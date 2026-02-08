@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://project-anchor.local/schemas/command.schema.json",
+  "title": "Project Anchor Command",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "status", "payload", "created_at", "updated_at"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Command unique identifier (uuid or ulid)."
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Command type, e.g., 'PLACE_ORDER', 'CANCEL_ORDER', 'SYNC_BALANCE'."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PENDING", "PROCESSING", "DONE", "FAILED"],
+      "description": "Lifecycle status of the command."
+    },
+    "payload": {
+      "type": "object",
+      "description": "Command input payload (type-specific).",
+      "additionalProperties": true
+    },
+    "result": {
+      "type": ["object", "null"],
+      "description": "Command execution result (type-specific).",
+      "additionalProperties": true,
+      "default": null
+    },
+    "error": {
+      "type": ["string", "null"],
+      "description": "Error message when status is FAILED.",
+      "minLength": 1,
+      "default": null
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "How many execution attempts have been made."
+    },
+    "locked_by": {
+      "type": ["string", "null"],
+      "default": null,
+      "description": "Worker identifier holding the processing lock."
+    },
+    "locked_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "default": null,
+      "description": "When the worker lock was acquired (ISO8601)."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Creation time (ISO8601)."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last update time (ISO8601)."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "const": "FAILED" } },
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["error"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "PROCESSING" } },
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["locked_by", "locked_at"]
+      }
+    }
+  ]
+}
+
