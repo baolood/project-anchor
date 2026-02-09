@@ -1,0 +1,16 @@
+from enum import Enum
+
+class EngineStatus(str, Enum):
+    STOPPED = "STOPPED"
+    RUNNING = "RUNNING"
+    COOLDOWN = "COOLDOWN"
+    LOCKED = "LOCKED"
+
+class RiskReason(str, Enum):
+    NONE = "NONE"
+    DRAW_DOWN = "DRAW_DOWN"
+    LOSS_STREAK = "LOSS_STREAK"
+    MANUAL_INTERVENTION = "MANUAL_INTERVENTION"
+    API_ERROR = "API_ERROR"
+    INVALID_API_KEY = "INVALID_API_KEY"
+    SYSTEM_GUARD = "SYSTEM_GUARD"

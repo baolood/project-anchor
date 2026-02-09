@@ -1,0 +1,230 @@
+import asyncio
+import json
+import os
+import time
+from typing import Any, Dict
+
+from sqlalchemy import text
+from app.db import async_session
+
+# ========== 基本配置 ==========
+POLL_INTERVAL = 2  # 轮询间隔（秒）
+PROCESSING_TIMEOUT_SEC = 300  # PROCESSING 超时回收（秒）
+
+print(
+    f"[worker] boot ok pid={os.getpid()} ts={int(time.time())}",
+    flush=True,
+)
+
+
+# ========== 工具函数 ==========
+def fail(reason: str) -> Dict[str, Any]:
+    return {"ok": False, "error": reason}
+
+
+def ok() -> Dict[str, Any]:
+    return {"ok": True}
+
+
+# ========== 业务校验 ==========
+def validate_trade_preview(payload: Dict[str, Any]) -> Dict[str, Any]:
+    required = ["request_id", "symbol", "side", "qty", "leverage"]
+    for k in required:
+        if k not in payload:
+            return fail(f"validation:missing_{k}")
+
+    if payload["side"] not in ("BUY", "SELL"):
+        return fail("validation:side_must_be_one_of_BUY,SELL")
+
+    if payload["qty"] <= 0:
+        return fail("validation:qty_must_be_positive")
+
+    if payload["leverage"] <= 0:
+        return fail("validation:leverage_must_be_positive")
+
+    risk = payload.get("risk")
+    if risk:
+        max_notional = risk.get("max_notional_usdt")
+        max_loss = risk.get("max_loss_usdt")
+        cooldown = risk.get("cooldown_sec")
+
+        if max_notional is not None and max_notional <= 0:
+            return fail("validation:risk_max_notional_invalid")
+
+        if max_loss is not None and max_loss <= 0:
+            return fail("validation:risk_max_loss_invalid")
+
+        if max_notional is not None and max_loss is not None and max_loss > max_notional:
+            return fail("validation:risk_max_loss_gt_max_notional")
+
+        if cooldown is not None and cooldown < 0:
+            return fail("validation:risk_cooldown_invalid")
+
+    return ok()
+
+
+# ========== DB 状态变更 ==========
+async def mark_done(db, cmd_id):
+    res = await db.execute(
+        text(
+            """
+            update commands
+            set status='DONE',
+                finished_at=now(),
+                processed_at=now()
+            where id=(:id)::uuid
+            """
+        ),
+        {"id": str(cmd_id)},
+    )
+    await db.commit()
+    print(f"DONE rows={res.rowcount} id={cmd_id}", flush=True)
+
+
+async def mark_failed(db, cmd_id, reason: str):
+    res = await db.execute(
+        text(
+            """
+            update commands
+            set status='FAILED',
+                error_message=:err,
+                finished_at=now(),
+                processed_at=now()
+            where id=(:id)::uuid
+            """
+        ),
+        {"id": str(cmd_id), "err": reason},
+    )
+    await db.commit()
+    print(f"FAILED rows={res.rowcount} id={cmd_id} reason={reason}", flush=True)
+
+
+# ========== Worker 主循环 ==========
+async def poll_commands():
+    print("worker started, polling commands...", flush=True)
+
+    while True:
+        try:
+            async with async_session() as db:
+
+                # ---------- 1) 回收超时 PROCESSING ----------
+                # 关键修复：不用 (:t || ' seconds')::interval，避免 asyncpg 期望 str
+                sweep = await db.execute(
+                    text(
+                        """
+                        update commands
+                        set status='FAILED',
+                            error_message='timeout',
+                            finished_at=now(),
+                            processed_at=now()
+                        where status='PROCESSING'
+                          and started_at < now() - (:t * interval '1 second')
+                        """
+                    ),
+                    {"t": int(PROCESSING_TIMEOUT_SEC)},
+                )
+                if sweep.rowcount:
+                    print(f"timeout sweep rows={sweep.rowcount}", flush=True)
+                    await db.commit()
+
+                # ---------- 2) 取一条 PENDING 并锁定 ----------
+                row = (
+                    await db.execute(
+                        text(
+                            """
+                            update commands
+                            set status='PROCESSING',
+                                started_at=now()
+                            where id = (
+                                select id
+                                from commands
+                                where status='PENDING'
+                                order by created_at asc
+                                for update skip locked
+                                limit 1
+                            )
+                            returning id, idempotency_key, payload
+                            """
+                        )
+                    )
+                ).first()
+
+                if not row:
+                    await asyncio.sleep(POLL_INTERVAL)
+                    continue
+
+                cmd_id, idem_key, payload = row
+                payload = payload or {}
+
+                print(
+                    f"picked command id={cmd_id} key={idem_key} payload={json.dumps(payload, ensure_ascii=False)}",
+                    flush=True,
+                )
+
+                cmd_type = payload.get("type")
+                if not cmd_type:
+                    await mark_failed(db, cmd_id, "missing_type")
+                    continue
+
+                # ---------- 3) 分发处理 ----------
+                if cmd_type == "ping":
+                    await mark_done(db, cmd_id)
+
+                elif cmd_type == "noop":
+                    if "request_id" not in payload:
+                        await mark_failed(db, cmd_id, "validation:missing_request_id")
+                    else:
+                        await mark_done(db, cmd_id)
+
+                elif cmd_type == "trade.preview":
+                    res = validate_trade_preview(payload)
+                    if not res["ok"]:
+                        await mark_failed(db, cmd_id, res["error"])
+                        continue
+
+                    cooldown = (
+                        payload.get("risk", {}).get("cooldown_sec")
+                        if payload.get("risk")
+                        else None
+                    )
+                    if cooldown:
+                        # 同样修复 interval 拼接方式
+                        hit = (
+                            await db.execute(
+                                text(
+                                    """
+                                    select 1
+                                    from commands
+                                    where status in ('PROCESSING','DONE')
+                                      and payload->>'type'='trade.preview'
+                                      and payload->>'symbol'=:symbol
+                                      and payload->>'side'=:side
+                                      and started_at > now() - (:cd * interval '1 second')
+                                    limit 1
+                                    """
+                                ),
+                                {
+                                    "symbol": payload["symbol"],
+                                    "side": payload["side"],
+                                    "cd": int(cooldown),
+                                },
+                            )
+                        ).first()
+
+                        if hit:
+                            await mark_failed(db, cmd_id, "cooldown_active")
+                            continue
+
+                    await mark_done(db, cmd_id)
+
+                else:
+                    await mark_failed(db, cmd_id, "unknown_command_type")
+
+        except Exception as e:
+            print("worker error:", repr(e), flush=True)
+
+        await asyncio.sleep(POLL_INTERVAL)
+
+
+if __name__ == "__main__":
+    asyncio.run(poll_commands())
