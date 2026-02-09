@@ -21,6 +21,24 @@ def _now_z() -> str:
     return datetime.utcnow().isoformat() + "Z"
 
 
+def _ensure_json_result(x):
+    import json
+
+    if x is None:
+        return None
+    if isinstance(x, dict):
+        return x
+    # asyncpg 正常情况下会把 jsonb 映射成 dict；如果某些历史数据是字符串，这里兜底解析
+    if isinstance(x, str):
+        try:
+            v = json.loads(x)
+            return v
+        except Exception:
+            # 解析失败时保持原值，以免静默丢信息
+            return x
+    return x
+
+
 async def command_state_driver():
     """
     MVP driver (in-memory):
@@ -168,7 +186,7 @@ async def list_domain_commands(limit: int = 50):
             "attempt": r["attempt"],
             "locked_by": r["locked_by"],
             "locked_at": iso(r["locked_at"]),
-            "result": r["result"],
+            "result": _ensure_json_result(r["result"]),
             "error": r["error"],
             "created_at": iso(r["created_at"]),
             "updated_at": iso(r["updated_at"]),
