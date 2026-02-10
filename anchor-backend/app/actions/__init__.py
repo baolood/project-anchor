@@ -1,0 +1,1 @@
+# Command → Action decoupling layer
