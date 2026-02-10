@@ -71,7 +71,7 @@ class DomainCommandRunner:
 
         if self._append_event:
             try:
-                await self._append_event(cid, "PICKED", attempt, {"type": cmd_type})
+                await self._append_event(cid, "PICKED", attempt, {"type": cmd_type, "attempt": attempt})
             except Exception:
                 pass
 
@@ -98,7 +98,7 @@ class DomainCommandRunner:
                     try:
                         await self._append_event(
                             cid, "POLICY_BLOCK", attempt,
-                            {"code": decision.get("code"), "message": decision.get("message"), "detail": decision.get("detail")},
+                            {"type": cmd_type, "attempt": attempt, "code": decision.get("code"), "message": decision.get("message"), "detail": decision.get("detail")},
                         )
                     except Exception:
                         pass
@@ -110,7 +110,7 @@ class DomainCommandRunner:
                     pass
                 if self._append_event:
                     try:
-                        await self._append_event(cid, "MARK_FAILED", attempt, {"error": decision})
+                        await self._append_event(cid, "MARK_FAILED", attempt, {"type": cmd_type, "attempt": attempt, "error": decision})
                     except Exception:
                         pass
                 return {"id": cid, "type": cmd_type, "final_status": "FAILED"}
@@ -118,7 +118,7 @@ class DomainCommandRunner:
                 try:
                     await self._append_event(
                         cid, "POLICY_ALLOW", attempt,
-                        {"policies": [p.name for p in self._policies]},
+                        {"type": cmd_type, "attempt": attempt, "policies": [p.name for p in self._policies]},
                     )
                 except Exception:
                     pass
@@ -127,7 +127,7 @@ class DomainCommandRunner:
         if action is None:
             if self._append_event:
                 try:
-                    await self._append_event(cid, "ACTION_FAIL", attempt, {"error": {"code": "UNKNOWN_TYPE", "type": cmd_type}, "type": cmd_type})
+                    await self._append_event(cid, "ACTION_FAIL", attempt, {"type": cmd_type, "attempt": attempt, "error": {"code": "UNKNOWN_TYPE", "type": cmd_type}})
                 except Exception:
                     pass
             try:
@@ -136,7 +136,7 @@ class DomainCommandRunner:
                 pass
             if self._append_event:
                 try:
-                    await self._append_event(cid, "MARK_FAILED", attempt, {"reason": "UNKNOWN_TYPE", "type": cmd_type})
+                    await self._append_event(cid, "MARK_FAILED", attempt, {"type": cmd_type, "attempt": attempt, "reason": "UNKNOWN_TYPE"})
                 except Exception:
                     pass
             return {"id": cid, "type": cmd_type, "final_status": "FAILED"}
@@ -151,16 +151,16 @@ class DomainCommandRunner:
             }
             if self._append_event:
                 try:
-                    await self._append_event(cid, "EXCEPTION", attempt, {"code": "ACTION_EXCEPTION", "message": str(e)})
+                    await self._append_event(cid, "EXCEPTION", attempt, {"type": cmd_type, "attempt": attempt, "code": "ACTION_EXCEPTION", "message": str(e)})
                 except Exception:
                     pass
 
         if self._append_event:
             try:
                 if out.get("ok") is True:
-                    await self._append_event(cid, "ACTION_OK", attempt, {"result": _result_summary(out.get("result"))})
+                    await self._append_event(cid, "ACTION_OK", attempt, {"type": cmd_type, "attempt": attempt, "result": _result_summary(out.get("result"))})
                 else:
-                    await self._append_event(cid, "ACTION_FAIL", attempt, {"error": out.get("error"), "type": cmd_type})
+                    await self._append_event(cid, "ACTION_FAIL", attempt, {"type": cmd_type, "attempt": attempt, "error": out.get("error")})
             except Exception:
                 pass
 
@@ -172,7 +172,7 @@ class DomainCommandRunner:
                 await self._mark_done(cid, result)
                 if self._append_event:
                     try:
-                        await self._append_event(cid, "MARK_DONE", attempt, {"result_summary": _result_summary(result)})
+                        await self._append_event(cid, "MARK_DONE", attempt, {"type": cmd_type, "attempt": attempt, "result_summary": _result_summary(result)})
                     except Exception:
                         pass
                 return {"id": cid, "type": cmd_type, "final_status": "DONE"}
@@ -187,14 +187,14 @@ class DomainCommandRunner:
                 await self._mark_failed(cid, reason, detail)
                 if self._append_event:
                     try:
-                        await self._append_event(cid, "MARK_FAILED", attempt, {"error": detail, "type": cmd_type})
+                        await self._append_event(cid, "MARK_FAILED", attempt, {"type": cmd_type, "attempt": attempt, "error": detail})
                     except Exception:
                         pass
                 return {"id": cid, "type": cmd_type, "final_status": "FAILED"}
         except Exception as e:
             if self._append_event:
                 try:
-                    await self._append_event(cid, "EXCEPTION", attempt, {"code": "RUNNER_PERSIST", "message": str(e)})
+                    await self._append_event(cid, "EXCEPTION", attempt, {"type": cmd_type, "attempt": attempt, "code": "RUNNER_PERSIST", "message": str(e)})
                 except Exception:
                     pass
             try:

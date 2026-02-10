@@ -27,7 +27,7 @@ class IdempotencyPolicy(Policy):
         command_id = (command_dict.get("id") or "").strip() or (getattr(ctx, "command_id", "") or "")
         attempt = int(command_dict.get("attempt", 0) or getattr(ctx, "attempt", 0) or 0)
         if not command_id:
-            return {"allowed": True, "code": "OK", "message": "no command_id"}
+            return {"allowed": True, "code": "OK", "message": "no command_id", "detail": None}
         try:
             async with engine.begin() as conn:
                 r = await conn.execute(
@@ -49,9 +49,9 @@ class IdempotencyPolicy(Policy):
                     "message": "terminal state already written for this attempt",
                     "detail": {"command_id": command_id, "attempt": attempt},
                 }
-            return {"allowed": True, "code": "OK", "message": "ok"}
+            return {"allowed": True, "code": "OK", "message": "ok", "detail": None}
         except Exception as e:
-            return {"allowed": True, "code": "OK", "message": f"check error (allow): {e}"}
+            return {"allowed": True, "code": "OK", "message": f"check error (allow): {e}", "detail": None}
 
 
 def _rate_limit_key(cmd_type: str) -> str:
@@ -74,10 +74,10 @@ class RateLimitPolicy(Policy):
     ) -> PolicyDecision:
         cmd_type = (command_dict.get("type") or "").strip().upper() or (getattr(ctx, "cmd_type", "") or "").strip().upper()
         if not cmd_type:
-            return {"allowed": True, "code": "OK", "message": "ok"}
+            return {"allowed": True, "code": "OK", "message": "ok", "detail": None}
         limit = int(os.environ.get(_rate_limit_key(cmd_type), os.environ.get("POLICY_RATE_LIMIT_PER_MINUTE", "100000")))
         if limit <= 0:
-            return {"allowed": True, "code": "OK", "message": "ok"}
+            return {"allowed": True, "code": "OK", "message": "ok", "detail": None}
         try:
             async with engine.begin() as conn:
                 r = await conn.execute(
@@ -101,9 +101,9 @@ class RateLimitPolicy(Policy):
                     "message": f"type {cmd_type} over limit ({cnt} >= {limit}/min)",
                     "detail": {"type": cmd_type, "count": cnt, "limit": limit},
                 }
-            return {"allowed": True, "code": "OK", "message": "ok"}
+            return {"allowed": True, "code": "OK", "message": "ok", "detail": None}
         except Exception as e:
-            return {"allowed": True, "code": "OK", "message": f"check error (allow): {e}"}
+            return {"allowed": True, "code": "OK", "message": f"check error (allow): {e}", "detail": None}
 
 
 class CooldownAfterFailPolicy(Policy):
@@ -122,10 +122,10 @@ class CooldownAfterFailPolicy(Policy):
     ) -> PolicyDecision:
         cooldown_sec = int(os.environ.get("POLICY_FAIL_COOLDOWN_SECONDS", "0"))
         if cooldown_sec <= 0:
-            return {"allowed": True, "code": "OK", "message": "ok"}
+            return {"allowed": True, "code": "OK", "message": "ok", "detail": None}
         cmd_type = (command_dict.get("type") or "").strip().upper() or (getattr(ctx, "cmd_type", "") or "").strip().upper()
         if not cmd_type:
-            return {"allowed": True, "code": "OK", "message": "ok"}
+            return {"allowed": True, "code": "OK", "message": "ok", "detail": None}
         try:
             async with engine.begin() as conn:
                 r = await conn.execute(
@@ -141,13 +141,13 @@ class CooldownAfterFailPolicy(Policy):
                 )
                 row = r.mappings().first()
             if not row or row["last_fail"] is None:
-                return {"allowed": True, "code": "OK", "message": "ok"}
+                return {"allowed": True, "code": "OK", "message": "ok", "detail": None}
             last_fail = row["last_fail"]
             now_ts = time.time()
             try:
                 last_ts = last_fail.timestamp()
             except Exception:
-                return {"allowed": True, "code": "OK", "message": "ok"}
+                return {"allowed": True, "code": "OK", "message": "ok", "detail": None}
             if (now_ts - last_ts) < cooldown_sec:
                 return {
                     "allowed": False,
@@ -155,6 +155,6 @@ class CooldownAfterFailPolicy(Policy):
                     "message": f"type {cmd_type} in cooldown ({cooldown_sec}s)",
                     "detail": {"type": cmd_type, "cooldown_seconds": cooldown_sec},
                 }
-            return {"allowed": True, "code": "OK", "message": "ok"}
+            return {"allowed": True, "code": "OK", "message": "ok", "detail": None}
         except Exception as e:
-            return {"allowed": True, "code": "OK", "message": f"check error (allow): {e}"}
+            return {"allowed": True, "code": "OK", "message": f"check error (allow): {e}", "detail": None}

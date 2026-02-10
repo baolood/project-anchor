@@ -1,15 +1,16 @@
 """
 Policy protocol: check(ctx, command_dict) -> PolicyDecision.
 Used by runner before running action pipeline; block => mark_failed + POLICY_BLOCK event.
+All policies must return all four fields; when allowed=True use code="OK".
 """
 from typing import Any, Dict, Optional, TypedDict
 
 
-class PolicyDecision(TypedDict, total=False):
+class PolicyDecision(TypedDict):
     allowed: bool
     code: str
     message: str
-    detail: Optional[Dict[str, Any]]
+    detail: Optional[Any]  # object | None
 
 
 class Policy:
