@@ -10,6 +10,7 @@ NEXT_LOG_FILE="${NEXT_LOG_FILE:-/tmp/next-dev.log}"
 RETRY_E2E_PASS=NO
 EVENTS_E2E_PASS=NO
 QUOTE_E2E_PASS=NO
+LIST_RETRY_UI_E2E_PASS=NO
 CLOSURE_PASS=NO
 PASS_OR_FAIL=FAIL
 FAIL_REASON=""
@@ -49,6 +50,7 @@ if [ "$RETRY_E2E_PASS" != "YES" ] || [ "$EVENTS_E2E_PASS" != "YES" ]; then
   echo "RETRY_E2E_PASS=$RETRY_E2E_PASS"
   echo "EVENTS_E2E_PASS=$EVENTS_E2E_PASS"
   echo "QUOTE_E2E_PASS=$QUOTE_E2E_PASS"
+  echo "LIST_RETRY_UI_E2E_PASS=$LIST_RETRY_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=retry_or_events_e2e_failed"
@@ -71,9 +73,32 @@ if [ "$QUOTE_E2E_PASS" != "YES" ]; then
   echo "RETRY_E2E_PASS=$RETRY_E2E_PASS"
   echo "EVENTS_E2E_PASS=$EVENTS_E2E_PASS"
   echo "QUOTE_E2E_PASS=$QUOTE_E2E_PASS"
+  echo "LIST_RETRY_UI_E2E_PASS=$LIST_RETRY_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=quote_e2e_failed"
+  exit 1
+fi
+
+echo "=============================="
+echo "verify_all_e2e: Step 2c — checklist_list_retry_ui_e2e.sh"
+echo "=============================="
+list_retry_out="${LIST_RETRY_UI_E2E_OUT:-/tmp/checklist_list_retry_ui_e2e_last.out}"
+if CONSOLE_URL="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}" NEXT_LOG_FILE="${NEXT_LOG_FILE:-}" \
+   bash "$ROOT/scripts/checklist_list_retry_ui_e2e.sh" 2>&1 | tee "$list_retry_out"; then
+  if grep -q '^PASS_OR_FAIL=PASS$' "$list_retry_out"; then
+    LIST_RETRY_UI_E2E_PASS=YES
+  fi
+fi
+if [ "$LIST_RETRY_UI_E2E_PASS" != "YES" ]; then
+  echo "MODULE=verify_all_e2e"
+  echo "RETRY_E2E_PASS=$RETRY_E2E_PASS"
+  echo "EVENTS_E2E_PASS=$EVENTS_E2E_PASS"
+  echo "QUOTE_E2E_PASS=$QUOTE_E2E_PASS"
+  echo "LIST_RETRY_UI_E2E_PASS=$LIST_RETRY_UI_E2E_PASS"
+  echo "CLOSURE_PASS=$CLOSURE_PASS"
+  echo "PASS_OR_FAIL=FAIL"
+  echo "FAIL_REASON=list_retry_ui_e2e_failed"
   exit 1
 fi
 
@@ -109,6 +134,7 @@ echo "MODULE=verify_all_e2e"
 echo "RETRY_E2E_PASS=$RETRY_E2E_PASS"
 echo "EVENTS_E2E_PASS=$EVENTS_E2E_PASS"
 echo "QUOTE_E2E_PASS=$QUOTE_E2E_PASS"
+echo "LIST_RETRY_UI_E2E_PASS=$LIST_RETRY_UI_E2E_PASS"
 echo "CLOSURE_PASS=$CLOSURE_PASS"
 echo "PASS_OR_FAIL=$PASS_OR_FAIL"
 echo "FAIL_REASON=$FAIL_REASON"
