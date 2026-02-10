@@ -7,6 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONSOLE_DIR="${CONSOLE_DIR:-$ROOT/anchor-console}"
 CONSOLE_URL="${CONSOLE_URL:-http://127.0.0.1:3000}"
+BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}"
 LIMIT="${LIMIT:-200}"
 OUT="${OUT:-/tmp/checklist_create_payload_schema_ui_e2e_last.out}"
 
@@ -78,6 +79,14 @@ if [ "$home_status" != "200" ]; then
   echo "FAIL_REASON=CONSOLE_NOT_READY"
   exit 1
 fi
+
+echo "== Step1b Wait for backend (e.g. after 2g restore) =="
+for _ in $(seq 1 20); do
+  if curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 2 --max-time 5 "$BACKEND_PRECHECK/" 2>/dev/null | grep -q '^200$'; then
+    break
+  fi
+  sleep 1
+done
 
 echo "== Step2 POST quote (valid payload) =="
 quote_resp="$tmpdir/quote_resp.txt"
