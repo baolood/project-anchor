@@ -6,6 +6,7 @@ services:
     environment:
       REDIS_URL: redis://redis:6379/0
       DATABASE_URL: postgresql+asyncpg://anchor:anchor@postgres:5432/anchor
+      POLICY_QUOTE_MAX_NOTIONAL: ${POLICY_QUOTE_MAX_NOTIONAL:-0}
     depends_on:
       - postgres
       - redis
@@ -16,6 +17,7 @@ services:
     environment:
       REDIS_URL: redis://redis:6379/0
       DATABASE_URL: postgresql+asyncpg://anchor:anchor@postgres:5432/anchor
+      POLICY_QUOTE_MAX_NOTIONAL: ${POLICY_QUOTE_MAX_NOTIONAL:-0}
     depends_on:
       - postgres
       - redis
