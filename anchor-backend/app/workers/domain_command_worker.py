@@ -5,6 +5,14 @@ from typing import Any, Dict, Optional
 from sqlalchemy import text
 
 from app.workers import command_worker as cw
+from app.actions.registry import get_action, init_actions
+from app.actions.runner import DomainCommandRunner
+from app.domain_events import append_domain_event
+from app.policies.registry import get_policies, init_policies
+
+# Ensure actions and policies are registered when worker module loads
+init_actions()
+init_policies()
 
 
 def _ensure_json_object(x):
@@ -81,7 +89,7 @@ async def _domain_mark_failed(
             {"id": command_id, "result": result_json, "reason": reason},
         )
 
-    print(f"[domain] mark FAILED id={command_id} type(result)={type(result).__name__}", flush=True)
+    print(f"[domain] mark FAILED id={command_id} reason={reason!r}", flush=True)
     return r.rowcount
 
 
@@ -109,7 +117,7 @@ async def _pick_one_domain() -> Optional[Dict[str, Any]]:
                     locked_at = NOW(),
                     updated_at = NOW()
                 WHERE id IN (SELECT id FROM cte)
-                RETURNING id, type, payload
+                RETURNING id, type, payload, attempt
                 """
             ),
             {"locked_by": DOMAIN_WORKER_ID},
@@ -122,56 +130,34 @@ async def _pick_one_domain() -> Optional[Dict[str, Any]]:
             "id": str(row["id"]),
             "type": row.get("type"),
             "payload": row.get("payload") or {},
+            "attempt": int(row["attempt"]) if row.get("attempt") is not None else 0,
         }
-
-
-async def _process_domain_one(item: Dict[str, Any]) -> None:
-    cid = item["id"]
-    raw_payload = item.get("payload") or {}
-
-    cmd_type = (str(item.get("type") or "")).strip().lower()
-
-    try:
-        # 目前仅有 NOOP，一律视作成功回显
-        result: Dict[str, Any] = {
-            "ok": True,
-            "type": cmd_type or "noop",
-            "ts": cw._now_ts(),
-            "payload": raw_payload,
-        }
-
-        rows = await _domain_mark_done(cid, result)
-        print(f"DOMAIN DONE rows={rows} id={cid}", flush=True)
-
-    except Exception as e:
-        rows = await _domain_mark_failed(
-            cid,
-            "exception",
-            {"error": str(e), "payload": raw_payload},
-        )
-        print(f"DOMAIN FAILED rows={rows} id={cid} err={e}", flush=True)
 
 
 async def domain_worker_loop() -> None:
     print("domain worker started, polling commands_domain...", flush=True)
 
+    runner = DomainCommandRunner(
+        _pick_one_domain,
+        get_action,
+        _domain_mark_done,
+        _domain_mark_failed,
+        now_ts_fn=cw._now_ts,
+        append_event_fn=append_domain_event,
+        policies=get_policies(),
+        policy_engine=engine,
+    )
+
     while True:
-        item: Optional[Dict[str, Any]] = None
         try:
-            item = await _pick_one_domain()
-            if not item:
+            res = await runner.run_one()
+            if res is None:
                 await asyncio.sleep(POLL_INTERVAL_SEC)
                 continue
-
             print(
-                f"picked domain command id={item['id']} "
-                f"type={item.get('type')} "
-                f"payload={cw._safe_json(item.get('payload'))}",
+                f"picked domain command id={res['id']} type={res['type']} final_status={res['final_status']}",
                 flush=True,
             )
-
-            await _process_domain_one(item)
-
         except Exception as e:
             print(f"domain worker error: {e}", flush=True)
             await asyncio.sleep(1.0)
