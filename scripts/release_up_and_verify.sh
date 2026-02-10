@@ -13,18 +13,95 @@ VERIFY_OUT="${VERIFY_OUT:-/tmp/verify_all_e2e_release.out}"
 # Hard timeout for curl readiness (seconds)
 NEXT_READY_TIMEOUT="${NEXT_READY_TIMEOUT:-60}"
 
+# Docker retry on transient pull/auth/network
+DOCKER_UP_LOG="${DOCKER_UP_LOG:-/tmp/release_docker_up.log}"
+MAX_RETRIES="${RELEASE_DOCKER_MAX_RETRIES:-3}"
+# Backoff seconds before retry 1, 2, 3
+BACKOFF_1=2
+BACKOFF_2=5
+BACKOFF_3=10
+
+# Single regex to detect transient docker pull/auth/network errors
+TRANSIENT_PATTERN="failed to solve|pull access denied|unauthorized|TLS handshake timeout|i/o timeout|connection reset by peer|net/http: TLS handshake timeout|dial tcp|temporary failure in name resolution|context deadline exceeded|unexpected EOF"
+
 echo "=============================="
 echo "release_up_and_verify: Step A — Backend up"
 echo "=============================="
 cd "$BACKEND_DIR"
+
+if [ "${RELEASE_SIMULATE_DOCKER_PULL_FAIL:-0}" = "1" ]; then
+  echo "Simulating transient docker pull failure (RELEASE_SIMULATE_DOCKER_PULL_FAIL=1)..."
+  : > "$DOCKER_UP_LOG"
+  attempt=1
+  while [ "$attempt" -le "$MAX_RETRIES" ]; do
+    echo "Attempt $attempt/$MAX_RETRIES (simulated transient failure)"
+    echo "failed to solve: failed to fetch oauth token: read tcp: connection reset by peer" >> "$DOCKER_UP_LOG"
+    if [ "$attempt" -lt "$MAX_RETRIES" ]; then
+      backoff_sec=$BACKOFF_1
+      [ "$attempt" -eq 2 ] && backoff_sec=$BACKOFF_2
+      echo "Sleeping ${backoff_sec}s before retry..."
+      sleep "$backoff_sec"
+    fi
+    attempt=$((attempt + 1))
+  done
+  echo "=============================="
+  echo "MODULE=release_up_and_verify"
+  echo "PASS_OR_FAIL=FAIL"
+  echo "FAIL_REASON=DOCKER_PULL_TRANSIENT"
+  echo "DOCKER_UP_LOG=$DOCKER_UP_LOG"
+  echo "=============================="
+  echo "Last ~80 lines of docker log:"
+  tail -n 80 "$DOCKER_UP_LOG" 2>/dev/null || true
+  exit 1
+fi
+
 PS_OUT="$(docker compose ps 2>/dev/null | grep -E 'backend|worker' || true)"
 echo "$PS_OUT" | grep -q 'backend.*Up' && BACKEND_UP=1 || BACKEND_UP=0
 echo "$PS_OUT" | grep -q 'worker.*Up' && WORKER_UP=1 || WORKER_UP=0
 
 if [ "$BACKEND_UP" -eq 0 ] || [ "$WORKER_UP" -eq 0 ]; then
-  echo "Starting backend + worker (docker compose up -d --build)..."
-  docker compose up -d --build
-  echo "OK: backend + worker started"
+  attempt=1
+  DOCKER_OK=0
+  while [ "$attempt" -le "$MAX_RETRIES" ]; do
+    echo "Starting backend + worker (docker compose up -d --build) attempt $attempt/$MAX_RETRIES..."
+    docker_exit=0
+    (docker compose up -d --build > "$DOCKER_UP_LOG" 2>&1) || docker_exit=$?
+    if [ "$docker_exit" -eq 0 ]; then
+      DOCKER_OK=1
+      echo "OK: backend + worker started"
+      break
+    fi
+    if grep -qEi "$TRANSIENT_PATTERN" "$DOCKER_UP_LOG" 2>/dev/null; then
+      if [ "$attempt" -lt "$MAX_RETRIES" ]; then
+        backoff_sec=$BACKOFF_1
+        [ "$attempt" -eq 2 ] && backoff_sec=$BACKOFF_2
+        echo "Transient pull/auth/network error detected. Sleeping ${backoff_sec}s before retry..."
+        sleep "$backoff_sec"
+      else
+        echo "=============================="
+        echo "MODULE=release_up_and_verify"
+        echo "PASS_OR_FAIL=FAIL"
+        echo "FAIL_REASON=DOCKER_PULL_TRANSIENT"
+        echo "DOCKER_UP_LOG=$DOCKER_UP_LOG"
+        echo "=============================="
+        echo "Last ~80 lines of docker log:"
+        tail -n 80 "$DOCKER_UP_LOG" 2>/dev/null || true
+        exit 1
+      fi
+    else
+      echo "=============================="
+      echo "MODULE=release_up_and_verify"
+      echo "PASS_OR_FAIL=FAIL"
+      echo "FAIL_REASON=DOCKER_COMPOSE_UP_FAILED"
+      echo "DOCKER_UP_LOG=$DOCKER_UP_LOG"
+      echo "=============================="
+      echo "Last ~80 lines of docker log:"
+      tail -n 80 "$DOCKER_UP_LOG" 2>/dev/null || true
+      exit 1
+    fi
+    attempt=$((attempt + 1))
+  done
+  [ "$DOCKER_OK" -eq 0 ] && exit 1
 else
   echo "OK: backend + worker already Up"
 fi
