@@ -9,7 +9,7 @@ CONSOLE_DIR="${CONSOLE_DIR:-$ROOT/anchor-console}"
 CONSOLE_URL="${CONSOLE_URL:-http://127.0.0.1:3000}"
 BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}"
 LIMIT="${LIMIT:-200}"
-OUT="${OUT:-/tmp/checklist_create_payload_schema_ui_e2e_last.out}"
+OUT="${OUT:-/tmp/anchor_e2e_checklist_create_payload_schema_ui_e2e_last.out}"
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT

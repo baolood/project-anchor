@@ -104,7 +104,7 @@ fi
 echo "=============================="
 echo "verify_all_e2e: Step 2c — checklist_list_retry_ui_e2e.sh"
 echo "=============================="
-list_retry_out="${LIST_RETRY_UI_E2E_OUT:-/tmp/checklist_list_retry_ui_e2e_last.out}"
+list_retry_out="${LIST_RETRY_UI_E2E_OUT:-/tmp/anchor_e2e_checklist_list_retry_ui_e2e_last.out}"
 if CONSOLE_URL="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}" NEXT_LOG_FILE="${NEXT_LOG_FILE:-}" \
    bash "$ROOT/scripts/checklist_list_retry_ui_e2e.sh" 2>&1 | tee "$list_retry_out"; then
   if grep -q '^PASS_OR_FAIL=PASS$' "$list_retry_out"; then
@@ -131,7 +131,7 @@ fi
 echo "=============================="
 echo "verify_all_e2e: Step 2d — checklist_create_form_ui_e2e.sh"
 echo "=============================="
-create_form_out="${CREATE_FORM_UI_E2E_OUT:-/tmp/checklist_create_form_ui_e2e_last.out}"
+create_form_out="${CREATE_FORM_UI_E2E_OUT:-/tmp/anchor_e2e_checklist_create_form_ui_e2e_last.out}"
 if CONSOLE_URL="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}" \
    bash "$ROOT/scripts/checklist_create_form_ui_e2e.sh" 2>&1 | tee "$create_form_out"; then
   if grep -q '^PASS_OR_FAIL=PASS$' "$create_form_out"; then
@@ -158,7 +158,7 @@ fi
 echo "=============================="
 echo "verify_all_e2e: Step 2e — checklist_create_navigate_events_e2e.sh"
 echo "=============================="
-create_nav_events_out="${CREATE_NAV_EVENTS_E2E_OUT:-/tmp/checklist_create_navigate_events_e2e_last.out}"
+create_nav_events_out="${CREATE_NAV_EVENTS_E2E_OUT:-/tmp/anchor_e2e_checklist_create_navigate_events_e2e_last.out}"
 if CONSOLE_URL="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}" \
    bash "$ROOT/scripts/checklist_create_navigate_events_e2e.sh" 2>&1 | tee "$create_nav_events_out"; then
   if grep -q '^PASS_OR_FAIL=PASS$' "$create_nav_events_out"; then
@@ -185,7 +185,7 @@ fi
 echo "=============================="
 echo "verify_all_e2e: Step 2f — checklist_detail_explainer_e2e.sh"
 echo "=============================="
-detail_explainer_out="${DETAIL_EXPLAINER_E2E_OUT:-/tmp/checklist_detail_explainer_e2e_last.out}"
+detail_explainer_out="${DETAIL_EXPLAINER_E2E_OUT:-/tmp/anchor_e2e_checklist_detail_explainer_e2e_last.out}"
 if CONSOLE_URL="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}" \
    bash "$ROOT/scripts/checklist_detail_explainer_e2e.sh" 2>&1 | tee "$detail_explainer_out"; then
   if grep -q '^PASS_OR_FAIL=PASS$' "$detail_explainer_out"; then
@@ -212,7 +212,7 @@ fi
 echo "=============================="
 echo "verify_all_e2e: Step 2g — checklist_policy_block_explainer_e2e.sh"
 echo "=============================="
-policy_block_out="${POLICY_BLOCK_EXPLAINER_E2E_OUT:-/tmp/checklist_policy_block_explainer_e2e_last.out}"
+policy_block_out="${POLICY_BLOCK_EXPLAINER_E2E_OUT:-/tmp/anchor_e2e_checklist_policy_block_explainer_e2e_last.out}"
 if CONSOLE_URL="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}" BACKEND_DIR="${ROOT}/anchor-backend" \
    bash "$ROOT/scripts/checklist_policy_block_explainer_e2e.sh" 2>&1 | tee "$policy_block_out"; then
   if grep -q '^PASS_OR_FAIL=PASS$' "$policy_block_out"; then
@@ -239,7 +239,7 @@ fi
 echo "=============================="
 echo "verify_all_e2e: Step 2h — checklist_create_payload_schema_ui_e2e.sh"
 echo "=============================="
-create_payload_schema_out="${CREATE_PAYLOAD_SCHEMA_UI_E2E_OUT:-/tmp/checklist_create_payload_schema_ui_e2e_last.out}"
+create_payload_schema_out="${CREATE_PAYLOAD_SCHEMA_UI_E2E_OUT:-/tmp/anchor_e2e_checklist_create_payload_schema_ui_e2e_last.out}"
 if CONSOLE_URL="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}" CONSOLE_DIR="${ROOT}/anchor-console" \
    bash "$ROOT/scripts/checklist_create_payload_schema_ui_e2e.sh" 2>&1 | tee "$create_payload_schema_out"; then
   if grep -q '^PASS_OR_FAIL=PASS$' "$create_payload_schema_out"; then
@@ -304,4 +304,7 @@ echo "CREATE_PAYLOAD_SCHEMA_UI_E2E_PASS=$CREATE_PAYLOAD_SCHEMA_UI_E2E_PASS"
 echo "CLOSURE_PASS=$CLOSURE_PASS"
 echo "PASS_OR_FAIL=$PASS_OR_FAIL"
 echo "FAIL_REASON=$FAIL_REASON"
+
+# Emit index for paste-ready navigation
+"$ROOT/scripts/emit_e2e_index.sh" >/dev/null 2>&1 || true
 exit 0

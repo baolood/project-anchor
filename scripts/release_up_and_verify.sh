@@ -8,7 +8,11 @@ ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONSOLE_DIR="${CONSOLE_DIR:-$ROOT/anchor-console}"
 BACKEND_DIR="${BACKEND_DIR:-$ROOT/anchor-backend}"
 NEXT_LOG_FILE="${NEXT_LOG_FILE:-/tmp/next-dev.log}"
-VERIFY_OUT="${VERIFY_OUT:-/tmp/verify_all_e2e_release.out}"
+VERIFY_OUT="${VERIFY_OUT:-/tmp/anchor_e2e_verify_all_release.out}"
+RELEASE_OUT="${RELEASE_OUT:-/tmp/anchor_e2e_release_up_and_verify_last.out}"
+
+# Tee whole release output to RELEASE_OUT
+exec > >(tee "$RELEASE_OUT") 2>&1
 
 # Hard timeout for curl readiness (seconds)
 NEXT_READY_TIMEOUT="${NEXT_READY_TIMEOUT:-60}"
@@ -157,7 +161,7 @@ if [ "$VERIFY_EXIT" -ne 0 ]; then
   echo "=============================="
   echo "NEXT_LOG_FILE=$NEXT_LOG_FILE"
   echo "VERIFY_ALL_OUT=$VERIFY_OUT"
-  echo "Check checklist outputs under /tmp/checklist_*_last.out"
+  echo "Check checklist outputs under /tmp/anchor_e2e_checklist_*_last.out"
   exit 1
 fi
 echo
@@ -165,12 +169,12 @@ echo
 echo "=============================="
 echo "release_up_and_verify: Step D — Delivery template"
 echo "=============================="
-CHECKLIST_DETAIL_EXPLAINER_OUT="/tmp/checklist_detail_explainer_e2e_last.out"
-CHECKLIST_CREATE_NAV_EVENTS_OUT="/tmp/checklist_create_navigate_events_e2e_last.out"
-CHECKLIST_CREATE_FORM_UI_OUT="/tmp/checklist_create_form_ui_e2e_last.out"
-CHECKLIST_LIST_RETRY_UI_OUT="/tmp/checklist_list_retry_ui_e2e_last.out"
-CHECKLIST_EVENTS_OUT="/tmp/checklist_events_e2e_last.out"
-CHECKLIST_RETRY_OUT="/tmp/checklist_retry_e2e_last.out"
+CHECKLIST_DETAIL_EXPLAINER_OUT="/tmp/anchor_e2e_checklist_detail_explainer_e2e_last.out"
+CHECKLIST_CREATE_NAV_EVENTS_OUT="/tmp/anchor_e2e_checklist_create_navigate_events_e2e_last.out"
+CHECKLIST_CREATE_FORM_UI_OUT="/tmp/anchor_e2e_checklist_create_form_ui_e2e_last.out"
+CHECKLIST_LIST_RETRY_UI_OUT="/tmp/anchor_e2e_checklist_list_retry_ui_e2e_last.out"
+CHECKLIST_EVENTS_OUT="/tmp/anchor_e2e_checklist_events_e2e_last.out"
+CHECKLIST_RETRY_OUT="/tmp/anchor_e2e_checklist_retry_e2e_last.out"
 
 echo "MODULE=release_up_and_verify"
 echo "NEXT_LOG_FILE=$NEXT_LOG_FILE"
