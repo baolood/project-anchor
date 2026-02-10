@@ -8,6 +8,7 @@ from app.actions.protocol import Action
 from app.actions.noop import NoopAction
 from app.actions.fail import FailAction
 from app.actions.flaky import FlakyAction
+from app.actions.quote import QuoteAction
 
 ACTIONS: Dict[str, Action] = {}
 _INIT_DONE = False
@@ -32,4 +33,5 @@ def init_actions() -> None:
     register(NoopAction())
     register(FailAction())
     register(FlakyAction())
+    register(QuoteAction())
     _INIT_DONE = True

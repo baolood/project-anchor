@@ -9,6 +9,7 @@ NEXT_LOG_FILE="${NEXT_LOG_FILE:-/tmp/next-dev.log}"
 
 RETRY_E2E_PASS=NO
 EVENTS_E2E_PASS=NO
+QUOTE_E2E_PASS=NO
 CLOSURE_PASS=NO
 PASS_OR_FAIL=FAIL
 FAIL_REASON=""
@@ -23,6 +24,7 @@ if ! bash "$ROOT/scripts/run_fix_restart_verify.sh"; then
   echo "MODULE=verify_all_e2e"
   echo "RETRY_E2E_PASS=$RETRY_E2E_PASS"
   echo "EVENTS_E2E_PASS=$EVENTS_E2E_PASS"
+  echo "QUOTE_E2E_PASS=$QUOTE_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=$PASS_OR_FAIL"
   echo "FAIL_REASON=run_fix_restart_verify_failed"
@@ -46,9 +48,32 @@ if [ "$RETRY_E2E_PASS" != "YES" ] || [ "$EVENTS_E2E_PASS" != "YES" ]; then
   echo "MODULE=verify_all_e2e"
   echo "RETRY_E2E_PASS=$RETRY_E2E_PASS"
   echo "EVENTS_E2E_PASS=$EVENTS_E2E_PASS"
+  echo "QUOTE_E2E_PASS=$QUOTE_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=retry_or_events_e2e_failed"
+  exit 1
+fi
+
+echo "=============================="
+echo "verify_all_e2e: Step 2b — checklist_quote_e2e.sh"
+echo "=============================="
+quote_out="$(mktemp)"
+trap 'rm -f "$full_out" "$quote_out"' EXIT
+if CONSOLE_PRECHECK="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}" BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}" \
+   bash "$ROOT/scripts/checklist_quote_e2e.sh" 2>&1 | tee "$quote_out"; then
+  if grep -q '^PASS_OR_FAIL=PASS$' "$quote_out"; then
+    QUOTE_E2E_PASS=YES
+  fi
+fi
+if [ "$QUOTE_E2E_PASS" != "YES" ]; then
+  echo "MODULE=verify_all_e2e"
+  echo "RETRY_E2E_PASS=$RETRY_E2E_PASS"
+  echo "EVENTS_E2E_PASS=$EVENTS_E2E_PASS"
+  echo "QUOTE_E2E_PASS=$QUOTE_E2E_PASS"
+  echo "CLOSURE_PASS=$CLOSURE_PASS"
+  echo "PASS_OR_FAIL=FAIL"
+  echo "FAIL_REASON=quote_e2e_failed"
   exit 1
 fi
 
@@ -83,6 +108,7 @@ echo "=============================="
 echo "MODULE=verify_all_e2e"
 echo "RETRY_E2E_PASS=$RETRY_E2E_PASS"
 echo "EVENTS_E2E_PASS=$EVENTS_E2E_PASS"
+echo "QUOTE_E2E_PASS=$QUOTE_E2E_PASS"
 echo "CLOSURE_PASS=$CLOSURE_PASS"
 echo "PASS_OR_FAIL=$PASS_OR_FAIL"
 echo "FAIL_REASON=$FAIL_REASON"

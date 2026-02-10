@@ -5,6 +5,7 @@ from typing import List
 
 from app.policies.builtins import CooldownAfterFailPolicy, IdempotencyPolicy, RateLimitPolicy
 from app.policies.protocol import Policy
+from app.policies.quote import QuoteNotionalPolicy
 
 POLICIES: List[Policy] = []
 _INIT_DONE = False
@@ -27,4 +28,5 @@ def init_policies() -> None:
     register(IdempotencyPolicy())
     register(RateLimitPolicy())
     register(CooldownAfterFailPolicy())
+    register(QuoteNotionalPolicy())
     _INIT_DONE = True

@@ -4,7 +4,7 @@ import random
 import uuid
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from app.api.routes import router
 from app.domain_events import append_domain_event_pool
 
@@ -121,20 +121,26 @@ async def health():
     return {"ok": True}
 
 
-async def _create_domain_command(cmd_id_prefix: str, cmd_type: str) -> dict:
+def _json_dumps(obj) -> str:
+    import json
+    return json.dumps(obj, ensure_ascii=False)
+
+
+async def _create_domain_command(cmd_id_prefix: str, cmd_type: str, payload: dict | None = None) -> dict:
     pool = await _get_domain_pg_pool()
     cmd_id = f"{cmd_id_prefix}-{uuid.uuid4()}"
     now = datetime.utcnow()
+    payload_json = _json_dumps(payload if payload else {})
     sql = """
     INSERT INTO commands_domain
       (id, type, status, payload, attempt, created_at, updated_at)
     VALUES
-      ($1, $2, 'PENDING', '{}'::jsonb, 0, $3, $3)
+      ($1, $2, 'PENDING', $3::jsonb, 0, $4, $4)
     RETURNING id, type, status, created_at, updated_at;
     """
     try:
         async with pool.acquire() as conn:
-            row = await conn.fetchrow(sql, cmd_id, cmd_type, now)
+            row = await conn.fetchrow(sql, cmd_id, cmd_type, payload_json, now)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DB insert failed: {e}")
     if row is None:
@@ -163,6 +169,19 @@ async def create_domain_fail():
 async def create_domain_flaky():
     """Create FLAKY: first run FAILED, after retry DONE (for retry e2e)."""
     return await _create_domain_command("flaky", "FLAKY")
+
+
+@app.post("/domain-commands/quote")
+async def create_domain_quote(body: dict = Body(default_factory=dict)):
+    """Create QUOTE: payload defaults symbol=BTCUSDT, side=BUY, notional=100; optional price."""
+    payload = dict(body) if body else {}
+    defaults = {"symbol": "BTCUSDT", "side": "BUY", "notional": 100}
+    for k, v in defaults.items():
+        if k not in payload:
+            payload[k] = v
+    if "price" in payload and payload["price"] is None:
+        del payload["price"]
+    return await _create_domain_command("quote", "QUOTE", payload)
 
 
 @app.post("/domain-commands/{domain_id}/retry")
