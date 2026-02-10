@@ -6,7 +6,7 @@ from app.actions.protocol import Action, ActionOutput
 class FlakyAction(Action):
     name = "FLAKY"
 
-    def run(self, command: Dict[str, Any]) -> ActionOutput:
+    def run_core(self, command: Dict[str, Any]) -> ActionOutput:
         attempt = int(command.get("attempt") or 0)
         if attempt <= 1:
             return {
@@ -20,3 +20,6 @@ class FlakyAction(Action):
             "result": {"ok": True, "type": "flaky", "attempt": attempt, "payload": payload},
             "error": None,
         }
+
+    def run(self, command: Dict[str, Any]) -> ActionOutput:
+        return self.run_core(command)

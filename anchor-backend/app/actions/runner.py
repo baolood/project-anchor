@@ -1,5 +1,5 @@
 """
-DomainCommandRunner: pick one command → action.run() → mark_done / mark_failed.
+DomainCommandRunner: pick one command → pipeline(action) → mark_done / mark_failed.
 Emits append-only events at key points (PICKED, ACTION_OK/ACTION_FAIL, MARK_DONE, MARK_FAILED, EXCEPTION).
 No prints inside; returns a result dict for the worker to log.
 """
@@ -8,6 +8,8 @@ import time
 from typing import Any, Callable, Dict, Optional
 
 from app.actions.context import ActionContext
+from app.actions.pipeline import run_action_with_pipeline
+from app.actions.steps import default_pipeline_steps
 
 
 def _result_summary(obj: Any, max_keys: int = 5) -> Dict[str, Any]:
@@ -96,7 +98,7 @@ class DomainCommandRunner:
             return {"id": cid, "type": cmd_type, "final_status": "FAILED"}
 
         try:
-            out = action.run(command)
+            out = run_action_with_pipeline(action, context, command, default_pipeline_steps)
         except Exception as e:
             out = {
                 "ok": False,
