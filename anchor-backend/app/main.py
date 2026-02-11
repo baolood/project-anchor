@@ -220,7 +220,7 @@ async def get_ops_summary(
         failed_row = await conn.fetchrow(
             """
             SELECT COUNT(*) AS cnt FROM commands_domain
-            WHERE updated_at >= NOW() - ($1::text || ' minutes')::interval
+            WHERE updated_at >= NOW() - ($1::int * interval '1 minute')
               AND status = 'FAILED'
             """,
             minutes,
@@ -231,7 +231,7 @@ async def get_ops_summary(
         policy_row = await conn.fetchrow(
             """
             SELECT COUNT(*) AS cnt FROM domain_events
-            WHERE created_at >= NOW() - ($1::text || ' minutes')::interval
+            WHERE created_at >= NOW() - ($1::int * interval '1 minute')
               AND event_type = 'POLICY_BLOCK'
             """,
             minutes,
@@ -242,7 +242,7 @@ async def get_ops_summary(
         exc_row = await conn.fetchrow(
             """
             SELECT COUNT(*) AS cnt FROM domain_events
-            WHERE created_at >= NOW() - ($1::text || ' minutes')::interval
+            WHERE created_at >= NOW() - ($1::int * interval '1 minute')
               AND event_type = 'EXCEPTION'
             """,
             minutes,
@@ -253,7 +253,7 @@ async def get_ops_summary(
         kill_row = await conn.fetchrow(
             """
             SELECT COUNT(*) AS cnt FROM domain_events
-            WHERE created_at >= NOW() - ($1::text || ' minutes')::interval
+            WHERE created_at >= NOW() - ($1::int * interval '1 minute')
               AND event_type = 'KILL_SWITCH_ON'
             """,
             minutes,
@@ -266,7 +266,7 @@ async def get_ops_summary(
             """
             SELECT command_id, event_type, payload, created_at
             FROM domain_events
-            WHERE created_at >= NOW() - ($1::text || ' minutes')::interval
+            WHERE created_at >= NOW() - ($1::int * interval '1 minute')
               AND event_type IN ('POLICY_BLOCK', 'EXCEPTION', 'MARK_FAILED', 'KILL_SWITCH_ON')
             ORDER BY created_at DESC
             LIMIT $2
