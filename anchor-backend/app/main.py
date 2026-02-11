@@ -4,7 +4,7 @@ import random
 import uuid
 from datetime import datetime
 
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException, Query, Request
 from app.api.routes import router
 from app.domain_events import append_domain_event_pool
 
@@ -119,6 +119,189 @@ async def _shutdown():
 @app.get("/health")
 async def health():
     return {"ok": True}
+
+
+@app.get("/ops/kill-switch")
+async def get_kill_switch():
+    """Read-only: report whether kill switch is enabled (env or redis). Worker respects it and does not pick when ON."""
+    from app.ops.kill_switch import get_kill_switch_state
+    enabled, source = get_kill_switch_state()
+    return {"enabled": enabled, "source": source}
+
+
+@app.post("/ops/kill-switch")
+async def post_kill_switch(request: Request, body: dict = Body(default_factory=dict)):
+    """Set kill switch via Redis. OPS_TOKEN required if set. Writes KILL_SWITCH_SET audit event."""
+    ops_token = (os.getenv("OPS_TOKEN") or "").strip()
+    if ops_token:
+        token = (request.headers.get("x-ops-token") or "").strip()
+        if token != ops_token:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+    enabled = body.get("enabled", False) if isinstance(body, dict) else False
+    from app.ops.kill_switch import set_kill_switch_redis, get_kill_switch_state
+    ok = set_kill_switch_redis(bool(enabled))
+    if ok:
+        try:
+            pool = await _get_domain_pg_pool()
+            await append_domain_event_pool(
+                pool,
+                "ops-kill-switch",
+                "KILL_SWITCH_SET",
+                0,
+                {"enabled": bool(enabled), "source": "redis", "actor": "ops_api"},
+            )
+        except Exception as e:
+            print(f"[ops/kill-switch] audit append failed: {e}", flush=True)
+    enabled_out, source_out = get_kill_switch_state()
+    return {"enabled": enabled_out, "source": source_out}
+
+
+@app.get("/ops/worker")
+async def get_ops_worker():
+    """Read-only: kill switch, telegram enabled, last worker heartbeat. Never raises."""
+    from app.ops.kill_switch import get_kill_switch_state
+    kill_enabled, kill_source = get_kill_switch_state()
+    telegram_enabled = (os.getenv("TELEGRAM_NOTIFY_ENABLED") or "").strip() == "1"
+    last_heartbeat_at = None
+    try:
+        pool = await _get_domain_pg_pool()
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT created_at FROM domain_events
+                WHERE event_type = 'WORKER_HEARTBEAT'
+                ORDER BY created_at DESC LIMIT 1
+                """
+            )
+            if row and row.get("created_at"):
+                last_heartbeat_at = row["created_at"].isoformat()
+    except Exception as e:
+        print(f"[ops/worker] query failed: {e}", flush=True)
+    return {
+        "kill_switch_enabled": kill_enabled,
+        "kill_switch_source": kill_source,
+        "telegram_enabled": telegram_enabled,
+        "last_heartbeat_at": last_heartbeat_at,
+    }
+
+
+def _summary_from_payload(payload) -> str | None:
+    """Extract summary from payload: message > code > error.message > error.code. Returns None if empty."""
+    if payload is None or not isinstance(payload, dict):
+        return None
+    msg = payload.get("message")
+    if msg is not None and str(msg).strip():
+        return str(msg).strip()[:240]
+    code = payload.get("code")
+    if code is not None and str(code).strip():
+        return str(code).strip()[:240]
+    err = payload.get("error")
+    if isinstance(err, dict):
+        em = err.get("message")
+        if em is not None and str(em).strip():
+            return str(em).strip()[:240]
+        ec = err.get("code")
+        if ec is not None and str(ec).strip():
+            return str(ec).strip()[:240]
+    return None
+
+
+@app.get("/ops/summary")
+async def get_ops_summary(
+    minutes: int = Query(30, ge=1, le=1440),
+    limit: int = Query(10, ge=1, le=200),
+):
+    """Return counts (FAILED, POLICY_BLOCK, EXCEPTION, KILL_SWITCH_ON) and recent events in time window."""
+    pool = await _get_domain_pg_pool()
+    counts = {"FAILED": 0, "POLICY_BLOCK": 0, "EXCEPTION": 0, "KILL_SWITCH_ON": 0}
+
+    async with pool.acquire() as conn:
+        # window_start = now - interval 'X minutes'
+        failed_row = await conn.fetchrow(
+            """
+            SELECT COUNT(*) AS cnt FROM commands_domain
+            WHERE updated_at >= NOW() - ($1::text || ' minutes')::interval
+              AND status = 'FAILED'
+            """,
+            minutes,
+        )
+        if failed_row:
+            counts["FAILED"] = failed_row["cnt"] or 0
+
+        policy_row = await conn.fetchrow(
+            """
+            SELECT COUNT(*) AS cnt FROM domain_events
+            WHERE created_at >= NOW() - ($1::text || ' minutes')::interval
+              AND event_type = 'POLICY_BLOCK'
+            """,
+            minutes,
+        )
+        if policy_row:
+            counts["POLICY_BLOCK"] = policy_row["cnt"] or 0
+
+        exc_row = await conn.fetchrow(
+            """
+            SELECT COUNT(*) AS cnt FROM domain_events
+            WHERE created_at >= NOW() - ($1::text || ' minutes')::interval
+              AND event_type = 'EXCEPTION'
+            """,
+            minutes,
+        )
+        if exc_row:
+            counts["EXCEPTION"] = exc_row["cnt"] or 0
+
+        kill_row = await conn.fetchrow(
+            """
+            SELECT COUNT(*) AS cnt FROM domain_events
+            WHERE created_at >= NOW() - ($1::text || ' minutes')::interval
+              AND event_type = 'KILL_SWITCH_ON'
+            """,
+            minutes,
+        )
+        if kill_row:
+            counts["KILL_SWITCH_ON"] = kill_row["cnt"] or 0
+
+        # recent events
+        recent_rows = await conn.fetch(
+            """
+            SELECT command_id, event_type, payload, created_at
+            FROM domain_events
+            WHERE created_at >= NOW() - ($1::text || ' minutes')::interval
+              AND event_type IN ('POLICY_BLOCK', 'EXCEPTION', 'MARK_FAILED', 'KILL_SWITCH_ON')
+            ORDER BY created_at DESC
+            LIMIT $2
+            """,
+            minutes,
+            limit,
+        )
+
+    def iso(v):
+        return v.isoformat() if v is not None else None
+
+    recent = []
+    import json
+    for r in recent_rows:
+        payload = _ensure_json_result(r["payload"]) or {}
+        cmd_type = None
+        if isinstance(payload, dict) and payload.get("type") is not None:
+            cmd_type = str(payload["type"])
+        summary = _summary_from_payload(payload)
+        if summary is None and payload:
+            raw = json.dumps(payload, ensure_ascii=False) if isinstance(payload, dict) else str(payload)
+            summary = (raw[:240] + "...") if len(raw) > 240 else raw
+        recent.append({
+            "created_at": iso(r["created_at"]) or "",
+            "command_id": r["command_id"] or "",
+            "event_type": r["event_type"] or "",
+            "cmd_type": cmd_type,
+            "summary": summary or "",
+        })
+
+    return {
+        "window_minutes": minutes,
+        "counts": counts,
+        "recent": recent,
+    }
 
 
 def _json_dumps(obj) -> str:
