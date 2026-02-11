@@ -5,6 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONSOLE_URL="${CONSOLE_URL:-http://127.0.0.1:3000}"
+LIMIT="${LIMIT:-200}"
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
@@ -115,7 +116,7 @@ fi
 
 echo "== Step3 GET events =="
 events_resp="$tmpdir/events_resp.txt"
-curl -sS -i --noproxy '*' "$CONSOLE_URL/api/proxy/commands/$QUOTE_ID/events?limit=200" -o "$events_resp" || true
+curl -sS -i --noproxy '*' "$CONSOLE_URL/api/proxy/commands/$QUOTE_ID/events?limit=$LIMIT" -o "$events_resp" || true
 EVENTS_HTTP_STATUS="$(parse_http "$events_resp" | head -1)"
 events_body="$tmpdir/events_body.json"
 parse_http "$events_resp" | sed -n '2,$p' > "$events_body"
