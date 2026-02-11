@@ -59,7 +59,7 @@ if [ "${RELEASE_SIMULATE_DOCKER_PULL_FAIL:-0}" = "1" ]; then
   exit 1
 fi
 
-PS_OUT="$(docker compose ps 2>/dev/null | grep -E 'backend|worker' || true)"
+PS_OUT="$(docker compose -f "$BACKEND_DIR/docker-compose.yml" ps 2>/dev/null | grep -E 'backend|worker' || true)"
 echo "$PS_OUT" | grep -q 'backend.*Up' && BACKEND_UP=1 || BACKEND_UP=0
 echo "$PS_OUT" | grep -q 'worker.*Up' && WORKER_UP=1 || WORKER_UP=0
 
@@ -69,7 +69,7 @@ if [ "$BACKEND_UP" -eq 0 ] || [ "$WORKER_UP" -eq 0 ]; then
   while [ "$attempt" -le "$MAX_RETRIES" ]; do
     echo "Starting backend + worker (docker compose up -d --build) attempt $attempt/$MAX_RETRIES..."
     docker_exit=0
-    (docker compose up -d --build > "$DOCKER_UP_LOG" 2>&1) || docker_exit=$?
+    (docker compose -f "$BACKEND_DIR/docker-compose.yml" up -d --build > "$DOCKER_UP_LOG" 2>&1) || docker_exit=$?
     if [ "$docker_exit" -eq 0 ]; then
       DOCKER_OK=1
       echo "OK: backend + worker started"
@@ -179,6 +179,9 @@ CHECKLIST_CREATE_NAV_EVENTS_OUT="/tmp/anchor_e2e_checklist_create_navigate_event
 CHECKLIST_DETAIL_EXPLAINER_OUT="/tmp/anchor_e2e_checklist_detail_explainer_e2e_last.out"
 CHECKLIST_POLICY_BLOCK_EXPLAINER_OUT="/tmp/anchor_e2e_checklist_policy_block_explainer_e2e_last.out"
 CHECKLIST_CREATE_PAYLOAD_SCHEMA_UI_OUT="/tmp/anchor_e2e_checklist_create_payload_schema_ui_e2e_last.out"
+CHECKLIST_KILL_SWITCH_OUT="/tmp/anchor_e2e_checklist_kill_switch_e2e_last.out"
+CHECKLIST_WORKER_HEARTBEAT_OUT="/tmp/anchor_e2e_checklist_worker_heartbeat_e2e_last.out"
+CHECKLIST_KILL_SWITCH_REDIS_OUT="/tmp/anchor_e2e_checklist_kill_switch_redis_e2e_last.out"
 
 echo "MODULE=release_up_and_verify"
 echo "NEXT_LOG_FILE=$NEXT_LOG_FILE"
@@ -193,5 +196,8 @@ echo "CHECKLIST_CREATE_NAV_EVENTS_OUT=$CHECKLIST_CREATE_NAV_EVENTS_OUT"
 echo "CHECKLIST_DETAIL_EXPLAINER_OUT=$CHECKLIST_DETAIL_EXPLAINER_OUT"
 echo "CHECKLIST_POLICY_BLOCK_EXPLAINER_OUT=$CHECKLIST_POLICY_BLOCK_EXPLAINER_OUT"
 echo "CHECKLIST_CREATE_PAYLOAD_SCHEMA_UI_OUT=$CHECKLIST_CREATE_PAYLOAD_SCHEMA_UI_OUT"
+echo "CHECKLIST_KILL_SWITCH_OUT=$CHECKLIST_KILL_SWITCH_OUT"
+echo "CHECKLIST_WORKER_HEARTBEAT_OUT=$CHECKLIST_WORKER_HEARTBEAT_OUT"
+echo "CHECKLIST_KILL_SWITCH_REDIS_OUT=$CHECKLIST_KILL_SWITCH_REDIS_OUT"
 echo "PASS_OR_FAIL=PASS"
 echo "FAIL_REASON="

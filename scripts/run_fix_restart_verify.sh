@@ -8,6 +8,7 @@ CONSOLE="${CONSOLE:-$ROOT/anchor-console}"
 CONSOLE_PRECHECK="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}"
 BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}"
 ANCHOR_BACKEND_DIR="${ANCHOR_BACKEND_DIR:-$BACKEND}"
+BACKEND_DIR="${BACKEND_DIR:-$BACKEND}"
 
 PG_USER="${PG_USER:-anchor}"
 PG_DB="${PG_DB:-anchor}"
@@ -46,9 +47,9 @@ echo
 echo "=============================="
 echo "STEP 1｜重启 backend + worker（no-cache build）"
 echo "=============================="
-docker compose down
-docker compose build --no-cache backend worker
-docker compose up -d
+docker compose -f "$BACKEND_DIR/docker-compose.yml" down
+docker compose -f "$BACKEND_DIR/docker-compose.yml" build --no-cache backend worker
+docker compose -f "$BACKEND_DIR/docker-compose.yml" up -d
 
 sleep 3
 echo "OK: backend/worker up"
@@ -62,17 +63,17 @@ if [ ! -f "$MIGRATION_FILE" ]; then
   exit 1
 fi
 
-PG_CID="$(docker compose ps -q postgres || true)"
+PG_CID="$(docker compose -f "$BACKEND_DIR/docker-compose.yml" ps -q postgres || true)"
 if [ -z "$PG_CID" ]; then
   echo "FAIL: postgres container not found"
-  docker compose ps
+  docker compose -f "$BACKEND_DIR/docker-compose.yml" ps
   exit 1
 fi
 
-docker compose exec -T postgres psql -U "$PG_USER" -d "$PG_DB" -v ON_ERROR_STOP=1 < "$MIGRATION_FILE"
+docker compose -f "$BACKEND_DIR/docker-compose.yml" exec -T postgres psql -U "$PG_USER" -d "$PG_DB" -v ON_ERROR_STOP=1 < "$MIGRATION_FILE"
 
 # verify exists
-docker compose exec -T postgres psql -U "$PG_USER" -d "$PG_DB" -v ON_ERROR_STOP=1 -c "\dt domain_events" | sed -n '1,80p'
+docker compose -f "$BACKEND_DIR/docker-compose.yml" exec -T postgres psql -U "$PG_USER" -d "$PG_DB" -v ON_ERROR_STOP=1 -c "\dt domain_events" | sed -n '1,80p'
 
 echo "OK: migration applied (domain_events exists)"
 echo
@@ -80,7 +81,7 @@ echo
 echo "=============================="
 echo "STEP 3｜worker 日志必须无 result 未定义"
 echo "=============================="
-docker compose logs --tail=120 worker | tee /tmp/worker_last.log
+docker compose -f "$BACKEND_DIR/docker-compose.yml" logs --tail=120 worker | tee /tmp/worker_last.log
 
 if grep -q "name 'result' is not defined" /tmp/worker_last.log; then
   echo "FAIL: worker still shows result undefined"
@@ -156,7 +157,7 @@ echo "STEP 9｜worker 日志证据（最新 120 行）"
 echo "=============================="
 echo "===== PASTE_4: worker logs ====="
 cd "$BACKEND"
-docker compose logs --tail=120 worker
+docker compose -f "$BACKEND_DIR/docker-compose.yml" logs --tail=120 worker
 echo
 
 echo "=============================="

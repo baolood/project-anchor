@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# Kill Switch E2E: worker does not pick when ANCHOR_KILL_SWITCH=1; command stays PENDING; events get KILL_SWITCH_ON.
+set -euo pipefail
+
+OUT="${OUT:-/tmp/anchor_e2e_checklist_kill_switch_e2e_last.out}"
+BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}"
+ANCHOR_BACKEND_DIR="${ANCHOR_BACKEND_DIR:-$(cd "$(dirname "$0")/.." && pwd)/anchor-backend}"
+BACKEND_DIR="${BACKEND_DIR:-$ANCHOR_BACKEND_DIR}"
+
+PASS_OR_FAIL=FAIL
+FAIL_REASON=""
+
+echo "=============================="
+echo "MODULE=kill_switch_e2e"
+echo "Step0: Precheck backend"
+echo "=============================="
+if ! curl -sS --noproxy '*' -o /dev/null -w "%{http_code}" "$BACKEND_PRECHECK/health" | grep -q 200; then
+  echo "FAIL_REASON=backend_not_reachable"
+  echo "PASS_OR_FAIL=$PASS_OR_FAIL"
+  echo "FAIL_REASON=$FAIL_REASON"
+  exit 1
+fi
+echo "OK: backend reachable"
+
+echo "=============================="
+echo "Step1: Restart worker with ANCHOR_KILL_SWITCH=1"
+echo "=============================="
+cd "$ANCHOR_BACKEND_DIR"
+docker compose -f "$BACKEND_DIR/docker-compose.yml" stop worker 2>/dev/null || true
+ANCHOR_KILL_SWITCH=1 docker compose -f "$BACKEND_DIR/docker-compose.yml" up -d worker
+sleep 3
+echo "OK: worker restarted with kill switch ON"
+
+echo "=============================="
+echo "Step2: POST /domain-commands/noop"
+echo "=============================="
+noop_resp="$(curl -sS --noproxy '*' -X POST "$BACKEND_PRECHECK/domain-commands/noop")"
+cmd_id="$(echo "$noop_resp" | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")"
+if [ -z "$cmd_id" ]; then
+  FAIL_REASON=noop_post_failed
+  echo "FAIL_REASON=$FAIL_REASON"
+  echo "PASS_OR_FAIL=$PASS_OR_FAIL"
+  docker compose -f "$BACKEND_DIR/docker-compose.yml" stop worker 2>/dev/null || true
+  docker compose -f "$BACKEND_DIR/docker-compose.yml" up -d worker 2>/dev/null || true
+  exit 1
+fi
+echo "COMMAND_ID=$cmd_id"
+
+echo "=============================="
+echo "Step3: Wait 5s + 5s (total 10s), assert command still PENDING"
+echo "=============================="
+sleep 5
+sleep 5
+status="$(curl -sS --noproxy '*' "$BACKEND_PRECHECK/domain-commands/$cmd_id" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))")"
+if [ "$status" != "PENDING" ]; then
+  FAIL_REASON=command_not_pending_after_10s
+  echo "FAIL_REASON=$FAIL_REASON"
+  echo "PASS_OR_FAIL=$PASS_OR_FAIL"
+  docker compose -f "$BACKEND_DIR/docker-compose.yml" stop worker 2>/dev/null || true
+  docker compose -f "$BACKEND_DIR/docker-compose.yml" up -d worker 2>/dev/null || true
+  exit 1
+fi
+echo "OK: command still PENDING"
+
+echo "=============================="
+echo "Step4: GET /domain-commands/{id}/events — KILL_SWITCH_ON present and count <= 2"
+echo "=============================="
+events="$(curl -sS --noproxy '*' "$BACKEND_PRECHECK/domain-commands/$cmd_id/events")"
+kill_count="$(echo "$events" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+n = sum(1 for e in data if e.get('event_type') == 'KILL_SWITCH_ON')
+print(n)
+")"
+if [ -z "$kill_count" ] || [ "$kill_count" -lt 1 ]; then
+  FAIL_REASON=no_kill_switch_on_event
+  echo "FAIL_REASON=$FAIL_REASON"
+  echo "PASS_OR_FAIL=$PASS_OR_FAIL"
+  docker compose -f "$BACKEND_DIR/docker-compose.yml" stop worker 2>/dev/null || true
+  docker compose -f "$BACKEND_DIR/docker-compose.yml" up -d worker 2>/dev/null || true
+  exit 1
+fi
+if [ "$kill_count" -gt 2 ]; then
+  FAIL_REASON=kill_switch_event_count_exceeded
+  KILL_SWITCH_EVENT_COUNT="$kill_count"
+  EVENT_COUNT_WITHIN_LIMIT=NO
+  echo "KILL_SWITCH_EVENT_COUNT=$KILL_SWITCH_EVENT_COUNT"
+  echo "EVENT_COUNT_WITHIN_LIMIT=$EVENT_COUNT_WITHIN_LIMIT"
+  echo "FAIL_REASON=$FAIL_REASON"
+  echo "PASS_OR_FAIL=$PASS_OR_FAIL"
+  docker compose -f "$BACKEND_DIR/docker-compose.yml" stop worker 2>/dev/null || true
+  docker compose -f "$BACKEND_DIR/docker-compose.yml" up -d worker 2>/dev/null || true
+  exit 1
+fi
+KILL_SWITCH_EVENT_COUNT="$kill_count"
+EVENT_COUNT_WITHIN_LIMIT=YES
+echo "OK: KILL_SWITCH_ON count=$kill_count (<=2)"
+
+echo "=============================="
+echo "Cleanup: Restore worker (kill switch OFF)"
+echo "=============================="
+docker compose -f "$BACKEND_DIR/docker-compose.yml" stop worker 2>/dev/null || true
+docker compose -f "$BACKEND_DIR/docker-compose.yml" up -d worker 2>/dev/null || true
+sleep 2
+
+PASS_OR_FAIL=PASS
+FAIL_REASON=""
+echo "=============================="
+echo "MODULE=kill_switch_e2e"
+echo "KILL_SWITCH_EVENT_COUNT=${KILL_SWITCH_EVENT_COUNT:-0}"
+echo "EVENT_COUNT_WITHIN_LIMIT=${EVENT_COUNT_WITHIN_LIMIT:-NO}"
+echo "PASS_OR_FAIL=$PASS_OR_FAIL"
+echo "FAIL_REASON=$FAIL_REASON"
