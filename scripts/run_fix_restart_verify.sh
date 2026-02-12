@@ -76,6 +76,14 @@ docker compose -f "$BACKEND_DIR/docker-compose.yml" exec -T postgres psql -U "$P
 docker compose -f "$BACKEND_DIR/docker-compose.yml" exec -T postgres psql -U "$PG_USER" -d "$PG_DB" -v ON_ERROR_STOP=1 -c "\dt domain_events" | sed -n '1,80p'
 
 echo "OK: migration applied (domain_events exists)"
+
+# Apply ops_state migration
+MIGRATION_OPS_STATE="${MIGRATION_OPS_STATE:-$BACKEND/migrations/0005_ops_state.sql}"
+if [ -f "$MIGRATION_OPS_STATE" ]; then
+  echo "Applying migration 0005_ops_state..."
+  docker compose -f "$BACKEND_DIR/docker-compose.yml" exec -T postgres psql -U "$PG_USER" -d "$PG_DB" -v ON_ERROR_STOP=1 < "$MIGRATION_OPS_STATE"
+  echo "OK: ops_state migration applied"
+fi
 echo
 
 echo "=============================="

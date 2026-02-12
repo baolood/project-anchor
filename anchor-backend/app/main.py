@@ -153,7 +153,94 @@ async def post_kill_switch(request: Request, body: dict = Body(default_factory=d
         except Exception as e:
             print(f"[ops/kill-switch] audit append failed: {e}", flush=True)
     enabled_out, source_out = get_kill_switch_state()
+    if ok:
+        try:
+            pool = await _get_domain_pg_pool()
+            from app.ops.state_store import upsert_state_pool
+            await upsert_state_pool(
+                pool,
+                "kill_switch",
+                {"enabled": enabled_out, "source": source_out, "actor": "ops_api"},
+            )
+        except Exception as e:
+            print(f"[ops/kill-switch] state_store upsert failed: {e}", flush=True)
     return {"enabled": enabled_out, "source": source_out}
+
+
+@app.get("/ops/state")
+async def get_ops_state():
+    """Aggregated ops state: kill_switch, worker_heartbeat, worker_panic, recent_ops_events. Never raises."""
+    from datetime import datetime
+    from app.ops.kill_switch import get_kill_switch_state
+    kill_enabled, kill_source = get_kill_switch_state()
+    kill_switch = {"enabled": kill_enabled, "source": kill_source}
+    worker_heartbeat = None
+    worker_panic = None
+    recent_ops_events = []
+    try:
+        pool = await _get_domain_pg_pool()
+        from app.ops.state_store import get_state_pool
+        state = await get_state_pool(pool)
+        if state.get("worker_heartbeat"):
+            worker_heartbeat = state["worker_heartbeat"].get("value")
+        if state.get("worker_panic"):
+            worker_panic = state["worker_panic"].get("value")
+        if state.get("kill_switch"):
+            kill_switch = state["kill_switch"].get("value") or kill_switch
+
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT command_id, event_type, payload, created_at
+                FROM domain_events
+                WHERE command_id IN ('ops-kill-switch', 'ops-worker')
+                ORDER BY created_at DESC
+                LIMIT 20
+                """
+            )
+        def iso(v):
+            return v.isoformat() if v is not None else None
+        recent_ops_events = [
+            {
+                "command_id": r["command_id"],
+                "event_type": r["event_type"],
+                "payload": _ensure_json_result(r["payload"]),
+                "created_at": iso(r["created_at"]),
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        print(f"[ops/state] query failed: {e}", flush=True)
+    return {
+        "kill_switch": kill_switch,
+        "worker_heartbeat": worker_heartbeat,
+        "worker_panic": worker_panic,
+        "recent_ops_events": recent_ops_events,
+        "generated_at": datetime.utcnow().isoformat() + "Z",
+    }
+
+
+@app.get("/ops/state/history")
+async def get_ops_state_history(limit: int = Query(50, ge=1, le=200)):
+    """Recent ops_state_history rows. Never raises."""
+    try:
+        pool = await _get_domain_pg_pool()
+        from app.ops.state_store import get_state_history_pool
+        rows = await get_state_history_pool(pool, limit)
+        def iso(v):
+            return v.isoformat() if v is not None else None
+        return [
+            {
+                "id": r["id"],
+                "key": r["key"],
+                "value": r["value"],
+                "created_at": iso(r["created_at"]),
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        print(f"[ops/state/history] query failed: {e}", flush=True)
+        return []
 
 
 @app.get("/ops/worker")

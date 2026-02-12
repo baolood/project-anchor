@@ -191,12 +191,23 @@ async def domain_worker_loop() -> None:
 
             now_ts = time.time()
             if now_ts - _last_heartbeat_ts[0] >= HEARTBEAT_INTERVAL_SEC:
+                from datetime import datetime
+                ts_iso = datetime.utcnow().isoformat() + "Z"
                 await append_domain_event(
                     WORKER_HEARTBEAT_COMMAND_ID,
                     "WORKER_HEARTBEAT",
                     0,
                     {"worker": "domain", "reason": "loop"},
                 )
+                try:
+                    from app.ops.state_store import upsert_state_engine
+                    await upsert_state_engine(
+                        engine,
+                        "worker_heartbeat",
+                        {"last_heartbeat_at": ts_iso, "source": "worker"},
+                    )
+                except Exception as ev:
+                    print(f"[domain] worker_heartbeat state_store failed: {ev}", flush=True)
                 _last_heartbeat_ts[0] = now_ts
             kill_enabled, kill_source = _kill_switch_state()
             if kill_enabled:
@@ -237,6 +248,8 @@ async def domain_worker_loop() -> None:
             n = len(_panic_exception_timestamps)
             if n >= WORKER_PANIC_THRESHOLD:
                 try:
+                    from datetime import datetime
+                    ts_iso = datetime.utcnow().isoformat() + "Z"
                     await append_domain_event(
                         "ops-worker",
                         "WORKER_PANIC",
@@ -248,6 +261,15 @@ async def domain_worker_loop() -> None:
                             "source": "worker",
                         },
                     )
+                    try:
+                        from app.ops.state_store import upsert_state_engine
+                        await upsert_state_engine(
+                            engine,
+                            "worker_panic",
+                            {"last_panic_at": ts_iso, "count": n, "window_sec": WORKER_PANIC_WINDOW_SECONDS},
+                        )
+                    except Exception as ev2:
+                        print(f"[domain] worker_panic state_store failed: {ev2}", flush=True)
                 except Exception as ev:
                     print(f"[domain] WORKER_PANIC append failed: {ev}", flush=True)
                 try:
