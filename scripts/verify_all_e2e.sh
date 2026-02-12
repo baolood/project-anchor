@@ -548,6 +548,16 @@ echo "CHECKLIST_OPS_DASHBOARD_UI_OUT=$ops_dashboard_ui_out"
 echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
 
 echo "=============================="
+echo "verify_all_e2e: Step 2q — ops_dashboard_ui_e2e.sh"
+echo "=============================="
+if CONSOLE_URL="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}" bash "$ROOT/scripts/ops_dashboard_ui_e2e.sh"; then
+  echo "OK: ops_dashboard_ui_e2e PASS"
+else
+  echo "FAIL: ops_dashboard_ui_e2e failed"
+  exit 1
+fi
+
+echo "=============================="
 echo "verify_all_e2e: Step 3 — optional Next log (NEXT_LOG_FILE)"
 echo "=============================="
 if [ -n "${NEXT_LOG_FILE:-}" ] && [ -f "$NEXT_LOG_FILE" ]; then

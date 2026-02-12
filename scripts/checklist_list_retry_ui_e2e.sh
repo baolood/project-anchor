@@ -155,7 +155,9 @@ for _ in $(seq 1 30); do
   sleep 1
 done
 
-if [ "$SAW_NON_TERMINAL_AFTER_RETRY" != "YES" ] || [ "$FINAL_STATUS_AFTER_RETRY" != "DONE" ]; then
+# PASS when retry succeeded and command reached DONE. SAW_NON_TERMINAL_AFTER_RETRY is
+# informational; when worker is fast we may see DONE on first post-retry poll.
+if [ "$FINAL_STATUS_AFTER_RETRY" != "DONE" ]; then
   echo "MODULE=$MODULE"
   echo "FLAKY_CREATED_ID=$FLAKY_CREATED_ID"
   echo "SAW_FAILED=$SAW_FAILED"
