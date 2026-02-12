@@ -1,5 +1,7 @@
 import asyncio
 import os
+import time
+from collections import deque
 from typing import Any, Dict, Optional
 
 from sqlalchemy import text
@@ -37,6 +39,27 @@ POLL_INTERVAL_SEC = float(
     os.getenv("DOMAIN_WORKER_POLL_INTERVAL_SEC", os.getenv("WORKER_POLL_INTERVAL_SEC", "1.0"))
 )
 DOMAIN_WORKER_ID = os.getenv("DOMAIN_WORKER_ID", "domain-worker")
+
+# Kill switch: env (priority) or Redis. Event throttle + DB throttle.
+def _kill_switch_state() -> tuple:
+    """Returns (enabled: bool, source: 'env'|'redis'|'none'). Never raises."""
+    from app.ops.kill_switch import get_kill_switch_state
+    return get_kill_switch_state()
+
+
+_kill_switch_written_ids: set = set()
+_last_pending_check_ts: list = [0.0]
+PENDING_CHECK_INTERVAL_SEC = 10.0
+
+HEARTBEAT_INTERVAL_SEC = float(os.getenv("WORKER_HEARTBEAT_SECONDS", "30"))
+_last_heartbeat_ts: list = [0.0]
+WORKER_HEARTBEAT_COMMAND_ID = "anchor:worker_heartbeat"
+
+# Panic guard: sliding window of unhandled exception timestamps
+WORKER_PANIC_THRESHOLD = int(os.getenv("WORKER_PANIC_THRESHOLD", "999999"))
+WORKER_PANIC_WINDOW_SECONDS = float(os.getenv("WORKER_PANIC_WINDOW_SECONDS", "60"))
+WORKER_PANIC_COOLDOWN_SECONDS = float(os.getenv("WORKER_PANIC_COOLDOWN_SECONDS", "10"))
+_panic_exception_timestamps: deque = deque(maxlen=1000)
 
 
 async def _domain_mark_done(command_id: str, result: Optional[Dict[str, Any]] = None) -> int:
@@ -91,6 +114,18 @@ async def _domain_mark_failed(
 
     print(f"[domain] mark FAILED id={command_id} reason={reason!r}", flush=True)
     return r.rowcount
+
+
+async def _oldest_pending_command_id() -> Optional[str]:
+    """Read-only: id of oldest PENDING command (no lock). Used when kill switch ON to attach KILL_SWITCH_ON event."""
+    async with engine.begin() as conn:
+        r = await conn.execute(
+            text(
+                "SELECT id FROM commands_domain WHERE status = 'PENDING' ORDER BY created_at ASC LIMIT 1"
+            ),
+        )
+        row = r.mappings().first()
+    return str(row["id"]) if row else None
 
 
 async def _pick_one_domain() -> Optional[Dict[str, Any]]:
@@ -150,6 +185,40 @@ async def domain_worker_loop() -> None:
 
     while True:
         try:
+            # Fault injection for e2e (must be inside outer try so Panic Guard catches it)
+            if os.getenv("WORKER_INJECT_PANIC") == "1":
+                raise RuntimeError("INJECTED_PANIC_FOR_E2E")
+
+            now_ts = time.time()
+            if now_ts - _last_heartbeat_ts[0] >= HEARTBEAT_INTERVAL_SEC:
+                await append_domain_event(
+                    WORKER_HEARTBEAT_COMMAND_ID,
+                    "WORKER_HEARTBEAT",
+                    0,
+                    {"worker": "domain", "reason": "loop"},
+                )
+                _last_heartbeat_ts[0] = now_ts
+            kill_enabled, kill_source = _kill_switch_state()
+            if kill_enabled:
+                now_ts = time.time()
+                if now_ts - _last_pending_check_ts[0] >= PENDING_CHECK_INTERVAL_SEC:
+                    pending_id = await _oldest_pending_command_id()
+                    _last_pending_check_ts[0] = now_ts
+                else:
+                    pending_id = None
+                if pending_id and pending_id not in _kill_switch_written_ids:
+                    try:
+                        await append_domain_event(
+                            pending_id,
+                            "KILL_SWITCH_ON",
+                            0,
+                            {"reason": "kill_switch", "source": kill_source},
+                        )
+                        _kill_switch_written_ids.add(pending_id)
+                    except Exception as e:
+                        print(f"[domain] KILL_SWITCH_ON append failed: {e}", flush=True)
+                await asyncio.sleep(1.0)
+                continue
             res = await runner.run_one()
             if res is None:
                 await asyncio.sleep(POLL_INTERVAL_SEC)
@@ -160,6 +229,44 @@ async def domain_worker_loop() -> None:
             )
         except Exception as e:
             print(f"domain worker error: {e}", flush=True)
+            now = time.time()
+            _panic_exception_timestamps.append(now)
+            # Trim old timestamps outside window
+            while _panic_exception_timestamps and _panic_exception_timestamps[0] < now - WORKER_PANIC_WINDOW_SECONDS:
+                _panic_exception_timestamps.popleft()
+            n = len(_panic_exception_timestamps)
+            if n >= WORKER_PANIC_THRESHOLD:
+                try:
+                    await append_domain_event(
+                        "ops-worker",
+                        "WORKER_PANIC",
+                        0,
+                        {
+                            "reason": "unhandled_exception_storm",
+                            "count": n,
+                            "window_sec": WORKER_PANIC_WINDOW_SECONDS,
+                            "source": "worker",
+                        },
+                    )
+                except Exception as ev:
+                    print(f"[domain] WORKER_PANIC append failed: {ev}", flush=True)
+                try:
+                    from app.ops.kill_switch import set_kill_switch_redis
+                    set_kill_switch_redis(True)
+                except Exception:
+                    pass
+                try:
+                    from app.ops.notify import send_telegram
+                    send_telegram(
+                        f"WORKER_PANIC unhandled_exception_storm count={n} window_sec={WORKER_PANIC_WINDOW_SECONDS}",
+                        throttle_key="WORKER_PANIC",
+                    )
+                except Exception:
+                    pass
+                _panic_exception_timestamps.clear()
+                print(f"[domain] PANIC GUARD triggered: sleep {WORKER_PANIC_COOLDOWN_SECONDS}s", flush=True)
+                await asyncio.sleep(WORKER_PANIC_COOLDOWN_SECONDS)
+                continue
             await asyncio.sleep(1.0)
 
 

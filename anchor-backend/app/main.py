@@ -422,9 +422,11 @@ async def get_domain_command_events(domain_id: str, limit: int = 200):
     if limit > 500:
         limit = 500
     async with pool.acquire() as conn:
-        exists = await conn.fetchval("SELECT 1 FROM commands_domain WHERE id = $1", domain_id)
-        if not exists:
-            raise HTTPException(status_code=404, detail="Not Found")
+        # ops-worker, ops-kill-switch are system command_ids; events may exist without commands_domain row
+        if domain_id not in ("ops-worker", "ops-kill-switch"):
+            exists = await conn.fetchval("SELECT 1 FROM commands_domain WHERE id = $1", domain_id)
+            if not exists:
+                raise HTTPException(status_code=404, detail="Not Found")
         rows = await conn.fetch(
             """
             SELECT id, command_id, event_type, attempt, payload, created_at
