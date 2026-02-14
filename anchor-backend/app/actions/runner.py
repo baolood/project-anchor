@@ -1,11 +1,12 @@
 """
-DomainCommandRunner: pick one command → policies → pipeline(action) → mark_done / mark_failed.
-Emits append-only events at key points (PICKED, POLICY_ALLOW/POLICY_BLOCK, ACTION_OK/ACTION_FAIL, MARK_DONE, MARK_FAILED, EXCEPTION).
+DomainCommandRunner: pick one command → [risk lockout] → policies → pipeline(action) → mark_done / mark_failed.
+Emits append-only events at key points (PICKED, POLICY_ALLOW/POLICY_BLOCK, RISK_LOCKOUT_BLOCK, ACTION_OK/ACTION_FAIL, MARK_DONE, MARK_FAILED, EXCEPTION).
 No prints inside; returns a result dict for the worker to log.
 """
 import json
+import os
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from app.actions.context import ActionContext
 from app.actions.pipeline import run_action_with_pipeline
@@ -40,6 +41,8 @@ class DomainCommandRunner:
         append_event_fn: Optional[Callable] = None,
         policies: Optional[List[Policy]] = None,
         policy_engine: Any = None,
+        is_lockout_blocked_fn: Optional[Callable[[str], Awaitable[Tuple[bool, str, str]]]] = None,
+        risk_guard_fn: Optional[Callable[[str, dict], Awaitable[Tuple[bool, Optional[str]]]]] = None,
     ):
         self._pick_one = pick_one_fn
         self._get_action = get_action_fn
@@ -49,6 +52,8 @@ class DomainCommandRunner:
         self._append_event = append_event_fn
         self._policies = list(policies) if policies else []
         self._policy_engine = policy_engine
+        self._is_lockout_blocked = is_lockout_blocked_fn
+        self._risk_guard_fn = risk_guard_fn
 
     async def run_one(self) -> Optional[Dict[str, Any]]:
         """
@@ -72,6 +77,46 @@ class DomainCommandRunner:
         if self._append_event:
             try:
                 await self._append_event(cid, "PICKED", attempt, {"type": cmd_type, "attempt": attempt})
+            except Exception:
+                pass
+
+        if self._is_lockout_blocked:
+            try:
+                blocked, lockout_until, lockout_reason = await self._is_lockout_blocked(cmd_type)
+                if blocked:
+                    try:
+                        await self._mark_failed(cid, "RISK_LOCKOUT_ACTIVE", {"lockout_until": lockout_until, "lockout_reason": lockout_reason})
+                    except Exception:
+                        pass
+                    if self._append_event:
+                        try:
+                            await self._append_event(
+                                cid, "RISK_LOCKOUT_BLOCK", attempt,
+                                {"type": cmd_type, "reason": "RISK_LOCKOUT_ACTIVE", "lockout_until": lockout_until, "lockout_reason": lockout_reason},
+                            )
+                        except Exception:
+                            pass
+                    return {"id": cid, "type": cmd_type, "final_status": "FAILED"}
+            except Exception:
+                pass
+
+        if self._risk_guard_fn:
+            try:
+                ok, reason = await self._risk_guard_fn(cmd_type, payload)
+                if not ok and reason:
+                    try:
+                        await self._mark_failed(cid, reason, {"reason": reason})
+                    except Exception:
+                        pass
+                    if self._append_event:
+                        try:
+                            await self._append_event(
+                                cid, "RISK_HARD_LIMITS_BLOCK", attempt,
+                                {"type": cmd_type, "reason": reason},
+                            )
+                        except Exception:
+                            pass
+                    return {"id": cid, "type": cmd_type, "final_status": "FAILED"}
             except Exception:
                 pass
 
@@ -122,6 +167,74 @@ class DomainCommandRunner:
                     )
                 except Exception:
                     pass
+
+        # BINANCE TESTNET execution (opt-in): QUOTE → place_limit_ioc instead of local QuoteAction
+        if os.getenv("EXECUTION_MODE", "").upper() == "BINANCE_TESTNET" and cmd_type == "QUOTE":
+            from app.executors.binance_futures_testnet import (
+                BinanceFuturesTestnetExecutor,
+                notional_to_qty,
+            )
+
+            symbol = str(payload.get("symbol") or "BTCUSDT").strip()
+            notional = payload.get("notional")
+            if notional is None:
+                notional = payload.get("notional_usd")
+            side = str(payload.get("side") or "BUY").strip().upper()
+            if side not in ("BUY", "SELL"):
+                side = "BUY"
+
+            try:
+                ex = BinanceFuturesTestnetExecutor()
+                mp = ex.get_mark_price(symbol)
+                qty = notional_to_qty(symbol=symbol, notional_usd=float(notional or 0), mark_price=mp)
+                px = mp * 1.005 if side == "BUY" else mp * 0.995
+
+                resp = ex.place_limit_ioc(symbol=symbol, side=side, quantity=qty, price=px)
+                st = (resp.get("status") or "").upper()
+                if st != "FILLED":
+                    raise RuntimeError(f"BINANCE_ORDER_NOT_FILLED:{resp}")
+
+                result = {
+                    "ok": True,
+                    "type": "quote",
+                    "symbol": symbol,
+                    "side": side,
+                    "notional": float(notional or 0),
+                    "price": float(resp.get("avgPrice") or px),
+                    "qty": float(resp.get("executedQty") or qty),
+                    "_binance_testnet": {
+                        "orderId": resp.get("orderId"),
+                        "status": resp.get("status"),
+                        "executedQty": resp.get("executedQty"),
+                        "avgPrice": resp.get("avgPrice"),
+                    },
+                }
+                if self._append_event:
+                    try:
+                        await self._append_event(cid, "ACTION_OK", attempt, {"type": cmd_type, "binance": True})
+                    except Exception:
+                        pass
+                await self._mark_done(cid, result)
+                if self._append_event:
+                    try:
+                        await self._append_event(cid, "MARK_DONE", attempt, {"type": cmd_type})
+                    except Exception:
+                        pass
+                return {"id": cid, "type": cmd_type, "final_status": "DONE"}
+            except Exception as e:
+                err_str = str(e)
+                if self._append_event:
+                    try:
+                        await self._append_event(cid, "ACTION_FAIL", attempt, {"type": cmd_type, "error": err_str})
+                    except Exception:
+                        pass
+                await self._mark_failed(cid, err_str, {"error": err_str})
+                if self._append_event:
+                    try:
+                        await self._append_event(cid, "MARK_FAILED", attempt, {"type": cmd_type, "error": err_str})
+                    except Exception:
+                        pass
+                return {"id": cid, "type": cmd_type, "final_status": "FAILED"}
 
         action = self._get_action(cmd_type)
         if action is None:

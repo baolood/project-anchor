@@ -128,7 +128,7 @@ fi
 rm -f "$CONSOLE_DIR/.next/dev/lock" 2>/dev/null || true
 
 echo "Starting Next dev (log: $NEXT_LOG_FILE)..."
-(cd "$CONSOLE_DIR" && nohup npm run dev >"$NEXT_LOG_FILE" 2>&1 &)
+(cd "$CONSOLE_DIR" && nohup npx next dev >"$NEXT_LOG_FILE" 2>&1 &)
 echo
 
 echo "Waiting for http://127.0.0.1:3000/ to return 200 (timeout ${NEXT_READY_TIMEOUT}s)..."
@@ -187,6 +187,9 @@ CHECKLIST_OPS_SUMMARY_OUT="/tmp/anchor_e2e_checklist_ops_summary_e2e_last.out"
 CHECKLIST_WORKER_PANIC_GUARD_OUT="/tmp/anchor_e2e_checklist_worker_panic_guard_e2e_last.out"
 CHECKLIST_OPS_STATE_OUT="/tmp/anchor_e2e_checklist_ops_state_e2e_last.out"
 CHECKLIST_OPS_DASHBOARD_UI_OUT="/tmp/anchor_e2e_checklist_ops_dashboard_ui_e2e_last.out"
+CHECKLIST_RISK_PANEL_UI_OUT="/tmp/anchor_e2e_checklist_risk_panel_ui_e2e_last.out"
+CHECKLIST_RISK_LOCKOUT_BLOCK_OUT="/tmp/anchor_e2e_checklist_risk_lockout_block_e2e_last.out"
+CHECKLIST_RISK_HARD_LIMITS_OUT="/tmp/anchor_e2e_checklist_risk_hard_limits_e2e_last.out"
 
 echo "MODULE=release_up_and_verify"
 echo "NEXT_LOG_FILE=$NEXT_LOG_FILE"
@@ -209,5 +212,8 @@ echo "CHECKLIST_OPS_SUMMARY_OUT=$CHECKLIST_OPS_SUMMARY_OUT"
 echo "CHECKLIST_WORKER_PANIC_GUARD_OUT=$CHECKLIST_WORKER_PANIC_GUARD_OUT"
 echo "CHECKLIST_OPS_STATE_OUT=$CHECKLIST_OPS_STATE_OUT"
 echo "CHECKLIST_OPS_DASHBOARD_UI_OUT=$CHECKLIST_OPS_DASHBOARD_UI_OUT"
+echo "CHECKLIST_RISK_PANEL_UI_OUT=$CHECKLIST_RISK_PANEL_UI_OUT"
+echo "CHECKLIST_RISK_LOCKOUT_BLOCK_OUT=$CHECKLIST_RISK_LOCKOUT_BLOCK_OUT"
+echo "CHECKLIST_RISK_HARD_LIMITS_OUT=$CHECKLIST_RISK_HARD_LIMITS_OUT"
 echo "PASS_OR_FAIL=PASS"
 echo "FAIL_REASON="

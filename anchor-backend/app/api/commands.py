@@ -1,6 +1,6 @@
 import json
 import traceback
-from uuid import uuid4
+from uuid import UUID, uuid4
 from typing import Any, Dict
 
 from fastapi import APIRouter, Header, HTTPException, Body
@@ -65,13 +65,29 @@ async def create_command(
         return {"status": "ACCEPTED", "id": str(cmd_id), "idempotency_key": x_idempotency_key}
 
 
+def _is_uuid(s: str) -> bool:
+    if not s or len(s) != 36:
+        return False
+    try:
+        UUID(s)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
 @router.get("/{command_id}")
 async def get_command(command_id: str):
     """
     Step 8 (A-route): Request observability
     - The POST /commands returns an `id` (request_id) that is the `commands.id`
     - This endpoint lets you query status/result by that id
+    - Non-UUID ids (e.g. domain-command ids like flaky-xxx) return 404 with deprecation hint.
     """
+    if not _is_uuid(command_id):
+        raise HTTPException(
+            status_code=404,
+            detail="Deprecated. Use /domain-commands/{id}",
+        )
     async with async_session() as db:
         row = (
             await db.execute(

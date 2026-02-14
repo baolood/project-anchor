@@ -11,6 +11,8 @@ from app.actions.registry import get_action, init_actions
 from app.actions.runner import DomainCommandRunner
 from app.domain_events import append_domain_event
 from app.policies.registry import get_policies, init_policies
+from app.risk.lockout import is_lockout_active, is_command_allowed
+from app.risk.hard_limits import risk_guard
 
 # Ensure actions and policies are registered when worker module loads
 init_actions()
@@ -172,6 +174,17 @@ async def _pick_one_domain() -> Optional[Dict[str, Any]]:
 async def domain_worker_loop() -> None:
     print("domain worker started, polling commands_domain...", flush=True)
 
+    async def _is_lockout_blocked(cmd_type: str):
+        active, until, reason = await is_lockout_active(engine)
+        if not active:
+            return (False, "", "")
+        if is_command_allowed(cmd_type):
+            return (False, "", "")
+        return (True, until, reason)
+
+    async def _risk_guard(cmd_type: str, payload: dict):
+        return await risk_guard(engine, cmd_type, payload or {})
+
     runner = DomainCommandRunner(
         _pick_one_domain,
         get_action,
@@ -181,6 +194,8 @@ async def domain_worker_loop() -> None:
         append_event_fn=append_domain_event,
         policies=get_policies(),
         policy_engine=engine,
+        is_lockout_blocked_fn=_is_lockout_blocked,
+        risk_guard_fn=_risk_guard,
     )
 
     while True:

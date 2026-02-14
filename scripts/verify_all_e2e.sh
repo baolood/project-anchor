@@ -24,6 +24,9 @@ OPS_SUMMARY_E2E_PASS=NO
 WORKER_PANIC_GUARD_E2E_PASS=NO
 OPS_STATE_E2E_PASS=NO
 OPS_DASHBOARD_UI_E2E_PASS=NO
+RISK_PANEL_UI_E2E_PASS=NO
+RISK_LOCKOUT_BLOCK_E2E_PASS=NO
+RISK_HARD_LIMITS_E2E_PASS=NO
 CLOSURE_PASS=NO
 PASS_OR_FAIL=FAIL
 FAIL_REASON=""
@@ -53,6 +56,7 @@ if ! bash "$ROOT/scripts/run_fix_restart_verify.sh"; then
   echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
   echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
   echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+  echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=$PASS_OR_FAIL"
   echo "FAIL_REASON=run_fix_restart_verify_failed"
@@ -91,6 +95,7 @@ if [ "$RETRY_E2E_PASS" != "YES" ] || [ "$EVENTS_E2E_PASS" != "YES" ]; then
   echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
   echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
   echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+  echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=retry_or_events_e2e_failed"
@@ -127,6 +132,7 @@ if [ "$QUOTE_E2E_PASS" != "YES" ]; then
   echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
   echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
   echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+  echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=quote_e2e_failed"
@@ -162,6 +168,7 @@ if [ "$LIST_RETRY_UI_E2E_PASS" != "YES" ]; then
   echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
   echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
   echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+  echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=list_retry_ui_e2e_failed"
@@ -197,6 +204,7 @@ if [ "$CREATE_FORM_UI_E2E_PASS" != "YES" ]; then
   echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
   echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
   echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+  echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=create_form_ui_e2e_failed"
@@ -232,6 +240,7 @@ if [ "$CREATE_NAV_EVENTS_E2E_PASS" != "YES" ]; then
   echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
   echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
   echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+  echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=create_navigate_events_e2e_failed"
@@ -267,6 +276,7 @@ if [ "$DETAIL_EXPLAINER_E2E_PASS" != "YES" ]; then
   echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
   echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
   echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+  echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=detail_explainer_e2e_failed"
@@ -302,6 +312,7 @@ if [ "$POLICY_BLOCK_EXPLAINER_E2E_PASS" != "YES" ]; then
   echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
   echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
   echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+  echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=policy_block_explainer_e2e_failed"
@@ -337,6 +348,7 @@ if [ "$CREATE_PAYLOAD_SCHEMA_UI_E2E_PASS" != "YES" ]; then
   echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
   echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
   echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+  echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=create_payload_schema_ui_e2e_failed"
@@ -372,6 +384,7 @@ if [ "$KILL_SWITCH_E2E_PASS" != "YES" ]; then
   echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
   echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
   echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+  echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=kill_switch_e2e_failed"
@@ -407,6 +420,7 @@ if [ "$WORKER_HEARTBEAT_E2E_PASS" != "YES" ]; then
   echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
   echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
   echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+  echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=worker_heartbeat_e2e_failed"
@@ -442,6 +456,7 @@ if [ "$KILL_SWITCH_REDIS_E2E_PASS" != "YES" ]; then
   echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
   echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
   echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+  echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=kill_switch_redis_e2e_failed"
@@ -539,6 +554,7 @@ else
   echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
   echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
   echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+  echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
   echo "CLOSURE_PASS=$CLOSURE_PASS"
   echo "PASS_OR_FAIL=FAIL"
   echo "FAIL_REASON=ops_dashboard_ui_e2e_failed"
@@ -556,6 +572,95 @@ else
   echo "FAIL: ops_dashboard_ui_e2e failed"
   exit 1
 fi
+
+echo "=============================="
+echo "verify_all_e2e: Step 2r — checklist_risk_panel_ui_e2e.sh"
+echo "=============================="
+risk_panel_ui_out="${RISK_PANEL_UI_E2E_OUT:-/tmp/anchor_e2e_checklist_risk_panel_ui_e2e_last.out}"
+OUT="$risk_panel_ui_out" CONSOLE_URL="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}" \
+   bash "$ROOT/scripts/checklist_risk_panel_ui_e2e.sh" 2>&1 | tee "$risk_panel_ui_out" || true
+
+if grep -q "PASS_OR_FAIL=PASS" "$risk_panel_ui_out"; then
+  RISK_PANEL_UI_E2E_PASS=YES
+else
+  echo "RISK_PANEL_UI_E2E_PASS=NO"
+  echo "MODULE=verify_all_e2e"
+  echo "RETRY_E2E_PASS=$RETRY_E2E_PASS"
+  echo "EVENTS_E2E_PASS=$EVENTS_E2E_PASS"
+  echo "QUOTE_E2E_PASS=$QUOTE_E2E_PASS"
+  echo "LIST_RETRY_UI_E2E_PASS=$LIST_RETRY_UI_E2E_PASS"
+  echo "CREATE_FORM_UI_E2E_PASS=$CREATE_FORM_UI_E2E_PASS"
+  echo "CREATE_NAV_EVENTS_E2E_PASS=$CREATE_NAV_EVENTS_E2E_PASS"
+  echo "DETAIL_EXPLAINER_E2E_PASS=$DETAIL_EXPLAINER_E2E_PASS"
+  echo "POLICY_BLOCK_EXPLAINER_E2E_PASS=$POLICY_BLOCK_EXPLAINER_E2E_PASS"
+  echo "CREATE_PAYLOAD_SCHEMA_UI_E2E_PASS=$CREATE_PAYLOAD_SCHEMA_UI_E2E_PASS"
+  echo "KILL_SWITCH_E2E_PASS=$KILL_SWITCH_E2E_PASS"
+  echo "WORKER_HEARTBEAT_E2E_PASS=$WORKER_HEARTBEAT_E2E_PASS"
+  echo "KILL_SWITCH_REDIS_E2E_PASS=$KILL_SWITCH_REDIS_E2E_PASS"
+  echo "OPS_CONSOLE_E2E_PASS=$OPS_CONSOLE_E2E_PASS"
+  echo "OPS_SUMMARY_E2E_PASS=$OPS_SUMMARY_E2E_PASS"
+  echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
+  echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
+  echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+  echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
+  echo "CLOSURE_PASS=$CLOSURE_PASS"
+  echo "PASS_OR_FAIL=FAIL"
+  echo "FAIL_REASON=risk_panel_ui_e2e_failed"
+  exit 1
+fi
+echo "CHECKLIST_RISK_PANEL_UI_OUT=$risk_panel_ui_out"
+echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
+
+echo "=============================="
+echo "verify_all_e2e: Step 2s — checklist_risk_lockout_block_e2e.sh"
+echo "=============================="
+risk_lockout_block_out="${RISK_LOCKOUT_BLOCK_E2E_OUT:-/tmp/anchor_e2e_checklist_risk_lockout_block_e2e_last.out}"
+OUT="$risk_lockout_block_out" BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}" \
+   bash "$ROOT/scripts/checklist_risk_lockout_block_e2e.sh" 2>&1 | tee "$risk_lockout_block_out" || true
+
+if grep -q "PASS_OR_FAIL=PASS" "$risk_lockout_block_out"; then
+  RISK_LOCKOUT_BLOCK_E2E_PASS=YES
+else
+  echo "RISK_LOCKOUT_BLOCK_E2E_PASS=NO"
+  echo "MODULE=verify_all_e2e"
+  echo "RISK_LOCKOUT_BLOCK_E2E_PASS=$RISK_LOCKOUT_BLOCK_E2E_PASS"
+  echo "PASS_OR_FAIL=FAIL"
+  echo "FAIL_REASON=risk_lockout_block_e2e_failed"
+  exit 1
+fi
+echo "CHECKLIST_RISK_LOCKOUT_BLOCK_OUT=$risk_lockout_block_out"
+echo "RISK_LOCKOUT_BLOCK_E2E_PASS=$RISK_LOCKOUT_BLOCK_E2E_PASS"
+
+echo "=============================="
+echo "verify_all_e2e: Step 2t — checklist_risk_hard_limits_e2e.sh"
+echo "=============================="
+risk_hard_limits_out="${RISK_HARD_LIMITS_E2E_OUT:-/tmp/anchor_e2e_checklist_risk_hard_limits_e2e_last.out}"
+OUT="$risk_hard_limits_out" BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}" \
+   bash "$ROOT/scripts/checklist_risk_hard_limits_e2e.sh" 2>&1 | tee "$risk_hard_limits_out" || true
+
+if grep -q "PASS_OR_FAIL=PASS" "$risk_hard_limits_out"; then
+  RISK_HARD_LIMITS_E2E_PASS=YES
+else
+  echo "RISK_HARD_LIMITS_E2E_PASS=NO"
+  echo "MODULE=verify_all_e2e"
+  echo "RISK_HARD_LIMITS_E2E_PASS=$RISK_HARD_LIMITS_E2E_PASS"
+  echo "PASS_OR_FAIL=FAIL"
+  echo "FAIL_REASON=risk_hard_limits_e2e_failed"
+  exit 1
+fi
+echo "CHECKLIST_RISK_HARD_LIMITS_OUT=$risk_hard_limits_out"
+echo "RISK_HARD_LIMITS_E2E_PASS=$RISK_HARD_LIMITS_E2E_PASS"
+
+echo "=============================="
+echo "verify_all_e2e: Step 2u — extreme_mode_e2e (optional gate; EXTREME_MODE_E2E=1 to run)"
+echo "=============================="
+EXTREME_MODE_E2E_OUT="${EXTREME_MODE_E2E_OUT:-/tmp/anchor_e2e_checklist_extreme_mode_e2e_last.out}"
+OUT="$EXTREME_MODE_E2E_OUT" BASE="${BASE:-http://127.0.0.1:8000}" bash "$ROOT/scripts/checklist_extreme_mode_e2e.sh"
+if grep -q '^PASS_OR_FAIL=FAIL' "$EXTREME_MODE_E2E_OUT" 2>/dev/null; then
+  echo "EXTREME_MODE_E2E_PASS=NO"
+  exit 1
+fi
+echo "EXTREME_MODE_E2E_PASS=YES"
 
 echo "=============================="
 echo "verify_all_e2e: Step 3 — optional Next log (NEXT_LOG_FILE)"
@@ -603,12 +708,18 @@ echo "OPS_SUMMARY_E2E_PASS=$OPS_SUMMARY_E2E_PASS"
 echo "WORKER_PANIC_GUARD_E2E_PASS=$WORKER_PANIC_GUARD_E2E_PASS"
 echo "OPS_STATE_E2E_PASS=$OPS_STATE_E2E_PASS"
 echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
+echo "RISK_PANEL_UI_E2E_PASS=$RISK_PANEL_UI_E2E_PASS"
 echo "CLOSURE_PASS=$CLOSURE_PASS"
 echo "CHECKLIST_OPS_CONSOLE_OUT=$ops_console_out"
 echo "CHECKLIST_OPS_SUMMARY_OUT=$ops_summary_out"
 echo "CHECKLIST_WORKER_PANIC_GUARD_OUT=$worker_panic_guard_out"
 echo "CHECKLIST_OPS_STATE_OUT=$ops_state_out"
 echo "CHECKLIST_OPS_DASHBOARD_UI_OUT=$ops_dashboard_ui_out"
+echo "CHECKLIST_RISK_PANEL_UI_OUT=$risk_panel_ui_out"
+echo "CHECKLIST_RISK_LOCKOUT_BLOCK_OUT=$risk_lockout_block_out"
+echo "RISK_LOCKOUT_BLOCK_E2E_PASS=$RISK_LOCKOUT_BLOCK_E2E_PASS"
+echo "CHECKLIST_RISK_HARD_LIMITS_OUT=$risk_hard_limits_out"
+echo "RISK_HARD_LIMITS_E2E_PASS=$RISK_HARD_LIMITS_E2E_PASS"
 echo "PASS_OR_FAIL=$PASS_OR_FAIL"
 echo "FAIL_REASON=$FAIL_REASON"
 

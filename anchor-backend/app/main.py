@@ -293,6 +293,219 @@ def _summary_from_payload(payload) -> str | None:
     return None
 
 
+def _risk_config():
+    """Risk env config. Never raises."""
+    def _float(s: str | None, default: float) -> float:
+        if not s or not s.strip():
+            return default
+        try:
+            return float(s.strip())
+        except ValueError:
+            return default
+
+    def _int(s: str | None, default: int) -> int:
+        if not s or not s.strip():
+            return default
+        try:
+            return int(s.strip())
+        except ValueError:
+            return default
+
+    return {
+        "daily_loss_budget_pct": _float(os.getenv("RISK_DAILY_LOSS_BUDGET_PCT"), 2.0),
+        "lockout_loss_pct": _float(os.getenv("RISK_LOCKOUT_LOSS_PCT"), 2.0),
+        "lockout_consec_losses": _int(os.getenv("RISK_LOCKOUT_CONSEC_LOSSES"), 3),
+        "lockout_minutes": _int(os.getenv("RISK_LOCKOUT_MINUTES"), 1440),
+        "capital_usd": _float(os.getenv("CAPITAL_USD"), 0.0),
+    }
+
+
+def _risk_state_fallback(status: str = "ERROR") -> dict:
+    """Minimal safe response on error. Never raises."""
+    from datetime import datetime
+    cfg = _risk_config()
+    return {
+        "status": status,
+        "daily_loss_budget_pct": cfg["daily_loss_budget_pct"],
+        "daily_loss_budget_usd": 0.0,
+        "today_pnl": 0.0,
+        "today_loss_pct": 0.0,
+        "consecutive_losses": 0,
+        "net_exposure_usd": 0.0,
+        "positions_count": 0,
+        "lockout_enabled": False,
+        "lockout_reason": "",
+        "lockout_until": "",
+        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "thresholds": {
+            "lockout_loss_pct": cfg["lockout_loss_pct"],
+            "lockout_consec_losses": cfg["lockout_consec_losses"],
+            "lockout_minutes": cfg["lockout_minutes"],
+        },
+    }
+
+
+@app.post("/ops/dev/reset-pending-domain-commands")
+async def post_ops_dev_reset_pending_domain():
+    """E2E helper: mark all PENDING domain commands as FAILED with RESET_FOR_E2E. No auth."""
+    pool = await _get_domain_pg_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            UPDATE commands_domain
+            SET status = 'FAILED', error = 'RESET_FOR_E2E', updated_at = NOW()
+            WHERE status = 'PENDING'
+            RETURNING id
+            """
+        )
+    return {"updated": len(rows)}
+
+
+@app.post("/risk/lockout/clear")
+async def post_risk_lockout_clear():
+    """Clear risk lockout for LOCKOUT_CLEAR_TTL_SEC. No auth in v1.2."""
+    from app.risk.lockout import clear_lockout_redis
+    ok = clear_lockout_redis()
+    return {"cleared": ok, "ttl_sec": 3600}
+
+
+@app.get("/risk/state")
+async def get_risk_state():
+    """Risk control state: budget, today PnL, consecutive_losses, exposure, lockout. Never raises."""
+    from datetime import datetime, timedelta
+    try:
+        cfg = _risk_config()
+        daily_loss_budget_pct = cfg["daily_loss_budget_pct"]
+        capital_usd = cfg["capital_usd"]
+        daily_loss_budget_usd = (capital_usd * daily_loss_budget_pct / 100.0) if capital_usd > 0 else 0.0
+        today_pnl = 0.0
+        today_loss_pct = 0.0
+        consecutive_losses = 0
+        net_exposure_usd = 0.0
+        positions_count = 0
+        lockout_enabled = False
+        lockout_reason = ""
+        lockout_until = ""
+        status = "OK"
+        try:
+            pool = await _get_domain_pg_pool()
+            async with pool.acquire() as conn:
+                failed_row = await conn.fetchrow(
+                    """
+                    SELECT COUNT(*) AS cnt FROM domain_events
+                    WHERE created_at::date = CURRENT_DATE
+                      AND event_type = 'MARK_FAILED'
+                    """
+                )
+                if failed_row and failed_row.get("cnt"):
+                    consecutive_losses = int(failed_row["cnt"] or 0)
+
+                pos_row = await conn.fetchrow(
+                    """
+                    SELECT COUNT(*) AS cnt FROM commands_domain
+                    WHERE status IN ('PENDING', 'PROCESSING')
+                    """
+                )
+                if pos_row and pos_row.get("cnt"):
+                    positions_count = int(pos_row["cnt"] or 0)
+
+                exp_row = await conn.fetchrow(
+                    "SELECT current_exposure_usd FROM risk_state WHERE id = 1"
+                )
+                if exp_row is not None and exp_row.get("current_exposure_usd") is not None:
+                    net_exposure_usd = float(exp_row["current_exposure_usd"])
+        except Exception as e:
+            print(f"[risk/state] query failed: {e}", flush=True)
+            status = "UNKNOWN"
+
+        lockout_loss_pct = cfg["lockout_loss_pct"]
+        lockout_consec = cfg["lockout_consec_losses"]
+        lockout_min = cfg["lockout_minutes"]
+        reasons = []
+        if today_loss_pct >= lockout_loss_pct:
+            reasons.append("daily_loss_pct")
+        if consecutive_losses >= lockout_consec:
+            reasons.append("consecutive_losses")
+        if reasons:
+            try:
+                from app.risk.lockout import _is_lockout_cleared_redis
+                if _is_lockout_cleared_redis():
+                    lockout_enabled = False
+                    lockout_reason = ""
+                else:
+                    lockout_enabled = True
+                    lockout_reason = "; ".join(reasons)
+                    until_dt = datetime.utcnow() + timedelta(minutes=lockout_min)
+                    lockout_until = until_dt.isoformat() + "Z"
+            except Exception:
+                lockout_enabled = True
+                lockout_reason = "; ".join(reasons)
+                until_dt = datetime.utcnow() + timedelta(minutes=lockout_min)
+                lockout_until = until_dt.isoformat() + "Z"
+        if reasons and lockout_enabled:
+            until_dt = datetime.utcnow() + timedelta(minutes=lockout_min)
+            lockout_until = until_dt.isoformat() + "Z"
+            try:
+                pool = await _get_domain_pg_pool()
+                should_append = False
+                async with pool.acquire() as conn:
+                    last = await conn.fetchrow(
+                        """
+                        SELECT created_at FROM domain_events
+                        WHERE command_id = 'ops-risk-lockout' AND event_type = 'RISK_LOCKOUT'
+                        ORDER BY created_at DESC LIMIT 1
+                        """
+                    )
+                if not last or not last.get("created_at"):
+                    should_append = True
+                else:
+                    from datetime import timezone
+                    ts = last["created_at"]
+                    ts_utc = ts.replace(tzinfo=timezone.utc) if ts.tzinfo is None else ts
+                    age_sec = (datetime.now(timezone.utc) - ts_utc).total_seconds()
+                    if age_sec > 60:
+                        should_append = True
+                if should_append:
+                    await append_domain_event_pool(
+                        pool,
+                        "ops-risk-lockout",
+                        "RISK_LOCKOUT",
+                        0,
+                        {
+                            "enabled": True,
+                            "reason": lockout_reason,
+                            "until": lockout_until,
+                            "today_loss_pct": today_loss_pct,
+                            "consecutive_losses": consecutive_losses,
+                        },
+                    )
+            except Exception as e:
+                print(f"[risk/state] audit RISK_LOCKOUT failed: {e}", flush=True)
+
+        return {
+            "status": status,
+            "daily_loss_budget_pct": daily_loss_budget_pct,
+            "daily_loss_budget_usd": daily_loss_budget_usd,
+            "today_pnl": today_pnl,
+            "today_loss_pct": today_loss_pct,
+            "consecutive_losses": consecutive_losses,
+            "net_exposure_usd": net_exposure_usd,
+            "positions_count": positions_count,
+            "lockout_enabled": lockout_enabled,
+            "lockout_reason": lockout_reason,
+            "lockout_until": lockout_until,
+            "generated_at": datetime.utcnow().isoformat() + "Z",
+            "thresholds": {
+                "lockout_loss_pct": lockout_loss_pct,
+                "lockout_consec_losses": lockout_consec,
+                "lockout_minutes": lockout_min,
+            },
+        }
+    except Exception as e:
+        print(f"[risk/state] unexpected error: {e}", flush=True)
+        return _risk_state_fallback("ERROR")
+
+
 @app.get("/ops/summary")
 async def get_ops_summary(
     minutes: int = Query(30, ge=1, le=1440),
@@ -445,6 +658,8 @@ async def create_domain_flaky():
 async def create_domain_quote(body: dict = Body(default_factory=dict)):
     """Create QUOTE: payload defaults symbol=BTCUSDT, side=BUY, notional=100; optional price."""
     payload = dict(body) if body else {}
+    if payload.get("notional_usd") is not None and payload.get("notional") is None:
+        payload["notional"] = payload["notional_usd"]
     defaults = {"symbol": "BTCUSDT", "side": "BUY", "notional": 100}
     for k, v in defaults.items():
         if k not in payload:
@@ -551,7 +766,7 @@ async def list_domain_commands(limit: int = 50):
         limit = 200
 
     sql = """
-    SELECT id, type, status, attempt, locked_by, locked_at, result, error, created_at, updated_at
+    SELECT id, type, status, attempt, locked_by, locked_at, result, error, payload, created_at, updated_at
     FROM commands_domain
     ORDER BY created_at DESC
     LIMIT $1;
@@ -576,6 +791,7 @@ async def list_domain_commands(limit: int = 50):
             "locked_at": iso(r["locked_at"]),
             "result": _ensure_json_result(r["result"]),
             "error": r["error"],
+            "payload": _ensure_json_result(r["payload"]),
             "created_at": iso(r["created_at"]),
             "updated_at": iso(r["updated_at"]),
         }
@@ -589,7 +805,7 @@ async def get_domain_command(domain_id: str):
     pool = await _get_domain_pg_pool()
 
     sql = """
-    SELECT id, type, status, attempt, locked_by, locked_at, result, error, created_at, updated_at
+    SELECT id, type, status, attempt, locked_by, locked_at, result, error, payload, created_at, updated_at
     FROM commands_domain
     WHERE id = $1;
     """
@@ -606,6 +822,12 @@ async def get_domain_command(domain_id: str):
     def iso(v):
         return v.isoformat() if v is not None else None
 
+    payload = _ensure_json_result(row["payload"]) or {}
+    result = _ensure_json_result(row["result"]) or {}
+    if isinstance(result, dict) and result.get("_binance_testnet"):
+        payload = dict(payload)
+        payload["_binance_testnet"] = result["_binance_testnet"]
+
     return {
         "id": row["id"],
         "type": row["type"],
@@ -613,8 +835,9 @@ async def get_domain_command(domain_id: str):
         "attempt": row["attempt"],
         "locked_by": row["locked_by"],
         "locked_at": iso(row["locked_at"]),
-        "result": _ensure_json_result(row["result"]),
+        "result": result,
         "error": row["error"],
+        "payload": payload,
         "created_at": iso(row["created_at"]),
         "updated_at": iso(row["updated_at"]),
     }
