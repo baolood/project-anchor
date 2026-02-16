@@ -1,0 +1,3 @@
+[submodule "anchor-console"]
+	path = anchor-console
+	url = https://github.com/baolood/anchor-console.git
