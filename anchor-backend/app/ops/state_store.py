@@ -144,3 +144,71 @@ async def get_state_history_pool(pool: Any, limit: int = 50) -> List[Dict[str, A
     except Exception as e:
         print(f"[state_store] get_state_history_pool failed: {e}", flush=True)
     return out
+
+# --- export helper (async, uses pool; schema: id, key, value jsonb, created_at) ---
+from datetime import datetime as _dt
+from typing import Any, Dict, List
+
+
+async def get_state_history_export_rows(
+    pool: Any,
+    from_dt: _dt,
+    to_dt: _dt,
+    limit: int,
+    event_type: str | None = None,
+    actor: str | None = None,
+    source: str | None = None,
+) -> List[Dict[str, Any]]:
+    """Export from ops_state_history. value is jsonb; we extract ts, event_type, exec_mode, actor, source."""
+    out: List[Dict[str, Any]] = []
+    try:
+        clauses = ["created_at >= $1", "created_at <= $2"]
+        params: List[Any] = [from_dt, to_dt]
+        idx = 3
+        if event_type:
+            clauses.append(f"(value->>'event_type' = ${idx} OR key = ${idx})")
+            params.append(event_type)
+            idx += 1
+        if actor:
+            clauses.append(f"value->>'actor' = ${idx}")
+            params.append(actor)
+            idx += 1
+        if source:
+            clauses.append(f"value->>'source' = ${idx}")
+            params.append(source)
+            idx += 1
+        params.append(min(max(1, limit), 10000))
+        limit_idx = idx
+        q = f"""
+            SELECT id, key, value, created_at
+            FROM ops_state_history
+            WHERE {" AND ".join(clauses)}
+            ORDER BY created_at DESC
+            LIMIT ${limit_idx}
+        """
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(q, *params)
+        for r in rows:
+            v = r.get("value")
+            if isinstance(v, str):
+                try:
+                    v = json.loads(v)
+                except Exception:
+                    v = {"raw": v}
+            ts_val = (v.get("ts") if isinstance(v, dict) else None) or (r.get("created_at"))
+            if hasattr(ts_val, "isoformat"):
+                ts_val = ts_val.isoformat() if ts_val else ""
+            elif ts_val is None:
+                ts_val = ""
+            evt = (v.get("event_type") if isinstance(v, dict) else None) or r.get("key") or ""
+            out.append({
+                "ts": ts_val,
+                "event_type": evt,
+                "exec_mode": (v.get("exec_mode") if isinstance(v, dict) else None) or "",
+                "actor": (v.get("actor") if isinstance(v, dict) else None) or "",
+                "source": (v.get("source") if isinstance(v, dict) else None) or "",
+                "payload_json": v if isinstance(v, dict) else {},
+            })
+    except Exception as e:
+        print(f"[state_store] get_state_history_export_rows failed: {e}", flush=True)
+    return out
