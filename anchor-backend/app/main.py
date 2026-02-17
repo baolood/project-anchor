@@ -184,7 +184,16 @@ async def get_ops_state():
         if state.get("worker_heartbeat"):
             worker_heartbeat = state["worker_heartbeat"].get("value")
         if state.get("worker_panic"):
-            worker_panic = state["worker_panic"].get("value")
+            wp_raw = state["worker_panic"].get("value")
+            worker_panic = dict(wp_raw) if isinstance(wp_raw, dict) else {}
+            last_at = worker_panic.get("last_panic_at") or worker_panic.get("last_trigger_at")
+            last_ts = _parse_iso_to_ts(last_at) if last_at else None
+            worker_panic["cooldown_sec"] = PANIC_GUARD_COOLDOWN_SEC
+            if last_ts:
+                elapsed = datetime.utcnow().timestamp() - last_ts
+                worker_panic["cooldown_remaining"] = max(0, int(PANIC_GUARD_COOLDOWN_SEC - elapsed))
+            else:
+                worker_panic["cooldown_remaining"] = 0
         if state.get("kill_switch"):
             kill_switch = state["kill_switch"].get("value") or kill_switch
 
@@ -228,9 +237,23 @@ def _panic_guard_ops_allowed() -> bool:
     return True
 
 
+PANIC_GUARD_COOLDOWN_SEC = int(os.getenv("PANIC_GUARD_COOLDOWN_SEC", "60"))
+
+
+def _parse_iso_to_ts(iso_str: str | None) -> float | None:
+    if not iso_str:
+        return None
+    try:
+        from datetime import datetime
+        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        return dt.timestamp()
+    except Exception:
+        return None
+
+
 @app.post("/ops/panic_guard/trigger")
 async def post_panic_guard_trigger(request: Request):
-    """Manual panic guard drill: set kill switch ON + worker_panic state. Only local/testnet."""
+    """Manual panic guard drill: set kill switch ON + worker_panic state. Only local/testnet. 409 if in cooldown."""
     if not _panic_guard_ops_allowed():
         raise HTTPException(status_code=403, detail="Panic guard ops disabled in prod")
     ops_token = (os.getenv("OPS_TOKEN") or "").strip()
@@ -238,28 +261,70 @@ async def post_panic_guard_trigger(request: Request):
         token = (request.headers.get("x-ops-token") or "").strip()
         if token != ops_token:
             raise HTTPException(status_code=401, detail="Unauthorized")
+
+    actor = (request.headers.get("x-anchor-actor") or "").strip() or "unknown"
+    source = (request.headers.get("x-anchor-source") or "").strip() or "unknown"
+    exec_mode_val = (os.getenv("EXEC_MODE") or os.getenv("NEXT_PUBLIC_EXEC_MODE") or "unknown").strip() or "unknown"
+
     from app.ops.kill_switch import set_kill_switch_redis, get_kill_switch_state
-    from app.ops.state_store import upsert_state_pool
+    from app.ops.state_store import upsert_state_pool, get_state_pool
+
     now_iso = datetime.utcnow().isoformat() + "Z"
+    now_ts = datetime.utcnow().timestamp()
+    cooldown_sec = PANIC_GUARD_COOLDOWN_SEC
+
+    try:
+        pool = await _get_domain_pg_pool()
+        state = await get_state_pool(pool)
+        wp = (state.get("worker_panic") or {}).get("value") or {}
+        last_at = wp.get("last_panic_at") or wp.get("last_trigger_at")
+        last_ts = _parse_iso_to_ts(last_at)
+        if last_ts is not None and (now_ts - last_ts) < cooldown_sec:
+            remaining = int(cooldown_sec - (now_ts - last_ts))
+            raise HTTPException(
+                status_code=409,
+                detail=f"Panic guard in cooldown. {remaining}s remaining.",
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ops/panic_guard/trigger] cooldown check failed: {e}", flush=True)
+
     ok = set_kill_switch_redis(True)
     try:
         pool = await _get_domain_pg_pool()
         await upsert_state_pool(
             pool,
             "worker_panic",
-            {"last_panic_at": now_iso, "count": 1, "window_sec": 60, "source": "ops_api", "triggered": True},
+            {
+                "last_panic_at": now_iso,
+                "last_trigger_at": now_iso,
+                "count": 1,
+                "window_sec": 60,
+                "source": source,
+                "actor": actor,
+                "triggered": True,
+                "event_type": "PANIC_GUARD_TRIGGER",
+                "ts": now_iso,
+                "exec_mode": exec_mode_val,
+            },
         )
         await append_domain_event_pool(
             pool,
             "ops-panic-guard",
             "PANIC_GUARD_TRIGGERED",
             0,
-            {"source": "ops_api", "actor": "ops_api"},
+            {"source": source, "actor": actor, "ts": now_iso, "exec_mode": exec_mode_val},
         )
     except Exception as e:
         print(f"[ops/panic_guard/trigger] failed: {e}", flush=True)
     enabled_out, source_out = get_kill_switch_state()
-    return {"ok": ok, "kill_switch": {"enabled": enabled_out, "source": source_out}}
+    return {
+        "ok": ok,
+        "kill_switch": {"enabled": enabled_out, "source": source_out},
+        "cooldown_sec": cooldown_sec,
+        "cooldown_remaining": 0,
+    }
 
 
 @app.post("/ops/panic_guard/reset")
@@ -272,6 +337,12 @@ async def post_panic_guard_reset(request: Request):
         token = (request.headers.get("x-ops-token") or "").strip()
         if token != ops_token:
             raise HTTPException(status_code=401, detail="Unauthorized")
+
+    actor = (request.headers.get("x-anchor-actor") or "").strip() or "unknown"
+    source = (request.headers.get("x-anchor-source") or "").strip() or "unknown"
+    exec_mode_val = (os.getenv("EXEC_MODE") or os.getenv("NEXT_PUBLIC_EXEC_MODE") or "unknown").strip() or "unknown"
+    now_iso = datetime.utcnow().isoformat() + "Z"
+
     from app.ops.kill_switch import set_kill_switch_redis, get_kill_switch_state
     from app.ops.state_store import upsert_state_pool
     ok = set_kill_switch_redis(False)
@@ -280,14 +351,24 @@ async def post_panic_guard_reset(request: Request):
         await upsert_state_pool(
             pool,
             "worker_panic",
-            {"last_panic_at": None, "count": 0, "triggered": False, "source": "ops_api"},
+            {
+                "last_panic_at": None,
+                "last_trigger_at": None,
+                "count": 0,
+                "triggered": False,
+                "source": source,
+                "actor": actor,
+                "event_type": "PANIC_GUARD_RESET",
+                "ts": now_iso,
+                "exec_mode": exec_mode_val,
+            },
         )
         await append_domain_event_pool(
             pool,
             "ops-panic-guard",
             "PANIC_GUARD_RESET",
             0,
-            {"source": "ops_api", "actor": "ops_api"},
+            {"source": source, "actor": actor, "ts": now_iso, "exec_mode": exec_mode_val},
         )
     except Exception as e:
         print(f"[ops/panic_guard/reset] failed: {e}", flush=True)
