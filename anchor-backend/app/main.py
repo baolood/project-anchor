@@ -220,6 +220,81 @@ async def get_ops_state():
     }
 
 
+def _panic_guard_ops_allowed() -> bool:
+    """Only allow trigger/reset in local/testnet. Reject in prod."""
+    mode = (os.getenv("EXEC_MODE") or os.getenv("NEXT_PUBLIC_EXEC_MODE") or "").strip().lower()
+    if mode in ("prod", "production"):
+        return False
+    return True
+
+
+@app.post("/ops/panic_guard/trigger")
+async def post_panic_guard_trigger(request: Request):
+    """Manual panic guard drill: set kill switch ON + worker_panic state. Only local/testnet."""
+    if not _panic_guard_ops_allowed():
+        raise HTTPException(status_code=403, detail="Panic guard ops disabled in prod")
+    ops_token = (os.getenv("OPS_TOKEN") or "").strip()
+    if ops_token:
+        token = (request.headers.get("x-ops-token") or "").strip()
+        if token != ops_token:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+    from app.ops.kill_switch import set_kill_switch_redis, get_kill_switch_state
+    from app.ops.state_store import upsert_state_pool
+    now_iso = datetime.utcnow().isoformat() + "Z"
+    ok = set_kill_switch_redis(True)
+    try:
+        pool = await _get_domain_pg_pool()
+        await upsert_state_pool(
+            pool,
+            "worker_panic",
+            {"last_panic_at": now_iso, "count": 1, "window_sec": 60, "source": "ops_api", "triggered": True},
+        )
+        await append_domain_event_pool(
+            pool,
+            "ops-panic-guard",
+            "PANIC_GUARD_TRIGGERED",
+            0,
+            {"source": "ops_api", "actor": "ops_api"},
+        )
+    except Exception as e:
+        print(f"[ops/panic_guard/trigger] failed: {e}", flush=True)
+    enabled_out, source_out = get_kill_switch_state()
+    return {"ok": ok, "kill_switch": {"enabled": enabled_out, "source": source_out}}
+
+
+@app.post("/ops/panic_guard/reset")
+async def post_panic_guard_reset(request: Request):
+    """Reset panic guard: set kill switch OFF + clear worker_panic. Only local/testnet."""
+    if not _panic_guard_ops_allowed():
+        raise HTTPException(status_code=403, detail="Panic guard ops disabled in prod")
+    ops_token = (os.getenv("OPS_TOKEN") or "").strip()
+    if ops_token:
+        token = (request.headers.get("x-ops-token") or "").strip()
+        if token != ops_token:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+    from app.ops.kill_switch import set_kill_switch_redis, get_kill_switch_state
+    from app.ops.state_store import upsert_state_pool
+    ok = set_kill_switch_redis(False)
+    try:
+        pool = await _get_domain_pg_pool()
+        await upsert_state_pool(
+            pool,
+            "worker_panic",
+            {"last_panic_at": None, "count": 0, "triggered": False, "source": "ops_api"},
+        )
+        await append_domain_event_pool(
+            pool,
+            "ops-panic-guard",
+            "PANIC_GUARD_RESET",
+            0,
+            {"source": "ops_api", "actor": "ops_api"},
+        )
+    except Exception as e:
+        print(f"[ops/panic_guard/reset] failed: {e}", flush=True)
+    enabled_out, source_out = get_kill_switch_state()
+    return {"ok": ok, "kill_switch": {"enabled": enabled_out, "source": source_out}}
+
+
 @app.get("/ops/state/history")
 async def get_ops_state_history(limit: int = Query(50, ge=1, le=200)):
     """Recent ops_state_history rows. Never raises."""
