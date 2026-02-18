@@ -13,6 +13,7 @@ from app.domain_events import append_domain_event
 from app.policies.registry import get_policies, init_policies
 from app.risk.lockout import is_lockout_active, is_command_allowed
 from app.risk.hard_limits import risk_guard
+from app.risk.policy_engine import RiskPolicyEngine
 
 # Ensure actions and policies are registered when worker module loads
 init_actions()
@@ -183,7 +184,12 @@ async def domain_worker_loop() -> None:
         return (True, until, reason)
 
     async def _risk_guard(cmd_type: str, payload: dict):
-        return await risk_guard(engine, cmd_type, payload or {})
+        p = payload or {}
+        notional_usd = p.get("notional_usd") or p.get("notional") or p.get("amount_usd") or 0
+        decision = RiskPolicyEngine.evaluate_single_trade({"notional_usd": notional_usd})
+        if not decision.allowed:
+            return (False, decision.reason)
+        return await risk_guard(engine, cmd_type, p)
 
     runner = DomainCommandRunner(
         _pick_one_domain,
