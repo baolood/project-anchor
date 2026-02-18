@@ -314,14 +314,11 @@ async def domain_worker_loop() -> None:
 
 
 async def main() -> None:
-    """
-    同一个容器进程里同时跑：
-    - 现有 commands worker（命令总线）
-    - 新的 domain worker（commands_domain）
-    """
-    t1 = asyncio.create_task(cw.main())
-    t2 = asyncio.create_task(domain_worker_loop())
-    await asyncio.gather(t1, t2)
+    """Domain-only worker: run domain_worker_loop (commands_domain)."""
+    from app.system.strict_check import run_strict_check
+    await run_strict_check()
+
+    await domain_worker_loop()
 
 
 if __name__ == "__main__":
