@@ -997,3 +997,119 @@ async def get_domain_command(domain_id: str):
         "created_at": iso(row["created_at"]),
         "updated_at": iso(row["updated_at"]),
     }
+
+# --- ops state history export (JSON/CSV) ---
+from fastapi import Response, Query
+import json as _json
+import csv as _csv
+import io as _io
+from datetime import datetime, timedelta, timezone
+
+def _is_prod_exec_mode() -> bool:
+    try:
+        import os
+        v = (os.getenv("EXEC_MODE") or os.getenv("NEXT_PUBLIC_EXEC_MODE") or "").lower()
+        return v in ("prod", "production")
+    except Exception:
+        return False
+
+@app.get("/ops/state/history/export")
+async def ops_state_history_export(
+    from_ts: str | None = Query(default=None),
+    to_ts: str | None = Query(default=None),
+    limit: int = Query(default=1000, ge=1, le=10000),
+    event_type: str | None = Query(default=None),
+    actor: str | None = Query(default=None),
+    source: str | None = Query(default=None),
+):
+    if _is_prod_exec_mode():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="export disabled in prod")
+    now = datetime.now(timezone.utc)
+    if not from_ts:
+        from_dt = now - timedelta(days=7)
+    else:
+        from_dt = datetime.fromisoformat(from_ts.replace("Z", "+00:00"))
+    to_dt = datetime.fromisoformat(to_ts.replace("Z", "+00:00")) if to_ts else now
+
+    pool = await _get_domain_pg_pool()
+    from app.ops.state_store import get_state_history_export_rows
+    rows = await get_state_history_export_rows(
+        pool,
+        from_dt=from_dt,
+        to_dt=to_dt,
+        limit=limit,
+        event_type=event_type,
+        actor=actor,
+        source=source,
+    )
+    out = []
+    for r in rows:
+        ts_str = r.get("ts", "")
+        if hasattr(ts_str, "isoformat"):
+            ts_str = ts_str.isoformat()
+        else:
+            ts_str = str(ts_str) if ts_str else ""
+        out.append({
+            "ts": ts_str,
+            "event_type": r.get("event_type", ""),
+            "exec_mode": r.get("exec_mode", ""),
+            "actor": r.get("actor", ""),
+            "source": r.get("source", ""),
+            "payload_json": _json.dumps(r.get("payload_json") or {}, ensure_ascii=False),
+        })
+    return out
+
+@app.get("/ops/state/history/export.csv")
+async def ops_state_history_export_csv(
+    from_ts: str | None = Query(default=None),
+    to_ts: str | None = Query(default=None),
+    limit: int = Query(default=1000, ge=1, le=10000),
+    event_type: str | None = Query(default=None),
+    actor: str | None = Query(default=None),
+    source: str | None = Query(default=None),
+):
+    if _is_prod_exec_mode():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="export disabled in prod")
+    now = datetime.now(timezone.utc)
+    if not from_ts:
+        from_dt = now - timedelta(days=7)
+    else:
+        from_dt = datetime.fromisoformat(from_ts.replace("Z", "+00:00"))
+    to_dt = datetime.fromisoformat(to_ts.replace("Z", "+00:00")) if to_ts else now
+
+    pool = await _get_domain_pg_pool()
+    from app.ops.state_store import get_state_history_export_rows
+    rows = await get_state_history_export_rows(
+        pool,
+        from_dt=from_dt,
+        to_dt=to_dt,
+        limit=limit,
+        event_type=event_type,
+        actor=actor,
+        source=source,
+    )
+
+    buf = _io.StringIO()
+    w = _csv.writer(buf)
+    w.writerow(["ts","event_type","exec_mode","actor","source","payload_json"])
+    for r in rows:
+        ts_str = r.get("ts", "")
+        if hasattr(ts_str, "isoformat"):
+            ts_str = ts_str.isoformat()
+        else:
+            ts_str = str(ts_str) if ts_str else ""
+        w.writerow([
+            ts_str,
+            r.get("event_type", ""),
+            r.get("exec_mode", ""),
+            r.get("actor", ""),
+            r.get("source", ""),
+            _json.dumps(r.get("payload_json") or {}, ensure_ascii=False),
+        ])
+    data = buf.getvalue().encode("utf-8")
+    headers = {
+        "Content-Disposition": "attachment; filename=ops_state_history_export.csv"
+    }
+    return Response(content=data, media_type="text/csv; charset=utf-8", headers=headers)

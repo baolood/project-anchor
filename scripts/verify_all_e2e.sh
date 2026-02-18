@@ -567,6 +567,23 @@ echo "CHECKLIST_OPS_DASHBOARD_UI_OUT=$ops_dashboard_ui_out"
 echo "OPS_DASHBOARD_UI_E2E_PASS=$OPS_DASHBOARD_UI_E2E_PASS"
 
 echo "=============================="
+echo "verify_all_e2e: Step 2p1 — checklist_ops_audit_export_e2e.sh"
+echo "=============================="
+ops_audit_export_out="${OPS_AUDIT_EXPORT_E2E_OUT:-/tmp/anchor_e2e_checklist_ops_audit_export_e2e_last.out}"
+OUT="$ops_audit_export_out" CONSOLE_URL="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}" \
+   bash "$ROOT/scripts/checklist_ops_audit_export_e2e.sh" 2>&1 | tee "$ops_audit_export_out" || true
+OPS_AUDIT_EXPORT_E2E_PASS=NO
+if grep -q "PASS_OR_FAIL=PASS" "$ops_audit_export_out"; then
+  OPS_AUDIT_EXPORT_E2E_PASS=YES
+else
+  echo "OPS_AUDIT_EXPORT_E2E_PASS=NO"
+  echo "FAIL_REASON=ops_audit_export_e2e_failed"
+  exit 1
+fi
+echo "CHECKLIST_OPS_AUDIT_EXPORT_E2E_OUT=$ops_audit_export_out"
+echo "OPS_AUDIT_EXPORT_E2E_PASS=$OPS_AUDIT_EXPORT_E2E_PASS"
+
+echo "=============================="
 echo "verify_all_e2e: Step 2q2 — checklist_kill_switch_ui_e2e.sh"
 echo "=============================="
 kill_switch_ui_out="${KILL_SWITCH_UI_E2E_OUT:-/tmp/anchor_e2e_checklist_kill_switch_ui_e2e_last.out}"
@@ -844,6 +861,8 @@ echo "CHECKLIST_OPS_SUMMARY_OUT=$ops_summary_out"
 echo "CHECKLIST_WORKER_PANIC_GUARD_OUT=$worker_panic_guard_out"
 echo "CHECKLIST_OPS_STATE_OUT=$ops_state_out"
 echo "CHECKLIST_OPS_DASHBOARD_UI_OUT=$ops_dashboard_ui_out"
+echo "CHECKLIST_OPS_AUDIT_EXPORT_E2E_OUT=$ops_audit_export_out"
+echo "OPS_AUDIT_EXPORT_E2E_PASS=$OPS_AUDIT_EXPORT_E2E_PASS"
 echo "CHECKLIST_KILL_SWITCH_UI_OUT=$kill_switch_ui_out"
 echo "CHECKLIST_PANIC_GUARD_UI_OUT=$panic_guard_ui_out"
 echo "CHECKLIST_PANIC_GUARD_COOLDOWN_OUT=$panic_guard_cooldown_out"
