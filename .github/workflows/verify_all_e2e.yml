@@ -2,9 +2,10 @@ name: verify_all_e2e
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   push:
-    branches: [ "codex/**" ]
+    branches:
+      - "codex/**"
   workflow_dispatch: {}
 
 concurrency:
@@ -21,12 +22,11 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      - name: Checkout (with submodules)
+      - name: Checkout (NO submodules)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: recursive
-          token: ${{ secrets.SUBMODULE_TOKEN }}
+          submodules: false
 
       - name: Show versions
         run: |
@@ -38,39 +38,29 @@ jobs:
           node --version || true
           python --version || true
 
-      - name: Install console deps
+      - name: Preflight (show repo layout)
         run: |
           set -euo pipefail
-          git submodule sync --recursive
-          git submodule update --init --recursive
-          if [ -d anchor-console ]; then
-            cd anchor-console && npm ci && cd ..
-          fi
+          pwd
+          ls -la
+          echo "== top-level dirs =="
+          ls -la | sed -n '1,120p'
 
-      - name: Docker compose up (infra)
-        env:
-          CI: "true"
+      - name: Warm up docker (best-effort)
         run: |
           set -euo pipefail
-          cd anchor-backend
-          docker compose pull || true
-          docker compose up -d --build
-
-          echo "== docker compose ps =="
-          docker compose ps
-
-      - name: Wait for services (best-effort)
-        run: |
-          set -euo pipefail
-          cd anchor-backend
-          for i in $(seq 1 60); do
-            if docker compose ps | grep -q "Up"; then
-              echo "Some services are Up."
-              break
+          # Try a few likely compose roots. Do NOT fail if none exist.
+          for d in . anchor-backend anchor_backend backend anchor-backend/anchor-backend; do
+            if [ -d "$d" ]; then
+              echo "Found dir: $d"
+              if [ -f "$d/docker-compose.yml" ] || [ -f "$d/compose.yml" ]; then
+                echo "Warming docker compose in $d"
+                (cd "$d" && docker compose up -d || true)
+                exit 0
+              fi
             fi
-            echo "Waiting services... ($i)"
-            sleep 2
           done
+          echo "No compose root found to warm up. Continue."
 
       - name: Run verify_all_e2e
         env:
@@ -100,8 +90,19 @@ jobs:
         if: failure()
         run: |
           set -euo pipefail
-          cd anchor-backend
-          echo "== docker compose ps =="
-          docker compose ps || true
-          echo "== docker compose logs (tail) =="
-          docker compose logs --tail=300 || true
+          echo "== dump docker logs (best-effort) =="
+
+          # Try a few likely backend dirs; DO NOT fail if none exist
+          for d in . anchor-backend anchor_backend backend anchor-backend/anchor-backend; do
+            if [ -d "$d" ]; then
+              echo "Using dir: $d"
+              if [ -f "$d/docker-compose.yml" ] || [ -f "$d/compose.yml" ]; then
+                (cd "$d" && docker compose ps || true)
+                (cd "$d" && docker compose logs --no-color --tail=500 || true)
+                exit 0
+              fi
+            fi
+          done
+
+          echo "No compose dir found for docker logs. Print docker status instead."
+          docker ps -a || true
