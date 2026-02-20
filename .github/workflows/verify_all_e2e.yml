@@ -2,7 +2,7 @@ name: verify_all_e2e
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
   push:
     branches:
       - "codex/**"
@@ -38,29 +38,27 @@ jobs:
           node --version || true
           python --version || true
 
-      - name: Preflight (show repo layout)
+      # Optional warm-up: do NOT fail the job if your repo doesn't have these paths.
+      - name: Docker compose up (infra) (best-effort)
         run: |
           set -euo pipefail
-          pwd
-          ls -la
-          echo "== top-level dirs =="
-          ls -la | sed -n '1,120p'
-
-      - name: Warm up docker (best-effort)
-        run: |
-          set -euo pipefail
-          # Try a few likely compose roots. Do NOT fail if none exist.
-          for d in . anchor-backend anchor_backend backend anchor-backend/anchor-backend; do
-            if [ -d "$d" ]; then
-              echo "Found dir: $d"
-              if [ -f "$d/docker-compose.yml" ] || [ -f "$d/compose.yml" ]; then
-                echo "Warming docker compose in $d"
-                (cd "$d" && docker compose up -d || true)
-                exit 0
-              fi
+          echo "== warm up docker compose (best-effort) =="
+          for d in anchor-backend anchor_backend backend . ; do
+            if [ -f "$d/docker-compose.yml" ] || [ -f "$d/docker-compose.yaml" ]; then
+              echo "Using compose dir: $d"
+              (cd "$d" && docker compose up -d --build || true)
+              exit 0
             fi
           done
-          echo "No compose root found to warm up. Continue."
+          echo "No docker-compose.yml found in expected dirs; skip warm-up."
+          exit 0
+
+      - name: Wait for services (best-effort)
+        run: |
+          set -euo pipefail
+          echo "== wait a bit for services (best-effort) =="
+          sleep 10
+          exit 0
 
       - name: Run verify_all_e2e
         env:
@@ -86,23 +84,25 @@ jobs:
             **/*.png
             **/*.log
 
+      # IMPORTANT: this step must NEVER fail the job
       - name: Dump docker logs on failure (best-effort)
         if: failure()
         run: |
-          set -euo pipefail
+          set +e
           echo "== dump docker logs (best-effort) =="
 
-          # Try a few likely backend dirs; DO NOT fail if none exist
-          for d in . anchor-backend anchor_backend backend anchor-backend/anchor-backend; do
-            if [ -d "$d" ]; then
-              echo "Using dir: $d"
-              if [ -f "$d/docker-compose.yml" ] || [ -f "$d/compose.yml" ]; then
-                (cd "$d" && docker compose ps || true)
-                (cd "$d" && docker compose logs --no-color --tail=500 || true)
-                exit 0
-              fi
+          # try likely compose dirs; do NOT fail if none exist
+          for d in anchor-backend anchor_backend backend . ; do
+            if [ -f "$d/docker-compose.yml" ] || [ -f "$d/docker-compose.yaml" ]; then
+              echo "Using compose dir: $d"
+              cd "$d" || true
+              echo "== docker compose ps =="
+              docker compose ps || true
+              echo "== docker compose logs (tail) =="
+              docker compose logs --no-color --tail=500 || true
+              exit 0
             fi
           done
 
-          echo "No compose dir found for docker logs. Print docker status instead."
-          docker ps -a || true
+          echo "No docker-compose.yml found; nothing to dump."
+          exit 0
