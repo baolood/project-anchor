@@ -1,0 +1,107 @@
+name: verify_all_e2e
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "codex/**" ]
+  workflow_dispatch: {}
+
+concurrency:
+  group: verify_all_e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify_all_e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_TOKEN }}
+
+      - name: Show versions
+        run: |
+          set -euo pipefail
+          uname -a
+          git --version
+          docker --version
+          docker compose version || docker-compose --version || true
+          node --version || true
+          python --version || true
+
+      - name: Install console deps
+        run: |
+          set -euo pipefail
+          git submodule sync --recursive
+          git submodule update --init --recursive
+          if [ -d anchor-console ]; then
+            cd anchor-console && npm ci && cd ..
+          fi
+
+      - name: Docker compose up (infra)
+        env:
+          CI: "true"
+        run: |
+          set -euo pipefail
+          cd anchor-backend
+          docker compose pull || true
+          docker compose up -d --build
+
+          echo "== docker compose ps =="
+          docker compose ps
+
+      - name: Wait for services (best-effort)
+        run: |
+          set -euo pipefail
+          cd anchor-backend
+          for i in $(seq 1 60); do
+            if docker compose ps | grep -q "Up"; then
+              echo "Some services are Up."
+              break
+            fi
+            echo "Waiting services... ($i)"
+            sleep 2
+          done
+
+      - name: Run verify_all_e2e
+        env:
+          CI: "true"
+          ROOT: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          chmod +x scripts/verify_all_e2e.sh || true
+          ./scripts/verify_all_e2e.sh
+
+      - name: Upload verify artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify_all_e2e_artifacts
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            /tmp/anchor_e2e_*
+            /tmp/*anchor*e2e*
+            **/playwright-report/**
+            **/test-results/**
+            **/*.png
+            **/*.log
+
+      - name: Dump docker logs on failure (best-effort)
+        if: failure()
+        run: |
+          set -euo pipefail
+          cd anchor-backend
+          echo "== docker compose ps =="
+          docker compose ps || true
+          echo "== docker compose logs (tail) =="
+          docker compose logs --tail=300 || true
