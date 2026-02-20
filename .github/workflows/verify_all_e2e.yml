@@ -1,17 +1,9 @@
 name: verify_all_e2e
 
 on:
-  # PR 一定跑
   pull_request:
-    branches: [ "main" ]
-
-  # 只要你 push 到这个分支，也自动跑（避免你手动 Re-run）
   push:
-    branches:
-      - codex/ci-gate-wt
-
-  # 保留手动按钮（Actions 里可以点 Run workflow）
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 concurrency:
   group: verify_all_e2e-${{ github.ref }}
@@ -38,13 +30,16 @@ jobs:
           set -euo pipefail
           uname -a
           git --version
-          docker --version
+          docker --version || true
           docker compose version || docker-compose --version || true
           node --version || true
           python --version || true
 
       - name: Run verify_all_e2e
- efail
+        env:
+          CI: "true"
+        run: |
+          set -euo pipefail
           chmod +x scripts/verify_all_e2e.sh || true
           ./scripts/verify_all_e2e.sh
 
