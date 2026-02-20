@@ -1,3 +1,4 @@
+cat > .github/workflows/verify_all_e2e.yml <<'YAML'
 name: verify_all_e2e
 
 on:
@@ -23,14 +24,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: recursive
+          submodules: false
 
       - name: Show versions
         run: |
           set -euo pipefail
           uname -a
           git --version
-          docker --version
+          docker --version || true
           docker compose version || docker-compose --version || true
           node --version || true
           python --version || true
@@ -57,3 +58,4 @@ jobs:
             **/test-results/**
             **/*.png
             **/*.log
+YAML
