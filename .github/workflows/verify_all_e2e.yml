@@ -1,9 +1,16 @@
-cat > .github/workflows/verify_all_e2e.yml <<'YAML'
 name: verify_all_e2e
 
 on:
+  # PR 一定跑
   pull_request:
     branches: [ "main" ]
+
+  # 只要你 push 到这个分支，也自动跑（避免你手动 Re-run）
+  push:
+    branches:
+      - codex/ci-gate-wt
+
+  # 保留手动按钮（Actions 里可以点 Run workflow）
   workflow_dispatch: {}
 
 concurrency:
@@ -20,7 +27,7 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      - name: Checkout
+      - name: Checkout (NO submodules)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -31,16 +38,13 @@ jobs:
           set -euo pipefail
           uname -a
           git --version
-          docker --version || true
+          docker --version
           docker compose version || docker-compose --version || true
           node --version || true
           python --version || true
 
       - name: Run verify_all_e2e
-        env:
-          CI: "true"
-        run: |
-          set -euo pipefail
+ efail
           chmod +x scripts/verify_all_e2e.sh || true
           ./scripts/verify_all_e2e.sh
 
@@ -58,4 +62,3 @@ jobs:
             **/test-results/**
             **/*.png
             **/*.log
-YAML
