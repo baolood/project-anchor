@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from typing import Any, Dict
 
 from fastapi import APIRouter, Header, HTTPException, Body
+from app.ops.kill_switch import get_kill_switch_state
 from sqlalchemy import text
 
 from app.db import async_session
@@ -16,6 +17,10 @@ async def create_command(
     payload: Dict[str, Any] = Body(default_factory=dict),
     x_idempotency_key: str = Header(..., alias="X-Idempotency-Key"),
 ):
+    enabled, _source = get_kill_switch_state()
+    if enabled:
+        raise HTTPException(status_code=423, detail="Kill switch enabled")
+
     """
     Idempotent command submit:
     - If idempotency_key exists -> return existing id
