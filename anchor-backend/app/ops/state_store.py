@@ -67,32 +67,18 @@ async def upsert_state_pool(pool: Any, key: str, value: Dict[str, Any]) -> None:
 async def upsert_state_engine(engine: Any, key: str, value: Dict[str, Any]) -> None:
     """Upsert ops_state and append to history. Uses SQLAlchemy engine. Never raises."""
     try:
-        from sqlalchemy import text
+        import json
         value_json = json.dumps(value, ensure_ascii=False)
         async with engine.begin() as conn:
-            await conn.execute(
-                text(
-                    """
-                    INSERT INTO ops_state (key, value, updated_at)
-                    VALUES (:key, :value::jsonb, NOW())
-                    ON CONFLICT (key) DO UPDATE SET value = :value::jsonb, updated_at = NOW()
-                    """
-                ),
-                {"key": key, "value": value_json},
-            )
-            await conn.execute(
-                text(
-                    """
-                    INSERT INTO ops_state_history (key, value, created_at)
-                    VALUES (:key, :value::jsonb, NOW())
-                    """
-                ),
-                {"key": key, "value": value_json},
-            )
+            sql = """
+                INSERT INTO ops_state (key, value, updated_at)
+                VALUES ($1, $2::jsonb, NOW())
+                ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at = NOW()
+            """
+            # use driver-level SQL to match asyncpg ($1/$2) paramstyle
+            await conn.exec_driver_sql(sql, (key, value_json))
     except Exception as e:
         print(f"[state_store] upsert_state_engine failed: {e}", flush=True)
-
-
 async def get_state_pool(pool: Any) -> Dict[str, Any]:
     """Return all ops_state key->value as dict. Never raises."""
     out = {}

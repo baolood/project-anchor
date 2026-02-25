@@ -172,17 +172,31 @@ async def get_ops_state():
     """Aggregated ops state: kill_switch, worker_heartbeat, worker_panic, recent_ops_events. Never raises."""
     from datetime import datetime
     from app.ops.kill_switch import get_kill_switch_state
+
     kill_enabled, kill_source = get_kill_switch_state()
     kill_switch = {"enabled": kill_enabled, "source": kill_source}
+
     worker_heartbeat = None
     worker_panic = None
     recent_ops_events = []
+
     try:
         pool = await _get_domain_pg_pool()
         from app.ops.state_store import get_state_pool
         state = await get_state_pool(pool)
-        if state.get("worker_heartbeat"):
-            worker_heartbeat = state["worker_heartbeat"].get("value")
+
+        wh = state.get("worker_heartbeat")
+        if isinstance(wh, dict) and "value" in wh:
+            worker_heartbeat = wh.get("value")
+        else:
+            worker_heartbeat = wh
+
+        # normalize field name (worker writes last_heartbeat_at; API may want last_seen_at)
+        if isinstance(worker_heartbeat, dict):
+            if "last_seen_at" not in worker_heartbeat and "last_heartbeat_at" in worker_heartbeat:
+                worker_heartbeat = dict(worker_heartbeat)
+                worker_heartbeat["last_seen_at"] = worker_heartbeat.get("last_heartbeat_at")
+
         if state.get("worker_panic"):
             wp_raw = state["worker_panic"].get("value")
             worker_panic = dict(wp_raw) if isinstance(wp_raw, dict) else {}
@@ -194,8 +208,11 @@ async def get_ops_state():
                 worker_panic["cooldown_remaining"] = max(0, int(PANIC_GUARD_COOLDOWN_SEC - elapsed))
             else:
                 worker_panic["cooldown_remaining"] = 0
+
         if state.get("kill_switch"):
-            kill_switch = state["kill_switch"].get("value") or kill_switch
+            ks_raw = state["kill_switch"].get("value")
+            if isinstance(ks_raw, dict) and ks_raw:
+                kill_switch = ks_raw
 
         async with pool.acquire() as conn:
             rows = await conn.fetch(
@@ -207,8 +224,10 @@ async def get_ops_state():
                 LIMIT 20
                 """
             )
+
         def iso(v):
             return v.isoformat() if v is not None else None
+
         recent_ops_events = [
             {
                 "command_id": r["command_id"],
@@ -218,8 +237,10 @@ async def get_ops_state():
             }
             for r in rows
         ]
+
     except Exception as e:
         print(f"[ops/state] query failed: {e}", flush=True)
+
     return {
         "kill_switch": kill_switch,
         "worker_heartbeat": worker_heartbeat,
@@ -227,7 +248,6 @@ async def get_ops_state():
         "recent_ops_events": recent_ops_events,
         "generated_at": datetime.utcnow().isoformat() + "Z",
     }
-
 
 def _panic_guard_ops_allowed() -> bool:
     """Only allow trigger/reset in local/testnet. Reject in prod."""
