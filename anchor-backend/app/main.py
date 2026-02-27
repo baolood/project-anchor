@@ -6,6 +6,7 @@ from datetime import datetime
 
 from fastapi import Body, FastAPI, HTTPException, Query, Request
 from app.api.routes import router
+from app.api.ops import router as ops_router
 from app.domain_events import append_domain_event_pool
 
 try:
@@ -16,6 +17,7 @@ except Exception:
 
 app = FastAPI(title="Anchor Backend", version="0.1.0")
 app.include_router(router)
+app.include_router(ops_router)
 
 
 def _now_z() -> str:
@@ -765,9 +767,10 @@ def _json_dumps(obj) -> str:
     return json.dumps(obj, ensure_ascii=False)
 
 
-async def _create_domain_command(cmd_id_prefix: str, cmd_type: str, payload: dict | None = None) -> dict:
+async def _create_domain_command(cmd_id_prefix: str, cmd_type: str, payload: dict | None = None, cmd_id: str | None = None) -> dict:
     pool = await _get_domain_pg_pool()
-    cmd_id = f"{cmd_id_prefix}-{uuid.uuid4()}"
+    if cmd_id is None:
+        cmd_id = f"{cmd_id_prefix}-{uuid.uuid4()}"
     now = datetime.utcnow()
     payload_json = _json_dumps(payload if payload else {})
     sql = """
@@ -793,9 +796,89 @@ async def _create_domain_command(cmd_id_prefix: str, cmd_type: str, payload: dic
     }
 
 
+async def _domain_command_response_by_id(domain_id: str) -> dict:
+    """Fetch domain command and return response dict (same shape as GET). Raises HTTPException if not found."""
+    pool = await _get_domain_pg_pool()
+    sql = """
+    SELECT id, type, status, attempt, locked_by, locked_at, result, error, payload, created_at, updated_at
+    FROM commands_domain WHERE id = $1;
+    """
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(sql, domain_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    def iso(v):
+        return v.isoformat() if v is not None else None
+
+    payload = _ensure_json_result(row["payload"]) or {}
+    result = _ensure_json_result(row["result"]) or {}
+    return {
+        "id": row["id"],
+        "type": row["type"],
+        "status": row["status"],
+        "attempt": row["attempt"],
+        "locked_by": row["locked_by"],
+        "locked_at": iso(row["locked_at"]),
+        "result": result,
+        "error": row["error"],
+        "payload": payload,
+        "created_at": iso(row["created_at"]),
+        "updated_at": iso(row["updated_at"]),
+    }
+
+
 @app.post("/domain-commands/noop")
-async def create_domain_noop():
-    return await _create_domain_command("noop", "NOOP")
+async def create_domain_noop(request: Request, body: dict = Body(default_factory=dict)):
+    """Create NOOP. API-level idempotency via x-idempotency-key: same key -> same command id returned."""
+    idempotency_key = (request.headers.get("x-idempotency-key") or "").strip()
+    payload = dict(body) if body else {}
+
+    if idempotency_key:
+        pool = await _get_domain_pg_pool()
+        async with pool.acquire() as conn:
+            # Check if key already exists
+            row = await conn.fetchrow(
+                "SELECT first_command_id FROM idempotency_keys WHERE idempotency_key = $1",
+                idempotency_key,
+            )
+            if row is not None:
+                return await _domain_command_response_by_id(row["first_command_id"])
+
+            # Claim key: INSERT ON CONFLICT DO NOTHING (concurrency safe)
+            cmd_id = f"noop-{uuid.uuid4()}"
+            await conn.execute(
+                """
+                INSERT INTO idempotency_keys (idempotency_key, first_command_id, first_seen_at, last_seen_at)
+                VALUES ($1, $2, NOW(), NOW())
+                ON CONFLICT (idempotency_key) DO NOTHING
+                """,
+                idempotency_key,
+                cmd_id,
+            )
+            # Re-select: if another request won, existing_id != cmd_id
+            row = await conn.fetchrow(
+                "SELECT first_command_id FROM idempotency_keys WHERE idempotency_key = $1",
+                idempotency_key,
+            )
+            existing_id = row["first_command_id"] if row else None
+            if existing_id is not None and existing_id != cmd_id:
+                # Lost race: winner may still be creating; retry fetch briefly
+                for _ in range(10):
+                    try:
+                        return await _domain_command_response_by_id(existing_id)
+                    except HTTPException as e:
+                        if e.status_code == 404:
+                            await asyncio.sleep(0.1)
+                            continue
+                        raise
+
+        # We won: create the command with the claimed id
+        payload["idempotency_key"] = idempotency_key
+        await _create_domain_command("noop", "NOOP", payload, cmd_id=cmd_id)
+        return await _domain_command_response_by_id(cmd_id)
+
+    return await _create_domain_command("noop", "NOOP", payload)
 
 
 @app.post("/domain-commands/fail")
