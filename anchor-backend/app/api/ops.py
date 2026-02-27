@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 from typing import Any, Dict, List
 
-from fastapi import APIRouter, Body, Query
+from fastapi import APIRouter, Body, Query, Request
 from sqlalchemy import text
 
 from app.db import async_session
@@ -11,15 +12,24 @@ from app.runtime.kill_switch import is_enabled as kill_is_enabled, set_enabled a
 router = APIRouter(prefix="/ops", tags=["ops"])
 
 
+def _actor_from_request(request: Request) -> str:
+    """X-ANCHOR-KEY present → key:<first 8 of sha256>; else anon."""
+    key = request.headers.get("X-ANCHOR-KEY")
+    if key:
+        short = hashlib.sha256(key.encode()).hexdigest()[:8]
+        return f"key:{short}"
+    return "anon"
+
+
 @router.get("/kill-switch")
 async def get_kill_switch():
     return {"enabled": bool(kill_is_enabled())}
 
 
 @router.post("/kill-switch")
-async def set_kill_switch(enabled: bool = Body(..., embed=True)):
+async def set_kill_switch(request: Request, enabled: bool = Body(..., embed=True)):
     kill_set_enabled(bool(enabled))
-    # Phase 3.5: write to ops_audit when kill-switch is toggled
+    actor = _actor_from_request(request)
     async with async_session() as s:
         async with s.begin():
             await s.execute(
@@ -28,7 +38,7 @@ async def set_kill_switch(enabled: bool = Body(..., embed=True)):
                     VALUES (gen_random_uuid(), NOW(), :actor, :action, CAST(:detail AS jsonb))
                 """),
                 {
-                    "actor": "api",
+                    "actor": actor,
                     "action": "KILL_SWITCH_SET",
                     "detail": '{"enabled": %s}' % ("true" if enabled else "false"),
                 },
