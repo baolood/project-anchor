@@ -8,6 +8,7 @@ from app.ops.kill_switch import get_kill_switch_state
 from sqlalchemy import text
 
 from app.db import async_session
+from app.system.risk_gate import check_create_command
 
 router = APIRouter(prefix="/commands", tags=["commands"])
 
@@ -17,6 +18,11 @@ async def create_command(
     payload: Dict[str, Any] = Body(default_factory=dict),
     x_idempotency_key: str = Header(..., alias="X-Idempotency-Key"),
 ):
+    # Phase 3.8: risk_gate (risk_state-backed global gate)
+    allowed, meta = await check_create_command(payload, x_idempotency_key)
+    if not allowed:
+        raise HTTPException(status_code=403, detail=meta)
+
     enabled, _source = get_kill_switch_state()
     if enabled:
         raise HTTPException(status_code=423, detail="Kill switch enabled")
