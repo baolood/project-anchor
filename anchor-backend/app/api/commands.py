@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from typing import Any, Dict
 
 from fastapi import APIRouter, Header, HTTPException, Body
+from app.system.idempotency import get_idempotency, request_hash, try_start_idempotency, finish_idempotency_ok, finish_idempotency_error
 from app.ops.kill_switch import get_kill_switch_state
 from sqlalchemy import text
 
@@ -21,6 +22,21 @@ async def create_command(
     if enabled:
         raise HTTPException(status_code=423, detail="Kill switch enabled")
 
+    # --- PHASE310_IDEMPOTENCY_KEYS ---
+    idem_key = x_idempotency_key
+    if idem_key:
+        req_hash = request_hash(payload)
+        st = await try_start_idempotency(idem_key, req_hash)
+        if st == "EXISTS_DIFF":
+            raise HTTPException(status_code=409, detail={"code": "IDEMPOTENCY_KEY_CONFLICT", "key": idem_key})
+        if st == "EXISTS_SAME":
+            row = await get_idempotency(idem_key)
+            if row and row.get("status") == "DONE" and row.get("response") is not None:
+                r = row["response"]
+                return {"id": r["id"], "idempotency_key": r["idempotency_key"], "status": r["status"]}
+            if row and row.get("status") == "IN_PROGRESS":
+                raise HTTPException(status_code=409, detail={"code": "IDEMPOTENCY_IN_PROGRESS", "key": idem_key})
+
     """
     Idempotent command submit:
     - If idempotency_key exists -> return existing id
@@ -36,7 +52,10 @@ async def create_command(
             )
         ).first()
         if row:
-            return {"status": "ACCEPTED", "id": str(row[0]), "idempotency_key": x_idempotency_key}
+            resp = {"id": str(row[0]), "idempotency_key": x_idempotency_key, "status": "ACCEPTED"}
+            if idem_key:
+                await finish_idempotency_ok(idem_key, resp)
+            return resp
 
         cmd_id = uuid4()
 
@@ -63,11 +82,16 @@ async def create_command(
                 )
             ).first()
             if row2:
-                return {"status": "ACCEPTED", "id": str(row2[0]), "idempotency_key": x_idempotency_key}
-
+                resp = {"id": str(row2[0]), "idempotency_key": x_idempotency_key, "status": "ACCEPTED"}
+                if idem_key:
+                    await finish_idempotency_ok(idem_key, resp)
+                return resp
             raise HTTPException(status_code=500, detail="db insert failed")
 
-        return {"status": "ACCEPTED", "id": str(cmd_id), "idempotency_key": x_idempotency_key}
+        resp = {"id": str(cmd_id), "idempotency_key": x_idempotency_key, "status": "ACCEPTED"}
+        if idem_key:
+            await finish_idempotency_ok(idem_key, resp)
+        return resp
 
 
 def _is_uuid(s: str) -> bool:
