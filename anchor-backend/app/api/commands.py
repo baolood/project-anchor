@@ -1,4 +1,3 @@
-import hashlib
 import json
 import traceback
 from uuid import UUID, uuid4
@@ -9,6 +8,7 @@ from app.system.idempotency import get_idempotency, request_hash, try_start_idem
 from app.ops.kill_switch import get_kill_switch_state
 from app.system.risk_gate import check_create_command
 from app.system.risk_state import get_risk_state
+from app.system.ops_audit_helpers import audit, actor_from_request
 from sqlalchemy import text
 
 from app.db import async_session
@@ -16,25 +16,12 @@ from app.db import async_session
 router = APIRouter(prefix="/commands", tags=["commands"])
 
 
-# Observability: audit actions into ops_audit (no schema change)
-def _actor_from_headers(request: Request) -> str:
-    k = request.headers.get("X-ANCHOR-KEY", "")
-    if not k:
-        return "anon"
-    h = hashlib.sha256(k.encode("utf-8")).hexdigest()[:8]
-    return f"key:{h}"
-
-
-async def _audit(action: str, actor: str, detail: dict) -> None:
+async def _write_audit(action: str, actor: str, detail: dict) -> None:
+    """Best-effort audit write; never raise."""
     try:
         async with async_session() as sess:
             async with sess.begin():
-                await sess.execute(
-                    text(
-                        "INSERT INTO ops_audit (actor, action, detail) VALUES (:actor, :action, CAST(:detail AS jsonb))"
-                    ),
-                    {"actor": actor, "action": action, "detail": json.dumps(detail, ensure_ascii=False)},
-                )
+                await audit(sess, action, actor, detail)
     except Exception:
         pass
 
@@ -45,13 +32,13 @@ async def create_command(
     payload: Dict[str, Any] = Body(default_factory=dict),
     x_idempotency_key: str = Header(..., alias="X-Idempotency-Key"),
 ):
-    actor = _actor_from_headers(request)
+    actor = actor_from_request(request)
     idem_key = x_idempotency_key
 
     # Kill switch
     enabled, _source = get_kill_switch_state()
     if enabled:
-        await _audit(
+        await _write_audit(
             "COMMAND_CREATE_DENIED",
             actor,
             {"code": "KILL_SWITCH_ON", "reason": "kill switch enabled", "idempotency_key": idem_key},
@@ -61,7 +48,7 @@ async def create_command(
     # Risk gate (risk_gate_global, etc.)
     ok, gate_detail = await check_create_command(payload, idem_key)
     if not ok:
-        await _audit(
+        await _write_audit(
             "COMMAND_CREATE_DENIED",
             actor,
             {
@@ -81,7 +68,7 @@ async def create_command(
             risk_usd = float(inner.get("risk_usd") or payload.get("risk_usd") or 0)
             if risk_usd > max_usd:
                 reason = f"MAX_SINGLE_TRADE_RISK:{risk_usd}>{max_usd}"
-                await _audit(
+                await _write_audit(
                     "COMMAND_CREATE_DENIED",
                     actor,
                     {"code": "MAX_SINGLE_TRADE_RISK", "reason": reason, "idempotency_key": idem_key},
@@ -100,13 +87,13 @@ async def create_command(
         req_hash = request_hash(payload)
         st = await try_start_idempotency(idem_key, req_hash)
         if st == "EXISTS_DIFF":
-            await _audit("IDEMPOTENCY_CONFLICT", actor, {"idempotency_key": idem_key})
+            await _write_audit("IDEMPOTENCY_CONFLICT", actor, {"idempotency_key": idem_key})
             raise HTTPException(status_code=409, detail={"code": "IDEMPOTENCY_KEY_CONFLICT", "key": idem_key})
         if st == "EXISTS_SAME":
             row = await get_idempotency(idem_key)
             if row and row.get("status") == "DONE" and row.get("response") is not None:
                 r = row["response"]
-                await _audit(
+                await _write_audit(
                     "COMMAND_CREATE_ACCEPTED",
                     actor,
                     {"command_id": r["id"], "idempotency_key": idem_key},
@@ -131,7 +118,7 @@ async def create_command(
         ).first()
         if row:
             resp = {"id": str(row[0]), "idempotency_key": x_idempotency_key, "status": "ACCEPTED"}
-            await _audit(
+            await _write_audit(
                 "COMMAND_CREATE_ACCEPTED",
                 actor,
                 {"command_id": resp["id"], "idempotency_key": idem_key},
@@ -166,7 +153,7 @@ async def create_command(
             ).first()
             if row2:
                 resp = {"id": str(row2[0]), "idempotency_key": x_idempotency_key, "status": "ACCEPTED"}
-                await _audit(
+                await _write_audit(
                     "COMMAND_CREATE_ACCEPTED",
                     actor,
                     {"command_id": resp["id"], "idempotency_key": idem_key},
@@ -177,7 +164,7 @@ async def create_command(
             raise HTTPException(status_code=500, detail="db insert failed")
 
         resp = {"id": str(cmd_id), "idempotency_key": x_idempotency_key, "status": "ACCEPTED"}
-        await _audit(
+        await _write_audit(
             "COMMAND_CREATE_ACCEPTED",
             actor,
             {"command_id": resp["id"], "idempotency_key": idem_key},
