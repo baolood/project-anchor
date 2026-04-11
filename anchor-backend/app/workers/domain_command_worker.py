@@ -7,7 +7,8 @@ from typing import Any, Dict, Optional
 from sqlalchemy import text
 
 from app.workers import command_worker as cw
-from app.actions.registry import get_action, init_actions
+from app.actions.protocol import Action, ActionOutput
+from app.actions.registry import get_action, init_actions, register
 from app.actions.runner import DomainCommandRunner
 from app.domain_events import append_domain_event
 from app.policies.registry import get_policies, init_policies
@@ -18,6 +19,469 @@ from app.risk.policy_engine import RiskPolicyEngine
 # Ensure actions and policies are registered when worker module loads
 init_actions()
 init_policies()
+
+
+class PositionsPreviewAction(Action):
+    name = "POSITIONS_PREVIEW"
+
+    def run(self, command: Dict[str, Any]) -> ActionOutput:
+        payload = command.get("payload") or {}
+
+        positions = [
+            {"symbol": "BTCUSDT", "side": "LONG", "qty": 0.25, "entry_price": 15800.0},
+            {"symbol": "ETHUSDT", "side": "SHORT", "qty": 1.5, "entry_price": 3200.0},
+        ]
+
+        symbol = payload.get("symbol")
+        if symbol is not None:
+            if not isinstance(symbol, str) or symbol != "BTCUSDT":
+                return {"ok": False, "result": None, "error": {"code": "invalid_symbol"}}
+            positions = [item for item in positions if item["symbol"] == symbol]
+
+        side = payload.get("side")
+        if side is not None:
+            if side not in {"LONG", "SHORT"}:
+                return {"ok": False, "result": None, "error": {"code": "invalid_side"}}
+            positions = [item for item in positions if item["side"] == side]
+
+        raw_qty_min = payload.get("qty_min")
+        if raw_qty_min is not None:
+            if isinstance(raw_qty_min, bool):
+                return {"ok": False, "result": None, "error": {"code": "invalid_qty_min"}}
+            try:
+                qty_min = float(raw_qty_min)
+            except (TypeError, ValueError):
+                return {"ok": False, "result": None, "error": {"code": "invalid_qty_min"}}
+            if qty_min <= 0:
+                return {"ok": False, "result": None, "error": {"code": "invalid_qty_min"}}
+            positions = [item for item in positions if float(item["qty"]) >= qty_min]
+
+        raw_limit = payload.get("limit")
+        limit = None
+        if raw_limit is not None:
+            if isinstance(raw_limit, bool):
+                return {"ok": False, "result": None, "error": {"code": "invalid_limit"}}
+            try:
+                limit = int(raw_limit)
+            except (TypeError, ValueError):
+                return {"ok": False, "result": None, "error": {"code": "invalid_limit"}}
+            if limit <= 0:
+                return {"ok": False, "result": None, "error": {"code": "invalid_limit"}}
+
+        order = payload.get("order")
+        if order is not None and order not in {"asc", "desc"}:
+            return {"ok": False, "result": None, "error": {"code": "invalid_order"}}
+
+        order_by = payload.get("order_by")
+        if order_by is not None:
+            if order_by != "qty":
+                return {"ok": False, "result": None, "error": {"code": "invalid_order_by"}}
+            positions = sorted(positions, key=lambda item: float(item["qty"]), reverse=(order == "desc"))
+        elif order is not None:
+            return {"ok": False, "result": None, "error": {"code": "invalid_order"}}
+
+        if limit is not None:
+            positions = positions[:limit]
+
+        return {
+            "ok": True,
+            "result": {
+                "ok": True,
+                "type": "positions_preview",
+                "positions": positions,
+            },
+            "error": None,
+        }
+
+
+register(PositionsPreviewAction())
+
+
+class BalancePreviewAction(Action):
+    name = "BALANCE_PREVIEW"
+
+    @staticmethod
+    def _normalize_read_only_fetch_failure(message: str) -> ActionOutput:
+        error_detail = {
+            "code": "read_only_fetch_failed",
+            "message": message,
+            "normalized_failure": True,
+            "failed_stage": "executor/read_only_fetch",
+            "failure_scope": "external_dependency",
+        }
+        return {
+            "ok": False,
+            "result": {
+                "ok": False,
+                "type": "balance_preview",
+                "read_only": True,
+                "normalized_failure": True,
+                "failed_stage": "executor/read_only_fetch",
+                "failure_scope": "external_dependency",
+            },
+            "error": error_detail,
+        }
+
+    def run(self, command: Dict[str, Any]) -> ActionOutput:
+        payload = command.get("payload") or {}
+
+        read_only = payload.get("read_only", False)
+        if not isinstance(read_only, bool):
+            return {"ok": False, "result": None, "error": {"code": "invalid_read_only"}}
+
+        balances = [
+            {"asset": "USDT", "free": 1000.0},
+            {"asset": "BTC", "free": 0.5},
+        ]
+
+        raw_limit = payload.get("limit")
+        limit = None
+        if raw_limit is not None:
+            if isinstance(raw_limit, bool):
+                return {"ok": False, "result": None, "error": {"code": "invalid_limit"}}
+            try:
+                limit = int(raw_limit)
+            except (TypeError, ValueError):
+                return {"ok": False, "result": None, "error": {"code": "invalid_limit"}}
+            if limit <= 0:
+                return {"ok": False, "result": None, "error": {"code": "invalid_limit"}}
+
+        raw_offset = payload.get("offset")
+        offset = 0
+        if raw_offset is not None:
+            if isinstance(raw_offset, bool):
+                return {"ok": False, "result": None, "error": {"code": "invalid_offset"}}
+            try:
+                offset = int(raw_offset)
+            except (TypeError, ValueError):
+                return {"ok": False, "result": None, "error": {"code": "invalid_offset"}}
+            if offset < 0:
+                return {"ok": False, "result": None, "error": {"code": "invalid_offset"}}
+
+        sort = payload.get("sort")
+        if sort is not None and sort != "asset":
+            return {"ok": False, "result": None, "error": {"code": "invalid_sort"}}
+
+        view = payload.get("view")
+        if view is not None and view != "summary":
+            return {"ok": False, "result": None, "error": {"code": "invalid_view"}}
+
+        include_zero = payload.get("include_zero", False)
+        if not isinstance(include_zero, bool):
+            return {"ok": False, "result": None, "error": {"code": "invalid_include_zero"}}
+        if include_zero and not any(item["asset"] == "ETH" for item in balances):
+            balances = list(balances) + [{"asset": "ETH", "free": 0.0}]
+
+        asset = payload.get("asset")
+        if asset is not None:
+            if not isinstance(asset, str) or not cw.SYMBOL_RE.fullmatch(asset):
+                return {"ok": False, "result": None, "error": {"code": "invalid_asset"}}
+
+        if read_only:
+            try:
+                from app.executors.binance_futures_testnet import BinanceFuturesTestnetExecutor
+
+                ex = BinanceFuturesTestnetExecutor()
+                raw_balances = ex._request("GET", "/fapi/v2/balance", {})
+                if not isinstance(raw_balances, list):
+                    raise RuntimeError(f"BINANCE_BALANCE_SHAPE:{raw_balances}")
+
+                balances = []
+                for item in raw_balances:
+                    asset_name = str(item.get("asset") or "").strip().upper()
+                    if not asset_name:
+                        continue
+                    free_raw = item.get("availableBalance")
+                    if free_raw is None:
+                        free_raw = item.get("balance")
+                    balances.append({"asset": asset_name, "free": float(free_raw or 0.0)})
+            except Exception as e:
+                return self._normalize_read_only_fetch_failure(str(e))
+
+        if asset is not None:
+            balances = [item for item in balances if item["asset"] == asset]
+            if not balances:
+                return {"ok": False, "result": None, "error": {"code": "invalid_asset"}}
+
+        if sort == "asset":
+            balances = sorted(balances, key=lambda item: item["asset"])
+
+        if offset:
+            balances = balances[offset:]
+
+        if limit is not None:
+            balances = balances[:limit]
+
+        if view == "summary":
+            result = {
+                "ok": True,
+                "type": "balance_preview",
+                "view": "summary",
+                "balance_count": len(balances),
+                "total_free": sum(float(item["free"]) for item in balances),
+            }
+        else:
+            result = {
+                "ok": True,
+                "type": "balance_preview",
+                "balances": balances,
+            }
+        if read_only:
+            result["read_only"] = True
+
+        return {"ok": True, "result": result, "error": None}
+
+
+register(BalancePreviewAction())
+
+
+class QuotePreviewAction(Action):
+    name = "QUOTE"
+
+    def run(self, command: Dict[str, Any]) -> ActionOutput:
+        payload = command.get("payload") or {}
+
+        symbol = payload.get("symbol")
+        if not symbol:
+            return {"ok": False, "result": None, "error": {"code": "missing_symbol"}}
+        if not isinstance(symbol, str) or symbol != "BTCUSDT":
+            return {"ok": False, "result": None, "error": {"code": "invalid_symbol"}}
+
+        side = payload.get("side")
+        if side is not None and side not in {"BUY", "SELL"}:
+            return {"ok": False, "result": None, "error": {"code": "invalid_side"}}
+
+        raw_notional = payload.get("notional")
+        notional = None
+        if raw_notional is not None:
+            if isinstance(raw_notional, bool):
+                return {"ok": False, "result": None, "error": {"code": "invalid_notional"}}
+            try:
+                notional = float(raw_notional)
+            except (TypeError, ValueError):
+                return {"ok": False, "result": None, "error": {"code": "invalid_notional"}}
+            if notional <= 0:
+                return {"ok": False, "result": None, "error": {"code": "invalid_notional"}}
+
+        bid = 15995.0
+        ask = 16005.0
+        result = {
+            "ok": True,
+            "type": "quote",
+            "symbol": symbol,
+            "bid": bid,
+            "ask": ask,
+            "mid": (bid + ask) / 2.0,
+        }
+        if side is not None:
+            result["side"] = side
+        if notional is not None:
+            result["notional"] = notional
+
+        return {"ok": True, "result": result, "error": None}
+
+
+register(QuotePreviewAction())
+
+
+class PreviewAction(Action):
+    name = "PREVIEW"
+
+    def run(self, command: Dict[str, Any]) -> ActionOutput:
+        payload = command.get("payload") or {}
+
+        symbol = payload.get("symbol")
+        if not symbol:
+            return {"ok": False, "result": None, "error": {"code": "missing_symbol"}}
+        if not isinstance(symbol, str) or symbol != "BTCUSDT":
+            return {"ok": False, "result": None, "error": {"code": "invalid_symbol"}}
+
+        side = payload.get("side", "BUY")
+        if side not in {"BUY", "SELL"}:
+            return {"ok": False, "result": None, "error": {"code": "invalid_side"}}
+
+        raw_notional = payload.get("notional")
+        notional = None
+        if raw_notional is not None:
+            if isinstance(raw_notional, bool):
+                return {"ok": False, "result": None, "error": {"code": "invalid_notional"}}
+            try:
+                notional = float(raw_notional)
+            except (TypeError, ValueError):
+                return {"ok": False, "result": None, "error": {"code": "invalid_notional"}}
+            if notional <= 0:
+                return {"ok": False, "result": None, "error": {"code": "invalid_notional"}}
+
+        result = {
+            "ok": True,
+            "type": "preview",
+            "symbol": symbol,
+            "side": side,
+            "preview_price": 16000.0,
+        }
+        if notional is not None:
+            result["notional"] = notional
+
+        return {"ok": True, "result": result, "error": None}
+
+
+register(PreviewAction())
+
+
+class CancelAction(Action):
+    name = "CANCEL"
+
+    def run(self, command: Dict[str, Any]) -> ActionOutput:
+        payload = command.get("payload") or {}
+
+        command_id = payload.get("command_id") or payload.get("id")
+        if not command_id:
+            return {"ok": False, "result": None, "error": {"code": "missing_command_id"}}
+
+        reason = payload.get("reason")
+        if reason is not None:
+            if not isinstance(reason, str) or not reason.strip():
+                return {"ok": False, "result": None, "error": {"code": "invalid_reason"}}
+
+        result = {
+            "ok": True,
+            "type": "cancel",
+            "canceled_command_id": str(command_id),
+            "status": "canceled",
+            "ts": cw._now_ts(),
+        }
+        if reason is not None:
+            result["reason"] = reason
+
+        return {"ok": True, "result": result, "error": None}
+
+
+register(CancelAction())
+
+
+class NoopAction(Action):
+    name = "NOOP"
+
+    def run(self, command: Dict[str, Any]) -> ActionOutput:
+        payload = command.get("payload")
+        if payload is None:
+            payload = {}
+
+        mode = payload.get("mode")
+        if mode is not None:
+            if not isinstance(mode, str) or mode not in {"basic"}:
+                return {"ok": False, "result": None, "error": {"code": "invalid_mode"}}
+
+        return {
+            "ok": True,
+            "result": {
+                "ok": True,
+                "type": "noop",
+                "echo": payload,
+            },
+            "error": None,
+        }
+
+
+register(NoopAction())
+
+
+class ExecuteAction(Action):
+    name = "EXECUTE"
+
+    def run(self, command: Dict[str, Any]) -> ActionOutput:
+        payload = command.get("payload")
+        target_id = None
+        if isinstance(payload, dict):
+            target_id = payload.get("command_id") or payload.get("id")
+        if not target_id:
+            return {"ok": False, "result": None, "error": {"code": "missing_command_id"}}
+
+        return {
+            "ok": True,
+            "result": {
+                "ok": True,
+                "type": "execute",
+                "executed_command_id": str(target_id),
+                "ts": cw._now_ts(),
+            },
+            "error": None,
+        }
+
+
+register(ExecuteAction())
+
+
+class PingAction(Action):
+    name = "PING"
+
+    def run(self, command: Dict[str, Any]) -> ActionOutput:
+        payload = command.get("payload") or {}
+
+        mode = payload.get("mode")
+        if mode is not None:
+            if not isinstance(mode, str) or mode not in {"basic"}:
+                return {"ok": False, "result": None, "error": {"code": "invalid_mode"}}
+
+        return {
+            "ok": True,
+            "result": {
+                "ok": True,
+                "type": "ping",
+                "ts": cw._now_ts(),
+            },
+            "error": None,
+        }
+
+
+register(PingAction())
+
+
+class OrderAction(Action):
+    name = "ORDER"
+
+    def run(self, command: Dict[str, Any]) -> ActionOutput:
+        payload = command.get("payload") or {}
+
+        symbol = payload.get("symbol")
+        if not symbol:
+            return {"ok": False, "result": None, "error": {"code": "missing_symbol"}}
+        if not isinstance(symbol, str) or symbol != "BTCUSDT":
+            return {"ok": False, "result": None, "error": {"code": "invalid_symbol"}}
+
+        side = payload.get("side")
+        if side not in {"BUY", "SELL"}:
+            return {"ok": False, "result": None, "error": {"code": "invalid_side"}}
+
+        raw_notional = payload.get("notional")
+        if raw_notional is None:
+            return {"ok": False, "result": None, "error": {"code": "missing_notional"}}
+        if isinstance(raw_notional, bool):
+            return {"ok": False, "result": None, "error": {"code": "invalid_notional"}}
+        try:
+            notional = float(raw_notional)
+        except (TypeError, ValueError):
+            return {"ok": False, "result": None, "error": {"code": "invalid_notional"}}
+        if notional <= 0:
+            return {"ok": False, "result": None, "error": {"code": "invalid_notional"}}
+        if notional > 1000:
+            return {"ok": False, "result": None, "error": {"code": "notional_too_large"}}
+
+        return {
+            "ok": True,
+            "result": {
+                "ok": True,
+                "type": "order",
+                "symbol": symbol,
+                "side": side,
+                "notional": notional,
+                "ts": cw._now_ts(),
+            },
+            "error": None,
+        }
+
+
+register(OrderAction())
 
 
 def _ensure_json_object(x):
@@ -189,7 +653,8 @@ async def domain_worker_loop() -> None:
         decision = RiskPolicyEngine.evaluate_single_trade({"notional_usd": notional_usd})
         if not decision.allowed:
             return (False, decision.reason)
-        return await risk_guard(engine, cmd_type, p)
+        hard_limit_cmd_type = "QUOTE" if cmd_type == "ORDER" else cmd_type
+        return await risk_guard(engine, hard_limit_cmd_type, p)
 
     runner = DomainCommandRunner(
         _pick_one_domain,
@@ -323,4 +788,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-
