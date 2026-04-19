@@ -698,6 +698,32 @@ _STRATEGY_V1_FORBIDDEN_BYPASS_KEYS_LOWER = frozenset(k.lower() for k in _STRATEG
 _STRATEGY_V1_NESTED_FORBIDDEN_SCAN_MAX_DEPTH = int(os.getenv("STRATEGY_REQUEST_V1_NESTED_FORBIDDEN_MAX_DEPTH", "12"))
 
 
+def _strategy_v1_nested_bypass_forbidden_scan(obj: Any, depth: int) -> Optional[str]:
+    """Depth-limited nested scan for bypass/forbidden-style keys (values not inspected)."""
+    if depth > _STRATEGY_V1_NESTED_FORBIDDEN_SCAN_MAX_DEPTH:
+        return None
+    if isinstance(obj, dict):
+        for k in obj.keys():
+            if isinstance(k, str) and k.lower() in _STRATEGY_V1_FORBIDDEN_BYPASS_KEYS_LOWER:
+                return k
+        for v in obj.values():
+            hit = _strategy_v1_nested_bypass_forbidden_scan(v, depth + 1)
+            if hit is not None:
+                return hit
+        return None
+    if isinstance(obj, (list, tuple)):
+        for item in obj:
+            hit = _strategy_v1_nested_bypass_forbidden_scan(item, depth + 1)
+            if hit is not None:
+                return hit
+        return None
+    return None
+
+
+def _strategy_v1_command_payload_nested_bypass(command_payload: Dict[str, Any]) -> Optional[str]:
+    return _strategy_v1_nested_bypass_forbidden_scan(command_payload, 0)
+
+
 async def domain_worker_loop() -> None:
     print("domain worker started, polling commands_domain...", flush=True)
 
