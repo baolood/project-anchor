@@ -681,6 +681,23 @@ def _strategy_v1_top_payload_forbidden_field(command_payload: Dict[str, Any]) ->
     return None
 
 
+# codex-active-013: explicit high-risk *bypass / override* names (nested scan only uses this set).
+_STRATEGY_V1_FORBIDDEN_BYPASS_KEYS = frozenset(
+    {
+        "bypass_risk",
+        "skip_guard",
+        "force_execute",
+        "admin_override",
+        "bypass_guard",
+        "skip_risk",
+        "force_bypass",
+        "admin_bypass",
+    }
+)
+_STRATEGY_V1_FORBIDDEN_BYPASS_KEYS_LOWER = frozenset(k.lower() for k in _STRATEGY_V1_FORBIDDEN_BYPASS_KEYS)
+_STRATEGY_V1_NESTED_FORBIDDEN_SCAN_MAX_DEPTH = int(os.getenv("STRATEGY_REQUEST_V1_NESTED_FORBIDDEN_MAX_DEPTH", "12"))
+
+
 async def domain_worker_loop() -> None:
     print("domain worker started, polling commands_domain...", flush=True)
 
