@@ -736,6 +736,9 @@ async def domain_worker_loop() -> None:
         return (True, until, reason)
 
     async def _risk_guard(cmd_type: str, payload: dict):
+        top_hit = _strategy_v1_top_payload_forbidden_field(payload)
+        if top_hit:
+            return (False, f"TOP_LEVEL_FORBIDDEN_FIELD:{top_hit}")
         hit = _strategy_v1_command_payload_nested_bypass(payload)
         if hit:
             return (False, f"NESTED_BYPASS_FORBIDDEN:{hit}")
