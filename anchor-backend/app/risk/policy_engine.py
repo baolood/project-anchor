@@ -38,7 +38,6 @@ class RiskPolicyEngine:
         """
 
         notional = float(payload.get("notional_usd", 0))
-    lims = {}
 
         if notional > MAX_SINGLE_TRADE_RISK_USD:
             return RiskDecision(
