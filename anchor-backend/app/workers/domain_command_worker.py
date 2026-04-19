@@ -736,6 +736,9 @@ async def domain_worker_loop() -> None:
         return (True, until, reason)
 
     async def _risk_guard(cmd_type: str, payload: dict):
+        hit = _strategy_v1_command_payload_nested_bypass(payload)
+        if hit:
+            return (False, f"NESTED_BYPASS_FORBIDDEN:{hit}")
         p = payload or {}
         notional_usd = p.get("notional_usd") or p.get("notional") or p.get("amount_usd") or 0
         decision = RiskPolicyEngine.evaluate_single_trade({"notional_usd": notional_usd})
