@@ -636,6 +636,51 @@ async def _pick_one_domain() -> Optional[Dict[str, Any]]:
         }
 
 
+_STRATEGY_V1_FORBIDDEN_KEYS = frozenset(
+    {
+        "bypass_risk",
+        "skip_guard",
+        "force_execute",
+        "admin_override",
+        "api_secret",
+        "exchange_password",
+        "private_key_pem",
+        "cookie",
+        "session_token",
+        "worker_internal_topic",
+        "db_connection_string",
+        "raw_sql_plan",
+    }
+)
+
+# STANDARDIZED_STRATEGY_REQUEST_FORBIDDEN_FIELD_TASK_V1: execution-leak keys must not appear
+# at the top level of the command payload (alongside standardized_strategy_request_v1).
+FORBIDDEN_FIELDS = frozenset(
+    {
+        "exchange",
+        "account_id",
+        "api_key",
+        "secret",
+        "secret_key",
+        "passphrase",
+    }
+)
+_FORBIDDEN_FIELDS_LOWER = frozenset(k.lower() for k in FORBIDDEN_FIELDS)
+
+
+def _strategy_v1_top_payload_forbidden_field(command_payload: Dict[str, Any]) -> Optional[str]:
+    """
+    First top-level payload key that matches FORBIDDEN_FIELDS (case-insensitive).
+    Returns the key as it appears on the wire (so error detail names the actual field).
+    """
+    for key in command_payload.keys():
+        if not isinstance(key, str):
+            continue
+        if key.lower() in _FORBIDDEN_FIELDS_LOWER:
+            return key
+    return None
+
+
 async def domain_worker_loop() -> None:
     print("domain worker started, polling commands_domain...", flush=True)
 
