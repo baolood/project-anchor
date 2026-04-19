@@ -7,6 +7,14 @@
 
 ## 2. 当前已知范围
 
+### 2.0 domain_command_worker · strategy guard（已封板 · 事实记录）
+
+- **代码**：`anchor-backend/app/workers/domain_command_worker.py` 内 strategy guard 已按 5 刀落地（top-level forbidden、nested bypass 常量与深度、nested 扫描、`_risk_guard` 接入 top-level 与 nested 检查）。
+- **端到端**：已通过最小 HTTP 验收（`POST /domain-commands/quote`、扁平 quote payload）；证据与样例结论见 `docs/DOMAIN_COMMAND_WORKER_STRATEGY_GUARD_E2E_RESULT_V1.md`（top-level / nested / 正常不命中三类）。
+- **封板文档**：`docs/DOMAIN_COMMAND_WORKER_STRATEGY_GUARD_CLOSEOUT_V1.md`。
+- **边界**：当前明确 **不进入第六刀**，不在此线上追加实现。
+- **后续**：若再动 worker guard，须先定义 **新的唯一验收目标** 并单独任务文档；不得沿用本条已封板主线继续扩刀。
+
 ### 2.1 backend 已跟踪未提交修改
 
 - `anchor-backend/app/risk/policy_engine.py`
@@ -40,6 +48,7 @@
 
 ## 3. 当前唯一判断
 
+- `domain_command_worker` 的 strategy guard 主线已从「进行中」收口为 **已封板**（见 §2.0），不再默认视为待推进主线。
 - 父仓库仍存在 backend 草稿与实验目录草稿
 - 这些内容必须先作为“待分层候选”管理
 - 现阶段不得并行推进多个方向
