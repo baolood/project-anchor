@@ -1,0 +1,13 @@
+name: local-box-baseline
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run local box baseline check
+        run: ./scripts/check_local_box_baseline.sh
