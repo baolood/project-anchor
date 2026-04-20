@@ -1,6 +1,6 @@
 # LOCAL_BOX_BASELINE_WORKFLOW_RUN_EVIDENCE_V1
 
-> **留痕说明**：§1–§6 冻结 **首次** run（失败，见下文）；§9 冻结**成功** run（含 `local_box` 入树后及后续文档推送）。**不得**用本地手跑替代远程 run。**失败 run：** **`24642983527`**；**成功 run（入树）：** **`24643041767`**；**成功 run（证据文档推送）：** **`24643098559`**（`2026-04-20`）。
+> **留痕说明**：§1–§6 冻结 **首次** run（失败，见下文）；§9 冻结**成功** run（含 `local_box` 入树后及后续文档推送）。**不得**用本地手跑替代远程 run。**失败 run：** **`24642983527`**；**成功 run（入树）：** **`24643041767`**；**成功 run（证据文档）：** **`24643098559`**；**成功 run（`main` merge 后）：** **`24643589825`**（`2026-04-20`）。
 
 ## 1. 本次运行对应的分支名
 
@@ -61,3 +61,11 @@
 - **步骤「Run local box baseline check」stdout 摘引（可逐字对照 Actions 控制台）：**
   - `Run ./scripts/check_local_box_baseline.sh`
   - `LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present`
+
+### 9.2 合并至 `main` 后的运行（网页 Run #6）
+
+- **分支：** **`main`**（截图：*Triggered via push … to the `main` branch*）。
+- **提交：** **`779c2d4`**（`docs: add PASS log line to local box workflow run evidence`）。
+- **Workflow run：** **[`24643589825`](https://github.com/baolood/project-anchor/actions/runs/24643589825)** — GitHub UI **run_number**：**`6`** — `conclusion`：**`success`**。
+- **并列参考（同一 SHA 在 feature 上再跑一次）：** run **`24643586063`**，`head_branch`：`feature/local-box-baseline-script-v1`，**run_number**：**`5`**，`conclusion`：**`success`**。
+- **stdout** 与同脚本 PASS 语义一致（见 §9.1 两行摘引）。
