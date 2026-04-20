@@ -1,6 +1,6 @@
 # LOCAL_BOX_BASELINE_WORKFLOW_RUN_EVIDENCE_V1
 
-> **留痕说明**：§1–§6 冻结 **首次** run（失败，见下文）；§9 冻结 **`local_box/` 入库后复检**（成功）。均含公开 API 可复核字段。**不得**用本地手跑替代远程 run。**首次：** run **`24642983527`**；**复检：** run **`24643041767`**（`2026-04-20`）。
+> **留痕说明**：§1–§6 冻结 **首次** run（失败，见下文）；§9 冻结**成功** run（含 `local_box` 入树后及后续文档推送）。**不得**用本地手跑替代远程 run。**失败 run：** **`24642983527`**；**成功 run（入树）：** **`24643041767`**；**成功 run（证据文档推送）：** **`24643098559`**（`2026-04-20`）。
 
 ## 1. 本次运行对应的分支名
 
@@ -54,3 +54,10 @@
 **API：** `GET /repos/baolood/project-anchor/actions/runs/24643041767`、`GET .../actions/runs/24643041767/jobs`。控制台完整日志见 run 页面展开步骤。
 
 **脚本语义：** 检出含 `local_box/` 所需路径后，baseline 脚本 **PASS**（stdout 含 `PASS`，退出码 `0`）。
+
+### 9.1 成功 run 补记（`04a9847`，与网页 Run #4 一致）
+
+- **Workflow run：** [`24643098559`](https://github.com/baolood/project-anchor/actions/runs/24643098559) — `head_sha` **`04a9847`**（`docs: extend local box workflow run evidence with passing re-run`）— `conclusion`：**`success`**。
+- **步骤「Run local box baseline check」stdout 摘引（可逐字对照 Actions 控制台）：**
+  - `Run ./scripts/check_local_box_baseline.sh`
+  - `LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present`
