@@ -1,14 +1,14 @@
 # LOCAL_BOX_BASELINE_WORKFLOW_RUN_EVIDENCE_V1
 
-> **留痕说明**：§1–§6 须在 **GitHub 上完成至少一次** `local-box-baseline` workflow 实际运行后，由负责人填入 **真实** 分支、触发、结论与日志摘引；**不得**用本地手跑替代远程 run 作为本证据的冻结值（本地手跑仅作开发自测）。
+> **留痕说明**：下列 §1–§6 来自 **GitHub** 上已 **完成** 的一次 `local-box-baseline` workflow 运行（含公开 API 可复核字段）；**不得**用本地手跑替代远程 run 作为冻结证据。首次冻结：**run `24642983527`**（`2026-04-20`）。
 
 ## 1. 本次运行对应的分支名
 
-- **（待补全）**
+- **`feature/local-box-baseline-script-v1`**
 
 ## 2. 本次运行触发方式
 
-- **（待补全：`push` 或 `pull_request`）**
+- **`push`**
 
 ## 3. GitHub Actions workflow 名称
 
@@ -20,11 +20,14 @@
 
 ## 5. 本次实际结果
 
-- **（待补全：`success` 或 `failure`）**
+- **`failure`**（与 GitHub Actions 对该 workflow run 的 `conclusion` 一致）
 
 ## 6. 日志关键证据（摘引）
 
-- **（待补全：含 `LOCAL_BOX_BASELINE_CHECK PASS`；或含 `FAIL` 与 `STOP`）**
+- **Workflow run（可点开核对）：** [`24642983527`](https://github.com/baolood/project-anchor/actions/runs/24642983527) — `display_title`: `ci: add local-box-baseline workflow`；`head_sha`: `8792a9f7e707c43d472178f2c3b7677b8f0dc6d7`。
+- **API 复核（无需登录）：** `GET /repos/baolood/project-anchor/actions/runs/24642983527` → `conclusion`: `failure`，`event`: `push`，`head_branch`: `feature/local-box-baseline-script-v1`。
+- **步骤级复核：** job id `72050204347` — 步骤 **`Run local box baseline check`** 结论 **`failure`**（`GET .../actions/jobs/72050204347`）。完整 stderr/stdout 正文请在上述 run 页展开该步骤查看（匿名请求无法下载 logs zip）。
+- **根因说明（与脚本语义一致，非日志正文摘抄）：** 当前仓库 **`local_box/` 目录未纳入 git 跟踪**，CI 检出后不存在脚本要求的对象，故脚本按设计输出 **FAIL + STOP** 类结果并使 job 失败。
 
 ## 7. 本次结论（口径固定）
 
