@@ -1,6 +1,6 @@
 # LOCAL_BOX_BASELINE_WORKFLOW_RUN_EVIDENCE_V1
 
-> **留痕说明**：§1–§6 冻结 **首次** run（失败，见下文）；§9 冻结**成功** run（含 `local_box` 入树后及后续文档推送）。**不得**用本地手跑替代远程 run。**失败 run：** **`24642983527`**；**成功 run（入树）：** **`24643041767`**；**成功 run（证据文档）：** **`24643098559`**；**成功 run（`main` merge 后）：** **`24643589825`**（`2026-04-20`）。
+> **留痕说明**：§1–§6 冻结 **首次** run（失败，见下文）；§9 冻结**成功** run（含 `local_box` 入树后及后续文档推送）。**不得**用本地手跑替代远程 run。**失败 run：** **`24642983527`**；**成功 run（入树）：** **`24643041767`**；**成功 run（证据文档）：** **`24643098559`**；**成功 run（`main` merge 后）：** **`24643589825`**；**成功 run（`main` 文档推送 `9c6805a`，Run #7）：** **`24643718594`**（`2026-04-20`）。
 
 ## 1. 本次运行对应的分支名
 
@@ -68,4 +68,11 @@
 - **提交：** **`779c2d4`**（`docs: add PASS log line to local box workflow run evidence`）。
 - **Workflow run：** **[`24643589825`](https://github.com/baolood/project-anchor/actions/runs/24643589825)** — GitHub UI **run_number**：**`6`** — `conclusion`：**`success`**。
 - **并列参考（同一 SHA 在 feature 上再跑一次）：** run **`24643586063`**，`head_branch`：`feature/local-box-baseline-script-v1`，**run_number**：**`5`**，`conclusion`：**`success`**。
+- **stdout** 与同脚本 PASS 语义一致（见 §9.1 两行摘引）。
+
+### 9.3 `main` 上文档推送后的运行（网页 Run #7）
+
+- **分支：** **`main`**。
+- **提交：** **`9c6805a`**（`docs: record local-box-baseline run on main after merge`）。
+- **Workflow run：** **[`24643718594`](https://github.com/baolood/project-anchor/actions/runs/24643718594)** — GitHub UI **run_number**：**`7`** — `conclusion`：**`success`**（与 `GET /repos/baolood/project-anchor/actions/runs/24643718594` 一致）。
 - **stdout** 与同脚本 PASS 语义一致（见 §9.1 两行摘引）。
