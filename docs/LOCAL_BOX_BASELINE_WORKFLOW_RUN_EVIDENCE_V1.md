@@ -1,6 +1,6 @@
 # LOCAL_BOX_BASELINE_WORKFLOW_RUN_EVIDENCE_V1
 
-> **留痕说明**：下列 §1–§6 来自 **GitHub** 上已 **完成** 的一次 `local-box-baseline` workflow 运行（含公开 API 可复核字段）；**不得**用本地手跑替代远程 run 作为冻结证据。首次冻结：**run `24642983527`**（`2026-04-20`）。
+> **留痕说明**：§1–§6 冻结 **首次** run（失败，见下文）；§9 冻结 **`local_box/` 入库后复检**（成功）。均含公开 API 可复核字段。**不得**用本地手跑替代远程 run。**首次：** run **`24642983527`**；**复检：** run **`24643041767`**（`2026-04-20`）。
 
 ## 1. 本次运行对应的分支名
 
@@ -37,3 +37,20 @@
 ## 8. 回滚方法
 
 - 删除 **`docs/LOCAL_BOX_BASELINE_WORKFLOW_RUN_EVIDENCE_V1.md`** 即可；不影响 workflow 与脚本。
+
+## 9. 复检运行证据（`local_box` 已跟踪后）
+
+以下为 **第二次** push 触发的同一 workflow；**HEAD** **`ddd718c`**（`chore: track local_box snapshot for baseline check`）。
+
+| 字段 | 值 |
+|------|-----|
+| 分支 | **`feature/local-box-baseline-script-v1`** |
+| 触发 | **`push`** |
+| Workflow run | **[`24643041767`](https://github.com/baolood/project-anchor/actions/runs/24643041767)** |
+| **`conclusion`**（API） | **`success`** |
+| Job id | **`72050363889`** |
+| 步骤 **`Run local box baseline check`** | **`success`** |
+
+**API：** `GET /repos/baolood/project-anchor/actions/runs/24643041767`、`GET .../actions/runs/24643041767/jobs`。控制台完整日志见 run 页面展开步骤。
+
+**脚本语义：** 检出含 `local_box/` 所需路径后，baseline 脚本 **PASS**（stdout 含 `PASS`，退出码 `0`）。
