@@ -75,3 +75,18 @@
 
 - 删除本文件 **`docs/CLOUD_PENDING_DECISION_RECORD_V1.md`** 即可撤回本条「决策口径」的文字层冻结。
 - 回滚 **不影响**：`cloud/` 草稿、`local_box`、`shared`、`execution_service`、`risk_engine`、`anchor-backend`、`anchor-console` 子模块等业务树内容——它们保持原物理状态与其它任务节奏。
+
+---
+
+## 9. 归档状态更新
+
+- **`cloud/` 草稿源文件**已 **归档并入库（父仓库跟踪）**，不再散落在原 **`cloud/`** 未跟踪目录下。
+- **新路径（跟踪对象）：**
+  - **`docs/archive/cloud_draft/strategy_api/server.py`**
+  - **`docs/archive/cloud_draft/strategy_store/versions.py`**
+- 原 **`cloud/`** 目录：不再作为 **`git status`** 下的 **未跟踪 pending 顶层目录**出现（与工作区现状一致）。
+- **归档语义**：上述文件仍属 **历史实验草稿**留痕；**不代表**运行时栈已收口为可运维 **正式服务**。
+- **shared/ 仍为 pending**：归档代码仍含 **`from shared.schemas …`** —— **不宣称可运行**：**不宣称 **`cloud`** 归档片段在本仓库状态下「可单机跑通」**，亦 **不宣称**已解除对 **`shared.schemas`** 的依赖。
+- **升级口径**：**归档入库 ≠ **`cloud`** 已升格为正式服务**；须 **单独契约、部署叙事与验收**，并 **新立项**后再宣称。
+- **后续**：若要恢复源码布局或与 **`local_box` HTTP** 联调升格，须先 **唯一立项**。
+- **禁止**：借本条顺带处理 **`shared/`**、**`execution_service/`**、**`risk_engine/`**、**`anchor-backend/`** pending 簇。（簇级隔离。）
