@@ -1,9 +1,15 @@
 # LOCAL_BOX_BASELINE_CHECK_ACCEPTANCE_V1
 
+## 0. 状态快照（与正文的关系）
+
+- 本文 **立项时** 用于把「baseline check 写什么算验收通过」写成唯一门槛；下文 §1–§9 保留为 **当时** 的收口语义。
+- **当前事实：** baseline check 已在仓库内以 **脚本 + CI** 兑现；运行与维护口径见 **`docs/LOCAL_BOX_BASELINE_SCRIPT_STATUS_V1.md`**、**`docs/LOCAL_BOX_BASELINE_WORKFLOW_RUN_EVIDENCE_V1.md`**；脚本与路径以 **`docs/LOCAL_BOX_BASELINE_CHECK_SCRIPT_SPEC_V1.md`** 与 **`scripts/check_local_box_baseline.sh`** 为准。若字句与实现不一致，以上述实现与 STATUS 为准。
+- **「下一步」** 仍以 **`docs/LOCAL_BOX_NEXT_SINGLE_ACCEPTANCE_TARGET_V1.md`**（当前版）为准：**扩面须新立唯一目标**，不得默认继续本条主线。
+
 ## 1. 结论
 
-- `local_box` 当前下一步只允许先定义 baseline check 的单一验收标准。
-- 在本文件获批并落库前，不进入 `local_box/` 实现。
+- **`（历史 · 立项期）`** `local_box` 当时下一步只允许先定义 baseline check 的单一验收标准。
+- **`（历史 · 立项期）`** 在本文件获批并落库前，不进入 `local_box/` 实现。
 
 ## 2. 目标对象
 
@@ -66,8 +72,8 @@
 
 ## 8. 当前明确不做什么
 
-- 不写 `local_box` 代码
-- 不补 baseline check 实现
+- **`（历史 · 立项期）`** 不写 `local_box` 代码（**之后**已按单独任务入库最小 baseline 路径；见 §0）。
+- **`（历史 · 立项期）`** 不补 baseline check 实现（**之后**已由 `scripts/check_local_box_baseline.sh` 与 CI 承担；见 §0）。
 - 不改 compose / infra
 - 不联动其它模块
 

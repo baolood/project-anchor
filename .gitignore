@@ -6,3 +6,6 @@ tmp/
 tmp/*.out
 
 _archive/
+
+# Local dev / accidental workspace DB (see docs/PARENT_WORKTREE_PENDING_LAYER_MAP_V1.md §2.4)
+anchor.db
