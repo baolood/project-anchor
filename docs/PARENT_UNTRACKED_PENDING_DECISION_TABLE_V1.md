@@ -81,3 +81,46 @@
 
 - 删除本文件 **`docs/PARENT_UNTRACKED_PENDING_DECISION_TABLE_V1.md`** 即可撤回「决策表本轮」的记录层变更。
 - 回滚 **不影响**：已入库代码、`scripts`、`local_box` baseline、`anchor-console` 子模块、GitHub Actions workflow、§2 所列未跟踪文件的磁盘内容——它们保持原状，仅撤回本表所提供的冻结口径文档。
+
+---
+
+## 8. 第二阶段覆盖索引
+
+**与 §2 的关系：** §2 为立项当时 **13 条路径**快照（含当时在仓库根的 **3** 个 `test_*.py`）。本节记录 **已将根目录 `test_*.py` 迁入 `docs/archive/manual_smoke/` 并入库** 之后，**`git ls-files --others --exclude-standard`** 下 **仍存在的未跟踪源代码/草稿** 与 **已落库 `PENDING_DECISION_RECORD_V1`** 的 **索引对齐**事实。
+
+### 8.1 当前剩余未跟踪文件（10 个）
+
+与 **`git ls-files --others --exclude-standard`** 口径一致（**2026-04 复核**）：
+
+1. `anchor-backend/docs/DOMAIN_COMMAND_VALIDATION_DEV_USAGE_V1.md`
+2. `anchor-backend/scripts/insert_order_command.py`
+3. `anchor-backend/worker/WORKER_BOUNDARY_RULES.md`
+4. `cloud/strategy_api/server.py`
+5. `cloud/strategy_store/versions.py`
+6. `execution_service/executor.py`
+7. `execution_service/server.py`
+8. `execution_service/verifier.py`
+9. `risk_engine/client.py`
+10. `shared/schemas.py`
+
+### 8.2 五簇与五份决策记录（5 个簇；均已落库）
+
+| 簇 | 对应 `PENDING_DECISION_RECORD_V1`（已跟踪） |
+|----|---------------------------------------------|
+| **`anchor-backend/`** | `docs/ANCHOR_BACKEND_PENDING_DECISION_RECORD_V1.md` |
+| **`cloud/`** | `docs/CLOUD_PENDING_DECISION_RECORD_V1.md` |
+| **`execution_service/`** | `docs/EXECUTION_SERVICE_PENDING_DECISION_RECORD_V1.md` |
+| **`risk_engine/`** | `docs/RISK_ENGINE_PENDING_DECISION_RECORD_V1.md` |
+| **`shared/`** | `docs/SHARED_SCHEMAS_PENDING_DECISION_RECORD_V1.md` |
+
+### 8.3 归档与覆盖结论
+
+- 根目录三文件 **`test_ack_semantics.py`**、**`test_cloud_publish.py`**、**`test_execution_service.py`** 已迁入 **`docs/archive/manual_smoke/`** 并在父仓 **跟踪**（见提交历史 **`docs: archive manual smoke test drafts`** 一类记录）；此三文件 **不再**出现在 **`git ls-files --others --exclude-standard`** 中。
+- **当前**在 **`--others --exclude-standard`** 语义下，**不存在**「**有未跟踪源文件簇却无任何 `PENDING_DECISION_RECORD_V1` 覆盖**」的额外缺口——**5 簇 ↔ 5 份记录**一一对应。
+
+### 8.4 下一阶段动作边界（封口径）
+
+- **每次只选一个簇**单独立项：只做 **归档 / 删除 / 升格入库** 之一为主路线（须 **验收 + 回滚**）。
+- **禁止 **`git add .`**。**
+- **禁止**在同一 commit **跨簇混提** pending 草稿。
+- **禁止**在未单列任务授权下对实验树执行 **`git clean`**。（与 §4 一脉相承，本节为第二阶段收口后的显式复述。）
