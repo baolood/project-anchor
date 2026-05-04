@@ -40,7 +40,7 @@
 - `anchor-backend/docs/`
 - `anchor-backend/scripts/insert_order_command.py`
 - `anchor-backend/worker/WORKER_BOUNDARY_RULES.md`
-- `anchor.db`
+- `anchor.db`（父仓库 `.gitignore` 已忽略，本地生成物不入库）
 - `test_ack_semantics.py`
 - `test_cloud_publish.py`
 - `test_execution_service.py`
