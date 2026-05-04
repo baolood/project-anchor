@@ -13,7 +13,7 @@
 - Workflow：**`.github/workflows/local-box-baseline.yml`**（workflow 名：`local-box-baseline`）。
 - **`main`** 已与 feature 工作合流；推送 / PR 会触发该 workflow。
 - 详见运行与日志留痕：**`docs/LOCAL_BOX_BASELINE_WORKFLOW_RUN_EVIDENCE_V1.md`**（含首次失败、`local_box` 入库后成功、merge 至 **`main`** 后的运行）。
-- **已回填 API 的运行（节选）：** **`9c6805a`** → Run **#7** / [`24643718594`](https://github.com/baolood/project-anchor/actions/runs/24643718594)；**`2f7be15`** → Run **#13** / [`24644103202`](https://github.com/baolood/project-anchor/actions/runs/24644103202)（见 RUN_EVIDENCE §9.3–§9.4）。其后 **`main`** 若有新推送会再产生 run，以 Actions 列表或 API 为准。
+- **已回填 API 的运行（节选）：** **`9c6805a`** → Run **#7** / [`24643718594`](https://github.com/baolood/project-anchor/actions/runs/24643718594)；**`2f7be15`** → Run **#13** / [`24644103202`](https://github.com/baolood/project-anchor/actions/runs/24644103202)；**`7758b1f`** → Run **#14** / [`24644350931`](https://github.com/baolood/project-anchor/actions/runs/24644350931)（见 RUN_EVIDENCE §9.3–§9.5）。其后 **`main`** 若有新推送会再产生 run，以 Actions 列表或 API 为准。
 
 ## 4. 验收语义（脚本）
 
