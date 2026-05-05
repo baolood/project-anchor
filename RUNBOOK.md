@@ -66,7 +66,14 @@ For the **parent repository** `local_box` audit stack (not Docker `anchor-backen
    python3 -c "import local_box.runner; print('runner import ok')"
    ```
 
-4. **CI:** workflow **`.github/workflows/local-box-baseline.yml`** runs `pip install -r requirements.txt`, `./scripts/check_local_box_baseline.sh`, then SQLite **`init_db()`** smoke, then **`import local_box.runner`** (covers **`shared`**, **`risk_engine.client`**, **`local_box.gate.ticket_signature`**).
+4. **CI:** workflow **`.github/workflows/local-box-baseline.yml`** runs `pip install -r requirements.txt`, `./scripts/check_local_box_baseline.sh`, then SQLite **`init_db()`** smoke, **`import local_box.runner`**, and **`import local_box.control.server`** (Flask app). Concurrent runs on the same ref are cancelled via workflow **`concurrency`**.
+
+5. **Local parity with CI** (from repo root, after `pip install -r requirements.txt`):
+
+   ```bash
+   export PYTHONPATH=.
+   python3 -c "import local_box.control.server as c; print('control', c.app.name)"
+   ```
 
 ## Verify
 
