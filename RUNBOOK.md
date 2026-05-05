@@ -6,6 +6,7 @@ For launch planning and owner tracking, use **`docs/GO_LIVE_CHECKLIST.md`** as t
 Daily progress snapshot:
 ```bash
 ./scripts/go_live_status_report.sh
+./scripts/go_live_status_report.sh --out /tmp/go_live_daily_status.out
 ```
 
 ## Daily Mode (default)
