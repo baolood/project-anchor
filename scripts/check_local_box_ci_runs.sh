@@ -9,6 +9,7 @@ CANCELLED_ONLY=0
 LATEST_ONLY=0
 SUMMARY=0
 REQUIRE_LATEST_SUCCESS=0
+QUIET=0
 
 while (($# > 0)); do
   case "$1" in
@@ -40,9 +41,13 @@ while (($# > 0)); do
       REQUIRE_LATEST_SUCCESS=1
       shift
       ;;
+    --quiet)
+      QUIET=1
+      shift
+      ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--latest-only] [--summary] [--require-latest-success]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--latest-only] [--summary] [--require-latest-success] [--quiet]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
@@ -52,6 +57,7 @@ Options:
   --latest-only     Keep only newest run per branch from the fetched set
   --summary         Print status/conclusion counts for filtered rows
   --require-latest-success  Exit non-zero unless latest run on --branch is successful
+  --quiet           Suppress table/tips; useful with --require-latest-success in scripts
 EOF
       exit 0
       ;;
@@ -80,29 +86,32 @@ if ! gh auth status >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "== Recent runs: ${WORKFLOW_FILE} (limit=${LIMIT}) =="
+if [[ "$QUIET" -eq 0 ]]; then
+  echo "== Recent runs: ${WORKFLOW_FILE} (limit=${LIMIT}) =="
+fi
 rows="$(gh run list --workflow "${WORKFLOW_FILE}" --limit "${LIMIT}" \
   --json databaseId,headBranch,status,conclusion,event,displayTitle,createdAt,updatedAt \
   --jq '.[] | "\(.databaseId)\t\(.headBranch)\t\(.status)\t\(.conclusion // "n/a")\t\(.event)\t\(.displayTitle)"')"
 
 output="$rows"
 if [[ -n "${BRANCH}" ]]; then
-  echo "(filtered branch=${BRANCH})"
+  [[ "$QUIET" -eq 0 ]] && echo "(filtered branch=${BRANCH})"
   output="$(printf '%s\n' "$output" | awk -F '\t' -v b="$BRANCH" '$2==b {print}')"
 fi
 if [[ "$CANCELLED_ONLY" -eq 1 ]]; then
-  echo "(filtered cancelled-only)"
+  [[ "$QUIET" -eq 0 ]] && echo "(filtered cancelled-only)"
   output="$(printf '%s\n' "$output" | awk -F '\t' '$4=="cancelled" {print}')"
 fi
 if [[ "$LATEST_ONLY" -eq 1 ]]; then
-  echo "(filtered latest-only per branch)"
+  [[ "$QUIET" -eq 0 ]] && echo "(filtered latest-only per branch)"
   output="$(printf '%s\n' "$output" | awk -F '\t' '!seen[$2]++')"
 fi
-printf '%s\n' "$output"
+if [[ "$QUIET" -eq 0 ]]; then
+  printf '%s\n' "$output"
+fi
 
 if [[ "$SUMMARY" -eq 1 ]]; then
-  echo
-  echo "== Summary =="
+  [[ "$QUIET" -eq 0 ]] && echo && echo "== Summary =="
   printf '%s\n' "$output" | awk -F '\t' '
     NF>=4 {
       status[$3]++
@@ -128,9 +137,11 @@ if [[ "$REQUIRE_LATEST_SUCCESS" -eq 1 ]]; then
     echo "CI_RUNS_CHECK FAIL: latest run for branch=${BRANCH} is status=${latest_status}, conclusion=${latest_conclusion}" >&2
     exit 1
   fi
-  echo "CI_RUNS_CHECK PASS: latest run for branch=${BRANCH} is successful"
+  [[ "$QUIET" -eq 0 ]] && echo "CI_RUNS_CHECK PASS: latest run for branch=${BRANCH} is successful"
 fi
 
-echo
-echo "Tip: under concurrency cancel-in-progress, older runs on the same branch may show cancelled."
-echo "Use the newest run on the branch/ref as source of truth."
+if [[ "$QUIET" -eq 0 ]]; then
+  echo
+  echo "Tip: under concurrency cancel-in-progress, older runs on the same branch may show cancelled."
+  echo "Use the newest run on the branch/ref as source of truth."
+fi
