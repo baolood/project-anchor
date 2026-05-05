@@ -6,6 +6,7 @@ WORKFLOW_FILE="${WORKFLOW_FILE:-local-box-baseline.yml}"
 LIMIT="${LIMIT:-10}"
 BRANCH="${BRANCH:-}"
 CANCELLED_ONLY=0
+LATEST_ONLY=0
 
 while (($# > 0)); do
   case "$1" in
@@ -25,15 +26,20 @@ while (($# > 0)); do
       CANCELLED_ONLY=1
       shift
       ;;
+    --latest-only)
+      LATEST_ONLY=1
+      shift
+      ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--latest-only]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
   --limit     Number of runs to fetch (default: 10)
   --branch    Filter output to one branch/ref name
   --cancelled-only  Show only cancelled runs (useful for concurrency checks)
+  --latest-only     Keep only newest run per branch from the fetched set
 EOF
       exit 0
       ;;
@@ -70,6 +76,10 @@ fi
 if [[ "$CANCELLED_ONLY" -eq 1 ]]; then
   echo "(filtered cancelled-only)"
   output="$(printf '%s\n' "$output" | awk -F '\t' '$4=="cancelled" {print}')"
+fi
+if [[ "$LATEST_ONLY" -eq 1 ]]; then
+  echo "(filtered latest-only per branch)"
+  output="$(printf '%s\n' "$output" | awk -F '\t' '!seen[$2]++')"
 fi
 printf '%s\n' "$output"
 

@@ -77,6 +77,7 @@ For the **parent repository** `local_box` audit stack (not Docker `anchor-backen
      ./scripts/check_local_box_ci_runs.sh --branch main --limit 20
      ./scripts/check_local_box_ci_runs.sh --workflow local-box-baseline.yml --branch <your-branch>
      ./scripts/check_local_box_ci_runs.sh --branch <your-branch> --cancelled-only
+     ./scripts/check_local_box_ci_runs.sh --latest-only
      ```
 
 5. **Local parity with CI** (from repo root, after `pip install -r requirements.txt`):
