@@ -25,7 +25,7 @@
 
 ## 4. 依赖关系（消费方快照）
 
-- **`docs/archive/cloud_draft/…`**、**`docs/archive/execution_service_draft/…`**、**`docs/archive/risk_engine_draft/…`**、**`docs/archive/manual_smoke/test_*.py`**、**`local_box/`** 等：**可能** **`from shared.schemas import …`**（以各路径 **实现与 PYTHONPATH** 为准）。
+- **`docs/archive/cloud_draft/…`**、**`docs/archive/execution_service_draft/…`**、**`docs/archive/manual_smoke/test_*.py`**、**`local_box/`**、**`risk_engine/`**（跟踪 **`client.py`**）等：**可能** **`from shared.schemas import …`**（以各路径 **实现与 PYTHONPATH** 为准）。
 - **归档段**对 **`shared`** 的依赖 **不宣称**「归档树在本仓库默认布局下可一键跑通」。
 
 ---
