@@ -10,5 +10,5 @@ ts=$(date +%s000)
 query="timestamp=$ts"
 sig=$(echo -n "$query" | openssl dgst -sha256 -hmac "$API_SECRET" | sed 's/^.* //')
 
-curl -s -H "X-MBX-APIKEY: $API_KEY" "$BASE/fapi/v2/positionRisk?$query&signature=$sig" \
+curl -sS --connect-timeout 5 --max-time 20 -H "X-MBX-APIKEY: $API_KEY" "$BASE/fapi/v2/positionRisk?$query&signature=$sig" \
 | jq -c '.[] | select(.symbol=="BTCUSDT")'

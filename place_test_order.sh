@@ -17,7 +17,7 @@ signature=$(echo -n "$query" | openssl dgst -sha256 -hmac "$API_SECRET" | sed 's
 
 echo ">>> Placing test market order..."
 
-curl -s \
+curl -sS --connect-timeout 5 --max-time 20 \
   -H "X-MBX-APIKEY: $API_KEY" \
   -X POST \
   "$BASE/fapi/v1/order?$query&signature=$signature" | jq .

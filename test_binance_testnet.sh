@@ -15,6 +15,6 @@ signature=$(echo -n "$query" | openssl dgst -sha256 -hmac "$API_SECRET" | sed 's
 
 echo ">>> Testing account endpoint..."
 
-curl -s \
+curl -sS --connect-timeout 5 --max-time 20 \
   -H "X-MBX-APIKEY: $API_KEY" \
   "$BASE/fapi/v2/account?$query&signature=$signature" | jq .

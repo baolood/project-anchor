@@ -14,7 +14,7 @@ QTY="0.002"
 ts=$(date +%s000)
 q1="symbol=$SYMBOL&timestamp=$ts"
 s1=$(echo -n "$q1" | openssl dgst -sha256 -hmac "$API_SECRET" | sed 's/^.* //')
-mark=$(curl -s -H "X-MBX-APIKEY: $API_KEY" "$BASE/fapi/v1/premiumIndex?$q1&signature=$s1" | jq -r '.markPrice')
+mark=$(curl -sS --connect-timeout 5 --max-time 20 -H "X-MBX-APIKEY: $API_KEY" "$BASE/fapi/v1/premiumIndex?$q1&signature=$s1" | jq -r '.markPrice')
 price=$(python3 - <<PY
 m=float("$mark")
 # 买单：加 0.5%（足够"穿过"卖一）
@@ -27,4 +27,4 @@ query="symbol=$SYMBOL&side=$SIDE&type=$TYPE&timeInForce=$TIF&quantity=$QTY&price
 sig=$(echo -n "$query" | openssl dgst -sha256 -hmac "$API_SECRET" | sed 's/^.* //')
 
 echo "markPrice=$mark  price=$price  qty=$QTY"
-curl -s -H "X-MBX-APIKEY: $API_KEY" -X POST "$BASE/fapi/v1/order?$query&signature=$sig" | jq .
+curl -sS --connect-timeout 5 --max-time 20 -H "X-MBX-APIKEY: $API_KEY" -X POST "$BASE/fapi/v1/order?$query&signature=$sig" | jq .
