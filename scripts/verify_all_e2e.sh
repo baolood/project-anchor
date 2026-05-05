@@ -39,7 +39,7 @@ echo "verify_all_e2e: Step 1 — run_fix_restart_verify.sh"
 echo "=============================="
 if ! bash "$ROOT/scripts/run_fix_restart_verify.sh"; then
   if ! lsof -nP -iTCP:3000 -sTCP:LISTEN 2>/dev/null | grep -q .; then
-    echo "HINT: run_fix_restart_verify failed; ensure Next is running on 3000 (e.g. cd $ROOT/anchor-console && npm run dev), then re-run verify_all_e2e.sh"
+    echo "HINT: run_fix_restart_verify failed; ensure Next is running on 3000 (e.g. cd \"$ROOT/anchor-console\" && npm run dev), then re-run verify_all_e2e.sh"
   fi
   echo "MODULE=verify_all_e2e"
   echo "RETRY_E2E_PASS=$RETRY_E2E_PASS"
