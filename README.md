@@ -10,7 +10,7 @@ This **parent** repo holds orchestration docs, **`local_box/`**, **`shared/`**, 
 
 ## Parent repo — Python stack (`local_box`)
 
-The **`local_box`** package (audit SQLite, control HTTP, runner) uses **repo-root** [`requirements.txt`](requirements.txt).
+The **`local_box`** package (audit SQLite, control HTTP, runner) uses **repo-root** [`requirements.txt`](requirements.txt) (pinned; source constraints in [`requirements.in`](requirements.in)). Regenerate after editing pins: `python3 -m piptools compile requirements.in -o requirements.txt`.
 
 ### Setup
 
