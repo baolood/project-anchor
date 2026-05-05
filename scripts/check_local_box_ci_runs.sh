@@ -4,6 +4,40 @@ set -euo pipefail
 
 WORKFLOW_FILE="${WORKFLOW_FILE:-local-box-baseline.yml}"
 LIMIT="${LIMIT:-10}"
+BRANCH="${BRANCH:-}"
+
+while (($# > 0)); do
+  case "$1" in
+    --workflow)
+      WORKFLOW_FILE="${2:-}"
+      shift 2
+      ;;
+    --limit)
+      LIMIT="${2:-}"
+      shift 2
+      ;;
+    --branch)
+      BRANCH="${2:-}"
+      shift 2
+      ;;
+    -h|--help)
+      cat <<'EOF'
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>]
+
+Options:
+  --workflow  Workflow file name (default: local-box-baseline.yml)
+  --limit     Number of runs to fetch (default: 10)
+  --branch    Filter output to one branch/ref name
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Run with --help for usage." >&2
+      exit 2
+      ;;
+  esac
+done
 
 if ! command -v gh >/dev/null 2>&1; then
   echo "CI_RUNS_CHECK FAIL: gh CLI not found." >&2
@@ -18,9 +52,16 @@ if ! gh auth status >/dev/null 2>&1; then
 fi
 
 echo "== Recent runs: ${WORKFLOW_FILE} (limit=${LIMIT}) =="
-gh run list --workflow "${WORKFLOW_FILE}" --limit "${LIMIT}" \
+rows="$(gh run list --workflow "${WORKFLOW_FILE}" --limit "${LIMIT}" \
   --json databaseId,headBranch,status,conclusion,event,displayTitle,createdAt,updatedAt \
-  --jq '.[] | "\(.databaseId)\t\(.headBranch)\t\(.status)\t\(.conclusion // "n/a")\t\(.event)\t\(.displayTitle)"'
+  --jq '.[] | "\(.databaseId)\t\(.headBranch)\t\(.status)\t\(.conclusion // "n/a")\t\(.event)\t\(.displayTitle)"')"
+
+if [[ -n "${BRANCH}" ]]; then
+  echo "(filtered branch=${BRANCH})"
+  printf '%s\n' "$rows" | awk -F '\t' -v b="$BRANCH" '$2==b {print}'
+else
+  printf '%s\n' "$rows"
+fi
 
 echo
 echo "Tip: under concurrency cancel-in-progress, older runs on the same branch may show cancelled."
