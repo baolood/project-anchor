@@ -34,7 +34,7 @@ echo "Step1: Ensure kill switch Redis OFF"
 echo "=============================="
 curl_opts=( "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" -d '{"enabled":false}' )
 [ -n "${OPS_TOKEN:-}" ] && curl_opts+=( -H "x-ops-token: $OPS_TOKEN" )
-curl "${curl_opts[@]}" "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
+curl "${curl_opts[@]}" --connect-timeout 5 --max-time 20 "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
 sleep 2
 echo "OK: kill switch OFF"
 
@@ -114,7 +114,7 @@ docker compose -f "$BACKEND_DIR/docker-compose.yml" up -d worker 2>/dev/null || 
 sleep 2
 curl_opts=( "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" -d '{"enabled":false}' )
 [ -n "${OPS_TOKEN:-}" ] && curl_opts+=( -H "x-ops-token: $OPS_TOKEN" )
-curl "${curl_opts[@]}" "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
+curl "${curl_opts[@]}" --connect-timeout 5 --max-time 20 "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
 sleep 2
 echo "OK: cleanup done"
 

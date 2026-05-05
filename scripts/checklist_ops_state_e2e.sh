@@ -106,9 +106,9 @@ echo "Step2: POST kill-switch on/off, GET /ops/state — recent_ops_events non-e
 echo "=============================="
 curl_opts=( "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" )
 [ -n "${OPS_TOKEN:-}" ] && curl_opts+=( -H "x-ops-token: $OPS_TOKEN" )
-curl "${curl_opts[@]}" -d '{"enabled":true}' "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
+curl "${curl_opts[@]}" --connect-timeout 5 --max-time 20 -d '{"enabled":true}' "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
 sleep 2
-curl "${curl_opts[@]}" -d '{"enabled":false}' "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
+curl "${curl_opts[@]}" --connect-timeout 5 --max-time 20 -d '{"enabled":false}' "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
 sleep 2
 
 state_resp2="$(curl "${CURL_FLAGS[@]}" "$BACKEND_PRECHECK/ops/state")"
@@ -185,7 +185,7 @@ echo "OK: history non-empty (len=$history_len)"
 echo "=============================="
 echo "Cleanup: kill switch OFF"
 echo "=============================="
-curl "${curl_opts[@]}" -d '{"enabled":false}' "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
+curl "${curl_opts[@]}" --connect-timeout 5 --max-time 20 -d '{"enabled":false}' "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
 echo "OK: cleanup done"
 
 PASS_OR_FAIL=PASS

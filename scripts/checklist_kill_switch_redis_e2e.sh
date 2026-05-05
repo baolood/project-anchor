@@ -38,7 +38,7 @@ echo "Step1: POST /ops/kill-switch {\"enabled\": true}"
 echo "=============================="
 curl_opts=( "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" -d '{"enabled":true}' )
 [ -n "${OPS_TOKEN:-}" ] && curl_opts+=( -H "x-ops-token: $OPS_TOKEN" )
-ops_on_resp="$(curl "${curl_opts[@]}" -w "\n%{http_code}" "$BACKEND_PRECHECK/ops/kill-switch")"
+ops_on_resp="$(curl "${curl_opts[@]}" --connect-timeout 5 --max-time 20 -w "\n%{http_code}" "$BACKEND_PRECHECK/ops/kill-switch")"
 OPS_SET_ON_HTTP_STATUS="$(echo "$ops_on_resp" | tail -1)"
 if [ "$OPS_SET_ON_HTTP_STATUS" != "200" ]; then
   FAIL_REASON=ops_set_on_failed
@@ -149,7 +149,7 @@ echo "Step5: POST /ops/kill-switch {\"enabled\": false}"
 echo "=============================="
 curl_off_opts=( "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" -d '{"enabled":false}' )
 [ -n "${OPS_TOKEN:-}" ] && curl_off_opts+=( -H "x-ops-token: $OPS_TOKEN" )
-ops_off_resp="$(curl "${curl_off_opts[@]}" -w "\n%{http_code}" "$BACKEND_PRECHECK/ops/kill-switch")"
+ops_off_resp="$(curl "${curl_off_opts[@]}" --connect-timeout 5 --max-time 20 -w "\n%{http_code}" "$BACKEND_PRECHECK/ops/kill-switch")"
 OPS_SET_OFF_HTTP_STATUS="$(echo "$ops_off_resp" | tail -1)"
 if [ "$OPS_SET_OFF_HTTP_STATUS" != "200" ]; then
   FAIL_REASON=ops_set_off_failed
