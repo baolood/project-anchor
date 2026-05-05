@@ -4,6 +4,7 @@ set -euo pipefail
 CONSOLE_PRECHECK="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}"
 BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}"
 ANCHOR_BACKEND_DIR="${ANCHOR_BACKEND_DIR:-$(cd "$(dirname "$0")/../anchor-backend" && pwd)}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
@@ -26,7 +27,7 @@ console_hdr="$tmpdir/console_flaky.headers"
 console_body="$tmpdir/console_flaky.body"
 : > "$console_hdr"
 
-curl -sS --noproxy '*' -X POST \
+curl "${CURL_FLAGS[@]}" -X POST \
   -D "$console_hdr" \
   -o "$console_body" \
   "$CONSOLE_PRECHECK/api/proxy/commands/flaky" || true
@@ -55,7 +56,7 @@ backend_hdr="$tmpdir/backend_flaky.headers"
 backend_body="$tmpdir/backend_flaky.body"
 : > "$backend_hdr"
 
-curl -sS --noproxy '*' -X POST \
+curl "${CURL_FLAGS[@]}" -X POST \
   -D "$backend_hdr" \
   -o "$backend_body" \
   "$BACKEND_PRECHECK/domain-commands/flaky" || true
@@ -87,7 +88,7 @@ docker compose logs --tail=20 worker | grep -E "poll|pick|domain" || true
 # Step1: Create flaky via console proxy
 ########################################
 create_body="$tmpdir/create.json"
-curl -sS --noproxy '*' -X POST \
+curl "${CURL_FLAGS[@]}" -X POST \
   "$CONSOLE_PRECHECK/api/proxy/commands/flaky" \
   -o "$create_body"
 
@@ -105,7 +106,7 @@ SAW_FAILED=NO
 ATTEMPT_AT_FAIL=""
 for i in {1..30}; do
   sleep 1
-  body="$(curl -sS "$CONSOLE_PRECHECK/api/proxy/commands/$NEW_ID")"
+  body="$(curl "${CURL_FLAGS[@]}" "$CONSOLE_PRECHECK/api/proxy/commands/$NEW_ID")"
   status="$(python3 -c "import json,sys; print(json.loads(sys.argv[1])['status'])" "$body")"
   attempt="$(python3 -c "import json,sys; print(json.loads(sys.argv[1]).get('attempt',''))" "$body")"
   echo "poll#$i status=$status attempt=$attempt"
@@ -119,7 +120,7 @@ done
 ########################################
 # Step3: Retry
 ########################################
-curl -sS --noproxy '*' -X POST \
+curl "${CURL_FLAGS[@]}" -X POST \
   "$CONSOLE_PRECHECK/api/proxy/commands/$NEW_ID/retry" >/dev/null
 
 ########################################
@@ -130,7 +131,7 @@ ATTEMPT_AFTER_RETRY_FIRST_NON_TERMINAL=""
 ATTEMPT_AT_DONE=""
 for i in {1..30}; do
   sleep 1
-  body="$(curl -sS "$CONSOLE_PRECHECK/api/proxy/commands/$NEW_ID")"
+  body="$(curl "${CURL_FLAGS[@]}" "$CONSOLE_PRECHECK/api/proxy/commands/$NEW_ID")"
   status="$(python3 -c "import json,sys; print(json.loads(sys.argv[1])['status'])" "$body")"
   attempt="$(python3 -c "import json,sys; print(json.loads(sys.argv[1]).get('attempt',''))" "$body")"
   echo "retry-poll#$i status=$status attempt=$attempt"
