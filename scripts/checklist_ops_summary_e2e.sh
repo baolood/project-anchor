@@ -4,6 +4,7 @@ set -euo pipefail
 
 OUT="${OUT:-/tmp/anchor_e2e_checklist_ops_summary_e2e_last.out}"
 CONSOLE_URL="${CONSOLE_URL:-http://127.0.0.1:3000}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
@@ -41,7 +42,7 @@ echo "MODULE=ops_summary_e2e" > "$OUT"
 
 echo "== Step0 Precheck =="
 get_home="$tmpdir/get_home.txt"
-curl -sS -i --noproxy '*' "$CONSOLE_URL/" -o "$get_home" || true
+curl "${CURL_FLAGS[@]}" -i "$CONSOLE_URL/" -o "$get_home" || true
 home_status="$(parse_http "$get_home" | head -1)"
 if [ "$home_status" != "200" ]; then
   echo "HTTP_STATUS=0" >> "$OUT"
@@ -55,7 +56,7 @@ fi
 
 echo "== Step1 GET /api/proxy/ops/summary =="
 summary_resp="$tmpdir/summary_resp.txt"
-curl -sS -i --noproxy '*' "$CONSOLE_URL/api/proxy/ops/summary?minutes=30&limit=10" -o "$summary_resp" || true
+curl "${CURL_FLAGS[@]}" -i "$CONSOLE_URL/api/proxy/ops/summary?minutes=30&limit=10" -o "$summary_resp" || true
 summary_status="$(parse_http "$summary_resp" | head -1)"
 summary_body="$tmpdir/summary_body.json"
 parse_http "$summary_resp" | sed -n '2,$p' > "$summary_body"
