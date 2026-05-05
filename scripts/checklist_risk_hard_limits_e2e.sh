@@ -10,6 +10,7 @@ OUT="${OUT:-/tmp/anchor_e2e_checklist_risk_hard_limits_e2e_last.out}"
 BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}"
 ANCHOR_BACKEND_DIR="${ANCHOR_BACKEND_DIR:-$(cd "$(dirname "$0")/.." && pwd)/anchor-backend}"
 BACKEND_DIR="${BACKEND_DIR:-$ANCHOR_BACKEND_DIR}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 PASS_OR_FAIL=FAIL
 FAIL_REASON=""
@@ -22,7 +23,7 @@ echo "=============================="
 echo "MODULE=risk_hard_limits_e2e"
 echo "Step0: Ensure backend up, restart worker with hard limits enabled"
 echo "=============================="
-if ! curl -sS --noproxy '*' -o /dev/null -w "%{http_code}" "$BACKEND_PRECHECK/health" | grep -q 200; then
+if ! curl "${CURL_FLAGS[@]}" -o /dev/null -w "%{http_code}" "$BACKEND_PRECHECK/health" | grep -q 200; then
   echo "FAIL_REASON=backend_not_reachable" > "$OUT"
   echo "PASS_OR_FAIL=$PASS_OR_FAIL" >> "$OUT"
   cat "$OUT"
@@ -43,13 +44,13 @@ docker compose -f "$BACKEND_DIR/docker-compose.yml" up -d worker
 sleep 5
 echo "OK: worker restarted with hard limits"
 # Clear any PENDING from previous tests so our quotes are picked first
-curl -sS --noproxy '*' -X POST "$BACKEND_PRECHECK/ops/dev/reset-pending-domain-commands" >/dev/null || true
+curl "${CURL_FLAGS[@]}" -X POST "$BACKEND_PRECHECK/ops/dev/reset-pending-domain-commands" >/dev/null || true
 sleep 2
 
 echo "=============================="
 echo "Step1: QUOTE over-leverage (notional 6000, capital 1000 -> 600%% single trade > 0.5%%) -> expect FAILED"
 echo "=============================="
-r1="$(curl -sS --noproxy '*' -X POST -H "Content-Type: application/json" \
+r1="$(curl "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" \
   -d '{"symbol":"BTCUSDT","side":"BUY","notional":6000,"stop_loss":100}' "$BACKEND_PRECHECK/domain-commands/quote")"
 ID1="$(echo "$r1" | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))" 2>/dev/null || echo "")"
 if [ -z "$ID1" ]; then
@@ -60,7 +61,7 @@ if [ -z "$ID1" ]; then
   exit 1
 fi
 for i in $(seq 1 30); do
-  detail="$(curl -sS --noproxy '*' "$BACKEND_PRECHECK/domain-commands/$ID1" 2>/dev/null)"
+  detail="$(curl "${CURL_FLAGS[@]}" "$BACKEND_PRECHECK/domain-commands/$ID1" 2>/dev/null)"
   status="$(echo "$detail" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))" 2>/dev/null || echo "")"
   error="$(echo "$detail" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('error',''))" 2>/dev/null || echo "")"
   if [ "$status" = "FAILED" ] && [ -n "$error" ] && (echo "$error" | grep -q "LEVERAGE_EXCEEDED" || echo "$error" | grep -q "SINGLE_TRADE_RISK_EXCEEDED"); then
@@ -93,7 +94,7 @@ echo "OK: over-leverage blocked (SINGLE_TRADE_RISK or LEVERAGE_EXCEEDED)"
 echo "=============================="
 echo "Step2: QUOTE over-exposure (notional 400, capital 1000 -> 40% > 30%) -> expect FAILED"
 echo "=============================="
-r2="$(curl -sS --noproxy '*' -X POST -H "Content-Type: application/json" \
+r2="$(curl "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" \
   -d '{"symbol":"BTCUSDT","side":"BUY","notional":400,"stop_loss":100}' "$BACKEND_PRECHECK/domain-commands/quote")"
 ID2="$(echo "$r2" | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))" 2>/dev/null || echo "")"
 if [ -z "$ID2" ]; then
@@ -112,7 +113,7 @@ if [ -z "$ID2" ]; then
   exit 1
 fi
 for i in $(seq 1 30); do
-  detail="$(curl -sS --noproxy '*' "$BACKEND_PRECHECK/domain-commands/$ID2" 2>/dev/null)"
+  detail="$(curl "${CURL_FLAGS[@]}" "$BACKEND_PRECHECK/domain-commands/$ID2" 2>/dev/null)"
   status="$(echo "$detail" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))" 2>/dev/null || echo "")"
   error="$(echo "$detail" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('error',''))" 2>/dev/null || echo "")"
   if [ "$status" = "FAILED" ] && [ -n "$error" ] && (echo "$error" | grep -q "NET_EXPOSURE_EXCEEDED" || echo "$error" | grep -q "SINGLE_TRADE_RISK_EXCEEDED" || echo "$error" | grep -q "LEVERAGE_EXCEEDED"); then
@@ -145,7 +146,7 @@ echo "OK: over-exposure blocked (NET_EXPOSURE or SINGLE_TRADE_RISK or LEVERAGE)"
 echo "=============================="
 echo "Step3: QUOTE no stop (notional 5, no stop_loss) -> expect FAILED"
 echo "=============================="
-r3="$(curl -sS --noproxy '*' -X POST -H "Content-Type: application/json" \
+r3="$(curl "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" \
   -d '{"symbol":"BTCUSDT","side":"BUY","notional":5}' "$BACKEND_PRECHECK/domain-commands/quote")"
 ID3="$(echo "$r3" | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))" 2>/dev/null || echo "")"
 if [ -z "$ID3" ]; then
@@ -164,7 +165,7 @@ if [ -z "$ID3" ]; then
   exit 1
 fi
 for i in $(seq 1 30); do
-  detail="$(curl -sS --noproxy '*' "$BACKEND_PRECHECK/domain-commands/$ID3" 2>/dev/null)"
+  detail="$(curl "${CURL_FLAGS[@]}" "$BACKEND_PRECHECK/domain-commands/$ID3" 2>/dev/null)"
   status="$(echo "$detail" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))" 2>/dev/null || echo "")"
   error="$(echo "$detail" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('error',''))" 2>/dev/null || echo "")"
   if [ "$status" = "FAILED" ] && [ -n "$error" ] && echo "$error" | grep -q "STOP_REQUIRED"; then
@@ -195,7 +196,7 @@ fi
 echo "OK: no-stop blocked (STOP_REQUIRED)"
 
 pre_step_clean() {
-  curl -sS --noproxy '*' -X POST "$BACKEND_PRECHECK/ops/dev/reset-pending-domain-commands" >/dev/null || true
+  curl "${CURL_FLAGS[@]}" -X POST "$BACKEND_PRECHECK/ops/dev/reset-pending-domain-commands" >/dev/null || true
   docker compose -f "$BACKEND_DIR/docker-compose.yml" exec -T postgres psql -U anchor -d anchor -c \
     "UPDATE risk_state SET current_exposure_usd=0, updated_at=NOW() WHERE id=1;" >/dev/null 2>&1 || true
   sleep 2
@@ -205,7 +206,7 @@ pre_step_clean
 echo "=============================="
 echo "Step4: QUOTE compliant (notional 5, stop_loss 100) -> expect DONE"
 echo "=============================="
-r4="$(curl -sS --noproxy '*' -X POST -H "Content-Type: application/json" \
+r4="$(curl "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" \
   -d '{"symbol":"BTCUSDT","side":"BUY","notional":5,"stop_loss":100}' "$BACKEND_PRECHECK/domain-commands/quote")"
 ID4="$(echo "$r4" | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))" 2>/dev/null || echo "")"
 if [ -z "$ID4" ]; then
@@ -224,7 +225,7 @@ if [ -z "$ID4" ]; then
   exit 1
 fi
 for i in $(seq 1 30); do
-  status="$(curl -sS --noproxy '*' "$BACKEND_PRECHECK/domain-commands/$ID4" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))" 2>/dev/null || echo "")"
+  status="$(curl "${CURL_FLAGS[@]}" "$BACKEND_PRECHECK/domain-commands/$ID4" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))" 2>/dev/null || echo "")"
   [ "$status" = "DONE" ] && COMPLIANT_PASS=YES && break
   sleep 1
 done

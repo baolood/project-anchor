@@ -4,6 +4,7 @@ set -euo pipefail
 OUT="${OUT:-/tmp/anchor_e2e_checklist_risk_bypass_proof_e2e_last.out}"
 BASE="${BASE:-http://127.0.0.1:8000}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 )
 
 PASS_OR_FAIL="FAIL"
 FAIL_REASON=""
@@ -32,12 +33,12 @@ emit() {
 # helpers
 post_quote() {
   local payload="$1"
-  curl -s -X POST "$BASE/domain-commands/quote" -H "Content-Type: application/json" -d "$payload"
+  curl "${CURL_FLAGS[@]}" -X POST "$BASE/domain-commands/quote" -H "Content-Type: application/json" -d "$payload"
 }
 
 get_cmd() {
   local id="$1"
-  curl -s "$BASE/domain-commands/$id"
+  curl "${CURL_FLAGS[@]}" "$BASE/domain-commands/$id"
 }
 
 # Poll until status is DONE or FAILED (max 30s)
@@ -92,7 +93,7 @@ rm -f "$tmp" || true
 
 # 先把 exposure 归零、清 pending（dev 环境允许）
 say "S3-pre: reset exposure + clear pending (dev)"
-curl -s -X POST "$BASE/ops/dev/reset-pending-domain-commands" >/dev/null || true
+curl "${CURL_FLAGS[@]}" -X POST "$BASE/ops/dev/reset-pending-domain-commands" >/dev/null || true
 cd "$ROOT/anchor-backend" >/dev/null
 docker compose exec -T postgres psql -U anchor -d anchor -c \
 "UPDATE risk_state SET current_exposure_usd=0, updated_at=NOW() WHERE id=1;" >/dev/null
@@ -107,7 +108,7 @@ wait
 sleep 3
 
 # 拉最近 100 条里 error 统计，看是否出现 NET_EXPOSURE_EXCEEDED
-recent="$(curl -s "$BASE/domain-commands?limit=100")"
+recent="$(curl "${CURL_FLAGS[@]}" "$BASE/domain-commands?limit=100")"
 echo "$recent" > /tmp/anchor_bypass_recent_60_last.json
 has_net="$(python3 - <<'PY'
 import json,re
@@ -132,7 +133,7 @@ cd "$ROOT" >/dev/null
 
 # 4) NOOP 白名单：必须 DONE（证明"允许的命令仍可执行"，且不是全局误杀）
 say "S4: NOOP allowed"
-r4="$(curl -s -X POST "$BASE/domain-commands/noop" -H "Content-Type: application/json" -d '{}')"
+r4="$(curl "${CURL_FLAGS[@]}" -X POST "$BASE/domain-commands/noop" -H "Content-Type: application/json" -d '{}')"
 id4="$(echo "$r4" | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("id",""))')"
 wait_cmd "$id4" || true
 d4="$(get_cmd "$id4")"
