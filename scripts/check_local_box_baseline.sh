@@ -12,6 +12,10 @@ REQUIRED_PATHS=(
   "local_box"
   "local_box/runner.py"
   "local_box/self_check/checks.py"
+  "requirements.txt"
+  "shared/schemas.py"
+  "risk_engine/client.py"
+  "local_box/gate/ticket_signature.py"
 )
 
 missing=()

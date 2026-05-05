@@ -37,6 +37,36 @@ RISK_HARD_LIMITS_DISABLE=0 RISK_EXPOSURE_ATOMIC=1 \
 docker compose up -d worker
 ```
 
+## Parent repo — `local_box` (Python + SQLite)
+
+For the **parent repository** `local_box` audit stack (not Docker `anchor-backend`):
+
+1. **Install Python deps** (from repo root):
+
+   ```bash
+   cd /path/to/project-anchor
+   python3 -m pip install -r requirements.txt
+   ```
+
+2. **SQLite path** (`local_box/audit/event_store.py`):
+
+   - **Default:** `<repo-root>/anchor.db` (resolved from `local_box/audit/event_store.py`, not machine-specific).
+   - **Override:** set **`LOCAL_BOX_DB_PATH`** to an absolute path or `~`-expanded path if the default location is not writable.
+
+   ```bash
+   export LOCAL_BOX_DB_PATH="$PWD/tmp/local_box_ci.db"
+   mkdir -p tmp
+   ```
+
+3. **Import smoke** (optional, after `pip install`):
+
+   ```bash
+   export PYTHONPATH=.
+   python3 -c "from local_box.audit import event_store; event_store.init_db(); print('ok', event_store.DB_PATH)"
+   ```
+
+4. **CI:** workflow **`.github/workflows/local-box-baseline.yml`** runs `pip install -r requirements.txt`, `./scripts/check_local_box_baseline.sh`, then the SQLite `init_db()` smoke above.
+
 ## Verify
 
 ### Full E2E (default: EXTREME skipped)
