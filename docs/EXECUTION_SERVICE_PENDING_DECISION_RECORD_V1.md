@@ -71,6 +71,7 @@
 
 ## 9. 归档状态更新
 
+- **例提交（物理归档入账）：** **`10ccfad`** **`docs(archive): move execution_service draft under docs/archive`**
 - **跟踪前缀：** **`docs/archive/execution_service_draft/execution_service/`**
 - **`PYTHONPATH`**：若在无父仓源码树辅助下尝试导入，典型需将 **`docs/archive/execution_service_draft`** 与 **Repo 根目录**一并纳入 **`sys.path`**（以便解析 **`execution_service`** 与 **`shared`/`local_box`** —— **`shared`** 若仍 **`pending`** 则 **不完整**）。
 - **依赖重申：** **`verifier.py`** 内常量 **`SECRET`** 为 **教学/草稿**残留；**`server.py`** 依赖 **`EXECUTION_SHARED_KEYS`** 环境拼接。

@@ -24,7 +24,7 @@
 | `anchor-backend/scripts/insert_order_command.py` | **已升格跟踪**（例：**`9c20d55`** **`fix(scripts): require ANCHOR_DB_* env …`**）；口令仅 **`ANCHOR_*`** 环境变量注入，必填 **`ANCHOR_DB_PASSWORD`**，见 **`ANCHOR_BACKEND`** **§11** |
 | `anchor-backend/worker/WORKER_BOUNDARY_RULES.md` | **已归档入库** **`docs/archive/anchor_backend_draft/worker/WORKER_BOUNDARY_RULES.md`**（见 `ANCHOR_BACKEND` 记录 **§2.2／§10**） |
 | `cloud/strategy_api/server.py`、`cloud/strategy_store/versions.py` | **已归档入库**（跟踪路径见 `docs/CLOUD_PENDING_DECISION_RECORD_V1.md` §9 **`docs/archive/cloud_draft/…`**） |
-| `execution_service/executor.py`、`execution_service/server.py`、`execution_service/verifier.py` | **已归档入库** **`docs/archive/execution_service_draft/execution_service/…`**（见 `EXECUTION_SERVICE_PENDING_DECISION_RECORD_V1.md` **§9**） |
+| `execution_service/executor.py`、`execution_service/server.py`、`execution_service/verifier.py` | **已归档入库**（例：**`10ccfad`** **`docs(archive): move execution_service draft…`**；路径 **`docs/archive/execution_service_draft/execution_service/…`**，见 **`EXECUTION_SERVICE_PENDING_DECISION_RECORD_V1.md`** **§9**） |
 | 根目录 `test_ack_semantics.py`、`test_cloud_publish.py`、`test_execution_service.py` | 已迁入 `docs/archive/manual_smoke/` 并跟踪 |
 | 上表 §2.1 所列 **2** 条 | 仍为 `pending_decision` **未跟踪** |
 
@@ -102,7 +102,7 @@
 - **`anchor-backend/worker/WORKER_BOUNDARY_RULES.md`** 已由未跟踪草稿 **归档入库**至 **`docs/archive/anchor_backend_draft/worker/WORKER_BOUNDARY_RULES.md`**，**不应再**残留在 **`anchor-backend/worker/`** 未跟踪路径上。
 - 根目录三文件 **`test_ack_semantics.py`**、**`test_cloud_publish.py`**、**`test_execution_service.py`** 已迁入 **`docs/archive/manual_smoke/`** 并在父仓 **跟踪**；此三文件 **不再**出现在 **`--others --exclude-standard`** 中。
 - **`cloud/strategy_*` 源草稿**按 **`CLOUD`** 记录 **§9** 归档至 **`docs/archive/cloud_draft/…`** 并已跟踪；**原顶层 `cloud/`** 不作为 **pending 未跟踪顶簇**残留在清单中。
-- **`execution_service/*.py`** 已由 **`execution_service/`** 顶层未跟踪草稿 **归档入库**至 **`docs/archive/execution_service_draft/execution_service/…`**（见 **`EXECUTION_SERVICE_PENDING_DECISION_RECORD_V1.md`** **§9**）；**顶层 `execution_service/`** **不应再**附带未跟踪 **`*.py`**。
+- **`execution_service/*.py`** 已由 **`execution_service/`** 顶层未跟踪草稿 **归档入库**至 **`docs/archive/execution_service_draft/execution_service/…`**（例提交 **`10ccfad`**，见 **`EXECUTION_SERVICE_PENDING_DECISION_RECORD_V1.md`** **§9**）；**顶层 `execution_service/`** **不应再**附带未跟踪 **`*.py`**。
 - **当前**在 **`--others --exclude-standard`** 语义下，**不存在**「**有未跟踪源文件簇却无任何 `PENDING_DECISION_RECORD_V1` 覆盖**」的额外缺口——**5 簇 ↔ 5 份记录**一一对应。
 
 ### 8.4 下一阶段动作边界（封口径）
