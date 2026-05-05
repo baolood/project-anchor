@@ -2,90 +2,77 @@
 
 ## 1. 结论
 
-- **`execution_service/`** 当前属于父仓库中的 **未跟踪实验草稿组**。
-- **当前**：不对 **`execution_service/`** 做删除、不做目录/文件迁移，并 **不入主线提交**。
-- **统一状态：** **`pending_decision`**。
-- **建议策略（冻结口径）：** **保留待立项**——含执行边界、验签、禁 **`LIVE`**、回执 API 等设计草图；在未定义正式密钥与契约前 **不得**当成可合并主线的执行面。
+- **原**父仓顶层 **`execution_service/*.py`** 实验草稿：**物理形态**已 **按 §9 归档入库**（跟踪副本位于 **`docs/archive/execution_service_draft/execution_service/…`**），**不再**作为 **`git ls-files --others --exclude-standard`** 下的 **`execution_service/`** 顶层未跟踪条目残留。
+- **当前（归档段语义）：** 归档源码仍属 **历史实验占位**（Flask、`shared.schemas`、`local_box.audit.event_store`、`verifier` 内示例级 **`SECRET`**）；**升格为可运维正式服务**须 **重新唯一立项**。**归档入库 ≠ execution 已成正式运行时栈**。
+- **`shared/`**（父仓 **`schemas.py`** 仍为 **pending 未跟踪**）与 **`local_box`** 已入库段落：**不讲**归档段在当前父仓状态下「可开箱跑通」，亦 **不讲**与安全相关的 **`SECRET`/共享密钥** 已升格为正式方案。
+- **建议：** 若要恢复 **`execution_service/`** 顶树或与 **`risk_engine`/策略云**联动，须在立项中重写 **拓扑、密钥、契约与验收**。
 
 ---
 
 ## 2. 当前文件清单
 
-本记录覆盖的草稿源路径：
+### 2.1 归档跟踪路径（ **`docs/archive/execution_service_draft/execution_service/`** ，见 §9）
 
-- **`execution_service/executor.py`**
-- **`execution_service/server.py`**
-- **`execution_service/verifier.py`**
+- **`__init__.py`**（占位包锚点）
+- **`executor.py`**
+- **`server.py`**
+- **`verifier.py`**
 
-**说明：** **`execution_service/__pycache__/`** 下的 **`.pyc`** 为 **本地 Python 运行时产物**，**不是**本条文档的交付物组成部分；本轮 **不处理** `__pycache__`，也不得将其作为提交素材。
+### 2.2 父仓顶层 **`execution_service/`**
+
+- **不应再**以 **未跟踪 `*.py`** 草稿形态出现；若以 **新建顶树**卷土重来，视同 **下一轮实验**，须 **单列 **`git status`**/`git add` 立项**。**`__pycache__/`** **不得**入库。
 
 ---
 
 ## 3. 用途摘要
 
-- **`execution_service/executor.py`**
-  - 提供 **`execute_simulate`** 与 **`execute_testnet`**。
-  - **`execute_simulate`**：生成 **模拟成交**，返回 **`ExecutionResult`**（**`SIMULATED`** 语义）。
-  - **`execute_testnet`**：当前为 **`TESTNET-MOCK`**，**未**接真实交易所，仅返回占位结果。
-- **`execution_service/server.py`**
-  - **Flask** **执行占位服务**；默认监听 **`127.0.0.1:9001`**（可通过环境变量覆盖 host/port）。
-  - **`GET /health`**：返回服务名与 **共享密钥 id** 等 **边界信息**。
-  - **`POST /execute`**：
-    - 校验请求头 **`X-EXECUTION-KEY-ID`** / **`X-EXECUTION-KEY`**（与 **`EXECUTION_SHARED_KEYS`** 配置匹配）。
-    - 解析 **`ExecutionTicket`**，**`verify_ticket` 验签**。
-    - **禁止 LIVE 模式**（`ExecMode.LIVE`）。
-    - 按 **`ExecMode`** 调用 **`execute_simulate`** 或 **`execute_testnet`**。
-    - 调用 **`local_box.audit.event_store`** 写入 **execution receipt**（**`save_execution_receipt`**）。
-  - **`GET /receipt/<ticket_id>`**：通过 **`get_execution_receipt`** **读取** execution receipt。
-- **`execution_service/verifier.py`**
-  - 使用 **简化 · 基于 SHA256** 的 **签名 / 验签**（**`sign_ticket` / `verify_ticket`**）。
-  - **当前存在硬编码 `SECRET`（示例级）**，**不适合**在未立项条件下 **并入主线** 或冒充 **正式密钥方案**。
+- **`executor.py`**：**`execute_simulate`** / **`execute_testnet`**；后者为占位 **TESTNET-MOCK**。
+- **`server.py`**：**Flask**；**`EXECUTION_SHARED_KEYS`**；**`/execute`** 验门票与签、**禁止 `LIVE`**；写 **`local_box.audit.event_store`** 回执；**`/receipt/<id>`** 读取。
+- **`verifier.py`**：**SHA256** 玩具签验；内含 **硬编码 `SECRET`**（**示例级**，**禁止冒充生产密钥叙事**）。
 
 ---
 
 ## 4. 与当前主线关系
 
-- 与 **`commands_domain`**（**anchor-backend** 域指令主链）**无直接关系**。
-- 与 **`local_box` baseline**（**`scripts/check_local_box_baseline.sh`** + 已入库最小 **`local_box/`** + CI）**无直接关系**。
-- **`server.py`** 与 **`local_box.audit.event_store`** **存在耦合**（回执读写）；**不得**在未立项前把该耦合解释成 **`local_box` 主线已验收的扩面结论**。
-- **`execution_service/`** **强依赖** **`shared.schemas`**（类型与载荷模型）。
-- **未立项前**：不得把本草稿组解释为 **已并入 `local_box` 主线** 或 **已封板的 execution 主线**。
+- 与 **`commands_domain`** **无直接关系**。
+- 与 **`local_box` baseline** CI **无直接关系**；与 **`local_box.audit.event_store`** **归档稿内仍存在 import 耦合**。
+- **`shared.schemas`** **强依赖**；**父仓 **`shared/schemas.py`** pending** 状态下，归档段 **不满足**完整类型/模块解析假设。
 
 ---
 
 ## 5. 当前禁止动作
 
-- **`git add execution_service/`**：**禁止**在未单列任务立项下将整个草稿目录纳入版本控制。
-- **删除或移动 `execution_service/` 目录树：** **禁止**在本轮或未授权任务下执行。
+- **`git add execution_service/`**（指 **新建的**顶层整棵草稿树）：**禁止**在未立项下 **一把梭**。
+- **删除 §9 归档跟踪文件**：**禁止**在未授权任务下执行。
 - **`__pycache__` 入库**：**禁止**。
-- **修改 `.gitignore`**：**本轮**不得擅自调整忽略策略以「消灭噪音」为名改变风险边界。
-- **与 **`shared` / `risk_engine` / `cloud`** 的 pending 草稿**联批处理：**禁止**。
-- **借此推进 **`local_box` 扩面****：**禁止**。
-- **把硬编码 **`SECRET`** 当作正式密钥方案**：**禁止**。
+- **在未立项下联批 **`shared` / `risk_engine` / `cloud`**：** **禁止**。
+- **`SECRET`/`EXECUTION_SHARED_KEYS` 升格为不经评审的生产方案**：**禁止**借归档完成宣称。
 
 ---
 
 ## 6. 后续处理规则
 
-- 若要处理 **`execution_service/`**，必须先 **新唯一立项**。
-- 立项时必须先选：**归档 / 删除 / 升格为真实长期服务** 之一为主路线（可多阶段，须写清）。
-- 必须说明：**`shared.schemas` 依赖**如何版本化或搬迁。
-- 必须说明：**`local_box.audit.event_store` 耦合**是否保留、接口契约、以及回执存储是否独立服务化。
-- 必须说明：**密钥管理**、**签名算法**、**禁 LIVE** 策略、**receipt API** 的 **正式安全边界**（含轮换、审计、误用防护）。
-- 必须写明 **验收** 与 **回滚**。
-- **未立项前**：维持 **`pending_decision`**。
+- 升格或恢复 **`execution_service` 顶树**：须 **单列立项**。
+- 须写明：**密钥**、**签算法**、**禁 LIVE**、**回执边界**、`shared`/契约、`local_box` 耦合可否保留。
 
 ---
 
-## 7. 验收口径（针对「新增本决策记录」这一轮）
+## 7. 验收口径（历史首轮）
 
-- 本轮在父仓库内 **只允许新增**：**`docs/EXECUTION_SERVICE_PENDING_DECISION_RECORD_V1.md`**。
-- **`git status`** 中 **`execution_service/`** 仍应保持 **未跟踪**。
-- 不出现 **`execution_service/`** 被 **暂存 / 删除 / 移动**；不出现 **`__pycache__`** 入库；**不改 **`.gitignore`**。
+- 首轮 **只允许新增** **`docs/EXECUTION_SERVICE_PENDING_DECISION_RECORD_V1.md`**。
 
 ---
 
 ## 8. 回滚方法
 
-- 删除本文件 **`docs/EXECUTION_SERVICE_PENDING_DECISION_RECORD_V1.md`** 即可撤回本条「决策口径」的文字层冻结。
-- 回滚 **不影响**：`execution_service/` 草稿、`local_box`、`shared`、`risk_engine`、`cloud`、`anchor-backend`、`anchor-console` 子模块等业务树内容。
+- 删除 **`docs/EXECUTION_SERVICE_PENDING_DECISION_RECORD_V1.md`** 仅撤回本条 **文字口径**冻结层。
+
+---
+
+## 9. 归档状态更新
+
+- **跟踪前缀：** **`docs/archive/execution_service_draft/execution_service/`**
+- **`PYTHONPATH`**：若在无父仓源码树辅助下尝试导入，典型需将 **`docs/archive/execution_service_draft`** 与 **Repo 根目录**一并纳入 **`sys.path`**（以便解析 **`execution_service`** 与 **`shared`/`local_box`** —— **`shared`** 若仍 **`pending`** 则 **不完整**）。
+- **依赖重申：** **`verifier.py`** 内常量 **`SECRET`** 为 **教学/草稿**残留；**`server.py`** 依赖 **`EXECUTION_SHARED_KEYS`** 环境拼接。
+- **`shared/`**：归档段 **仍会** **`from shared.schemas import …`** —— **`shared/schemas.py`** **未升格前**，**不讲**本条归档可单机跑通。
+- **后续**：升格正式服务必须 **另行契约 + 立项**。**禁止**：借本条 **顺带收口 **`risk_engine`/`shared`** 其它 pending。**（簇级隔离。）
