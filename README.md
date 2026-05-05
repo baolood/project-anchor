@@ -61,6 +61,7 @@ Concurrency behavior (expected):
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --require-latest-success`
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --require-latest-success --quiet`
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --json`
+  - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --fail-on-cancelled`
 
 ### Quick local checks (after `pip install`)
 

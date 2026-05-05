@@ -11,6 +11,7 @@ SUMMARY=0
 REQUIRE_LATEST_SUCCESS=0
 QUIET=0
 JSON_OUTPUT=0
+FAIL_ON_CANCELLED=0
 
 while (($# > 0)); do
   case "$1" in
@@ -50,9 +51,13 @@ while (($# > 0)); do
       JSON_OUTPUT=1
       shift
       ;;
+    --fail-on-cancelled)
+      FAIL_ON_CANCELLED=1
+      shift
+      ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
@@ -64,6 +69,7 @@ Options:
   --require-latest-success  Exit non-zero unless latest run on --branch is successful
   --quiet           Suppress table/tips; useful with --require-latest-success in scripts
   --json            Emit filtered rows as JSON (for automation)
+  --fail-on-cancelled  Exit non-zero if any filtered row has conclusion=cancelled
 EOF
       exit 0
       ;;
@@ -175,6 +181,15 @@ if [[ "$REQUIRE_LATEST_SUCCESS" -eq 1 ]]; then
     exit 1
   fi
   [[ "$QUIET" -eq 0 ]] && echo "CI_RUNS_CHECK PASS: latest run for branch=${BRANCH} is successful"
+fi
+
+if [[ "$FAIL_ON_CANCELLED" -eq 1 ]]; then
+  cancelled_count="$(printf '%s\n' "$output" | awk -F '\t' '$4=="cancelled" {n++} END {print n+0}')"
+  if [[ "$cancelled_count" -gt 0 ]]; then
+    echo "CI_RUNS_CHECK FAIL: found ${cancelled_count} cancelled run(s) in filtered output" >&2
+    exit 1
+  fi
+  [[ "$QUIET" -eq 0 ]] && echo "CI_RUNS_CHECK PASS: no cancelled runs in filtered output"
 fi
 
 if [[ "$QUIET" -eq 0 && "$JSON_OUTPUT" -eq 0 ]]; then
