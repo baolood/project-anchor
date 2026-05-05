@@ -71,6 +71,10 @@ For the **parent repository** `local_box` audit stack (not Docker `anchor-backen
 4. **CI:** workflow **`.github/workflows/local-box-baseline.yml`** runs `pip install -r requirements.txt`, `./scripts/check_local_box_baseline.sh` (includes checklist curl guardrail scan), then SQLite **`init_db()`** smoke, **`import local_box.runner`**, and **`import local_box.control.server`** (Flask app). Concurrent runs on the same ref are cancelled via workflow **`concurrency`**.
    - Expected signal under frequent pushes: older runs on the same ref can appear **Cancelled**; this is normal.
    - Validation rule: check the **latest run on the ref** for final PASS/FAIL.
+   - Optional helper (requires GitHub CLI auth):
+     ```bash
+     ./scripts/check_local_box_ci_runs.sh
+     ```
 
 5. **Local parity with CI** (from repo root, after `pip install -r requirements.txt`):
 
