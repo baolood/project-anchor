@@ -2,33 +2,33 @@
 
 ## 1. 结论
 
-- 父仓 **未跟踪路径**曾以 **初版 13 项**快照登记（见 §2 附：**历史对齐**）；现阶段 **`git ls-files --others --exclude-standard` 口径下仍 pending 的未跟踪路径为 6 个**（见 §2 **当前权威清单**）。
-- **对这 6 个路径**：在未新唯一立项前，不执行删除，不归档实体，不并入主线，不对其做未授权 `git add`。
-- **这 6 项**的统一状态：**`pending_decision`**。
+- 父仓 **未跟踪路径**曾以 **初版 13 项**快照登记（见 §2 附：**历史对齐**）；现阶段 **`git ls-files --others --exclude-standard` 口径下仍 pending 的未跟踪路径为 5 个**（见 §2 **当前权威清单**）。
+- **对这 5 个路径**：在未新唯一立项前，不执行删除，不归档实体，不并入主线，不对其做未授权 `git add`。
+- **这 5 项**的统一状态：**`pending_decision`**。
 - **后续**：必须 **新唯一立项** 后 **逐项或按目录组** 处理；未立项前不得推进清屏或多线并行。
 
 ---
 
 ## 2. 当前权威清单
 
-### 2.1 仍为未跟踪（计数 **6**；与 `git ls-files --others --exclude-standard` 一致，`anchor.db` 等已忽略项不在此列）
+### 2.1 仍为未跟踪（计数 **5**；与 `git ls-files --others --exclude-standard` 一致，`anchor.db` 等已忽略项不在此列）
 
-1. `anchor-backend/scripts/insert_order_command.py`
-2. `execution_service/executor.py`
-3. `execution_service/server.py`
-4. `execution_service/verifier.py`
-5. `risk_engine/client.py`
-6. `shared/schemas.py`
+1. `execution_service/executor.py`
+2. `execution_service/server.py`
+3. `execution_service/verifier.py`
+4. `risk_engine/client.py`
+5. `shared/schemas.py`
 
 ### 2.2 附：初版 13 项快照 → 当前对齐（台账用）
 
 | 原 §2 条目（初版） | 现状态 |
 |-------------------|--------|
 | `anchor-backend/docs/DOMAIN_COMMAND_VALIDATION_DEV_USAGE_V1.md` | **已升格跟踪**（例：`fcc76b3` **`docs: add domain command validation dev usage`**） |
+| `anchor-backend/scripts/insert_order_command.py` | **已升格跟踪**（脚本仅允许 **`ANCHOR_*` 环境变量**提供口令；必填 **`ANCHOR_DB_PASSWORD`**，见 **`ANCHOR_BACKEND`** 记录 **§11**） |
 | `anchor-backend/worker/WORKER_BOUNDARY_RULES.md` | **已归档入库** **`docs/archive/anchor_backend_draft/worker/WORKER_BOUNDARY_RULES.md`**（见 `ANCHOR_BACKEND` 记录 **§2.2／§10**） |
 | `cloud/strategy_api/server.py`、`cloud/strategy_store/versions.py` | **已归档入库**（跟踪路径见 `docs/CLOUD_PENDING_DECISION_RECORD_V1.md` §9 **`docs/archive/cloud_draft/…`**） |
 | 根目录 `test_ack_semantics.py`、`test_cloud_publish.py`、`test_execution_service.py` | 已迁入 `docs/archive/manual_smoke/` 并跟踪 |
-| 上表 §2.1 所列 **6** 条 | 仍为 `pending_decision` **未跟踪** |
+| 上表 §2.1 所列 **5** 条 | 仍为 `pending_decision` **未跟踪** |
 
 ---
 
@@ -36,7 +36,6 @@
 
 | path | group | current_status | allowed_next_action | forbidden_action |
 |------|-------|----------------|---------------------|------------------|
-| `anchor-backend/scripts/insert_order_command.py` | `anchor-backend/scripts` | `pending_decision` | 新唯一立项后再处理 | 不得顺手 git add / git clean / rm / 并入主线 |
 | `execution_service/executor.py` | `execution_service` | `pending_decision` | 新唯一立项后再处理 | 不得顺手 git add / git clean / rm / 并入主线 |
 | `execution_service/server.py` | `execution_service` | `pending_decision` | 新唯一立项后再处理 | 不得顺手 git add / git clean / rm / 并入主线 |
 | `execution_service/verifier.py` | `execution_service` | `pending_decision` | 新唯一立项后再处理 | 不得顺手 git add / git clean / rm / 并入主线 |
@@ -68,8 +67,8 @@
 ## 6. 验收口径
 
 - **本轮**在父仓库内 **只允许新增**：`docs/PARENT_UNTRACKED_PENDING_DECISION_TABLE_V1.md`。
-- **提交核对**：在仅暂存本文档的理想情况下，`git diff --cached --name-only` 应 **只列出**本文档路径；**§2.1 所列 6 个未跟踪路径不参与暂存**，仍应保持 **`git status`** 的 **`??`** 形态（与 §2.2 已升格/已归档路径**不**矛盾）。
-- **禁止**：新增、删除、移动 **§2.1 所列 6 个路径**的任何实体文件或目录层级（除非下一轮单独立项明确授权）。
+- **提交核对**：在仅暂存本文档的理想情况下，`git diff --cached --name-only` 应 **只列出**本文档路径；**§2.1 所列 5 个未跟踪路径不参与暂存**，仍应保持 **`git status`** 的 **`??`** 形态（与 §2.2 已升格/已归档路径**不**矛盾）。
+- **禁止**：新增、删除、移动 **§2.1 所列 5 个路径**的任何实体文件或目录层级（除非下一轮单独立项明确授权）。
 
 ---
 
@@ -84,16 +83,15 @@
 
 **与 §2 的关系：** §2.2 保留 **立项当时 13 条路径**快照与 **现态**对照。§2.1 与下表为 **`git ls-files --others --exclude-standard`** 下 **仍存在的未跟踪**与 **已落库 `PENDING_DECISION_RECORD_V1`** 的 **索引对齐**。
 
-### 8.1 当前剩余未跟踪文件（6 个）
+### 8.1 当前剩余未跟踪文件（5 个）
 
 与 **`git ls-files --others --exclude-standard`** 口径一致（**2026-04 收口**）：
 
-1. `anchor-backend/scripts/insert_order_command.py`
-2. `execution_service/executor.py`
-3. `execution_service/server.py`
-4. `execution_service/verifier.py`
-5. `risk_engine/client.py`
-6. `shared/schemas.py`
+1. `execution_service/executor.py`
+2. `execution_service/server.py`
+3. `execution_service/verifier.py`
+4. `risk_engine/client.py`
+5. `shared/schemas.py`
 
 ### 8.2 五簇与五份决策记录（5 个簇；均已落库）
 
@@ -108,6 +106,7 @@
 ### 8.3 归档与覆盖结论
 
 - **`anchor-backend/docs/DOMAIN_COMMAND_VALIDATION_DEV_USAGE_V1.md`** 已于父仓 **`anchor-backend/docs/`** 下 **升格跟踪**（例提交 **`fcc76b3`**），**不再**出现在 **`git ls-files --others --exclude-standard`**（仍属 **`anchor-backend`** 治理叙事：`docs/ANCHOR_BACKEND_PENDING_DECISION_RECORD_V1.md`）。
+- **`anchor-backend/scripts/insert_order_command.py`** 已 **升格跟踪**（**仅用环境变量**承载 DB 口令，见 **`ANCHOR_BACKEND`** §11）。
 - **`anchor-backend/worker/WORKER_BOUNDARY_RULES.md`** 已由未跟踪草稿 **归档入库**至 **`docs/archive/anchor_backend_draft/worker/WORKER_BOUNDARY_RULES.md`**，**不应再**残留在 **`anchor-backend/worker/`** 未跟踪路径上。
 - 根目录三文件 **`test_ack_semantics.py`**、**`test_cloud_publish.py`**、**`test_execution_service.py`** 已迁入 **`docs/archive/manual_smoke/`** 并在父仓 **跟踪**；此三文件 **不再**出现在 **`--others --exclude-standard`** 中。
 - **`cloud/strategy_*` 源草稿**按 **`CLOUD`** 记录 **§9** 归档至 **`docs/archive/cloud_draft/…`** 并已跟踪；**原顶层 `cloud/`** 不作为 **pending 未跟踪顶簇**残留在清单中。
