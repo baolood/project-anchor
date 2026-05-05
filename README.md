@@ -5,6 +5,8 @@ This **parent** repo holds orchestration docs, **`local_box/`**, **`shared/`**, 
 - **Architecture (commands / worker semantics):** [`ARCHITECTURE.md`](ARCHITECTURE.md)
 - **Operations / risk runbook:** [`RUNBOOK.md`](RUNBOOK.md)
 - **Console (separate app):** [`anchor-console/README.md`](anchor-console/README.md)
+- **PR body template:** [`PR_DESCRIPTION.md`](PR_DESCRIPTION.md)
+- **Release notes template:** [`RELEASE_NOTES.md`](RELEASE_NOTES.md)
 
 ---
 

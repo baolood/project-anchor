@@ -1,40 +1,36 @@
-# feat(ops): Ops Dashboard UI + list_retry E2E fix
+# Pull request description (template)
+
+Copy this file into the GitHub PR body and replace the placeholders. Use **repo-relative** paths and portable examples (for example `cd /path/to/project-anchor`), not machine-specific absolute paths.
 
 ## Summary
 
-- Ops Dashboard: `/ops` page, state proxy, heartbeat/panic/kill_switch display, 5s auto-refresh
-- E2E: `ops_dashboard_ui_e2e` (SSR/CSR compatible via API checks), `checklist_ops_dashboard_ui_e2e`
-- Fix: `list_retry_ui_e2e` FINAL_NOT_DONE — relax pass condition when worker is fast (PASS when `FINAL_STATUS_AFTER_RETRY=DONE`)
+- **What:** <!-- one sentence -->
+- **Why:** <!-- problem or ticket reference -->
 
-## E2E Evidence (bb1f990)
+## Scope
 
-```
-./scripts/release_up_and_verify.sh exit 0
-PASS_OR_FAIL=PASS
-OPS_DASHBOARD_UI_E2E_PASS=YES
-LIST_RETRY_UI_E2E_PASS=YES
-CHECKLIST_OPS_DASHBOARD_UI_OUT=/tmp/anchor_e2e_checklist_ops_dashboard_ui_e2e_last.out
-CHECKLIST_LIST_RETRY_UI_OUT=/tmp/anchor_e2e_checklist_list_retry_ui_e2e_last.out
-```
+- **Areas touched:** <!-- e.g. local_box, scripts, anchor-backend subtree, anchor-console submodule pointer -->
+- **Out of scope:** <!-- explicit non-goals -->
 
-### Full template (from /tmp/anchor_e2e_merge_summary.out)
+## How to verify
 
-```
-==== E2E EVIDENCE ====
-DATE=2026-02-12T20:59:23+08:00
-PARENT_HEAD=bb1f990
----- release ----
-MODULE=verify_all_e2e
-LIST_RETRY_UI_E2E_PASS=YES
-OPS_DASHBOARD_UI_E2E_PASS=YES
-PASS_OR_FAIL=PASS
-FAIL_REASON=
----- index ----
-CHECKLIST_LIST_RETRY_UI_OUT=/tmp/anchor_e2e_checklist_list_retry_ui_e2e_last.out
-CHECKLIST_OPS_DASHBOARD_UI_OUT=/tmp/anchor_e2e_checklist_ops_dashboard_ui_e2e_last.out
+```bash
+cd /path/to/project-anchor
+export PYTHONPATH=.
+./scripts/check_local_box_baseline.sh
 ```
 
-## Base / Compare
+<!-- Add service-specific steps (docker compose, UI) if relevant. -->
 
-- **base:** main (or master)
-- **compare:** feature/ops-console-minimal
+## Risk / rollout
+
+- **User-visible behavior:** <!-- none / describe -->
+- **Migrations / data:** <!-- N/A or describe -->
+- **Submodule / subtree:** <!-- N/A or SHA bump noted -->
+
+## Checklist
+
+- [ ] **CI:** `local-box-baseline` (or equivalent) considered for this change
+- [ ] **Docs:** `README.md` / `RUNBOOK.md` / ADRs updated if behavior or ops changed
+- [ ] **Paths:** examples and scripts avoid machine-specific absolute paths (use repo-relative paths or placeholders like `/path/to/project-anchor`)
+- [ ] **Secrets:** no credentials committed
