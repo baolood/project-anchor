@@ -28,7 +28,38 @@ Use this file as the single execution board:
 
 ---
 
-## 2) Weekly Plan (Fill Owner/ETA)
+## 2) This Week Kickstart (Day 1-5)
+
+Use this if you want immediate execution without waiting for a full planning meeting.
+
+- [ ] **Day 1 — Assign owners + freeze scope**
+  - Confirm owner for each Week 1 item
+  - Mark non-go-live work as out-of-scope for this cycle
+  - Evidence: owner map link
+
+- [ ] **Day 2 — Go/No-Go gate draft**
+  - Write explicit hard-stop release gates
+  - Name final go/no-go approver
+  - Evidence: gate doc link
+
+- [ ] **Day 3 — Environment parity diff**
+  - Produce dev/stage/prod-like config diff
+  - Flag high-risk mismatches
+  - Evidence: parity diff link
+
+- [ ] **Day 4 — Stage deploy + rollback rehearsal booking**
+  - Dry-run deploy from clean checkout
+  - Book rollback drill window with owner/on-call
+  - Evidence: run output + calendar link
+
+- [ ] **Day 5 — Weekly review and blocker burn-down**
+  - Review Week 1 status (`DONE`/`BLOCKED`)
+  - Re-assign blockers with ETA before next week starts
+  - Evidence: review notes link
+
+---
+
+## 3) Weekly Plan (Fill Owner/ETA)
 
 ### Week 1 — Release Gate Definition + Environment Baseline
 
@@ -184,7 +215,7 @@ Use this file as the single execution board:
 
 ---
 
-## 3) Hard Go/No-Go Gates (Must Be GREEN)
+## 4) Hard Go/No-Go Gates (Must Be GREEN)
 
 - [ ] Deployment and rollback drills pass
 - [ ] P0/P1 alerting verified
@@ -197,7 +228,7 @@ If any item is not green, launch is **NO-GO**.
 
 ---
 
-## 4) Daily Standup Template
+## 5) Daily Standup Template
 
 - Yesterday done:
 - Today plan:
@@ -207,7 +238,7 @@ If any item is not green, launch is **NO-GO**.
 
 ---
 
-## 5) Final Go-Live Signoff
+## 6) Final Go-Live Signoff
 
 - Release manager: `<name>` / `<date>`
 - Engineering lead: `<name>` / `<date>`
