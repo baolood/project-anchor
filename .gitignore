@@ -7,6 +7,9 @@ __pycache__/
 tmp/
 tmp/*.out
 
+# Go-live daily standup snapshots (see docs/GO_LIVE_CHECKLIST.md §7)
+artifacts/go-live/*.out
+
 _archive/
 
 # Local dev / accidental workspace DB (see docs/PARENT_WORKTREE_PENDING_LAYER_MAP_V1.md §2.4)
