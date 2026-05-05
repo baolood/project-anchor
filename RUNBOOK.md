@@ -63,9 +63,10 @@ For the **parent repository** `local_box` audit stack (not Docker `anchor-backen
    ```bash
    export PYTHONPATH=.
    python3 -c "from local_box.audit import event_store; event_store.init_db(); print('ok', event_store.DB_PATH)"
+   python3 -c "import local_box.runner; print('runner import ok')"
    ```
 
-4. **CI:** workflow **`.github/workflows/local-box-baseline.yml`** runs `pip install -r requirements.txt`, `./scripts/check_local_box_baseline.sh`, then the SQLite `init_db()` smoke above.
+4. **CI:** workflow **`.github/workflows/local-box-baseline.yml`** runs `pip install -r requirements.txt`, `./scripts/check_local_box_baseline.sh`, then SQLite **`init_db()`** smoke, then **`import local_box.runner`** (covers **`shared`**, **`risk_engine.client`**, **`local_box.gate.ticket_signature`**).
 
 ## Verify
 

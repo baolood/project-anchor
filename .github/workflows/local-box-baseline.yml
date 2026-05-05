@@ -26,3 +26,11 @@ jobs:
           event_store.init_db()
           print("LOCAL_BOX_SQLITE_SMOKE ok")
           PY
+      - name: Smoke — import local_box.runner (full parent import chain)
+        env:
+          PYTHONPATH: .
+        run: |
+          python - <<'PY'
+          import local_box.runner  # noqa: F401
+          print("LOCAL_BOX_RUNNER_IMPORT ok")
+          PY
