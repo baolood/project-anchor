@@ -275,3 +275,41 @@ Use one row per active risk; update daily until closed.
 - Operations lead: `<name>` / `<date>`
 - Product owner: `<name>` / `<date>`
 
+---
+
+## 9) Go/No-Go Review Template
+
+Use this section in the final review meeting.
+
+- Review date/time: `<YYYY-MM-DD HH:MM>`
+- Release target window: `<window>`
+- Chair (decision owner): `<name>`
+- Participants: `<names>`
+
+### Gate results
+
+- Deployment + rollback drill: `PASS|FAIL` (evidence: `<link>`)
+- Alerting + routing: `PASS|FAIL` (evidence: `<link>`)
+- Backup/restore drill: `PASS|FAIL` (evidence: `<link>`)
+- Security checks: `PASS|FAIL` (evidence: `<link>`)
+- Capacity/stress checks: `PASS|FAIL` (evidence: `<link>`)
+- On-call readiness: `PASS|FAIL` (evidence: `<link>`)
+
+### Decision
+
+- Final decision: `GO | NO-GO`
+- If `NO-GO`, top blockers + owner + ETA:
+  1. `<blocker>` / `<owner>` / `<eta>`
+  2. `<blocker>` / `<owner>` / `<eta>`
+
+---
+
+## 10) Launch Week Run Sheet (T-7 to T+1)
+
+- [ ] **T-7 to T-5:** freeze feature scope, finalize owner matrix, confirm rollout window
+- [ ] **T-4 to T-3:** rerun deployment + rollback drill in stage
+- [ ] **T-2:** verify alerts, on-call roster, escalation contacts
+- [ ] **T-1:** final go/no-go review and signoff
+- [ ] **T (launch):** canary rollout + watch SLO/alerts for agreed window
+- [ ] **T+1:** post-launch review, open follow-up actions, close launch ticket
+
