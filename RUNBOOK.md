@@ -112,6 +112,11 @@ When adding or updating shell automation under `scripts/` (and checklist scripts
      ```bash
      ./scripts/check_checklist_curl_guardrails.sh
      ```
+   - Optional modes for local developer loops:
+     ```bash
+     ./scripts/check_checklist_curl_guardrails.sh --verbose
+     ./scripts/check_checklist_curl_guardrails.sh --changed-only
+     ```
    - For parent baseline safety, run:
      ```bash
      ./scripts/check_local_box_baseline.sh

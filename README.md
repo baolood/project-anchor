@@ -39,6 +39,13 @@ GitHub Actions workflow **[`.github/workflows/local-box-baseline.yml`](.github/w
 4. Job **`check`** smoke-tests **`event_store.init_db()`**, **`import local_box.runner`**, **`import local_box.control.server`**
 5. If either guardrail/baseline step fails, run locally: `./scripts/check_checklist_curl_guardrails.sh` then `./scripts/check_local_box_baseline.sh`
 
+Quick local options for the guardrail scanner:
+
+```bash
+./scripts/check_checklist_curl_guardrails.sh --verbose
+./scripts/check_checklist_curl_guardrails.sh --changed-only
+```
+
 ### Quick local checks (after `pip install`)
 
 ```bash
