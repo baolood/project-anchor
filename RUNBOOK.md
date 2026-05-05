@@ -2,6 +2,8 @@
 
 Throughout this file, **`/path/to/project-anchor`** means your local clone of the repository (replace with the real directory).
 
+For launch planning and owner tracking, use **`docs/GO_LIVE_CHECKLIST.md`** as the execution board.
+
 ## Daily Mode (default)
 
 ### Start (backend + worker)
