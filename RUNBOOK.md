@@ -1,12 +1,14 @@
 # Project Anchor — Risk Core Runbook
 
+Throughout this file, **`/path/to/project-anchor`** means your local clone of the repository (replace with the real directory).
+
 ## Daily Mode (default)
 
 ### Start (backend + worker)
 
 With `docker-compose.override.yml` present, worker picks up daily defaults; no manual env needed:
 ```bash
-cd /Users/baolood/Projects/project-anchor/anchor-backend
+cd /path/to/project-anchor/anchor-backend
 docker compose up -d --build
 docker compose stop worker 2>/dev/null || true
 sleep 2
@@ -23,13 +25,13 @@ RISK_HARD_LIMITS_DISABLE=0 RISK_EXPOSURE_ATOMIC=1 docker compose up -d worker
 
 ### Enter extreme
 ```bash
-cd /Users/baolood/Projects/project-anchor
+cd /path/to/project-anchor
 BASE="http://127.0.0.1:8000" CAPITAL_USD=1000 ./scripts/extreme_mode_run.sh
 ```
 
 ### Or step-by-step
 ```bash
-cd anchor-backend
+cd /path/to/project-anchor/anchor-backend
 docker compose stop worker
 sleep 2
 CAPITAL_USD=1000 MAX_SINGLE_TRADE_RISK_PCT=100 MAX_NET_EXPOSURE_PCT=30 \
@@ -79,7 +81,7 @@ For the **parent repository** `local_box` audit stack (not Docker `anchor-backen
 
 ### Full E2E (default: EXTREME skipped)
 ```bash
-cd /Users/baolood/Projects/project-anchor
+cd /path/to/project-anchor
 ./scripts/release_up_and_verify.sh
 ```
 
@@ -98,7 +100,7 @@ EXTREME_MODE_E2E=1 ./scripts/release_up_and_verify.sh
 ### Reset exposure + clean pending
 ```bash
 curl -s -X POST http://127.0.0.1:8000/ops/dev/reset-pending-domain-commands
-cd /Users/baolood/Projects/project-anchor/anchor-backend
+cd /path/to/project-anchor/anchor-backend
 docker compose exec -T postgres psql -U anchor -d anchor -c \
   "UPDATE risk_state SET current_exposure_usd=0, updated_at=NOW() WHERE id=1;"
 ```
@@ -106,7 +108,7 @@ docker compose exec -T postgres psql -U anchor -d anchor -c \
 ## Tag Release (固化 daily env + 验证 + 打 tag)
 
 ```bash
-cd /Users/baolood/Projects/project-anchor
+cd /path/to/project-anchor
 ./scripts/risk_core_tag_release.sh
 ```
 
