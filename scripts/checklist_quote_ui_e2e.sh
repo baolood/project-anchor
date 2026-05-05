@@ -5,6 +5,7 @@ set -euo pipefail
 
 CONSOLE="${CONSOLE_URL:-http://127.0.0.1:3000}"
 NEXT_LOG_FILE="${NEXT_LOG_FILE:-/tmp/next-dev.log}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 NEXT_LOG_HAS_POST_QUOTE=NO
 LIST_HAS_NEW_QUOTE_ID=NO
@@ -15,7 +16,7 @@ FAIL_REASON=""
 
 # Create one quote via proxy
 echo "Create QUOTE via proxy..."
-BODY="$(curl -sS --noproxy '*' -X POST "$CONSOLE/api/proxy/commands/quote" -H "Content-Type: application/json" -d '{}')"
+BODY="$(curl "${CURL_FLAGS[@]}" -X POST "$CONSOLE/api/proxy/commands/quote" -H "Content-Type: application/json" -d '{}')"
 NEW_ID="$(echo "$BODY" | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")"
 if [ -z "$NEW_ID" ] || [[ "$NEW_ID" != quote-* ]]; then
   echo "FAIL: create quote did not return id quote-*"
@@ -42,7 +43,7 @@ fi
 # Poll detail until status=DONE (max 30 x 1s)
 echo "Poll detail until DONE..."
 for i in $(seq 1 30); do
-  DETAIL="$(curl -sS --noproxy '*' "$CONSOLE/api/proxy/commands/$NEW_ID")"
+  DETAIL="$(curl "${CURL_FLAGS[@]}" "$CONSOLE/api/proxy/commands/$NEW_ID")"
   STATUS="$(echo "$DETAIL" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))")"
   [ "$STATUS" = "DONE" ] && QUOTE_STATUS_EVENTUALLY_DONE=YES && break
   [ "$STATUS" = "FAILED" ] && break

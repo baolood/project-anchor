@@ -4,6 +4,7 @@ set -euo pipefail
 MODULE=ops_audit_export_e2e
 OUT=${OUT:-/tmp/anchor_e2e_checklist_ops_audit_export_e2e_last.out}
 CONSOLE_URL=${CONSOLE_URL:-http://127.0.0.1:3000}
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 )
 
 pass=YES
 fail_reason=""
@@ -11,8 +12,8 @@ fail_reason=""
 json_url="$CONSOLE_URL/api/proxy/ops/state/history/export?limit=5"
 csv_url="$CONSOLE_URL/api/proxy/ops/state/history/export.csv?limit=5"
 
-json_code=$(curl -s -o /tmp/anchor_tmp_ops_audit_export_json.out -w "%{http_code}" "$json_url" || true)
-csv_code=$(curl -s -D /tmp/anchor_tmp_ops_audit_export_csv_headers.out -o /tmp/anchor_tmp_ops_audit_export_csv_body.out -w "%{http_code}" "$csv_url" || true)
+json_code=$(curl "${CURL_FLAGS[@]}" -o /tmp/anchor_tmp_ops_audit_export_json.out -w "%{http_code}" "$json_url" || true)
+csv_code=$(curl "${CURL_FLAGS[@]}" -D /tmp/anchor_tmp_ops_audit_export_csv_headers.out -o /tmp/anchor_tmp_ops_audit_export_csv_body.out -w "%{http_code}" "$csv_url" || true)
 
 has_header=NO
 if grep -qi "ts,event_type,exec_mode,actor,source" /tmp/anchor_tmp_ops_audit_export_csv_body.out 2>/dev/null; then
