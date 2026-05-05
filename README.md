@@ -57,6 +57,7 @@ Concurrency behavior (expected):
   - `./scripts/check_local_box_ci_runs.sh --workflow local-box-baseline.yml --branch <your-branch>`
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --cancelled-only`
   - `./scripts/check_local_box_ci_runs.sh --latest-only`
+  - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --summary`
 
 ### Quick local checks (after `pip install`)
 

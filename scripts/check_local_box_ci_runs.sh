@@ -7,6 +7,7 @@ LIMIT="${LIMIT:-10}"
 BRANCH="${BRANCH:-}"
 CANCELLED_ONLY=0
 LATEST_ONLY=0
+SUMMARY=0
 
 while (($# > 0)); do
   case "$1" in
@@ -30,9 +31,13 @@ while (($# > 0)); do
       LATEST_ONLY=1
       shift
       ;;
+    --summary)
+      SUMMARY=1
+      shift
+      ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--latest-only]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--latest-only] [--summary]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
@@ -40,6 +45,7 @@ Options:
   --branch    Filter output to one branch/ref name
   --cancelled-only  Show only cancelled runs (useful for concurrency checks)
   --latest-only     Keep only newest run per branch from the fetched set
+  --summary         Print status/conclusion counts for filtered rows
 EOF
       exit 0
       ;;
@@ -82,6 +88,22 @@ if [[ "$LATEST_ONLY" -eq 1 ]]; then
   output="$(printf '%s\n' "$output" | awk -F '\t' '!seen[$2]++')"
 fi
 printf '%s\n' "$output"
+
+if [[ "$SUMMARY" -eq 1 ]]; then
+  echo
+  echo "== Summary =="
+  printf '%s\n' "$output" | awk -F '\t' '
+    NF>=4 {
+      status[$3]++
+      conclusion[$4]++
+      total++
+    }
+    END {
+      print "total_rows\t" (total+0)
+      for (k in status) print "status_" k "\t" status[k]
+      for (k in conclusion) print "conclusion_" k "\t" conclusion[k]
+    }'
+fi
 
 echo
 echo "Tip: under concurrency cancel-in-progress, older runs on the same branch may show cancelled."
