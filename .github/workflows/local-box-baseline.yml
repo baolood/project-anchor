@@ -9,6 +9,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  checklist-curl-guardrails:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Guardrail — checklist curl timeout scan
+        run: ./scripts/check_checklist_curl_guardrails.sh
+
   check:
     runs-on: ubuntu-latest
     steps:

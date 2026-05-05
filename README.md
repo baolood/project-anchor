@@ -31,12 +31,13 @@ export PYTHONPATH=.
 
 ### CI
 
-GitHub Actions workflow **[`.github/workflows/local-box-baseline.yml`](.github/workflows/local-box-baseline.yml)** (job **`local-box-baseline`**) on **push** and **pull_request**:
+GitHub Actions workflow **[`.github/workflows/local-box-baseline.yml`](.github/workflows/local-box-baseline.yml)** on **push** and **pull_request**:
 
-1. Installs **`requirements.txt`**
-2. Runs **`./scripts/check_local_box_baseline.sh`** (includes checklist curl guardrail scan)
-3. Smoke: **`event_store.init_db()`**, **`import local_box.runner`**, **`import local_box.control.server`**
-4. If step 2 fails, run locally: `./scripts/check_local_box_baseline.sh` and `./scripts/check_checklist_curl_guardrails.sh` to identify missing files vs curl-timeout regressions
+1. Job **`checklist-curl-guardrails`** runs **`./scripts/check_checklist_curl_guardrails.sh`** (fast, script-policy only)
+2. Job **`check`** installs **`requirements.txt`**
+3. Job **`check`** runs **`./scripts/check_local_box_baseline.sh`**
+4. Job **`check`** smoke-tests **`event_store.init_db()`**, **`import local_box.runner`**, **`import local_box.control.server`**
+5. If either guardrail/baseline step fails, run locally: `./scripts/check_checklist_curl_guardrails.sh` then `./scripts/check_local_box_baseline.sh`
 
 ### Quick local checks (after `pip install`)
 
