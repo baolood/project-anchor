@@ -68,6 +68,6 @@
 
 ## 10. 跟踪锚点（曾误归档副本的纠正）
 
-- **曾短暂入库：** **`docs/archive/risk_engine_draft/client.py`**（例 **`6ee8365`** 批次）—— **已删除**，避免与 **`risk_engine/client.py`** **双源**；**唯一 SSOT** 为 **`risk_engine/client.py`**。
+- **曾短暂入库：** **`docs/archive/risk_engine_draft/client.py`**（例 **`6ee8365`** 批次）—— **已从 Git 树移除**（**`8164c0a`** 批次完成 **`git rm`**），避免与 **`risk_engine/client.py`** **双源**；**唯一 SSOT** 为 **`risk_engine/client.py`**。
 - **纠正提交：** **`183a011`** **`fix(risk_engine): restore tracked client for local_box imports`**
 - **禁止**：借本条宣称 **`execution_service` 归档段**已升格为 **生产可运维服务**。
