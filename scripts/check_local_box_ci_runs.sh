@@ -8,6 +8,7 @@ BRANCH="${BRANCH:-}"
 CANCELLED_ONLY=0
 LATEST_ONLY=0
 SUMMARY=0
+REQUIRE_LATEST_SUCCESS=0
 
 while (($# > 0)); do
   case "$1" in
@@ -35,9 +36,13 @@ while (($# > 0)); do
       SUMMARY=1
       shift
       ;;
+    --require-latest-success)
+      REQUIRE_LATEST_SUCCESS=1
+      shift
+      ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--latest-only] [--summary]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--latest-only] [--summary] [--require-latest-success]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
@@ -46,6 +51,7 @@ Options:
   --cancelled-only  Show only cancelled runs (useful for concurrency checks)
   --latest-only     Keep only newest run per branch from the fetched set
   --summary         Print status/conclusion counts for filtered rows
+  --require-latest-success  Exit non-zero unless latest run on --branch is successful
 EOF
       exit 0
       ;;
@@ -56,6 +62,11 @@ EOF
       ;;
   esac
 done
+
+if [[ "$REQUIRE_LATEST_SUCCESS" -eq 1 && -z "${BRANCH}" ]]; then
+  echo "CI_RUNS_CHECK FAIL: --require-latest-success requires --branch <name>." >&2
+  exit 2
+fi
 
 if ! command -v gh >/dev/null 2>&1; then
   echo "CI_RUNS_CHECK FAIL: gh CLI not found." >&2
@@ -103,6 +114,21 @@ if [[ "$SUMMARY" -eq 1 ]]; then
       for (k in status) print "status_" k "\t" status[k]
       for (k in conclusion) print "conclusion_" k "\t" conclusion[k]
     }'
+fi
+
+if [[ "$REQUIRE_LATEST_SUCCESS" -eq 1 ]]; then
+  latest_line="$(printf '%s\n' "$rows" | awk -F '\t' -v b="$BRANCH" '$2==b {print; exit}')"
+  if [[ -z "${latest_line}" ]]; then
+    echo "CI_RUNS_CHECK FAIL: no runs found for branch=${BRANCH}" >&2
+    exit 1
+  fi
+  latest_status="$(printf '%s\n' "$latest_line" | awk -F '\t' '{print $3}')"
+  latest_conclusion="$(printf '%s\n' "$latest_line" | awk -F '\t' '{print $4}')"
+  if [[ "$latest_status" != "completed" || "$latest_conclusion" != "success" ]]; then
+    echo "CI_RUNS_CHECK FAIL: latest run for branch=${BRANCH} is status=${latest_status}, conclusion=${latest_conclusion}" >&2
+    exit 1
+  fi
+  echo "CI_RUNS_CHECK PASS: latest run for branch=${BRANCH} is successful"
 fi
 
 echo
