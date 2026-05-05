@@ -2,7 +2,7 @@
 # Run once after setting REPO_URL. Usage:
 #   export REPO_URL=https://github.com/YOUR_ORG/project-anchor.git
 #   ./scripts/do_push_and_pr.sh
-set -e
+set -euo pipefail
 
 REPO_URL="${REPO_URL:?Set REPO_URL, e.g. export REPO_URL=https://github.com/YOUR_ORG/project-anchor.git}"
 

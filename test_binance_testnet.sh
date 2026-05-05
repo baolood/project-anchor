@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 # Use env vars to avoid committing secrets. Example:
 #   export API_KEY="your_key" API_SECRET="your_secret"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Baseline presence check for local_box. Spec: docs/LOCAL_BOX_BASELINE_CHECK_SCRIPT_SPEC_V1.md
 # Run from repository root: ./scripts/check_local_box_baseline.sh
-set -u
+set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || {
   echo "LOCAL_BOX_BASELINE_CHECK FAIL: cannot resolve repository root" >&2

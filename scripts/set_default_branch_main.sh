@@ -3,7 +3,7 @@
 # 1) 打开 https://github.com/settings/tokens/new 创建 token（勾选 repo）
 # 2) export TOKEN=ghp_xxxx
 # 3) ./scripts/set_default_branch_main.sh
-set -e
+set -euo pipefail
 
 TOKEN="${TOKEN:?请设置 TOKEN，例如: export TOKEN=ghp_xxxx}"
 OWNER="baolood"

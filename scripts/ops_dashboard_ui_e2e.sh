@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 CONSOLE_URL="${CONSOLE_URL:-http://127.0.0.1:3000}"
 

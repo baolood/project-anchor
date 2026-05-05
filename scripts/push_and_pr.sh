@@ -2,7 +2,7 @@
 # Push feature/ops-console-minimal and prepare PR evidence.
 # Usage: REPO_URL=<your_https_or_ssh_url> ./scripts/push_and_pr.sh
 # Example: REPO_URL=https://github.com/yourorg/project-anchor.git ./scripts/push_and_pr.sh
-set -e
+set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPO_URL="${REPO_URL:?Set REPO_URL (HTTPS or SSH)}"

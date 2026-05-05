@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 API_KEY="${API_KEY:?Set API_KEY}"
 API_SECRET="${API_SECRET:?Set API_SECRET}"
 
