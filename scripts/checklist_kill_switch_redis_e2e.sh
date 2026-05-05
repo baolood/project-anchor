@@ -4,6 +4,7 @@ set -euo pipefail
 
 OUT="${OUT:-/tmp/anchor_e2e_checklist_kill_switch_redis_e2e_last.out}"
 BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 PASS_OR_FAIL=FAIL
 FAIL_REASON=""
@@ -18,7 +19,7 @@ echo "=============================="
 echo "MODULE=kill_switch_redis_e2e"
 echo "Step0: Precheck backend"
 echo "=============================="
-if ! curl -sS --noproxy '*' -o /dev/null -w "%{http_code}" "$BACKEND_PRECHECK/health" | grep -q 200; then
+if ! curl "${CURL_FLAGS[@]}" -o /dev/null -w "%{http_code}" "$BACKEND_PRECHECK/health" | grep -q 200; then
   echo "FAIL_REASON=backend_not_reachable"
   echo "OPS_SET_ON_HTTP_STATUS=$OPS_SET_ON_HTTP_STATUS"
   echo "OPS_SET_OFF_HTTP_STATUS=$OPS_SET_OFF_HTTP_STATUS"
@@ -35,7 +36,7 @@ echo "OK: backend reachable"
 echo "=============================="
 echo "Step1: POST /ops/kill-switch {\"enabled\": true}"
 echo "=============================="
-curl_opts=( -sS --noproxy '*' -X POST -H "Content-Type: application/json" -d '{"enabled":true}' )
+curl_opts=( "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" -d '{"enabled":true}' )
 [ -n "${OPS_TOKEN:-}" ] && curl_opts+=( -H "x-ops-token: $OPS_TOKEN" )
 ops_on_resp="$(curl "${curl_opts[@]}" -w "\n%{http_code}" "$BACKEND_PRECHECK/ops/kill-switch")"
 OPS_SET_ON_HTTP_STATUS="$(echo "$ops_on_resp" | tail -1)"
@@ -57,7 +58,7 @@ sleep 2
 echo "=============================="
 echo "Step2: POST /domain-commands/noop"
 echo "=============================="
-noop_resp="$(curl -sS --noproxy '*' -X POST "$BACKEND_PRECHECK/domain-commands/noop")"
+noop_resp="$(curl "${CURL_FLAGS[@]}" -X POST "$BACKEND_PRECHECK/domain-commands/noop")"
 NEW_ID="$(echo "$noop_resp" | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")"
 if [ -z "$NEW_ID" ]; then
   FAIL_REASON=noop_post_failed
@@ -77,7 +78,7 @@ echo "=============================="
 echo "Step3: sleep 12 (pending check 10s), GET status => PENDING"
 echo "=============================="
 sleep 12
-status="$(curl -sS --noproxy '*' "$BACKEND_PRECHECK/domain-commands/$NEW_ID" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))")"
+status="$(curl "${CURL_FLAGS[@]}" "$BACKEND_PRECHECK/domain-commands/$NEW_ID" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))")"
 if [ "$status" = "PENDING" ]; then
   STAY_PENDING=YES
 else
@@ -92,7 +93,7 @@ else
   echo "PASS_OR_FAIL=$PASS_OR_FAIL"
   echo "FAIL_REASON=$FAIL_REASON"
   # Turn off kill switch before exit
-  curl -sS --noproxy '*' -X POST -H "Content-Type: application/json" -d '{"enabled":false}' "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
+  curl "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" -d '{"enabled":false}' "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
   exit 1
 fi
 echo "OK: command still PENDING"
@@ -100,7 +101,7 @@ echo "OK: command still PENDING"
 echo "=============================="
 echo "Step4: GET /domain-commands/{id}/events => KILL_SWITCH_ON with source=redis"
 echo "=============================="
-events="$(curl -sS --noproxy '*' "$BACKEND_PRECHECK/domain-commands/$NEW_ID/events")"
+events="$(curl "${CURL_FLAGS[@]}" "$BACKEND_PRECHECK/domain-commands/$NEW_ID/events")"
 has_kill="$(echo "$events" | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
@@ -138,7 +139,7 @@ if [ "$EVENTS_HAS_KILL_SWITCH_ON" != "YES" ] || [ "$SOURCE_IS_REDIS" != "YES" ];
   echo "SOURCE_IS_REDIS=$SOURCE_IS_REDIS"
   echo "PASS_OR_FAIL=$PASS_OR_FAIL"
   echo "FAIL_REASON=$FAIL_REASON"
-  curl -sS --noproxy '*' -X POST -H "Content-Type: application/json" -d '{"enabled":false}' "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
+  curl "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" -d '{"enabled":false}' "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
   exit 1
 fi
 echo "OK: KILL_SWITCH_ON with source=redis"
@@ -146,7 +147,7 @@ echo "OK: KILL_SWITCH_ON with source=redis"
 echo "=============================="
 echo "Step5: POST /ops/kill-switch {\"enabled\": false}"
 echo "=============================="
-curl_off_opts=( -sS --noproxy '*' -X POST -H "Content-Type: application/json" -d '{"enabled":false}' )
+curl_off_opts=( "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" -d '{"enabled":false}' )
 [ -n "${OPS_TOKEN:-}" ] && curl_off_opts+=( -H "x-ops-token: $OPS_TOKEN" )
 ops_off_resp="$(curl "${curl_off_opts[@]}" -w "\n%{http_code}" "$BACKEND_PRECHECK/ops/kill-switch")"
 OPS_SET_OFF_HTTP_STATUS="$(echo "$ops_off_resp" | tail -1)"

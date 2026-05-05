@@ -6,6 +6,7 @@ OUT="${OUT:-/tmp/anchor_e2e_checklist_kill_switch_e2e_last.out}"
 BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}"
 ANCHOR_BACKEND_DIR="${ANCHOR_BACKEND_DIR:-$(cd "$(dirname "$0")/.." && pwd)/anchor-backend}"
 BACKEND_DIR="${BACKEND_DIR:-$ANCHOR_BACKEND_DIR}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 PASS_OR_FAIL=FAIL
 FAIL_REASON=""
@@ -14,7 +15,7 @@ echo "=============================="
 echo "MODULE=kill_switch_e2e"
 echo "Step0: Precheck backend"
 echo "=============================="
-if ! curl -sS --noproxy '*' -o /dev/null -w "%{http_code}" "$BACKEND_PRECHECK/health" | grep -q 200; then
+if ! curl "${CURL_FLAGS[@]}" -o /dev/null -w "%{http_code}" "$BACKEND_PRECHECK/health" | grep -q 200; then
   echo "FAIL_REASON=backend_not_reachable"
   echo "PASS_OR_FAIL=$PASS_OR_FAIL"
   echo "FAIL_REASON=$FAIL_REASON"
@@ -34,7 +35,7 @@ echo "OK: worker restarted with kill switch ON"
 echo "=============================="
 echo "Step2: POST /domain-commands/noop"
 echo "=============================="
-noop_resp="$(curl -sS --noproxy '*' -X POST "$BACKEND_PRECHECK/domain-commands/noop")"
+noop_resp="$(curl "${CURL_FLAGS[@]}" -X POST "$BACKEND_PRECHECK/domain-commands/noop")"
 cmd_id="$(echo "$noop_resp" | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")"
 if [ -z "$cmd_id" ]; then
   FAIL_REASON=noop_post_failed
@@ -51,7 +52,7 @@ echo "Step3: Wait 5s + 5s (total 10s), assert command still PENDING"
 echo "=============================="
 sleep 5
 sleep 5
-status="$(curl -sS --noproxy '*' "$BACKEND_PRECHECK/domain-commands/$cmd_id" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))")"
+status="$(curl "${CURL_FLAGS[@]}" "$BACKEND_PRECHECK/domain-commands/$cmd_id" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))")"
 if [ "$status" != "PENDING" ]; then
   FAIL_REASON=command_not_pending_after_10s
   echo "FAIL_REASON=$FAIL_REASON"
@@ -65,7 +66,7 @@ echo "OK: command still PENDING"
 echo "=============================="
 echo "Step4: GET /domain-commands/{id}/events — KILL_SWITCH_ON present and count <= 2"
 echo "=============================="
-events="$(curl -sS --noproxy '*' "$BACKEND_PRECHECK/domain-commands/$cmd_id/events")"
+events="$(curl "${CURL_FLAGS[@]}" "$BACKEND_PRECHECK/domain-commands/$cmd_id/events")"
 kill_count="$(echo "$events" | python3 -c "
 import json, sys
 data = json.load(sys.stdin)

@@ -4,6 +4,7 @@ set -euo pipefail
 
 OUT="${OUT:-/tmp/anchor_e2e_checklist_ops_state_e2e_last.out}"
 BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 PASS_OR_FAIL=FAIL
 FAIL_REASON=""
@@ -19,7 +20,7 @@ echo "=============================="
 echo "MODULE=ops_state_e2e"
 echo "Step0: Precheck backend"
 echo "=============================="
-if ! curl -sS --noproxy '*' -o /dev/null -w "%{http_code}" "$BACKEND_PRECHECK/health" | grep -q 200; then
+if ! curl "${CURL_FLAGS[@]}" -o /dev/null -w "%{http_code}" "$BACKEND_PRECHECK/health" | grep -q 200; then
   {
     echo "MODULE=ops_state_e2e"
     echo "HTTP_STATUS=0"
@@ -40,7 +41,7 @@ echo "OK: backend reachable"
 echo "=============================="
 echo "Step1: GET /ops/state — assert 200 and keys"
 echo "=============================="
-state_resp="$(curl -sS --noproxy '*' -w "\n%{http_code}" "$BACKEND_PRECHECK/ops/state")"
+state_resp="$(curl "${CURL_FLAGS[@]}" -w "\n%{http_code}" "$BACKEND_PRECHECK/ops/state")"
 HTTP_STATUS="$(echo "$state_resp" | tail -1)"
 state_body="$(echo "$state_resp" | sed '$d')"
 
@@ -103,14 +104,14 @@ HAS_PANIC_GUARD=YES
 echo "=============================="
 echo "Step2: POST kill-switch on/off, GET /ops/state — recent_ops_events non-empty"
 echo "=============================="
-curl_opts=( -sS --noproxy '*' -X POST -H "Content-Type: application/json" )
+curl_opts=( "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" )
 [ -n "${OPS_TOKEN:-}" ] && curl_opts+=( -H "x-ops-token: $OPS_TOKEN" )
 curl "${curl_opts[@]}" -d '{"enabled":true}' "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
 sleep 2
 curl "${curl_opts[@]}" -d '{"enabled":false}' "$BACKEND_PRECHECK/ops/kill-switch" >/dev/null || true
 sleep 2
 
-state_resp2="$(curl -sS --noproxy '*' "$BACKEND_PRECHECK/ops/state")"
+state_resp2="$(curl "${CURL_FLAGS[@]}" "$BACKEND_PRECHECK/ops/state")"
 recent_count="$(echo "$state_resp2" | python3 -c "
 import json, sys
 d = json.load(sys.stdin)
@@ -126,7 +127,7 @@ echo "OK: recent_ops_events count=$recent_count"
 echo "=============================="
 echo "Step3: GET /ops/state/history?limit=20"
 echo "=============================="
-history_resp="$(curl -sS --noproxy '*' -w "\n%{http_code}" "$BACKEND_PRECHECK/ops/state/history?limit=20")"
+history_resp="$(curl "${CURL_FLAGS[@]}" -w "\n%{http_code}" "$BACKEND_PRECHECK/ops/state/history?limit=20")"
 HISTORY_HTTP_STATUS="$(echo "$history_resp" | tail -1)"
 history_body="$(echo "$history_resp" | sed '$d')"
 
