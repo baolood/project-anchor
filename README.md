@@ -51,6 +51,8 @@ Concurrency behavior (expected):
 - The workflow uses `concurrency.cancel-in-progress: true`.
 - When multiple pushes happen on the same branch/ref, older in-progress runs may show as **Cancelled**.
 - Treat the **latest run for that ref** as source of truth; a cancelled older run is expected, not a failure.
+- Optional helper to inspect recent workflow runs locally (requires `gh auth login`):
+  - `./scripts/check_local_box_ci_runs.sh`
 
 ### Quick local checks (after `pip install`)
 
