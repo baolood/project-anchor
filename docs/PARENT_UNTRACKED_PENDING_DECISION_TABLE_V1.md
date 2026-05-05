@@ -24,7 +24,7 @@
 | 原 §2 条目（初版） | 现状态 |
 |-------------------|--------|
 | `anchor-backend/docs/DOMAIN_COMMAND_VALIDATION_DEV_USAGE_V1.md` | **已升格跟踪**（例：`fcc76b3` **`docs: add domain command validation dev usage`**） |
-| `anchor-backend/scripts/insert_order_command.py` | **已升格跟踪**（脚本仅允许 **`ANCHOR_*` 环境变量**提供口令；必填 **`ANCHOR_DB_PASSWORD`**，见 **`ANCHOR_BACKEND`** 记录 **§11**） |
+| `anchor-backend/scripts/insert_order_command.py` | **已升格跟踪**（例：**`9c20d55`** **`fix(scripts): require ANCHOR_DB_* env …`**）；口令仅 **`ANCHOR_*`** 环境变量注入，必填 **`ANCHOR_DB_PASSWORD`**，见 **`ANCHOR_BACKEND`** **§11** |
 | `anchor-backend/worker/WORKER_BOUNDARY_RULES.md` | **已归档入库** **`docs/archive/anchor_backend_draft/worker/WORKER_BOUNDARY_RULES.md`**（见 `ANCHOR_BACKEND` 记录 **§2.2／§10**） |
 | `cloud/strategy_api/server.py`、`cloud/strategy_store/versions.py` | **已归档入库**（跟踪路径见 `docs/CLOUD_PENDING_DECISION_RECORD_V1.md` §9 **`docs/archive/cloud_draft/…`**） |
 | 根目录 `test_ack_semantics.py`、`test_cloud_publish.py`、`test_execution_service.py` | 已迁入 `docs/archive/manual_smoke/` 并跟踪 |
@@ -106,7 +106,7 @@
 ### 8.3 归档与覆盖结论
 
 - **`anchor-backend/docs/DOMAIN_COMMAND_VALIDATION_DEV_USAGE_V1.md`** 已于父仓 **`anchor-backend/docs/`** 下 **升格跟踪**（例提交 **`fcc76b3`**），**不再**出现在 **`git ls-files --others --exclude-standard`**（仍属 **`anchor-backend`** 治理叙事：`docs/ANCHOR_BACKEND_PENDING_DECISION_RECORD_V1.md`）。
-- **`anchor-backend/scripts/insert_order_command.py`** 已 **升格跟踪**（**仅用环境变量**承载 DB 口令，见 **`ANCHOR_BACKEND`** §11）。
+- **`anchor-backend/scripts/insert_order_command.py`** 已 **升格跟踪**（**仅用环境变量**承载 DB 口令；例提交 **`9c20d55`**，见 **`ANCHOR_BACKEND`** §11）。
 - **`anchor-backend/worker/WORKER_BOUNDARY_RULES.md`** 已由未跟踪草稿 **归档入库**至 **`docs/archive/anchor_backend_draft/worker/WORKER_BOUNDARY_RULES.md`**，**不应再**残留在 **`anchor-backend/worker/`** 未跟踪路径上。
 - 根目录三文件 **`test_ack_semantics.py`**、**`test_cloud_publish.py`**、**`test_execution_service.py`** 已迁入 **`docs/archive/manual_smoke/`** 并在父仓 **跟踪**；此三文件 **不再**出现在 **`--others --exclude-standard`** 中。
 - **`cloud/strategy_*` 源草稿**按 **`CLOUD`** 记录 **§9** 归档至 **`docs/archive/cloud_draft/…`** 并已跟踪；**原顶层 `cloud/`** 不作为 **pending 未跟踪顶簇**残留在清单中。

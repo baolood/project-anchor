@@ -11,13 +11,14 @@
 
 ## 2. 当前文件清单
 
-### 2.1 已升格（跟踪；不出现于 `git ls-files --others --exclude-standard`)
+### 2.1 已升格（跟踪；不出现于 `git ls-files --others --exclude-standard`）
 
 - **`anchor-backend/docs/DOMAIN_COMMAND_VALIDATION_DEV_USAGE_V1.md`**
   - 例：**`fcc76b3`** **`docs: add domain command validation dev usage`**
   - 语义：**dev-only**，**≠** 生产 **`/domain-commands`** 主执行链（见下文 §3）。
 
 - **`anchor-backend/scripts/insert_order_command.py`**
+  - 例：**`9c20d55`** **`fix(scripts): require ANCHOR_DB_* env for sample order insert`**
   - **本地 Postgres **`commands`** 表** 写入示例：**`type=order`** / **`pending`**。
   - **连接参数：** 仅 **`ANCHOR_*`** **环境变量**；**`ANCHOR_DB_PASSWORD` 必填**；**无主线条目常量口令**。运行说明见 **脚本首注释**与 **§11**。
 
