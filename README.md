@@ -46,6 +46,12 @@ Quick local options for the guardrail scanner:
 ./scripts/check_checklist_curl_guardrails.sh --changed-only
 ```
 
+Concurrency behavior (expected):
+
+- The workflow uses `concurrency.cancel-in-progress: true`.
+- When multiple pushes happen on the same branch/ref, older in-progress runs may show as **Cancelled**.
+- Treat the **latest run for that ref** as source of truth; a cancelled older run is expected, not a failure.
+
 ### Quick local checks (after `pip install`)
 
 ```bash
