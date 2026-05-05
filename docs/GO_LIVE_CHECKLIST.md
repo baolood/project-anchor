@@ -28,7 +28,21 @@ Use this file as the single execution board:
 
 ---
 
-## 2) This Week Kickstart (Day 1-5)
+## 2) Owner Matrix (Fill First)
+
+Fill this once before Day 1 execution:
+
+- Release manager: `<name>`
+- Engineering lead: `<name>`
+- Operations lead: `<name>`
+- Security owner: `<name>`
+- Data/DB owner: `<name>`
+- On-call primary: `<name>`
+- On-call backup: `<name>`
+
+---
+
+## 3) This Week Kickstart (Day 1-5)
 
 Use this if you want immediate execution without waiting for a full planning meeting.
 
@@ -59,7 +73,7 @@ Use this if you want immediate execution without waiting for a full planning mee
 
 ---
 
-## 3) Weekly Plan (Fill Owner/ETA)
+## 4) Weekly Plan (Fill Owner/ETA)
 
 ### Week 1 — Release Gate Definition + Environment Baseline
 
@@ -215,7 +229,7 @@ Use this if you want immediate execution without waiting for a full planning mee
 
 ---
 
-## 4) Hard Go/No-Go Gates (Must Be GREEN)
+## 5) Hard Go/No-Go Gates (Must Be GREEN)
 
 - [ ] Deployment and rollback drills pass
 - [ ] P0/P1 alerting verified
@@ -228,7 +242,23 @@ If any item is not green, launch is **NO-GO**.
 
 ---
 
-## 5) Daily Standup Template
+## 6) Risk Register (Live Table)
+
+Use one row per active risk; update daily until closed.
+
+- Risk ID: `<R-001>`
+- Description: `<short risk statement>`
+- Impact: `<High|Medium|Low>`
+- Probability: `<High|Medium|Low>`
+- Owner: `<name>`
+- Mitigation: `<what we do now>`
+- Trigger/Signal: `<what indicates risk is materializing>`
+- Status: `<OPEN|MITIGATING|CLOSED>`
+- ETA to close: `<date>`
+
+---
+
+## 7) Daily Standup Template
 
 - Yesterday done:
 - Today plan:
@@ -238,7 +268,7 @@ If any item is not green, launch is **NO-GO**.
 
 ---
 
-## 6) Final Go-Live Signoff
+## 8) Final Go-Live Signoff
 
 - Release manager: `<name>` / `<date>`
 - Engineering lead: `<name>` / `<date>`
