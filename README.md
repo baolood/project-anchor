@@ -55,6 +55,7 @@ Concurrency behavior (expected):
   - `./scripts/check_local_box_ci_runs.sh`
   - `./scripts/check_local_box_ci_runs.sh --branch main --limit 20`
   - `./scripts/check_local_box_ci_runs.sh --workflow local-box-baseline.yml --branch <your-branch>`
+  - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --cancelled-only`
 
 ### Quick local checks (after `pip install`)
 

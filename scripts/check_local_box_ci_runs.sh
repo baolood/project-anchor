@@ -5,6 +5,7 @@ set -euo pipefail
 WORKFLOW_FILE="${WORKFLOW_FILE:-local-box-baseline.yml}"
 LIMIT="${LIMIT:-10}"
 BRANCH="${BRANCH:-}"
+CANCELLED_ONLY=0
 
 while (($# > 0)); do
   case "$1" in
@@ -20,14 +21,19 @@ while (($# > 0)); do
       BRANCH="${2:-}"
       shift 2
       ;;
+    --cancelled-only)
+      CANCELLED_ONLY=1
+      shift
+      ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
   --limit     Number of runs to fetch (default: 10)
   --branch    Filter output to one branch/ref name
+  --cancelled-only  Show only cancelled runs (useful for concurrency checks)
 EOF
       exit 0
       ;;
@@ -56,12 +62,16 @@ rows="$(gh run list --workflow "${WORKFLOW_FILE}" --limit "${LIMIT}" \
   --json databaseId,headBranch,status,conclusion,event,displayTitle,createdAt,updatedAt \
   --jq '.[] | "\(.databaseId)\t\(.headBranch)\t\(.status)\t\(.conclusion // "n/a")\t\(.event)\t\(.displayTitle)"')"
 
+output="$rows"
 if [[ -n "${BRANCH}" ]]; then
   echo "(filtered branch=${BRANCH})"
-  printf '%s\n' "$rows" | awk -F '\t' -v b="$BRANCH" '$2==b {print}'
-else
-  printf '%s\n' "$rows"
+  output="$(printf '%s\n' "$output" | awk -F '\t' -v b="$BRANCH" '$2==b {print}')"
 fi
+if [[ "$CANCELLED_ONLY" -eq 1 ]]; then
+  echo "(filtered cancelled-only)"
+  output="$(printf '%s\n' "$output" | awk -F '\t' '$4=="cancelled" {print}')"
+fi
+printf '%s\n' "$output"
 
 echo
 echo "Tip: under concurrency cancel-in-progress, older runs on the same branch may show cancelled."
