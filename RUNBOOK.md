@@ -77,6 +77,43 @@ For the **parent repository** `local_box` audit stack (not Docker `anchor-backen
    python3 -c "import local_box.control.server as c; print('control', c.app.name)"
    ```
 
+## Script maintenance guardrails
+
+When adding or updating shell automation under `scripts/` (and checklist scripts), keep these defaults so local runs and CI behave the same:
+
+1. **Strict mode first**
+   - Use `#!/usr/bin/env bash` and `set -euo pipefail`.
+   - Prefer explicit non-fatal handling (`|| true`) only where intentional.
+
+2. **Portable repository paths**
+   - Resolve repository root from script location, not machine-specific paths:
+     ```bash
+     ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+     ```
+   - Use quoted path joins, e.g. `cd "$ROOT/anchor-backend"`.
+
+3. **Network call safety (`curl`)**
+   - For HTTP calls in E2E/checklist scripts, use timeout guards:
+     - `--connect-timeout 5`
+     - `--max-time 20`
+   - Recommended pattern:
+     ```bash
+     CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
+     curl "${CURL_FLAGS[@]}" "$URL"
+     ```
+   - Keep existing auth/header option arrays; merge timeout flags rather than replacing behavior.
+
+4. **Validation before commit**
+   - Syntax-check changed scripts:
+     ```bash
+     bash -n scripts/your_script.sh
+     ```
+   - For parent baseline safety, run:
+     ```bash
+     ./scripts/check_local_box_baseline.sh
+     python3 -c "from local_box.audit import event_store; event_store.init_db(); print('LOCAL_BOX_SQLITE_SMOKE ok')"
+     ```
+
 ## Verify
 
 ### Full E2E (default: EXTREME skipped)
