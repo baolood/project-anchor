@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${ROOT:-/Users/baolood/Projects/project-anchor}"
+_DEFAULT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="${ROOT:-$_DEFAULT_ROOT}"
 BACKEND="${BACKEND:-$ROOT/anchor-backend}"
 CONSOLE="${CONSOLE:-$ROOT/anchor-console}"
 

@@ -5,7 +5,7 @@ echo "=============================="
 echo "STEP 0｜路径与环境"
 echo "=============================="
 
-ROOT="/Users/baolood/Projects/project-anchor"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND="$ROOT/anchor-backend"
 CONSOLE="$ROOT/anchor-console"
 

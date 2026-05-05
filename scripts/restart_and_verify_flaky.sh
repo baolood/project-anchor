@@ -5,6 +5,7 @@
 
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONSOLE_URL="${CONSOLE_URL:-http://127.0.0.1:3000}"
 BACKEND_URL="${BACKEND_URL:-http://127.0.0.1:8000}"
 
@@ -19,14 +20,14 @@ echo
 echo "=============================="
 echo "【1】确认代码确实存在（不存在就别重启了，先补文件）"
 echo "=============================="
-cd /Users/baolood/Projects/project-anchor/anchor-backend
+cd "$ROOT/anchor-backend"
 echo "[backend] grep flaky/retry"
 grep -RIn --line-number "domain-commands/flaky" app || true
 grep -RIn --line-number "domain-commands/.*/retry" app || true
 grep -RIn --line-number "FLAKY" app || true
 echo
 
-cd /Users/baolood/Projects/project-anchor/anchor-console
+cd "$ROOT/anchor-console"
 echo "[console] 确认 Next 路由文件存在"
 ls -la app/api/proxy/commands/flaky/route.ts || true
 ls -la app/api/proxy/commands/\[id\]/retry/route.ts || true
@@ -35,7 +36,7 @@ echo
 echo "=============================="
 echo "【2】重建并重启 backend+worker（确保容器跑到新代码）"
 echo "=============================="
-cd /Users/baolood/Projects/project-anchor/anchor-backend
+cd "$ROOT/anchor-backend"
 docker compose down
 docker compose up -d --build
 docker compose ps
