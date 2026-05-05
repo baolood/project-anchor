@@ -1,6 +1,8 @@
 .DS_Store
 node_modules/
 __pycache__/
+.venv/
+.venv-smoke/
 .env
 tmp/
 tmp/*.out

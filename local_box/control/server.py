@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import os
 import time
+from typing import Optional
 
 from flask import Flask, jsonify, request
 
@@ -230,7 +233,7 @@ def _ops_attention_view() -> dict:
 
 def _operator_action(
     execution_blocked_by_self_check: bool,
-    top_blocking_failure: str | None,
+    top_blocking_failure: Optional[str],
 ) -> str:
     if not execution_blocked_by_self_check:
         return "NO_ACTION_REQUIRED"

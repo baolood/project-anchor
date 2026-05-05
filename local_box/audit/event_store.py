@@ -2,7 +2,7 @@ import json
 import sqlite3
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from shared.schemas import Event, Stage, Status, new_event_id
 
@@ -91,7 +91,7 @@ def append_event(
     command_id: str,
     stage: Stage,
     status: Status,
-    payload: Dict[str, Any] | None = None,
+    payload: Optional[Dict[str, Any]] = None,
 ) -> Event:
     init_db()
     event = Event(
@@ -121,7 +121,7 @@ def append_event(
     return event
 
 
-def list_events(command_id: str | None = None) -> List[Event]:
+def list_events(command_id: Optional[str] = None) -> List[Event]:
     init_db()
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -338,7 +338,7 @@ def list_dead_dispatches() -> List[Dict[str, Any]]:
     return out
 
 
-def replay_dead_dispatch(ticket_id: str) -> Dict[str, Any] | None:
+def replay_dead_dispatch(ticket_id: str) -> Optional[Dict[str, Any]]:
     init_db()
     now = time.time()
     conn = sqlite3.connect(DB_PATH)
@@ -393,7 +393,7 @@ def save_execution_receipt(
     conn.close()
 
 
-def get_execution_receipt(ticket_id: str) -> Dict[str, Any] | None:
+def get_execution_receipt(ticket_id: str) -> Optional[Dict[str, Any]]:
     init_db()
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()

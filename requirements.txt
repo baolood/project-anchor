@@ -1,0 +1,4 @@
+# Parent repo (local_box control plane + risk_engine HTTP client).
+# Install: python3 -m pip install -r requirements.txt
+requests>=2.26,<3
+flask>=2.0,<4

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from collections import defaultdict
+from typing import Optional
 
 from local_box.audit.event_store import (
     count_dead_dispatches,
@@ -19,12 +22,12 @@ REQUIRED_AUDIT_STAGES = {
 
 
 def _kpi_status(
-    value: float | None,
+    value: Optional[float],
     *,
-    warn_below: float | None = None,
-    critical_below: float | None = None,
-    warn_above: float | None = None,
-    critical_above: float | None = None,
+    warn_below: Optional[float] = None,
+    critical_below: Optional[float] = None,
+    warn_above: Optional[float] = None,
+    critical_above: Optional[float] = None,
 ) -> str:
     if value is None:
         return "UNKNOWN"

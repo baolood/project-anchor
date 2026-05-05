@@ -1,5 +1,6 @@
 from shared.schemas import ExecutionTicket, NormalizedCommand, ExecMode, new_ticket_id
-from execution_service.verifier import sign_ticket
+
+from local_box.gate.ticket_signature import sign_ticket
 from local_box.audit.event_store import is_executed
 import time
 

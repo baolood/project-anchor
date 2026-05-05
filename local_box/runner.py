@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from shared.schemas import ExecutionTicket, StrategyIntent, Stage, Status
 from local_box.audit.event_store import (
     append_event,
