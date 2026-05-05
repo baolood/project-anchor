@@ -3,24 +3,83 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VERBOSE=0
+CHANGED_ONLY=0
 
-python3 - "$ROOT" <<'PY'
+while (($# > 0)); do
+  case "$1" in
+    --verbose)
+      VERBOSE=1
+      shift
+      ;;
+    --changed-only)
+      CHANGED_ONLY=1
+      shift
+      ;;
+    -h|--help)
+      cat <<'EOF'
+Usage: ./scripts/check_checklist_curl_guardrails.sh [--verbose] [--changed-only]
+
+Options:
+  --verbose       Print detailed scan information.
+  --changed-only  Scan only changed checklist scripts (working tree, staged, untracked).
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Run with --help for usage." >&2
+      exit 2
+      ;;
+  esac
+done
+
+python3 - "$ROOT" "$VERBOSE" "$CHANGED_ONLY" <<'PY'
 import pathlib
 import re
+import subprocess
 import sys
 
 root = pathlib.Path(sys.argv[1])
-scripts = sorted((root / "scripts").glob("checklist_*.sh"))
+verbose = sys.argv[2] == "1"
+changed_only = sys.argv[3] == "1"
+
+all_scripts = sorted((root / "scripts").glob("checklist_*.sh"))
+if changed_only:
+    changed = set()
+
+    def add_lines(cmd):
+        out = subprocess.check_output(cmd, cwd=root, text=True)
+        for line in out.splitlines():
+            line = line.strip()
+            if line.startswith("scripts/checklist_") and line.endswith(".sh"):
+                changed.add(line)
+
+    add_lines(["git", "diff", "--name-only", "--diff-filter=AM", "HEAD", "--", "scripts/checklist_*.sh"])
+    add_lines(["git", "diff", "--cached", "--name-only", "--diff-filter=AM", "--", "scripts/checklist_*.sh"])
+    add_lines(["git", "ls-files", "--others", "--exclude-standard", "--", "scripts/checklist_*.sh"])
+
+    scripts = [root / rel for rel in sorted(changed) if (root / rel).exists()]
+else:
+    scripts = all_scripts
+
 if not scripts:
-    print("CHECKLIST_CURL_GUARDRAILS PASS: no checklist scripts found")
+    if changed_only:
+        print("CHECKLIST_CURL_GUARDRAILS PASS: no changed checklist scripts to scan")
+    else:
+        print("CHECKLIST_CURL_GUARDRAILS PASS: no checklist scripts found")
     sys.exit(0)
 
 violations = []
+checked_lines = 0
 for path in scripts:
+    if verbose:
+        print(f"[scan] {path.relative_to(root).as_posix()}")
     for line_no, raw in enumerate(path.read_text(encoding="utf-8", errors="ignore").splitlines(), 1):
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
+        checked_lines += 1
         # Ignore array appends / variable names that include 'curl' but are not invocations.
         if "curl_opts+=" in line or "curl_off_opts+=" in line:
             continue
@@ -42,5 +101,8 @@ if violations:
         print(f"- {rel}:{line_no}: {line}")
     sys.exit(1)
 
-print(f"CHECKLIST_CURL_GUARDRAILS PASS: {len(scripts)} checklist scripts scanned")
+scope = "changed checklist scripts" if changed_only else "checklist scripts"
+print(f"CHECKLIST_CURL_GUARDRAILS PASS: {len(scripts)} {scope} scanned")
+if verbose:
+    print(f"[scan] non-comment/non-empty lines checked: {checked_lines}")
 PY
