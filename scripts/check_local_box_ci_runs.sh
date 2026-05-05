@@ -10,6 +10,7 @@ LATEST_ONLY=0
 SUMMARY=0
 REQUIRE_LATEST_SUCCESS=0
 QUIET=0
+JSON_OUTPUT=0
 
 while (($# > 0)); do
   case "$1" in
@@ -45,9 +46,13 @@ while (($# > 0)); do
       QUIET=1
       shift
       ;;
+    --json)
+      JSON_OUTPUT=1
+      shift
+      ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--latest-only] [--summary] [--require-latest-success] [--quiet]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
@@ -58,6 +63,7 @@ Options:
   --summary         Print status/conclusion counts for filtered rows
   --require-latest-success  Exit non-zero unless latest run on --branch is successful
   --quiet           Suppress table/tips; useful with --require-latest-success in scripts
+  --json            Emit filtered rows as JSON (for automation)
 EOF
       exit 0
       ;;
@@ -71,6 +77,12 @@ done
 
 if [[ "$REQUIRE_LATEST_SUCCESS" -eq 1 && -z "${BRANCH}" ]]; then
   echo "CI_RUNS_CHECK FAIL: --require-latest-success requires --branch <name>." >&2
+  exit 2
+fi
+if [[ "$LIMIT" =~ ^[0-9]+$ ]] && [[ "$LIMIT" -gt 0 ]]; then
+  :
+else
+  echo "CI_RUNS_CHECK FAIL: --limit must be a positive integer." >&2
   exit 2
 fi
 
@@ -106,11 +118,36 @@ if [[ "$LATEST_ONLY" -eq 1 ]]; then
   [[ "$QUIET" -eq 0 ]] && echo "(filtered latest-only per branch)"
   output="$(printf '%s\n' "$output" | awk -F '\t' '!seen[$2]++')"
 fi
-if [[ "$QUIET" -eq 0 ]]; then
+if [[ "$JSON_OUTPUT" -eq 1 ]]; then
+  printf '%s\n' "$output" | python3 - <<'PY'
+import json
+import sys
+
+rows = []
+for raw in sys.stdin:
+    raw = raw.rstrip("\n")
+    if not raw:
+        continue
+    parts = raw.split("\t")
+    if len(parts) < 6:
+        continue
+    rows.append(
+        {
+            "databaseId": parts[0],
+            "headBranch": parts[1],
+            "status": parts[2],
+            "conclusion": parts[3],
+            "event": parts[4],
+            "displayTitle": parts[5],
+        }
+    )
+print(json.dumps(rows, ensure_ascii=True))
+PY
+elif [[ "$QUIET" -eq 0 ]]; then
   printf '%s\n' "$output"
 fi
 
-if [[ "$SUMMARY" -eq 1 ]]; then
+if [[ "$SUMMARY" -eq 1 && "$JSON_OUTPUT" -eq 0 ]]; then
   [[ "$QUIET" -eq 0 ]] && echo && echo "== Summary =="
   printf '%s\n' "$output" | awk -F '\t' '
     NF>=4 {
@@ -140,7 +177,7 @@ if [[ "$REQUIRE_LATEST_SUCCESS" -eq 1 ]]; then
   [[ "$QUIET" -eq 0 ]] && echo "CI_RUNS_CHECK PASS: latest run for branch=${BRANCH} is successful"
 fi
 
-if [[ "$QUIET" -eq 0 ]]; then
+if [[ "$QUIET" -eq 0 && "$JSON_OUTPUT" -eq 0 ]]; then
   echo
   echo "Tip: under concurrency cancel-in-progress, older runs on the same branch may show cancelled."
   echo "Use the newest run on the branch/ref as source of truth."
