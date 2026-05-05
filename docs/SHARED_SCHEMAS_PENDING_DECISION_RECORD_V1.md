@@ -67,6 +67,6 @@
 
 ## 10. 升格锚点（`shared/`）
 
-- **提交 subject（父仓主线）：** **`feat(shared): track schemas package; archive risk_engine draft client`**
+- **例提交：** **`6ee8365`** **`feat(shared): track schemas package; archive risk_engine draft client`**
 - **跟踪路径：** **`shared/__init__.py`**、**`shared/schemas.py`**
 - **升级口径：** **跟踪入库 ≠** 已完成 **企业级 schema 治理**；**正式契约库**叙事须 **另行立项**。

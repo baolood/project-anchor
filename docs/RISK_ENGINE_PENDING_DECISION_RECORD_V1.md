@@ -64,5 +64,5 @@
 ## 9. 归档状态更新
 
 - **跟踪路径：** **`docs/archive/risk_engine_draft/client.py`**
-- **同批父仓提交 subject：** **`feat(shared): track schemas package; archive risk_engine draft client`**
+- **例提交：** **`6ee8365`** **`feat(shared): track schemas package; archive risk_engine draft client`**
 - **禁止**：借本条 **顺带**宣称 **`execution_service` 归档段**已升格为 **生产可运维服务**（簇级隔离与 **`EXECUTION_SERVICE`** 记录 **§9** 一致）。
