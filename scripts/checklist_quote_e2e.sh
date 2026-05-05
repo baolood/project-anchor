@@ -4,6 +4,7 @@ set -euo pipefail
 
 CONSOLE_PRECHECK="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}"
 BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
@@ -27,7 +28,7 @@ lsof -nP -iTCP:8000 -sTCP:LISTEN || true
 if [ -n "${POLICY_QUOTE_MAX_NOTIONAL:-}" ] && [ "${POLICY_QUOTE_MAX_NOTIONAL:-0}" -gt 0 ]; then
   echo "Step0b: Policy block test (POLICY_QUOTE_MAX_NOTIONAL=$POLICY_QUOTE_MAX_NOTIONAL)"
   block_body="$tmpdir/quote_block.json"
-  curl -sS --noproxy '*' -X POST "$CONSOLE_PRECHECK/api/proxy/commands/quote" \
+  curl "${CURL_FLAGS[@]}" -X POST "$CONSOLE_PRECHECK/api/proxy/commands/quote" \
     -H "Content-Type: application/json" \
     -d '{"notional":100}' \
     -o "$block_body"
@@ -37,12 +38,12 @@ print(json.load(open(sys.argv[1])).get("id",""))
 PY
 )"
   for i in $(seq 1 30); do
-    st="$(curl -sS --noproxy '*' "$CONSOLE_PRECHECK/api/proxy/commands/$block_id" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))")"
+    st="$(curl "${CURL_FLAGS[@]}" "$CONSOLE_PRECHECK/api/proxy/commands/$block_id" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))")"
     [ "$st" = "FAILED" ] && break
     [ "$st" = "DONE" ] && { echo "FAIL: expected FAILED when notional>max"; exit 1; }
     sleep 1
   done
-  ev="$(curl -sS --noproxy '*' "$CONSOLE_PRECHECK/api/proxy/commands/$block_id/events?limit=200")"
+  ev="$(curl "${CURL_FLAGS[@]}" "$CONSOLE_PRECHECK/api/proxy/commands/$block_id/events?limit=200")"
   if echo "$ev" | python3 -c "import json,sys; d=json.load(sys.stdin); types=[e.get('event_type') for e in d] if isinstance(d,list) else []; sys.exit(0 if 'POLICY_BLOCK' in types else 1)" 2>/dev/null; then
     echo "OK: policy block test passed (POLICY_BLOCK present)"
   else
@@ -63,7 +64,7 @@ fi
 
 echo "Step1: POST /api/proxy/commands/quote -> 200, type==QUOTE, status==PENDING, id prefix quote-"
 create_body="$tmpdir/quote_create.json"
-create_http="$(curl -sS --noproxy '*' -X POST "$CONSOLE_PRECHECK/api/proxy/commands/quote" \
+create_http="$(curl "${CURL_FLAGS[@]}" -X POST "$CONSOLE_PRECHECK/api/proxy/commands/quote" \
   -H "Content-Type: application/json" \
   -d '{}' \
   -o "$create_body" -w "%{http_code}")"
@@ -91,7 +92,7 @@ echo "NEW_ID=$NEW_ID"
 echo "Step2: Poll GET /api/proxy/commands/{id} until DONE (max 30 x 1s)"
 last_detail="$tmpdir/detail_last.json"
 for i in $(seq 1 30); do
-  curl -sS --noproxy '*' "$CONSOLE_PRECHECK/api/proxy/commands/$NEW_ID" -o "$last_detail"
+  curl "${CURL_FLAGS[@]}" "$CONSOLE_PRECHECK/api/proxy/commands/$NEW_ID" -o "$last_detail"
   FINAL_STATUS="$(python3 -c "import json; print(json.load(open('$last_detail')).get('status',''))")"
   [ "$FINAL_STATUS" = "DONE" ] && break
   [ "$FINAL_STATUS" = "FAILED" ] && { FAIL_REASON="QUOTE_FAILED"; break; }
@@ -132,7 +133,7 @@ RESULT_OK=YES
 
 echo "Step4: GET /api/proxy/commands/{id}/events?limit=200 -> 200, contains PICKED, ACTION_OK, MARK_DONE"
 ev_body="$tmpdir/events.json"
-ev_code="$(curl -sS --noproxy '*' -o "$ev_body" -w "%{http_code}" "$CONSOLE_PRECHECK/api/proxy/commands/$NEW_ID/events?limit=200")"
+ev_code="$(curl "${CURL_FLAGS[@]}" -o "$ev_body" -w "%{http_code}" "$CONSOLE_PRECHECK/api/proxy/commands/$NEW_ID/events?limit=200")"
 [ "$ev_code" != "200" ] && { FAIL_REASON="EVENTS_HTTP_$ev_code"; }
 python3 - "$ev_body" <<'PY' > "$tmpdir/events.out"
 import json, sys

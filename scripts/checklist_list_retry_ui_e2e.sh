@@ -7,6 +7,7 @@ ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONSOLE_URL="${CONSOLE_URL:-http://127.0.0.1:3000}"
 BACKEND_URL="${BACKEND_URL:-http://127.0.0.1:8000}"
 NEXT_LOG_FILE="${NEXT_LOG_FILE:-}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
@@ -58,7 +59,7 @@ PY
 
 echo "== Step0 Precheck =="
 get_home="$tmpdir/get_home.txt"
-curl -sS -i --noproxy '*' "$CONSOLE_URL/" -o "$get_home" || true
+curl "${CURL_FLAGS[@]}" -i "$CONSOLE_URL/" -o "$get_home" || true
 home_status="$(parse_http "$get_home" | head -1)"
 if [ "$home_status" != "200" ]; then
   echo "MODULE=$MODULE"
@@ -73,7 +74,7 @@ if [ "$home_status" != "200" ]; then
 fi
 
 create_flaky="$tmpdir/create_flaky.txt"
-curl -sS -i --noproxy '*' -X POST "$CONSOLE_URL/api/proxy/commands/flaky" -o "$create_flaky" || true
+curl "${CURL_FLAGS[@]}" -i -X POST "$CONSOLE_URL/api/proxy/commands/flaky" -o "$create_flaky" || true
 create_status="$(parse_http "$create_flaky" | head -1)"
 create_body="$tmpdir/create_body.json"
 parse_http "$create_flaky" | sed -n '2,$p' > "$create_body"
@@ -106,7 +107,7 @@ echo "FLAKY_CREATED_ID=$FLAKY_CREATED_ID"
 echo "== Step1 Poll until FAILED (max 30 x 1s) =="
 detail_file="$tmpdir/detail.json"
 for _ in $(seq 1 30); do
-  curl -sS --noproxy '*' "$CONSOLE_URL/api/proxy/commands/$FLAKY_CREATED_ID" -o "$detail_file" || true
+  curl "${CURL_FLAGS[@]}" "$CONSOLE_URL/api/proxy/commands/$FLAKY_CREATED_ID" -o "$detail_file" || true
   st="$(python3 -c "import json; print(json.load(open('$detail_file')).get('status',''))" 2>/dev/null || echo "")"
   case "$st" in
     PENDING|RUNNING) SAW_NON_TERMINAL_BEFORE=YES ;;
@@ -129,7 +130,7 @@ fi
 
 echo "== Step2 POST retry =="
 retry_resp="$tmpdir/retry_resp.txt"
-curl -sS -i --noproxy '*' -X POST "$CONSOLE_URL/api/proxy/commands/$FLAKY_CREATED_ID/retry" -o "$retry_resp" || true
+curl "${CURL_FLAGS[@]}" -i -X POST "$CONSOLE_URL/api/proxy/commands/$FLAKY_CREATED_ID/retry" -o "$retry_resp" || true
 RETRY_HTTP_STATUS="$(parse_http "$retry_resp" | head -1)"
 if [ "$RETRY_HTTP_STATUS" != "200" ]; then
   echo "MODULE=$MODULE"
@@ -145,7 +146,7 @@ fi
 
 echo "== Step3 Poll until DONE (max 30 x 1s) =="
 for _ in $(seq 1 30); do
-  curl -sS --noproxy '*' "$CONSOLE_URL/api/proxy/commands/$FLAKY_CREATED_ID" -o "$detail_file" || true
+  curl "${CURL_FLAGS[@]}" "$CONSOLE_URL/api/proxy/commands/$FLAKY_CREATED_ID" -o "$detail_file" || true
   st="$(python3 -c "import json; print(json.load(open('$detail_file')).get('status',''))" 2>/dev/null || echo "")"
   case "$st" in
     PENDING|RUNNING) SAW_NON_TERMINAL_AFTER_RETRY=YES ;;

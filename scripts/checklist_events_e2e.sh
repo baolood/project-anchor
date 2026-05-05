@@ -4,6 +4,7 @@ set -euo pipefail
 CONSOLE_URL="${CONSOLE_URL:-http://127.0.0.1:3000}"
 LIMIT="${LIMIT:-200}"
 CHECKLIST_OUT="${CHECKLIST_OUT:-/tmp/anchor_e2e_checklist_retry_e2e_last.out}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 if [ -n "${DOMAIN_ID:-}" ]; then
   : # use provided DOMAIN_ID
@@ -50,7 +51,7 @@ echo "Step1: GET /api/proxy/commands/${DOMAIN_ID}/events?limit=${LIMIT}"
 ev_hdr="$tmpdir/events.headers"
 ev_body="$tmpdir/events.body"
 : > "$ev_hdr"
-curl -sS --noproxy '*' -D "$ev_hdr" -o "$ev_body" \
+curl "${CURL_FLAGS[@]}" -D "$ev_hdr" -o "$ev_body" \
   "$CONSOLE_URL/api/proxy/commands/${DOMAIN_ID}/events?limit=${LIMIT}"
 
 EVENTS_HTTP_STATUS="$(awk 'NR==1{print $2}' "$ev_hdr" | tr -d '\r' || true)"
