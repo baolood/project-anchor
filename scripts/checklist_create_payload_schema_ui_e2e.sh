@@ -10,6 +10,7 @@ CONSOLE_URL="${CONSOLE_URL:-http://127.0.0.1:3000}"
 BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}"
 LIMIT="${LIMIT:-200}"
 OUT="${OUT:-/tmp/anchor_e2e_checklist_create_payload_schema_ui_e2e_last.out}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
@@ -67,7 +68,7 @@ echo "CODE_HAS_QUOTE_VALIDATION=$CODE_HAS_QUOTE_VALIDATION"
 
 echo "== Step1 Precheck CONSOLE_URL =="
 get_home="$tmpdir/get_home.txt"
-curl -sS -i --noproxy '*' "$CONSOLE_URL/" -o "$get_home" || true
+curl "${CURL_FLAGS[@]}" -i "$CONSOLE_URL/" -o "$get_home" || true
 home_status="$(parse_http "$get_home" | head -1)"
 if [ "$home_status" != "200" ]; then
   echo "MODULE=$MODULE"
@@ -90,7 +91,7 @@ done
 
 echo "== Step2 POST quote (valid payload) =="
 quote_resp="$tmpdir/quote_resp.txt"
-curl -sS -i --noproxy '*' -X POST "$CONSOLE_URL/api/proxy/commands/quote" \
+curl "${CURL_FLAGS[@]}" -i -X POST "$CONSOLE_URL/api/proxy/commands/quote" \
   -H "content-type: application/json" \
   -d '{"symbol":"BTCUSDT","side":"BUY","notional":100}' \
   -o "$quote_resp" || true
@@ -123,7 +124,7 @@ echo "== Step3 Poll until DONE (max 30 x 1s) =="
 detail_file="$tmpdir/detail.json"
 QUOTE_FINAL_STATUS=""
 for _ in $(seq 1 30); do
-  curl -sS --noproxy '*' "$CONSOLE_URL/api/proxy/commands/$QUOTE_ID" -o "$detail_file" || true
+  curl "${CURL_FLAGS[@]}" "$CONSOLE_URL/api/proxy/commands/$QUOTE_ID" -o "$detail_file" || true
   st="$(python3 -c "import json; print(json.load(open('$detail_file')).get('status',''))" 2>/dev/null || echo "")"
   [ "$st" = "DONE" ] && QUOTE_FINAL_STATUS=DONE && break
   [ "$st" = "FAILED" ] && QUOTE_FINAL_STATUS=FAILED && break

@@ -3,6 +3,7 @@ set -euo pipefail
 
 OUT="${OUT:-/tmp/anchor_e2e_checklist_policy_block_explainer_e2e_last.out}"
 CONSOLE_URL="${CONSOLE_URL:-http://127.0.0.1:3000}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 )
 
 say(){ echo "[$(date +%H:%M:%S)] $*"; }
 
@@ -35,7 +36,7 @@ fail() {
 }
 
 # Step0: /commands 200（仅确认 console alive，不做 SSR/CSR 文案 grep）
-CONSOLE_HTTP_STATUS="$(curl -s -o /dev/null -w "%{http_code}" "$CONSOLE_URL/commands" || true)"
+CONSOLE_HTTP_STATUS="$(curl "${CURL_FLAGS[@]}" -o /dev/null -w "%{http_code}" "$CONSOLE_URL/commands" || true)"
 if [[ "$CONSOLE_HTTP_STATUS" != "200" ]]; then
   FAIL_REASON="CONSOLE_NOT_200"
   fail
@@ -43,7 +44,7 @@ fi
 
 # Step1: 拉 commands 列表，尝试找到一个"policy 相关失败"的样本
 # 如果找不到，不再 FAIL —— 直接 SKIPPED（避免把 release 卡死）
-CMD_JSON="$(curl -s "$CONSOLE_URL/api/proxy/commands?limit=200" || true)"
+CMD_JSON="$(curl "${CURL_FLAGS[@]}" "$CONSOLE_URL/api/proxy/commands?limit=200" || true)"
 echo "$CMD_JSON" > /tmp/anchor_e2e_policy_block_explainer_cmds_last.json
 
 # 规则：找 status=FAILED 且 (error 包含 POLICY 或 policy_block) 的第一条
@@ -75,7 +76,7 @@ if [[ -z "${SAMPLE_ID:-}" ]]; then
 fi
 
 # Step2: 拉该样本 detail，检查是否包含可解释字段（error/payload/或 policy 字样）
-DETAIL_JSON="$(curl -s "$CONSOLE_URL/api/proxy/commands/$SAMPLE_ID" || true)"
+DETAIL_JSON="$(curl "${CURL_FLAGS[@]}" "$CONSOLE_URL/api/proxy/commands/$SAMPLE_ID" || true)"
 echo "$DETAIL_JSON" > /tmp/anchor_e2e_policy_block_explainer_detail_last.json
 
 # presence check（不依赖 CSR 文案）

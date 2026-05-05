@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONSOLE_URL="${CONSOLE_URL:-http://127.0.0.1:3000}"
 LIMIT="${LIMIT:-200}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
@@ -47,7 +48,7 @@ PY
 
 echo "== Step0 Precheck =="
 get_home="$tmpdir/get_home.txt"
-curl -sS -i --noproxy '*' "$CONSOLE_URL/" -o "$get_home" || true
+curl "${CURL_FLAGS[@]}" -i "$CONSOLE_URL/" -o "$get_home" || true
 home_status="$(parse_http "$get_home" | head -1)"
 if [ "$home_status" != "200" ]; then
   echo "MODULE=$MODULE"
@@ -63,7 +64,7 @@ fi
 
 echo "== Step1 Create QUOTE (with payload) =="
 quote_resp="$tmpdir/quote_resp.txt"
-curl -sS -i --noproxy '*' -X POST "$CONSOLE_URL/api/proxy/commands/quote" \
+curl "${CURL_FLAGS[@]}" -i -X POST "$CONSOLE_URL/api/proxy/commands/quote" \
   -H "content-type: application/json" \
   -d '{"symbol":"BTCUSDT","side":"BUY","notional":100}' \
   -o "$quote_resp" || true
@@ -96,7 +97,7 @@ echo "QUOTE_ID=$QUOTE_ID"
 echo "== Step2 Poll QUOTE until DONE (max 30 x 1s) =="
 detail_file="$tmpdir/detail.json"
 for _ in $(seq 1 30); do
-  curl -sS --noproxy '*' "$CONSOLE_URL/api/proxy/commands/$QUOTE_ID" -o "$detail_file" || true
+  curl "${CURL_FLAGS[@]}" "$CONSOLE_URL/api/proxy/commands/$QUOTE_ID" -o "$detail_file" || true
   st="$(python3 -c "import json; print(json.load(open('$detail_file')).get('status',''))" 2>/dev/null || echo "")"
   [ "$st" = "DONE" ] && break
   sleep 1
@@ -116,7 +117,7 @@ fi
 
 echo "== Step3 GET events =="
 events_resp="$tmpdir/events_resp.txt"
-curl -sS -i --noproxy '*' "$CONSOLE_URL/api/proxy/commands/$QUOTE_ID/events?limit=$LIMIT" -o "$events_resp" || true
+curl "${CURL_FLAGS[@]}" -i "$CONSOLE_URL/api/proxy/commands/$QUOTE_ID/events?limit=$LIMIT" -o "$events_resp" || true
 EVENTS_HTTP_STATUS="$(parse_http "$events_resp" | head -1)"
 events_body="$tmpdir/events_body.json"
 parse_http "$events_resp" | sed -n '2,$p' > "$events_body"
