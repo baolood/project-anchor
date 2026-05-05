@@ -108,6 +108,10 @@ When adding or updating shell automation under `scripts/` (and checklist scripts
      ```bash
      bash -n scripts/your_script.sh
      ```
+   - Run checklist curl timeout guardrail scan:
+     ```bash
+     ./scripts/check_checklist_curl_guardrails.sh
+     ```
    - For parent baseline safety, run:
      ```bash
      ./scripts/check_local_box_baseline.sh
