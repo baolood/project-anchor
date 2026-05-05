@@ -4,6 +4,7 @@ set -euo pipefail
 
 OUT="${OUT:-/tmp/anchor_e2e_checklist_ops_dashboard_ui_e2e_last.out}"
 CONSOLE_URL="${CONSOLE_URL:-http://127.0.0.1:3000}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 PASS_OR_FAIL=FAIL
 FAIL_REASON=""
@@ -19,7 +20,7 @@ echo "=============================="
 echo "MODULE=ops_dashboard_ui_e2e"
 echo "Step0: GET CONSOLE_URL/ops -> 200"
 echo "=============================="
-page_code="$(curl -sS -o /dev/null -w "%{http_code}" --noproxy '*' "$CONSOLE_URL/ops" 2>/dev/null || echo "000")"
+page_code="$(curl "${CURL_FLAGS[@]}" -o /dev/null -w "%{http_code}" "$CONSOLE_URL/ops" 2>/dev/null || echo "000")"
 PAGE_HTTP_STATUS="${page_code}"
 
 if [ "$PAGE_HTTP_STATUS" != "200" ]; then
@@ -44,7 +45,7 @@ echo "OK: /ops -> 200"
 echo "=============================="
 echo "Step1: GET CONSOLE_URL/api/proxy/ops/state -> 200 and key checks"
 echo "=============================="
-state_resp="$(curl -sS --noproxy '*' -w "\n%{http_code}" "$CONSOLE_URL/api/proxy/ops/state")"
+state_resp="$(curl "${CURL_FLAGS[@]}" -w "\n%{http_code}" "$CONSOLE_URL/api/proxy/ops/state")"
 STATE_HTTP_STATUS="$(echo "$state_resp" | tail -1)"
 state_body="$(echo "$state_resp" | sed '$d')"
 
@@ -108,7 +109,7 @@ echo "OK: state has kill_switch, worker_heartbeat, worker_panic, recent_ops_even
 echo "=============================="
 echo "Step2: GET CONSOLE_URL/api/proxy/ops/state/history?limit=20 -> 200 and non-empty array"
 echo "=============================="
-history_resp="$(curl -sS --noproxy '*' -w "\n%{http_code}" "$CONSOLE_URL/api/proxy/ops/state/history?limit=20")"
+history_resp="$(curl "${CURL_FLAGS[@]}" -w "\n%{http_code}" "$CONSOLE_URL/api/proxy/ops/state/history?limit=20")"
 history_code="$(echo "$history_resp" | tail -1)"
 history_body="$(echo "$history_resp" | sed '$d')"
 

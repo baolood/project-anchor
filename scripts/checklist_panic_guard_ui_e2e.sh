@@ -10,6 +10,7 @@ set -euo pipefail
 
 OUT="${OUT:-/tmp/anchor_e2e_checklist_panic_guard_ui_e2e_last.out}"
 CONSOLE_PRECHECK="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 PASS_OR_FAIL=FAIL
 FAIL_REASON=""
@@ -18,7 +19,7 @@ echo "=============================="
 echo "MODULE=panic_guard_ui_e2e"
 echo "Step0: GET /ops 200"
 echo "=============================="
-ops_code="$(curl -sS --noproxy '*' -o /dev/null -w "%{http_code}" "$CONSOLE_PRECHECK/ops")"
+ops_code="$(curl "${CURL_FLAGS[@]}" -o /dev/null -w "%{http_code}" "$CONSOLE_PRECHECK/ops")"
 if [ "$ops_code" != "200" ]; then
   echo "FAIL_REASON=ops_page_not_200"
   echo "PASS_OR_FAIL=$PASS_OR_FAIL"
@@ -29,7 +30,7 @@ echo "OK: GET /ops 200"
 echo "=============================="
 echo "Step1: GET /api/proxy/ops/state 200, contains worker_panic"
 echo "=============================="
-state_resp="$(curl -sS --noproxy '*' -w "\n%{http_code}" "$CONSOLE_PRECHECK/api/proxy/ops/state")"
+state_resp="$(curl "${CURL_FLAGS[@]}" -w "\n%{http_code}" "$CONSOLE_PRECHECK/api/proxy/ops/state")"
 state_code="$(echo "$state_resp" | tail -1)"
 state_body="$(echo "$state_resp" | sed '$d')"
 if [ "$state_code" != "200" ]; then
@@ -58,7 +59,7 @@ echo "OK: state contains worker_panic"
 echo "=============================="
 echo "Step2: POST /api/proxy/ops/panic_guard/trigger 200"
 echo "=============================="
-post_trigger_resp="$(curl -sS --noproxy '*' -X POST -H "Content-Type: application/json" -w "\n%{http_code}" "$CONSOLE_PRECHECK/api/proxy/ops/panic_guard/trigger")"
+post_trigger_resp="$(curl "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" -w "\n%{http_code}" "$CONSOLE_PRECHECK/api/proxy/ops/panic_guard/trigger")"
 post_trigger_code="$(echo "$post_trigger_resp" | tail -1)"
 if [ "$post_trigger_code" != "200" ]; then
   echo "FAIL_REASON=post_trigger_not_200"
@@ -71,7 +72,7 @@ sleep 2
 echo "=============================="
 echo "Step3: GET /api/proxy/ops/state -> panic triggered"
 echo "=============================="
-state_resp2="$(curl -sS --noproxy '*' "$CONSOLE_PRECHECK/api/proxy/ops/state")"
+state_resp2="$(curl "${CURL_FLAGS[@]}" "$CONSOLE_PRECHECK/api/proxy/ops/state")"
 triggered="$(echo "$state_resp2" | python3 -c "
 import json, sys
 try:
@@ -98,7 +99,7 @@ echo "OK: panic triggered"
 echo "=============================="
 echo "Step4: POST /api/proxy/ops/panic_guard/reset 200"
 echo "=============================="
-post_reset_resp="$(curl -sS --noproxy '*' -X POST -H "Content-Type: application/json" -w "\n%{http_code}" "$CONSOLE_PRECHECK/api/proxy/ops/panic_guard/reset")"
+post_reset_resp="$(curl "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" -w "\n%{http_code}" "$CONSOLE_PRECHECK/api/proxy/ops/panic_guard/reset")"
 post_reset_code="$(echo "$post_reset_resp" | tail -1)"
 if [ "$post_reset_code" != "200" ]; then
   echo "FAIL_REASON=post_reset_not_200"
@@ -111,7 +112,7 @@ sleep 2
 echo "=============================="
 echo "Step5: GET /api/proxy/ops/state -> panic reset"
 echo "=============================="
-state_resp3="$(curl -sS --noproxy '*' "$CONSOLE_PRECHECK/api/proxy/ops/state")"
+state_resp3="$(curl "${CURL_FLAGS[@]}" "$CONSOLE_PRECHECK/api/proxy/ops/state")"
 reset_ok="$(echo "$state_resp3" | python3 -c "
 import json, sys
 try:

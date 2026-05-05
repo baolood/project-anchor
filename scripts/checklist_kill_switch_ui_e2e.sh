@@ -10,6 +10,7 @@ set -euo pipefail
 
 OUT="${OUT:-/tmp/anchor_e2e_checklist_kill_switch_ui_e2e_last.out}"
 CONSOLE_PRECHECK="${CONSOLE_PRECHECK:-http://127.0.0.1:3000}"
+CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 
 PASS_OR_FAIL=FAIL
 FAIL_REASON=""
@@ -18,7 +19,7 @@ echo "=============================="
 echo "MODULE=kill_switch_ui_e2e"
 echo "Step0: GET /ops 200"
 echo "=============================="
-ops_code="$(curl -sS --noproxy '*' -o /dev/null -w "%{http_code}" "$CONSOLE_PRECHECK/ops")"
+ops_code="$(curl "${CURL_FLAGS[@]}" -o /dev/null -w "%{http_code}" "$CONSOLE_PRECHECK/ops")"
 if [ "$ops_code" != "200" ]; then
   echo "FAIL_REASON=ops_page_not_200"
   echo "PASS_OR_FAIL=$PASS_OR_FAIL"
@@ -30,7 +31,7 @@ echo "OK: GET /ops 200"
 echo "=============================="
 echo "Step1: GET /api/proxy/ops/state 200, contains kill_switch.enabled"
 echo "=============================="
-state_resp="$(curl -sS --noproxy '*' -w "\n%{http_code}" "$CONSOLE_PRECHECK/api/proxy/ops/state")"
+state_resp="$(curl "${CURL_FLAGS[@]}" -w "\n%{http_code}" "$CONSOLE_PRECHECK/api/proxy/ops/state")"
 state_code="$(echo "$state_resp" | tail -1)"
 state_body="$(echo "$state_resp" | sed '$d')"
 if [ "$state_code" != "200" ]; then
@@ -62,7 +63,7 @@ echo "OK: state contains kill_switch.enabled"
 echo "=============================="
 echo "Step2: POST /api/proxy/ops/kill_switch enabled=true 200"
 echo "=============================="
-post_on_resp="$(curl -sS --noproxy '*' -X POST -H "Content-Type: application/json" -d '{"enabled":true}' -w "\n%{http_code}" "$CONSOLE_PRECHECK/api/proxy/ops/kill_switch")"
+post_on_resp="$(curl "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" -d '{"enabled":true}' -w "\n%{http_code}" "$CONSOLE_PRECHECK/api/proxy/ops/kill_switch")"
 post_on_code="$(echo "$post_on_resp" | tail -1)"
 if [ "$post_on_code" != "200" ]; then
   echo "FAIL_REASON=post_enabled_true_not_200"
@@ -76,7 +77,7 @@ sleep 2
 echo "=============================="
 echo "Step3: GET /api/proxy/ops/state -> kill_switch.enabled=true"
 echo "=============================="
-state_resp2="$(curl -sS --noproxy '*' "$CONSOLE_PRECHECK/api/proxy/ops/state")"
+state_resp2="$(curl "${CURL_FLAGS[@]}" "$CONSOLE_PRECHECK/api/proxy/ops/state")"
 enabled_val="$(echo "$state_resp2" | python3 -c "
 import json, sys
 try:
@@ -97,7 +98,7 @@ echo "OK: kill_switch.enabled=true"
 echo "=============================="
 echo "Step4: POST /api/proxy/ops/kill_switch enabled=false 200"
 echo "=============================="
-post_off_resp="$(curl -sS --noproxy '*' -X POST -H "Content-Type: application/json" -d '{"enabled":false}' -w "\n%{http_code}" "$CONSOLE_PRECHECK/api/proxy/ops/kill_switch")"
+post_off_resp="$(curl "${CURL_FLAGS[@]}" -X POST -H "Content-Type: application/json" -d '{"enabled":false}' -w "\n%{http_code}" "$CONSOLE_PRECHECK/api/proxy/ops/kill_switch")"
 post_off_code="$(echo "$post_off_resp" | tail -1)"
 if [ "$post_off_code" != "200" ]; then
   echo "FAIL_REASON=post_enabled_false_not_200"
@@ -111,7 +112,7 @@ sleep 2
 echo "=============================="
 echo "Step5: GET /api/proxy/ops/state -> kill_switch.enabled=false"
 echo "=============================="
-state_resp3="$(curl -sS --noproxy '*' "$CONSOLE_PRECHECK/api/proxy/ops/state")"
+state_resp3="$(curl "${CURL_FLAGS[@]}" "$CONSOLE_PRECHECK/api/proxy/ops/state")"
 enabled_val2="$(echo "$state_resp3" | python3 -c "
 import json, sys
 try:
