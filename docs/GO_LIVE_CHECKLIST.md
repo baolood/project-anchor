@@ -260,6 +260,8 @@ Use one row per active risk; update daily until closed.
 
 ## 7) Daily Standup Template
 
+- Machine snapshot (run before standup, attach or paste path):
+  - `./scripts/go_live_status_report.sh --out /tmp/go_live_daily_status.out`
 - Yesterday done:
 - Today plan:
 - Current blockers:
