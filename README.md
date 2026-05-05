@@ -53,6 +53,8 @@ Concurrency behavior (expected):
 - Treat the **latest run for that ref** as source of truth; a cancelled older run is expected, not a failure.
 - Optional helper to inspect recent workflow runs locally (requires `gh auth login`):
   - `./scripts/check_local_box_ci_runs.sh`
+  - `./scripts/check_local_box_ci_runs.sh --branch main --limit 20`
+  - `./scripts/check_local_box_ci_runs.sh --workflow local-box-baseline.yml --branch <your-branch>`
 
 ### Quick local checks (after `pip install`)
 

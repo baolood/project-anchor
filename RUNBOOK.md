@@ -74,6 +74,8 @@ For the **parent repository** `local_box` audit stack (not Docker `anchor-backen
    - Optional helper (requires GitHub CLI auth):
      ```bash
      ./scripts/check_local_box_ci_runs.sh
+     ./scripts/check_local_box_ci_runs.sh --branch main --limit 20
+     ./scripts/check_local_box_ci_runs.sh --workflow local-box-baseline.yml --branch <your-branch>
      ```
 
 5. **Local parity with CI** (from repo root, after `pip install -r requirements.txt`):
