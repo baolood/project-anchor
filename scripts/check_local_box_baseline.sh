@@ -31,5 +31,11 @@ if ((${#missing[@]} > 0)); then
   exit 1
 fi
 
+# Script guardrail: checklist curl calls must keep timeout protection.
+if ! "${ROOT}/scripts/check_checklist_curl_guardrails.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: checklist curl guardrails check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
