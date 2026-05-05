@@ -1,4 +1,5 @@
 import json
+import os
 import sqlite3
 import time
 from pathlib import Path
@@ -7,7 +8,24 @@ from typing import Any, Dict, List, Optional
 from shared.schemas import Event, Stage, Status, new_event_id
 
 
-DB_PATH = Path("/Users/baolood/Projects/project-anchor/anchor.db")
+def _repo_root() -> Path:
+    """``local_box/audit/event_store.py`` → repository root (two levels up from ``audit``)."""
+    return Path(__file__).resolve().parents[2]
+
+
+def _db_path() -> Path:
+    """SQLite file for audit/event tables.
+
+    Override with ``LOCAL_BOX_DB_PATH`` (absolute or ``~`` path). Default:
+    ``<repo-root>/anchor.db`` (same file name as before; path is no longer machine-specific).
+    """
+    raw = os.environ.get("LOCAL_BOX_DB_PATH", "").strip()
+    if raw:
+        return Path(raw).expanduser()
+    return _repo_root() / "anchor.db"
+
+
+DB_PATH = _db_path()
 
 
 def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
