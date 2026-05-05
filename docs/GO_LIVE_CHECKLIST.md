@@ -261,7 +261,12 @@ Use one row per active risk; update daily until closed.
 ## 7) Daily Standup Template
 
 - Machine snapshot (run before standup, attach or paste path):
-  - `./scripts/go_live_status_report.sh --out /tmp/go_live_daily_status.out`
+  - **Recommended evidence path (standup / audit trail):** `artifacts/go-live/go_live_daily_status_YYYY-MM-DD.out`
+  - **Recommended commands:**
+    - `mkdir -p artifacts/go-live`
+    - `./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out`
+  - **Temporary local check only:** `/tmp` is fine for ad-hoc debugging (for example `./scripts/go_live_status_report.sh --out /tmp/go_live_daily_status.out`); it is not a durable standup artifact location.
+  - **Git policy:** daily `.out` files are **run artifacts** — **do not commit them by default**. Whether `artifacts/go-live/` is ignored or whether curated samples are kept in-repo is a separate follow-up decision.
 - Yesterday done:
 - Today plan:
 - Current blockers:
