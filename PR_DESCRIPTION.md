@@ -34,3 +34,24 @@ export PYTHONPATH=.
 - [ ] **Docs:** `README.md` / `RUNBOOK.md` / ADRs updated if behavior or ops changed
 - [ ] **Paths:** examples and scripts avoid machine-specific absolute paths (use repo-relative paths or placeholders like `/path/to/project-anchor`)
 - [ ] **Secrets:** no credentials committed
+
+---
+
+## Optional Release Summary Block (copy when needed)
+
+Use this section when the PR is part of a hardening/governance wave and you want a release-note-friendly summary directly in the PR body.
+
+### Hardening wave summary
+
+- **Portable paths:** scripts/docs avoid machine-specific absolute paths.
+- **Script safety:** strict bash mode and executable-bit normalization applied.
+- **Checklist networking:** `curl` timeout guardrails standardized (`--connect-timeout 5 --max-time 20`).
+- **CI guardrail:** dedicated `checklist-curl-guardrails` job + baseline integration.
+
+### Recommended verifier commands
+
+```bash
+cd /path/to/project-anchor
+./scripts/check_checklist_curl_guardrails.sh
+./scripts/check_local_box_baseline.sh
+```
