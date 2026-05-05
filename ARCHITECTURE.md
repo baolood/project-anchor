@@ -32,7 +32,7 @@ Required for existing e2e: **PICKED**, **ACTION_FAIL**, **MARK_FAILED**, **RETRY
 
 ## How to verify
 
-From the project root (e.g. `/Users/baolood/Projects/project-anchor`):
+From the repository root (your clone of this project, e.g. `~/Projects/project-anchor`):
 
 1. **Full restart + retry + events** (includes backend/worker rebuild, migration, Next dev, retry e2e, events e2e):
    ```bash

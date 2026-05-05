@@ -44,4 +44,4 @@ python3 -c "import local_box.control.server as c; print('control', c.app.name)"
 
 More detail: **RUNBOOK.md** → section **Parent repo — `local_box` (Python + SQLite)**.
 
-**Dependency PRs:** [Dependabot](.github/dependabot.yml) targets **repo-root** [`requirements.txt`](requirements.txt) (weekly). **Architecture note:** [`docs/adr/ADR-0004-local-box-execution-boundaries-and-naming.md`](docs/adr/ADR-0004-local-box-execution-boundaries-and-naming.md).
+**Dependency PRs:** [Dependabot](.github/dependabot.yml) targets **repo-root** [`requirements.txt`](requirements.txt) (weekly) and **GitHub Actions** workflow pins (monthly). **Architecture note:** [`docs/adr/ADR-0004-local-box-execution-boundaries-and-naming.md`](docs/adr/ADR-0004-local-box-execution-boundaries-and-naming.md).
