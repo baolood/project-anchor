@@ -142,9 +142,10 @@ When adding or updating shell automation under `scripts/` (and checklist scripts
      ./scripts/check_checklist_curl_guardrails.sh --verbose
      ./scripts/check_checklist_curl_guardrails.sh --changed-only
      ```
-   - For parent baseline safety, run:
+   - For parent baseline safety (matches CI `check` job order), run:
      ```bash
      ./scripts/check_local_box_baseline.sh
+     ./scripts/go_live_status_report.sh
      python3 -c "from local_box.audit import event_store; event_store.init_db(); print('LOCAL_BOX_SQLITE_SMOKE ok')"
      ```
 

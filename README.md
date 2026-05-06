@@ -37,9 +37,10 @@ GitHub Actions workflow **[`.github/workflows/local-box-baseline.yml`](.github/w
 
 1. Job **`checklist-curl-guardrails`** runs **`./scripts/check_checklist_curl_guardrails.sh`** (fast, script-policy only)
 2. Job **`check`** installs **`requirements.txt`**
-3. Job **`check`** runs **`./scripts/check_local_box_baseline.sh`**
-4. Job **`check`** smoke-tests **`event_store.init_db()`**, **`import local_box.runner`**, **`import local_box.control.server`**
-5. If either guardrail/baseline step fails, run locally: `./scripts/check_checklist_curl_guardrails.sh` then `./scripts/check_local_box_baseline.sh`
+3. Job **`check`** runs **`./scripts/check_local_box_baseline.sh`** (required paths include **`local_box`**, **`shared`**, **`risk_engine`**, **`artifacts/go-live/README.md`**, plus checklist `curl` guardrails)
+4. Job **`check`** runs **`./scripts/go_live_status_report.sh`** (parses **`docs/GO_LIVE_CHECKLIST.md`**)
+5. Job **`check`** smoke-tests **`event_store.init_db()`**, **`import local_box.runner`**, **`import local_box.control.server`**
+6. If either guardrail/baseline step fails, run locally: `./scripts/check_checklist_curl_guardrails.sh` then `./scripts/check_local_box_baseline.sh`
 
 Quick local options for the guardrail scanner:
 
