@@ -42,6 +42,7 @@ report="$(python3 - "$CHECKLIST_FILE" <<'PY'
 import pathlib
 import re
 import sys
+from datetime import datetime, timezone
 
 path = pathlib.Path(sys.argv[1])
 text = path.read_text(encoding="utf-8", errors="ignore")
@@ -55,7 +56,7 @@ items = len(re.findall(r"^- \[ \] ", text, flags=re.MULTILINE))
 
 print("GO_LIVE_STATUS_REPORT")
 print(f"CHECKLIST_FILE={path}")
-print(f"GENERATED_AT={__import__('datetime').datetime.utcnow().isoformat()}Z")
+print(f"GENERATED_AT={datetime.now(timezone.utc).isoformat()}")
 print(f"TOTAL_CHECK_ITEMS={items}")
 for s in statuses:
     print(f"STATUS_{s}={counts[s]}")
