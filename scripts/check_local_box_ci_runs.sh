@@ -77,13 +77,13 @@ while (($# > 0)); do
       FAIL_ON_EMPTY=1
       shift
       ;;
-    --gate-strict)
+    --gate-strict|--strict)
       GATE_STRICT=1
       shift
       ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only|--canceled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled|--fail-on-canceled] [--fail-on-failed|--fail-on-non-success] [--fail-on-incomplete|--fail-on-non-completed] [--fail-on-empty] [--gate-strict]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only|--canceled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled|--fail-on-canceled] [--fail-on-failed|--fail-on-non-success] [--fail-on-incomplete|--fail-on-non-completed] [--fail-on-empty] [--gate-strict|--strict]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
@@ -104,7 +104,8 @@ Options:
   --fail-on-incomplete, --fail-on-non-completed
                   Exit non-zero if any filtered row has status other than completed
   --fail-on-empty    Exit non-zero if filtered output has zero rows
-  --gate-strict      Convenience preset: --latest-only --fail-on-failed --fail-on-incomplete --fail-on-empty
+  --gate-strict, --strict
+                  Convenience preset: --latest-only --fail-on-failed --fail-on-incomplete --fail-on-empty
                      (requires --branch; mutually exclusive with --cancelled-only / --canceled-only / --failed-only)
 
 See also: README.md (section "CI") for workflow jobs and reproducing failures locally.
@@ -116,6 +117,7 @@ Examples:
   ./scripts/check_local_box_ci_runs.sh --branch main --latest-only --fail-on-incomplete # alias: --fail-on-non-completed
   ./scripts/check_local_box_ci_runs.sh --branch main --latest-only --fail-on-empty
   ./scripts/check_local_box_ci_runs.sh --branch main --gate-strict --quiet
+  ./scripts/check_local_box_ci_runs.sh --branch main --strict --quiet
 EOF
       exit 0
       ;;

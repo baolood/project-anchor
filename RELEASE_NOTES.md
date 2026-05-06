@@ -132,6 +132,7 @@ python3 -m pip install -r requirements.txt
 - **`check_local_box_ci_runs.sh`:** `--gate-strict` now rejects `--cancelled-only` / `--canceled-only` / `--failed-only` combinations to prevent conflicting filters.
 - **`check_local_box_ci_runs.sh`:** `--gate-strict` now also requires `--branch <name>` to avoid cross-branch ambiguity in strict gates.
 - **`check_local_box_ci_runs.sh`:** `--gate-strict` now includes `--fail-on-empty` so strict gates fail when no rows are returned.
+- **`check_local_box_ci_runs.sh`:** adds alias **`--strict`** (same behavior as **`--gate-strict`**).
 - **`check_local_box_ci_runs.sh`:** non-quiet `--gate-strict` prints the expanded preset flags for operator visibility.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.
