@@ -16,6 +16,7 @@ JSON_OUTPUT=0
 FAIL_ON_CANCELLED=0
 FAIL_ON_FAILED=0
 FAIL_ON_INCOMPLETE=0
+FAIL_ON_EMPTY=0
 GATE_STRICT=0
 
 while (($# > 0)); do
@@ -72,13 +73,17 @@ while (($# > 0)); do
       FAIL_ON_INCOMPLETE=1
       shift
       ;;
+    --fail-on-empty)
+      FAIL_ON_EMPTY=1
+      shift
+      ;;
     --gate-strict)
       GATE_STRICT=1
       shift
       ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled] [--fail-on-failed|--fail-on-non-success] [--fail-on-incomplete] [--gate-strict]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled] [--fail-on-failed|--fail-on-non-success] [--fail-on-incomplete] [--fail-on-empty] [--gate-strict]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
@@ -95,6 +100,7 @@ Options:
   --fail-on-failed, --fail-on-non-success
                   Exit non-zero if any filtered row is completed and non-success/non-cancelled
   --fail-on-incomplete Exit non-zero if any filtered row has status other than completed
+  --fail-on-empty    Exit non-zero if filtered output has zero rows
   --gate-strict      Convenience preset: --latest-only --fail-on-failed --fail-on-incomplete
                      (requires --branch; mutually exclusive with --cancelled-only / --failed-only)
 
@@ -260,6 +266,15 @@ if [[ "$FAIL_ON_INCOMPLETE" -eq 1 ]]; then
     exit 1
   fi
   [[ "$QUIET" -eq 0 ]] && echo "CI_RUNS_CHECK PASS: no incomplete runs in filtered output"
+fi
+
+if [[ "$FAIL_ON_EMPTY" -eq 1 ]]; then
+  row_count="$(printf '%s\n' "$output" | awk 'NF {n++} END {print n+0}')"
+  if [[ "$row_count" -eq 0 ]]; then
+    echo "CI_RUNS_CHECK FAIL: filtered output is empty" >&2
+    exit 1
+  fi
+  [[ "$QUIET" -eq 0 ]] && echo "CI_RUNS_CHECK PASS: filtered output has ${row_count} row(s)"
 fi
 
 if [[ "$QUIET" -eq 0 && "$JSON_OUTPUT" -eq 0 ]]; then
