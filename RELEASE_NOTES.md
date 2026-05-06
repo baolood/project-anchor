@@ -146,6 +146,7 @@ python3 -m pip install -r requirements.txt
 - **`check_local_box_ci_runs.sh`:** JSON row parsing now uses a bounded split so tab characters inside workflow titles do not corrupt structured fields.
 - **Docs (`CONTRIBUTING.md`):** adds `--summary`/`--json` examples and clarifies their mutual exclusion plus JSON quiet-mode behavior.
 - **Docs (`docs/GO_LIVE_CHECKLIST.md`, `PR_DESCRIPTION.md`):** aligns CI triage notes with `--summary`/`--json` mutual exclusion and JSON quiet-mode expectations.
+- **`go_live_status_report.sh`:** now fails fast with a clear message when `--out` points to a directory instead of a file path.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.
