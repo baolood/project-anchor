@@ -15,7 +15,6 @@ QUIET=0
 JSON_OUTPUT=0
 FAIL_ON_CANCELLED=0
 FAIL_ON_FAILED=0
-FAIL_ON_FAILED=0
 
 while (($# > 0)); do
   case "$1" in
@@ -218,16 +217,6 @@ if [[ "$FAIL_ON_CANCELLED" -eq 1 ]]; then
   fi
   [[ "$QUIET" -eq 0 ]] && echo "CI_RUNS_CHECK PASS: no cancelled runs in filtered output"
 fi
-if [[ "$FAIL_ON_FAILED" -eq 1 ]]; then
-  failed_count="$(printf '%s\n' "$output" | awk -F '\t' '$3=="completed" && $4!="success" && $4!="cancelled" {n++} END {print n+0}')"
-  if [[ "$failed_count" -gt 0 ]]; then
-    echo "CI_RUNS_CHECK FAIL: found ${failed_count} failed run(s) in filtered output" >&2
-    exit 1
-  fi
-  [[ "$QUIET" -eq 0 ]] && echo "CI_RUNS_CHECK PASS: no failed runs in filtered output"
-fi
-
-
 if [[ "$FAIL_ON_FAILED" -eq 1 ]]; then
   failed_count="$(printf '%s\n' "$output" | awk -F '\t' '$3=="completed" && $4!="success" && $4!="cancelled" {n++} END {print n+0}')"
   if [[ "$failed_count" -gt 0 ]]; then
