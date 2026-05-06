@@ -30,6 +30,7 @@ Usage: ./scripts/go_live_status_report.sh [--out <path>]
 
 Options:
   --out <path>  Write report to file (stdout always prints; parent dirs created if missing).
+                Must be a file path (directory targets are rejected).
 
 Env:
   CHECKLIST_FILE  Override checklist path.
