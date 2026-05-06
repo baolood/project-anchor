@@ -141,6 +141,7 @@ python3 -m pip install -r requirements.txt
 - **`check_local_box_ci_runs.sh`:** wraps `gh run list` failures with a stable `CI_RUNS_CHECK FAIL` message to improve operator triage context.
 - **`check_local_box_ci_runs.sh`:** now rejects `--summary --json` as an explicit invalid combination (previously summary was silently skipped under JSON mode).
 - **`check_local_box_ci_runs.sh`:** `--help` and docs now explicitly call out `--summary` / `--json` mutual exclusion for faster operator feedback.
+- **`check_local_box_ci_runs.sh`:** cancelled-only vs failed-only mutual-exclusion error text now mentions both spellings (`--cancelled-only` / `--canceled-only`).
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.

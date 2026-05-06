@@ -150,7 +150,7 @@ if [[ "$SUMMARY" -eq 1 && "$JSON_OUTPUT" -eq 1 ]]; then
   exit 2
 fi
 if [[ "$CANCELLED_ONLY" -eq 1 && "$FAILED_ONLY" -eq 1 ]]; then
-  echo "CI_RUNS_CHECK FAIL: --cancelled-only and --failed-only are mutually exclusive." >&2
+  echo "CI_RUNS_CHECK FAIL: --cancelled-only/--canceled-only and --failed-only are mutually exclusive." >&2
   exit 2
 fi
 if [[ "$GATE_STRICT" -eq 1 ]]; then
