@@ -128,6 +128,7 @@ python3 -m pip install -r requirements.txt
 - **Docs:** **`docs/GO_LIVE_CHECKLIST.md`** §1, **`PR_DESCRIPTION.md`**, and **`RUNBOOK.md`** updated for branch-scoped `gh` listing and **`--failed-only`** vs **`--cancelled-only`** mutual exclusion.
 - **`.github/pull_request_template.md`:** default PR body stub pointing contributors to **`PR_DESCRIPTION.md`** (also required by **`check_local_box_baseline.sh`**).
 - **Governance:** **`docs/GO_LIVE_CHECKLIST.md`** §1 and **`PR_DESCRIPTION.md`** checklist spell out how checklist path changes must stay aligned with **`check_local_box_baseline.sh`** and **`go_live_status_report.sh`**.
+- **`local-box-baseline`:** job **`check`** sets **`PIP_NO_INPUT=1`** and **`PIP_DISABLE_PIP_VERSION_CHECK=1`** for **`pip install`** reliability in CI.
 
 ### Ops / migration
 

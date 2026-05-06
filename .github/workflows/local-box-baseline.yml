@@ -32,6 +32,8 @@ jobs:
     timeout-minutes: 30
     env:
       PYTHONPATH: .
+      PIP_NO_INPUT: "1"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
     steps:
       - uses: actions/checkout@v4
         with:
