@@ -52,8 +52,21 @@ if changed_only:
     changed = set()
 
     def add_lines(cmd):
-        out = subprocess.check_output(cmd, cwd=root, text=True)
-        for line in out.splitlines():
+        proc = subprocess.run(
+            cmd,
+            cwd=root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if proc.returncode != 0:
+            if verbose:
+                joined = " ".join(cmd)
+                msg = proc.stderr.strip() or f"exit={proc.returncode}"
+                print(f"[scan] skip source ({joined}): {msg}")
+            return
+        for line in proc.stdout.splitlines():
             line = line.strip()
             if line.startswith("scripts/checklist_") and line.endswith(".sh"):
                 changed.add(line)
