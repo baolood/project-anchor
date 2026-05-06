@@ -6,8 +6,8 @@ For launch planning and owner tracking, use **`docs/GO_LIVE_CHECKLIST.md`** as t
 Daily progress snapshot:
 ```bash
 ./scripts/go_live_status_report.sh
-mkdir -p artifacts/go-live
 ./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out
+# mkdir -p artifacts/go-live   # optional: --out creates parent dirs if missing
 # Ad-hoc only: ./scripts/go_live_status_report.sh --out /tmp/go_live_daily_status.out
 ```
 (`artifacts/go-live/*.out` is gitignored; see `artifacts/go-live/README.md` and `docs/GO_LIVE_CHECKLIST.md` §7.)
