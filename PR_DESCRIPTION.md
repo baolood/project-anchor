@@ -18,8 +18,11 @@ Copy this file into the GitHub PR body and replace the placeholders. Use **repo-
 cd /path/to/project-anchor
 export PYTHONPATH=.
 ./scripts/check_local_box_baseline.sh
+./scripts/go_live_status_report.sh
+python3 -c "from local_box.audit import event_store; event_store.init_db(); print('LOCAL_BOX_SQLITE_SMOKE ok')"
 ```
 
+<!-- If you change checklist `curl` usage or `checklist_*.sh`, also run `./scripts/check_checklist_curl_guardrails.sh`. -->
 <!-- Add service-specific steps (docker compose, UI) if relevant. -->
 
 ## Risk / rollout
