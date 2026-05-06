@@ -1,5 +1,7 @@
 # Project Anchor (parent repository)
 
+[![local-box-baseline](https://github.com/baolood/project-anchor/actions/workflows/local-box-baseline.yml/badge.svg?branch=main)](https://github.com/baolood/project-anchor/actions/workflows/local-box-baseline.yml)
+
 This **parent** repo holds orchestration docs, **`local_box/`**, **`shared/`**, **`risk_engine/`**, **`anchor-backend/`** (subtree), **`anchor-console/`** (submodule), and archived drafts under **`docs/archive/`**.
 
 - **Architecture (commands / worker semantics):** [`ARCHITECTURE.md`](ARCHITECTURE.md)

@@ -122,6 +122,7 @@ python3 -m pip install -r requirements.txt
 - **`check_local_box_baseline.sh`** supports **`--help`**; **`local-box-baseline`** sets **`defaults.run.shell: bash`** for `run` steps.
 - **`local-box-baseline`:** `actions/checkout` uses **`persist-credentials: false`**; job **`check`** sets job-level **`PYTHONPATH=.`** for Python smokes (removes duplicated step `env`). **`README.md`** (CI) + **`RUNBOOK.md`** (Parent repo CI) summarize these choices.
 - **`local-box-baseline`:** **`actions/setup-python`** enables **pip** caching (`cache: pip`) with **`requirements.txt`** + **`requirements.in`** in **`cache-dependency-path`** so lock/in constraint changes refresh the cache key.
+- **`README.md`:** workflow status badge for **`local-box-baseline`** (default branch).
 
 ### Ops / migration
 
