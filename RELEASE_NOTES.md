@@ -119,6 +119,7 @@ python3 -m pip install -r requirements.txt
 - `local-box-baseline` sets explicit **`permissions: contents: read`** for the token (least privilege).
 - `local-box-baseline` jobs set **`timeout-minutes`** caps (curl guardrail `15`, check `30`) to shed stuck runs.
 - Cross-links for CI timeouts surfaced in **`docs/GO_LIVE_CHECKLIST.md`** §1, **`PR_DESCRIPTION.md`** (hardening block), **`check_local_box_ci_runs.sh --help`**, **`artifacts/go-live/README.md`**, and **`go_live_status_report.sh --help`**.
+- **`check_local_box_baseline.sh`** supports **`--help`**; **`local-box-baseline`** sets **`defaults.run.shell: bash`** for `run` steps.
 
 ### Ops / migration
 

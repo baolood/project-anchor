@@ -4,6 +4,26 @@
 # Run from repository root: ./scripts/check_local_box_baseline.sh
 set -euo pipefail
 
+if (($# > 0)); then
+  case "$1" in
+    -h|--help)
+      cat <<'EOF'
+Usage: ./scripts/check_local_box_baseline.sh
+
+Verifies required parent-repo paths exist, then runs scripts/check_checklist_curl_guardrails.sh.
+
+See README.md (section "CI"). Spec: docs/LOCAL_BOX_BASELINE_CHECK_SCRIPT_SPEC_V1.md
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Run: ./scripts/check_local_box_baseline.sh --help" >&2
+      exit 2
+      ;;
+  esac
+fi
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || {
   echo "LOCAL_BOX_BASELINE_CHECK FAIL: cannot resolve repository root" >&2
   exit 1
