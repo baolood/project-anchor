@@ -158,6 +158,7 @@ When adding or updating shell automation under `scripts/` (and checklist scripts
      ./scripts/go_live_status_report.sh
      python3 -c "from local_box.audit import event_store; event_store.init_db(); print('LOCAL_BOX_SQLITE_SMOKE ok')"
      ```
+   - Baseline also requires **`.github/pull_request_template.md`** (PR body stub); renaming or removing it needs a matching edit to **`scripts/check_local_box_baseline.sh`**.
 
 ## Verify
 

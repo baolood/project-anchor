@@ -12,6 +12,9 @@ Usage: ./scripts/check_local_box_baseline.sh
 
 Verifies required parent-repo paths exist, then runs scripts/check_checklist_curl_guardrails.sh.
 
+Required paths include (among others) core local_box trees, requirements pins,
+artifacts/go-live/README.md, and .github/pull_request_template.md.
+
 See README.md (section "CI"). Spec: docs/LOCAL_BOX_BASELINE_CHECK_SCRIPT_SPEC_V1.md
 EOF
       exit 0
