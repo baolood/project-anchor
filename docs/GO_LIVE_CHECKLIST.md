@@ -25,6 +25,7 @@ Use this file as the single execution board:
 - Every `DONE` must include evidence (run output, screenshot, link, log excerpt)
 - Any `BLOCKED` must include unblock owner and ETA
 - Weekly go/no-go review owned by release manager
+- **CI coupling:** workflow **`local-box-baseline`** runs **`./scripts/go_live_status_report.sh`** on every push/PR. Do not rename `docs/GO_LIVE_CHECKLIST.md` or overhaul its status-marker conventions without updating that script (and CI). After substantive edits here, run `./scripts/go_live_status_report.sh` locally before merge.
 
 ---
 

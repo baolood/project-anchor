@@ -48,6 +48,7 @@ Use this section when the PR is part of a hardening/governance wave and you want
 - **Script safety:** strict bash mode and executable-bit normalization applied.
 - **Checklist networking:** `curl` timeout guardrails standardized (`--connect-timeout 5 --max-time 20`).
 - **CI guardrail:** dedicated `checklist-curl-guardrails` job + baseline integration.
+- **Go-live tooling:** execution checklist, daily status reporter, `artifacts/go-live/` evidence layout; CI smoke + baseline require the tracked onboarding README.
 
 ### Recommended verifier commands
 

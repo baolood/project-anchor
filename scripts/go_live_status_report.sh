@@ -22,6 +22,11 @@ Options:
 Env:
   CHECKLIST_FILE  Override checklist path.
   OUT_FILE        Optional output path (same as --out).
+
+Standup evidence (tracked folder + gitignored *.out): see docs/GO_LIVE_CHECKLIST.md §7
+and artifacts/go-live/README.md. Example:
+  mkdir -p artifacts/go-live
+  ./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out
 EOF
       exit 0
       ;;

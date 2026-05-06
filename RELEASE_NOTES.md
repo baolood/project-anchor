@@ -92,3 +92,39 @@ python3 -m pip install -r requirements.txt
 ./scripts/check_checklist_curl_guardrails.sh
 ./scripts/check_local_box_baseline.sh
 ```
+
+---
+
+## Version go-live-tooling-2026-05-06
+
+**Date:** 2026-05-06
+
+### Highlights
+
+- Executable go-live board, daily status reporter, and evidence layout under `artifacts/go-live/`.
+- CI and parent baseline now guard the reporter and the tracked `artifacts/go-live/README.md` pointer.
+
+### Added
+
+- `docs/GO_LIVE_CHECKLIST.md` as the execution checklist; `scripts/go_live_status_report.sh` for standup metrics.
+- `artifacts/go-live/README.md` (tracked); `artifacts/go-live/*.out` gitignored for daily snapshots.
+- CI smoke step: `go_live_status_report.sh` in `.github/workflows/local-box-baseline.yml`.
+
+### Changed
+
+- `scripts/check_local_box_baseline.sh` requires `artifacts/go-live/README.md`.
+- Docs (`README.md`, `RUNBOOK.md`, `PR_DESCRIPTION.md`) aligned with CI job order and verifier commands.
+
+### Ops / migration
+
+- No production runtime migration.
+- Optional local standup habit: see `docs/GO_LIVE_CHECKLIST.md` §7.
+
+### Upgrade notes
+
+```bash
+cd /path/to/project-anchor
+git pull
+./scripts/go_live_status_report.sh
+./scripts/check_local_box_baseline.sh
+```
