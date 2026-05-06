@@ -33,7 +33,7 @@ python3 -c "from local_box.audit import event_store; event_store.init_db(); prin
 
 ## Checklist
 
-- [ ] **CI:** `local-box-baseline` (or equivalent) considered for this change
+- [ ] **CI:** `local-box-baseline` (or equivalent) considered for this change (on-demand re-run: GitHub **Actions** → **local-box-baseline** → **Run workflow** / `workflow_dispatch`)
 - [ ] **Go-live:** if you change `artifacts/go-live/`, `docs/GO_LIVE_CHECKLIST.md`, or `scripts/go_live_status_report.sh`, run `./scripts/go_live_status_report.sh` and ensure `./scripts/check_local_box_baseline.sh` still passes
 - [ ] **Docs:** `README.md` / `RUNBOOK.md` / ADRs updated if behavior or ops changed
 - [ ] **Paths:** examples and scripts avoid machine-specific absolute paths (use repo-relative paths or placeholders like `/path/to/project-anchor`)
