@@ -128,7 +128,7 @@ python3 -m pip install -r requirements.txt
 - **`check_local_box_ci_runs.sh`:** adds alias **`--fail-on-non-success`** for readability (same behavior as **`--fail-on-failed`**).
 - **`check_local_box_ci_runs.sh`:** adds **`--fail-on-incomplete`** to fail when filtered runs are still queued/in_progress (status != completed).
 - **`check_local_box_ci_runs.sh`:** **`--branch`** forwards to **`gh run list --branch`**; **`--require-latest-success`** uses the first row returned (branch-scoped, newest-first).
-- **Docs:** **`docs/GO_LIVE_CHECKLIST.md`** §1, **`PR_DESCRIPTION.md`**, and **`RUNBOOK.md`** updated for branch-scoped `gh` listing and **`--failed-only`** vs **`--cancelled-only`** mutual exclusion.
+- **Docs:** **`docs/GO_LIVE_CHECKLIST.md`** §1, **`PR_DESCRIPTION.md`**, and **`RUNBOOK.md`** updated for branch-scoped `gh` listing, **`--failed-only`** vs **`--cancelled-only`** mutual exclusion, and gate flags (**`--fail-on-failed`** / **`--fail-on-non-success`** / **`--fail-on-incomplete`**).
 - **`.github/pull_request_template.md`:** default PR body stub pointing contributors to **`PR_DESCRIPTION.md`** (also required by **`check_local_box_baseline.sh`**).
 - **Governance:** **`docs/GO_LIVE_CHECKLIST.md`** §1 and **`PR_DESCRIPTION.md`** checklist spell out how checklist path changes must stay aligned with **`check_local_box_baseline.sh`** and **`go_live_status_report.sh`**.
 - **`local-box-baseline`:** job **`check`** sets **`PIP_NO_INPUT=1`** and **`PIP_DISABLE_PIP_VERSION_CHECK=1`** for **`pip`** steps; **pip upgrade** and **`requirements.txt` install** are separate Actions steps for clearer logs.
