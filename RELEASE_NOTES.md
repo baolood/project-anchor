@@ -116,6 +116,7 @@ python3 -m pip install -r requirements.txt
 - Docs (`README.md`, `RUNBOOK.md`, `PR_DESCRIPTION.md`) aligned with CI job order and verifier commands.
 - `scripts/go_live_status_report.sh` ensures parent directories exist before writing `--out` (standup path convenience).
 - `local-box-baseline` workflow supports **`workflow_dispatch`** (GitHub **Actions** → **Run workflow**).
+- `local-box-baseline` sets explicit **`permissions: contents: read`** for the token (least privilege).
 
 ### Ops / migration
 

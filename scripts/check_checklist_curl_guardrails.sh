@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Guardrail check: checklist scripts should run curl with timeout protection.
+# CI: job checklist-curl-guardrails in local-box-baseline.yml; see README.md (section "CI").
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -23,6 +24,8 @@ Usage: ./scripts/check_checklist_curl_guardrails.sh [--verbose] [--changed-only]
 Options:
   --verbose       Print detailed scan information.
   --changed-only  Scan only changed checklist scripts (working tree, staged, untracked).
+
+See also: README.md (section "CI") for workflow layout (this script runs in job checklist-curl-guardrails).
 EOF
       exit 0
       ;;
