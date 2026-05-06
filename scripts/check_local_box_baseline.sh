@@ -17,6 +17,8 @@ REQUIRED_PATHS=(
   "shared/schemas.py"
   "risk_engine/client.py"
   "local_box/gate/ticket_signature.py"
+  # Tracked onboarding for go-live daily snapshots (see docs/GO_LIVE_CHECKLIST.md §7).
+  "artifacts/go-live/README.md"
 )
 
 missing=()
