@@ -103,6 +103,7 @@ For the **parent repository** `local_box` audit stack (not Docker `anchor-backen
      ./scripts/check_local_box_ci_runs.sh --branch <your-branch> --require-latest-success
      ./scripts/check_local_box_ci_runs.sh --branch <your-branch> --require-latest-success --quiet
      ./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --json
+     # Note: --summary and --json are mutually exclusive.
      ./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --fail-on-cancelled
      ```
 

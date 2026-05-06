@@ -105,10 +105,10 @@ Options:
                   Show only cancelled runs (useful for concurrency checks)
   --failed-only     Show only completed non-success, non-cancelled runs (excludes --cancelled-only|--canceled-only)
   --latest-only     Keep only newest run per branch from the fetched set
-  --summary         Print status/conclusion counts for filtered rows
+  --summary         Print status/conclusion counts for filtered rows (text mode only; cannot combine with --json)
   --require-latest-success  Exit non-zero unless latest run on --branch is successful
   --quiet           Suppress table/tips; useful with --require-latest-success in scripts
-  --json            Emit filtered rows as JSON (for automation)
+  --json            Emit filtered rows as JSON (for automation; cannot combine with --summary)
   --fail-on-cancelled, --fail-on-canceled
                   Exit non-zero if any filtered row has conclusion=cancelled
   --fail-on-failed, --fail-on-non-success
