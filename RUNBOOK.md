@@ -19,7 +19,7 @@ Daily progress snapshot:
 - **`actions/setup-python`** uses **`cache: pip`** with **`cache-dependency-path`** covering **`requirements.txt`** and **`requirements.in`** so constraint edits invalidate the pip cache cleanly.
 - Two jobs: **`checklist-curl-guardrails`** (checklist `curl` policy) and **`check`** (deps, `check_local_box_baseline.sh`, `go_live_status_report.sh`, SQLite/import smokes).
 - Full job order, failure triage, and `gh` examples: root **`README.md`** → section **CI** (this section is the short ops summary).
-- Quick fail triage helper: `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --failed-only`.
+- Quick fail triage helper: `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --failed-only` (**`--branch`** is passed through to **`gh`**; scope per-branch before **`--limit`** truncates the list).
 - Each job declares **`timeout-minutes`** in the workflow YAML (see **`.github/workflows/local-box-baseline.yml`**).
 
 ## Daily Mode (default)

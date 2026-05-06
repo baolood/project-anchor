@@ -125,6 +125,7 @@ python3 -m pip install -r requirements.txt
 - **`README.md`:** workflow status badge for **`local-box-baseline`** (default branch).
 - **`check_local_box_ci_runs.sh`:** adds **`--failed-only`** to isolate completed non-success, non-cancelled runs during triage; **`--failed-only`** cannot be combined with **`--cancelled-only`**.
 - **`check_local_box_ci_runs.sh`:** **`--branch`** forwards to **`gh run list --branch`**; **`--require-latest-success`** uses the first row returned (branch-scoped, newest-first).
+- **Docs:** **`docs/GO_LIVE_CHECKLIST.md`** §1, **`PR_DESCRIPTION.md`**, and **`RUNBOOK.md`** updated for branch-scoped `gh` listing and **`--failed-only`** vs **`--cancelled-only`** mutual exclusion.
 
 ### Ops / migration
 
