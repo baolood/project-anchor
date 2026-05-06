@@ -120,6 +120,7 @@ python3 -m pip install -r requirements.txt
 - `local-box-baseline` jobs set **`timeout-minutes`** caps (curl guardrail `15`, check `30`) to shed stuck runs.
 - Cross-links for CI timeouts surfaced in **`docs/GO_LIVE_CHECKLIST.md`** §1, **`PR_DESCRIPTION.md`** (hardening block), **`check_local_box_ci_runs.sh --help`**, **`artifacts/go-live/README.md`**, and **`go_live_status_report.sh --help`**.
 - **`check_local_box_baseline.sh`** supports **`--help`**; **`local-box-baseline`** sets **`defaults.run.shell: bash`** for `run` steps.
+- **`local-box-baseline`:** `actions/checkout` uses **`persist-credentials: false`**; job **`check`** sets job-level **`PYTHONPATH=.`** for Python smokes (removes duplicated step `env`). **`README.md`** (CI) + **`RUNBOOK.md`** (Parent repo CI) summarize these choices.
 
 ### Ops / migration
 

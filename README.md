@@ -37,6 +37,8 @@ GitHub Actions workflow **[`.github/workflows/local-box-baseline.yml`](.github/w
 
 Shorter ops-oriented summary (two jobs, where to look first): **[`RUNBOOK.md`](RUNBOOK.md)** → **Parent repo CI (GitHub Actions)**.
 
+Workflow hardening in the YAML: **`actions/checkout`** uses **`persist-credentials: false`**; job **`check`** sets **`PYTHONPATH=.`** for all steps (the inline Python smokes import **`local_box`** from repo root).
+
 1. Job **`checklist-curl-guardrails`** runs **`./scripts/check_checklist_curl_guardrails.sh`** (fast, script-policy only)
 2. Job **`check`** installs **`requirements.txt`**
 3. Job **`check`** runs **`./scripts/check_local_box_baseline.sh`** (`--help` explains scope; required paths include **`local_box`**, **`shared`**, **`risk_engine`**, **`artifacts/go-live/README.md`**, plus checklist `curl` guardrails)

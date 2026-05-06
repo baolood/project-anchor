@@ -22,14 +22,20 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Guardrail — checklist curl timeout scan
         run: ./scripts/check_checklist_curl_guardrails.sh
 
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      PYTHONPATH: .
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -40,8 +46,6 @@ jobs:
       - name: Smoke — go-live status report parses checklist
         run: ./scripts/go_live_status_report.sh
       - name: Smoke — local_box audit DB path + init_db
-        env:
-          PYTHONPATH: .
         run: |
           python - <<'PY'
           from local_box.audit import event_store
@@ -50,16 +54,12 @@ jobs:
           print("LOCAL_BOX_SQLITE_SMOKE ok")
           PY
       - name: Smoke — import local_box.runner (full parent import chain)
-        env:
-          PYTHONPATH: .
         run: |
           python - <<'PY'
           import local_box.runner  # noqa: F401
           print("LOCAL_BOX_RUNNER_IMPORT ok")
           PY
       - name: Smoke — import local_box.control.server (Flask control plane)
-        env:
-          PYTHONPATH: .
         run: |
           python - <<'PY'
           import local_box.control.server as ctl
