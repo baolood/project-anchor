@@ -193,9 +193,13 @@ if [[ -n "${BRANCH}" ]]; then
   gh_args+=(--branch "${BRANCH}")
   [[ "$QUIET" -eq 0 ]] && echo "(branch=${BRANCH} — passed to gh run list)"
 fi
-rows="$(gh "${gh_args[@]}" \
+if ! rows="$(gh "${gh_args[@]}" \
   --json databaseId,headBranch,status,conclusion,event,displayTitle,createdAt,updatedAt \
-  --jq '.[] | "\(.databaseId)\t\(.headBranch)\t\(.status)\t\(.conclusion // "n/a")\t\(.event)\t\(.displayTitle)"')"
+  --jq '.[] | "\(.databaseId)\t\(.headBranch)\t\(.status)\t\(.conclusion // "n/a")\t\(.event)\t\(.displayTitle)"')"; then
+  echo "CI_RUNS_CHECK FAIL: unable to fetch workflow runs via gh." >&2
+  echo "Check workflow name, repo access, and auth state (gh auth status)." >&2
+  exit 1
+fi
 
 output="$rows"
 if [[ "$CANCELLED_ONLY" -eq 1 ]]; then
