@@ -7,6 +7,7 @@ WORKFLOW_FILE="${WORKFLOW_FILE:-local-box-baseline.yml}"
 LIMIT="${LIMIT:-10}"
 BRANCH="${BRANCH:-}"
 CANCELLED_ONLY=0
+FAILED_ONLY=0
 LATEST_ONLY=0
 SUMMARY=0
 REQUIRE_LATEST_SUCCESS=0
@@ -30,6 +31,10 @@ while (($# > 0)); do
       ;;
     --cancelled-only)
       CANCELLED_ONLY=1
+      shift
+      ;;
+    --failed-only)
+      FAILED_ONLY=1
       shift
       ;;
     --latest-only)
@@ -58,13 +63,14 @@ while (($# > 0)); do
       ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
   --limit     Number of runs to fetch (default: 10)
   --branch    Filter output to one branch/ref name
   --cancelled-only  Show only cancelled runs (useful for concurrency checks)
+  --failed-only     Show only completed non-success, non-cancelled runs
   --latest-only     Keep only newest run per branch from the fetched set
   --summary         Print status/conclusion counts for filtered rows
   --require-latest-success  Exit non-zero unless latest run on --branch is successful
@@ -123,6 +129,10 @@ fi
 if [[ "$CANCELLED_ONLY" -eq 1 ]]; then
   [[ "$QUIET" -eq 0 ]] && echo "(filtered cancelled-only)"
   output="$(printf '%s\n' "$output" | awk -F '\t' '$4=="cancelled" {print}')"
+fi
+if [[ "$FAILED_ONLY" -eq 1 ]]; then
+  [[ "$QUIET" -eq 0 ]] && echo "(filtered failed-only)"
+  output="$(printf '%s\n' "$output" | awk -F '\t' '$3=="completed" && $4!="success" && $4!="cancelled" {print}')"
 fi
 if [[ "$LATEST_ONLY" -eq 1 ]]; then
   [[ "$QUIET" -eq 0 ]] && echo "(filtered latest-only per branch)"
