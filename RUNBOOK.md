@@ -17,7 +17,7 @@ Daily progress snapshot:
 - Workflow: **`.github/workflows/local-box-baseline.yml`** (`local-box-baseline`). Also runnable on demand (**Actions** → **local-box-baseline** → **Run workflow**) via **`workflow_dispatch`**. Inline `run:` steps use **`defaults.run.shell: bash`**.
 - **`actions/checkout`** sets **`persist-credentials: false`** (read-only clone only). Job **`check`** sets **`PYTHONPATH=.`** once for the Python smoke steps.
 - **`actions/setup-python`** uses **`cache: pip`** with **`cache-dependency-path`** covering **`requirements.txt`** and **`requirements.in`** so constraint edits invalidate the pip cache cleanly.
-- Job **`check`** exports **`PIP_NO_INPUT=1`** and **`PIP_DISABLE_PIP_VERSION_CHECK=1`** during **`pip install`** (CI-safe, non-interactive).
+- Job **`check`** exports **`PIP_NO_INPUT=1`** and **`PIP_DISABLE_PIP_VERSION_CHECK=1`** during **`pip`** steps (CI-safe, non-interactive). The workflow uses separate steps for **pip upgrade** vs **`requirements.txt` install** so failures are easier to read in Actions.
 - Two jobs: **`checklist-curl-guardrails`** (checklist `curl` policy) and **`check`** (deps, `check_local_box_baseline.sh`, `go_live_status_report.sh`, SQLite/import smokes).
 - Full job order, failure triage, and `gh` examples: root **`README.md`** → section **CI** (this section is the short ops summary).
 - Quick fail triage helper: `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --failed-only` (**`--branch`** is passed through to **`gh`**; scope per-branch before **`--limit`** truncates the list).

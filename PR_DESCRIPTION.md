@@ -54,6 +54,7 @@ Use this section when the PR is part of a hardening/governance wave and you want
 - **CI guardrail:** dedicated `checklist-curl-guardrails` job + baseline integration + `workflow_dispatch` + per-job `timeout-minutes` caps; checkout **`persist-credentials: false`**; job **`check`** uses job-level **`PYTHONPATH=.`** for smoke steps; **`setup-python`** **pip** cache on **`requirements.txt`** / **`requirements.in`**.
 - **CI triage helper:** `check_local_box_ci_runs.sh` forwards **`--branch`** to **`gh run list`**; **`--failed-only`** narrows to completed non-success, non-cancelled runs (mutually exclusive with **`--cancelled-only`**).
 - **Go-live tooling:** execution checklist, daily status reporter, `artifacts/go-live/` evidence layout; CI smoke + baseline require the tracked onboarding README.
+- **CI pip UX:** job **check** runs **pip upgrade** and **`pip install -r requirements.txt`** as separate steps (clearer Actions logs) with **PIP_NO_INPUT** / **PIP_DISABLE_PIP_VERSION_CHECK** on the job.
 
 ### Recommended verifier commands
 

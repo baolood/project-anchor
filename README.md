@@ -40,7 +40,7 @@ GitHub Actions workflow **[`.github/workflows/local-box-baseline.yml`](.github/w
 
 Shorter ops-oriented summary (two jobs, where to look first): **[`RUNBOOK.md`](RUNBOOK.md)** → **Parent repo CI (GitHub Actions)**.
 
-Workflow hardening in the YAML: **`actions/checkout`** uses **`persist-credentials: false`**; job **`check`** sets **`PYTHONPATH=.`** for all steps (the inline Python smokes import **`local_box`** from repo root); job **`check`** also sets **`PIP_NO_INPUT=1`** and **`PIP_DISABLE_PIP_VERSION_CHECK=1`** so **`pip install`** stays non-interactive and quieter; **`actions/setup-python`** enables **pip** dependency caching keyed off **`requirements.txt`** plus **`requirements.in`** (warm runs reinstall faster; **`requirements.in`** changes invalidate stale wheels).
+Workflow hardening in the YAML: **`actions/checkout`** uses **`persist-credentials: false`**; job **`check`** sets **`PYTHONPATH=.`** for all steps (the inline Python smokes import **`local_box`** from repo root); job **`check`** also sets **`PIP_NO_INPUT=1`** and **`PIP_DISABLE_PIP_VERSION_CHECK=1`** so **`pip`** stays non-interactive and quieter; **pip upgrade** and **`requirements.txt` install** are **separate workflow steps** for clearer log attribution; **`actions/setup-python`** enables **pip** dependency caching keyed off **`requirements.txt`** plus **`requirements.in`** (warm runs reinstall faster; **`requirements.in`** changes invalidate stale wheels).
 
 1. Job **`checklist-curl-guardrails`** runs **`./scripts/check_checklist_curl_guardrails.sh`** (fast, script-policy only)
 2. Job **`check`** installs **`requirements.txt`**
