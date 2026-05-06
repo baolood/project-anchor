@@ -232,7 +232,7 @@ for raw in sys.stdin:
     raw = raw.rstrip("\n")
     if not raw:
         continue
-    parts = raw.split("\t")
+    parts = raw.split("\t", 5)
     if len(parts) < 6:
         continue
     rows.append(
