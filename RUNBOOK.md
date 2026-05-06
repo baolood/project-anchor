@@ -12,6 +12,12 @@ Daily progress snapshot:
 ```
 (`artifacts/go-live/*.out` is gitignored; see `artifacts/go-live/README.md` and `docs/GO_LIVE_CHECKLIST.md` §7.)
 
+## Parent repo CI (GitHub Actions)
+
+- Workflow: **`.github/workflows/local-box-baseline.yml`** (`local-box-baseline`).
+- Two jobs: **`checklist-curl-guardrails`** (checklist `curl` policy) and **`check`** (deps, `check_local_box_baseline.sh`, `go_live_status_report.sh`, SQLite/import smokes).
+- Which failure to reproduce first and how to list runs with **`gh`**: root **`README.md`** → section **CI**.
+
 ## Daily Mode (default)
 
 ### Start (backend + worker)

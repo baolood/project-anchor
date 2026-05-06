@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Quick helper: inspect recent local-box-baseline workflow runs.
+# Inspect recent local-box-baseline (and other) workflow runs via gh.
+# Repo README.md → "CI" lists job roles and local triage order; this script lists/filter gates runs.
 set -euo pipefail
 
 WORKFLOW_FILE="${WORKFLOW_FILE:-local-box-baseline.yml}"
@@ -70,6 +71,8 @@ Options:
   --quiet           Suppress table/tips; useful with --require-latest-success in scripts
   --json            Emit filtered rows as JSON (for automation)
   --fail-on-cancelled  Exit non-zero if any filtered row has conclusion=cancelled
+
+See also: README.md (section "CI") for workflow jobs and reproducing failures locally.
 EOF
       exit 0
       ;;
