@@ -68,7 +68,7 @@ Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [-
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
   --limit     Number of runs to fetch (default: 10)
-  --branch    Filter output to one branch/ref name
+  --branch    Pass through to gh as run list --branch (recommended for ordering + --require-latest-success)
   --cancelled-only  Show only cancelled runs (useful for concurrency checks)
   --failed-only     Show only completed non-success, non-cancelled runs (excludes --cancelled-only)
   --latest-only     Keep only newest run per branch from the fetched set
@@ -121,15 +121,16 @@ fi
 if [[ "$QUIET" -eq 0 ]]; then
   echo "== Recent runs: ${WORKFLOW_FILE} (limit=${LIMIT}) =="
 fi
-rows="$(gh run list --workflow "${WORKFLOW_FILE}" --limit "${LIMIT}" \
+gh_args=(run list --workflow "${WORKFLOW_FILE}" --limit "${LIMIT}")
+if [[ -n "${BRANCH}" ]]; then
+  gh_args+=(--branch "${BRANCH}")
+  [[ "$QUIET" -eq 0 ]] && echo "(branch=${BRANCH} — passed to gh run list)"
+fi
+rows="$(gh "${gh_args[@]}" \
   --json databaseId,headBranch,status,conclusion,event,displayTitle,createdAt,updatedAt \
   --jq '.[] | "\(.databaseId)\t\(.headBranch)\t\(.status)\t\(.conclusion // "n/a")\t\(.event)\t\(.displayTitle)"')"
 
 output="$rows"
-if [[ -n "${BRANCH}" ]]; then
-  [[ "$QUIET" -eq 0 ]] && echo "(filtered branch=${BRANCH})"
-  output="$(printf '%s\n' "$output" | awk -F '\t' -v b="$BRANCH" '$2==b {print}')"
-fi
 if [[ "$CANCELLED_ONLY" -eq 1 ]]; then
   [[ "$QUIET" -eq 0 ]] && echo "(filtered cancelled-only)"
   output="$(printf '%s\n' "$output" | awk -F '\t' '$4=="cancelled" {print}')"
@@ -187,7 +188,8 @@ if [[ "$SUMMARY" -eq 1 && "$JSON_OUTPUT" -eq 0 ]]; then
 fi
 
 if [[ "$REQUIRE_LATEST_SUCCESS" -eq 1 ]]; then
-  latest_line="$(printf '%s\n' "$rows" | awk -F '\t' -v b="$BRANCH" '$2==b {print; exit}')"
+  # With --branch, gh returns runs for that ref only (newest first); first row is latest.
+  latest_line="$(printf '%s\n' "$rows" | awk 'NF {print; exit}')"
   if [[ -z "${latest_line}" ]]; then
     echo "CI_RUNS_CHECK FAIL: no runs found for branch=${BRANCH}" >&2
     exit 1

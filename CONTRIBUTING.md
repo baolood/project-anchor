@@ -35,6 +35,8 @@ Notes:
 
 Requires `gh` + `gh auth login`.
 
+**Note:** `--branch` is forwarded to `gh run list --branch` so the newest runs for that branch are not “hidden” behind other branches in the global limit window.
+
 ```bash
 ./scripts/check_local_box_ci_runs.sh --branch main --limit 20
 ./scripts/check_local_box_ci_runs.sh --branch main --failed-only --limit 30
