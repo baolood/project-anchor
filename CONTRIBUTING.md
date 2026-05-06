@@ -46,7 +46,7 @@ Requires `gh` + `gh auth login`.
 ./scripts/check_local_box_ci_runs.sh --branch main --gate-strict
 ```
 
-Do not combine **`--cancelled-only`** with **`--failed-only`** (the script exits with an error).
+Do not combine **`--cancelled-only`** with **`--failed-only`** (the script exits with an error). Also, **`--gate-strict`** requires **`--branch`** and cannot be combined with those two filter flags.
 
 ## Pull requests
 
