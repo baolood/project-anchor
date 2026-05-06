@@ -78,6 +78,7 @@ Concurrency behavior (expected):
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --fail-on-incomplete`
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --fail-on-empty`
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --gate-strict` (requires `--branch`; includes `--fail-on-empty`; cannot be combined with `--cancelled-only` / `--failed-only`)
+  - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --gate-strict --quiet` (CI-friendly: exit code only)
 
 Each workflow job sets **`timeout-minutes`** in **[`.github/workflows/local-box-baseline.yml`](.github/workflows/local-box-baseline.yml)** so a stuck runner does not run unbounded.
 
