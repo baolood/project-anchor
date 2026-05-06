@@ -16,6 +16,7 @@ Daily progress snapshot:
 
 - Workflow: **`.github/workflows/local-box-baseline.yml`** (`local-box-baseline`). Also runnable on demand (**Actions** → **local-box-baseline** → **Run workflow**) via **`workflow_dispatch`**. Inline `run:` steps use **`defaults.run.shell: bash`**.
 - **`actions/checkout`** sets **`persist-credentials: false`** (read-only clone only). Job **`check`** sets **`PYTHONPATH=.`** once for the Python smoke steps.
+- **`actions/setup-python`** uses **`cache: pip`** with **`cache-dependency-path: requirements.txt`** to speed up **`pip install`** on repeat runs.
 - Two jobs: **`checklist-curl-guardrails`** (checklist `curl` policy) and **`check`** (deps, `check_local_box_baseline.sh`, `go_live_status_report.sh`, SQLite/import smokes).
 - Full job order, failure triage, and `gh` examples: root **`README.md`** → section **CI** (this section is the short ops summary).
 - Each job declares **`timeout-minutes`** in the workflow YAML (see **`.github/workflows/local-box-baseline.yml`**).
