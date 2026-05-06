@@ -46,7 +46,7 @@ Do not combine **`--cancelled-only`** with **`--failed-only`** (the script exits
 
 ## Pull requests
 
-GitHub opens **`.github/pull_request_template.md`** when you create a PR. The canonical checklist and wording live in **`PR_DESCRIPTION.md`** at the repo root — copy from there into the PR body.
+GitHub opens **`.github/pull_request_template.md`** when you create a PR. The canonical checklist and wording live in **`PR_DESCRIPTION.md`** at the repo root — copy from there into the PR body. **`./scripts/check_local_box_baseline.sh`** treats the stub file as required (do not delete it without updating the baseline list).
 
 ## Go-live execution artifacts
 

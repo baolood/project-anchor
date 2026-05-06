@@ -40,6 +40,8 @@ REQUIRED_PATHS=(
   "local_box/gate/ticket_signature.py"
   # Tracked onboarding for go-live daily snapshots (see docs/GO_LIVE_CHECKLIST.md §7).
   "artifacts/go-live/README.md"
+  # GitHub PR body stub (see PR_DESCRIPTION.md and CONTRIBUTING.md).
+  ".github/pull_request_template.md"
 )
 
 missing=()

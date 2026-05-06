@@ -1,6 +1,6 @@
 # Pull request description (template)
 
-Copy this file into the GitHub PR body and replace the placeholders. Use **repo-relative** paths and portable examples (for example `cd /path/to/project-anchor`), not machine-specific absolute paths.
+Copy this file into the GitHub PR body and replace the placeholders. GitHub also opens **`.github/pull_request_template.md`** as a short stub that points here — keep both in sync conceptually (canonical wording lives in this file). Use **repo-relative** paths and portable examples (for example `cd /path/to/project-anchor`), not machine-specific absolute paths.
 
 ## Summary
 
