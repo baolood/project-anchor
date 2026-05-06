@@ -42,6 +42,12 @@ Requires `gh` + `gh auth login`.
 ./scripts/check_local_box_ci_runs.sh --branch main --failed-only --limit 30
 ```
 
+Do not combine **`--cancelled-only`** with **`--failed-only`** (the script exits with an error).
+
+## Pull requests
+
+GitHub opens **`.github/pull_request_template.md`** when you create a PR. The canonical checklist and wording live in **`PR_DESCRIPTION.md`** at the repo root — copy from there into the PR body.
+
 ## Go-live execution artifacts
 
 - Execution board: **`docs/GO_LIVE_CHECKLIST.md`**
