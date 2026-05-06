@@ -110,7 +110,9 @@ For per-job wall-clock caps see .github/workflows/local-box-baseline.yml (timeou
 
 Examples:
   ./scripts/check_local_box_ci_runs.sh --branch main --limit 20
-  ./scripts/check_local_box_ci_runs.sh --branch main --latest-only --fail-on-failed
+  ./scripts/check_local_box_ci_runs.sh --branch main --latest-only --fail-on-failed   # alias: --fail-on-non-success
+  ./scripts/check_local_box_ci_runs.sh --branch main --latest-only --fail-on-incomplete # alias: --fail-on-non-completed
+  ./scripts/check_local_box_ci_runs.sh --branch main --latest-only --fail-on-empty
   ./scripts/check_local_box_ci_runs.sh --branch main --gate-strict --quiet
 EOF
       exit 0
