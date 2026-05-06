@@ -135,6 +135,7 @@ python3 -m pip install -r requirements.txt
 - **`check_local_box_ci_runs.sh`:** non-quiet `--gate-strict` prints the expanded preset flags for operator visibility.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.
+- **`check_local_box_ci_runs.sh`:** missing-`gh` error now prints a concrete install hint (macOS `brew install gh` + upstream URL).
 - **`check_local_box_ci_runs.sh`:** adds **`--fail-on-empty`** to fail when filtered output has zero rows.
 - **`check_local_box_ci_runs.sh`:** **`--branch`** forwards to **`gh run list --branch`**; **`--require-latest-success`** uses the first row returned (branch-scoped, newest-first).
 - **Docs:** **`docs/GO_LIVE_CHECKLIST.md`** §1, **`PR_DESCRIPTION.md`**, and **`RUNBOOK.md`** updated for branch-scoped `gh` listing, **`--failed-only`** vs **`--cancelled-only`** mutual exclusion, and gate flags (**`--fail-on-failed`** / **`--fail-on-non-success`** / **`--fail-on-incomplete`**).

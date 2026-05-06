@@ -156,6 +156,7 @@ fi
 if ! command -v gh >/dev/null 2>&1; then
   echo "CI_RUNS_CHECK FAIL: gh CLI not found." >&2
   echo "Install GitHub CLI and authenticate (gh auth login)." >&2
+  echo "Install hint: macOS 'brew install gh' | Linux https://cli.github.com/" >&2
   exit 1
 fi
 

@@ -63,6 +63,7 @@ Concurrency behavior (expected):
 - When multiple pushes happen on the same branch/ref, older in-progress runs may show as **Cancelled**.
 - Treat the **latest run for that ref** as source of truth; a cancelled older run is expected, not a failure.
 - Optional helper to inspect recent workflow runs locally (requires `gh auth login`):
+  - If `gh` is missing locally: install first (for example macOS `brew install gh`)
   - `./scripts/check_local_box_ci_runs.sh`
   - `./scripts/check_local_box_ci_runs.sh --branch main --limit 20` (`--branch` is passed to **`gh`** so results are scoped to that branch)
   - `./scripts/check_local_box_ci_runs.sh --workflow local-box-baseline.yml --branch <your-branch>`
