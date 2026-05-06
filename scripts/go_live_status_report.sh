@@ -27,6 +27,8 @@ Env:
 Standup evidence (tracked folder + gitignored *.out): see docs/GO_LIVE_CHECKLIST.md §7
 and artifacts/go-live/README.md. Example:
   ./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out
+
+CI: smoke step in local-box-baseline (job check). Job wall-clock caps: see .github/workflows/local-box-baseline.yml (timeout-minutes).
 EOF
       exit 0
       ;;

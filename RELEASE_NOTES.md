@@ -118,6 +118,7 @@ python3 -m pip install -r requirements.txt
 - `local-box-baseline` workflow supports **`workflow_dispatch`** (GitHub **Actions** → **Run workflow**).
 - `local-box-baseline` sets explicit **`permissions: contents: read`** for the token (least privilege).
 - `local-box-baseline` jobs set **`timeout-minutes`** caps (curl guardrail `15`, check `30`) to shed stuck runs.
+- Cross-links for CI timeouts surfaced in **`docs/GO_LIVE_CHECKLIST.md`** §1, **`PR_DESCRIPTION.md`** (hardening block), **`check_local_box_ci_runs.sh --help`**, **`artifacts/go-live/README.md`**, and **`go_live_status_report.sh --help`**.
 
 ### Ops / migration
 
