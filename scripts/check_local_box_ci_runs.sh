@@ -62,13 +62,13 @@ while (($# > 0)); do
       FAIL_ON_CANCELLED=1
       shift
       ;;
-    --fail-on-failed)
+    --fail-on-failed|--fail-on-non-success)
       FAIL_ON_FAILED=1
       shift
       ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled] [--fail-on-failed]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled] [--fail-on-failed|--fail-on-non-success]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
@@ -82,7 +82,8 @@ Options:
   --quiet           Suppress table/tips; useful with --require-latest-success in scripts
   --json            Emit filtered rows as JSON (for automation)
   --fail-on-cancelled  Exit non-zero if any filtered row has conclusion=cancelled
-  --fail-on-failed     Exit non-zero if any filtered row is completed and non-success/non-cancelled
+  --fail-on-failed, --fail-on-non-success
+                  Exit non-zero if any filtered row is completed and non-success/non-cancelled
 
 See also: README.md (section "CI") for workflow jobs and reproducing failures locally.
 For per-job wall-clock caps see .github/workflows/local-box-baseline.yml (timeout-minutes).
