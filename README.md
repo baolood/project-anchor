@@ -35,6 +35,8 @@ export PYTHONPATH=.
 
 GitHub Actions workflow **[`.github/workflows/local-box-baseline.yml`](.github/workflows/local-box-baseline.yml)** on **push** and **pull_request**:
 
+Shorter ops-oriented summary (two jobs, where to look first): **[`RUNBOOK.md`](RUNBOOK.md)** → **Parent repo CI (GitHub Actions)**.
+
 1. Job **`checklist-curl-guardrails`** runs **`./scripts/check_checklist_curl_guardrails.sh`** (fast, script-policy only)
 2. Job **`check`** installs **`requirements.txt`**
 3. Job **`check`** runs **`./scripts/check_local_box_baseline.sh`** (required paths include **`local_box`**, **`shared`**, **`risk_engine`**, **`artifacts/go-live/README.md`**, plus checklist `curl` guardrails)

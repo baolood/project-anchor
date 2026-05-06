@@ -26,7 +26,7 @@ Use this file as the single execution board:
 - Any `BLOCKED` must include unblock owner and ETA
 - Weekly go/no-go review owned by release manager
 - **CI coupling:** workflow **`local-box-baseline`** runs **`./scripts/go_live_status_report.sh`** on every push/PR. Do not rename `docs/GO_LIVE_CHECKLIST.md` or overhaul its status-marker conventions without updating that script (and CI). After substantive edits here, run `./scripts/go_live_status_report.sh` locally before merge.
-- **CI triage:** the workflow has two jobs — **`checklist-curl-guardrails`** (curl policy only) and **`check`** (Python install, baseline, go-live reporter, smokes). See root **`README.md`** (CI section) for which command to run first when a job fails. To list or gate recent runs from your laptop, install **`gh`**, run **`gh auth login`**, then use **`./scripts/check_local_box_ci_runs.sh`** (examples in that same README section).
+- **CI triage:** the workflow has two jobs — **`checklist-curl-guardrails`** (curl policy only) and **`check`** (Python install, baseline, go-live reporter, smokes). See root **`README.md`** (CI section) and **`RUNBOOK.md`** (Parent repo CI) for repro order and context. To list or gate recent runs from your laptop, install **`gh`**, run **`gh auth login`**, then use **`./scripts/check_local_box_ci_runs.sh`** (examples in **`README.md`** CI).
 
 ---
 

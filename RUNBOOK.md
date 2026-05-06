@@ -16,7 +16,7 @@ Daily progress snapshot:
 
 - Workflow: **`.github/workflows/local-box-baseline.yml`** (`local-box-baseline`).
 - Two jobs: **`checklist-curl-guardrails`** (checklist `curl` policy) and **`check`** (deps, `check_local_box_baseline.sh`, `go_live_status_report.sh`, SQLite/import smokes).
-- Which failure to reproduce first and how to list runs with **`gh`**: root **`README.md`** → section **CI**.
+- Full job order, failure triage, and `gh` examples: root **`README.md`** → section **CI** (this section is the short ops summary).
 
 ## Daily Mode (default)
 
