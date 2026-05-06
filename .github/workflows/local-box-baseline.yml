@@ -3,6 +3,7 @@ name: local-box-baseline
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: local-box-baseline-${{ github.workflow }}-${{ github.ref }}

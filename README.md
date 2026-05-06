@@ -33,7 +33,7 @@ export PYTHONPATH=.
 
 ### CI
 
-GitHub Actions workflow **[`.github/workflows/local-box-baseline.yml`](.github/workflows/local-box-baseline.yml)** on **push** and **pull_request**:
+GitHub Actions workflow **[`.github/workflows/local-box-baseline.yml`](.github/workflows/local-box-baseline.yml)** on **push**, **pull_request**, and **`workflow_dispatch`** (re-run from GitHub: **Actions** → **local-box-baseline** → **Run workflow**):
 
 Shorter ops-oriented summary (two jobs, where to look first): **[`RUNBOOK.md`](RUNBOOK.md)** → **Parent repo CI (GitHub Actions)**.
 
