@@ -105,7 +105,7 @@ Options:
                   Exit non-zero if any filtered row has status other than completed
   --fail-on-empty    Exit non-zero if filtered output has zero rows
   --gate-strict, --strict
-                  Convenience preset: --latest-only --fail-on-failed --fail-on-incomplete --fail-on-empty
+                  Convenience preset: --latest-only --fail-on-cancelled --fail-on-failed --fail-on-incomplete --fail-on-empty
                      (requires --branch; mutually exclusive with --cancelled-only / --canceled-only / --failed-only)
 
 See also: README.md (section "CI") for workflow jobs and reproducing failures locally.
@@ -147,10 +147,11 @@ if [[ "$GATE_STRICT" -eq 1 ]]; then
     exit 2
   fi
   LATEST_ONLY=1
+  FAIL_ON_CANCELLED=1
   FAIL_ON_FAILED=1
   FAIL_ON_INCOMPLETE=1
   FAIL_ON_EMPTY=1
-  [[ "$QUIET" -eq 0 ]] && echo "(preset --gate-strict/--strict: latest-only + fail-on-failed + fail-on-incomplete + fail-on-empty)"
+  [[ "$QUIET" -eq 0 ]] && echo "(preset --gate-strict/--strict: latest-only + fail-on-cancelled + fail-on-failed + fail-on-incomplete + fail-on-empty)"
 fi
 if [[ "$LIMIT" =~ ^[0-9]+$ ]] && [[ "$LIMIT" -gt 0 ]]; then
   :
