@@ -52,14 +52,20 @@ if changed_only:
     changed = set()
 
     def add_lines(cmd):
-        proc = subprocess.run(
-            cmd,
-            cwd=root,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=False,
-        )
+        try:
+            proc = subprocess.run(
+                cmd,
+                cwd=root,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+        except FileNotFoundError as exc:
+            if verbose:
+                joined = " ".join(cmd)
+                print(f"[scan] skip source ({joined}): {exc}")
+            return
         if proc.returncode != 0:
             if verbose:
                 joined = " ".join(cmd)
