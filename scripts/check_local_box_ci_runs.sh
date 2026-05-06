@@ -106,6 +106,11 @@ Options:
 
 See also: README.md (section "CI") for workflow jobs and reproducing failures locally.
 For per-job wall-clock caps see .github/workflows/local-box-baseline.yml (timeout-minutes).
+
+Examples:
+  ./scripts/check_local_box_ci_runs.sh --branch main --limit 20
+  ./scripts/check_local_box_ci_runs.sh --branch main --latest-only --fail-on-failed
+  ./scripts/check_local_box_ci_runs.sh --branch main --gate-strict --quiet
 EOF
       exit 0
       ;;
