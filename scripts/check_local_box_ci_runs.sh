@@ -61,7 +61,7 @@ while (($# > 0)); do
       JSON_OUTPUT=1
       shift
       ;;
-    --fail-on-cancelled)
+    --fail-on-cancelled|--fail-on-canceled)
       FAIL_ON_CANCELLED=1
       shift
       ;;
@@ -83,7 +83,7 @@ while (($# > 0)); do
       ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled] [--fail-on-failed|--fail-on-non-success] [--fail-on-incomplete|--fail-on-non-completed] [--fail-on-empty] [--gate-strict]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled|--fail-on-canceled] [--fail-on-failed|--fail-on-non-success] [--fail-on-incomplete|--fail-on-non-completed] [--fail-on-empty] [--gate-strict]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
@@ -96,7 +96,8 @@ Options:
   --require-latest-success  Exit non-zero unless latest run on --branch is successful
   --quiet           Suppress table/tips; useful with --require-latest-success in scripts
   --json            Emit filtered rows as JSON (for automation)
-  --fail-on-cancelled  Exit non-zero if any filtered row has conclusion=cancelled
+  --fail-on-cancelled, --fail-on-canceled
+                  Exit non-zero if any filtered row has conclusion=cancelled
   --fail-on-failed, --fail-on-non-success
                   Exit non-zero if any filtered row is completed and non-success/non-cancelled
   --fail-on-incomplete, --fail-on-non-completed

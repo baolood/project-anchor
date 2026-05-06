@@ -74,7 +74,7 @@ Concurrency behavior (expected):
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --require-latest-success`
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --require-latest-success --quiet`
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --json`
-  - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --fail-on-cancelled`
+  - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --fail-on-cancelled` (alias: `--fail-on-canceled`)
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --fail-on-failed` (alias: `--fail-on-non-success`)
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --fail-on-incomplete` (alias: `--fail-on-non-completed`)
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --fail-on-empty`
