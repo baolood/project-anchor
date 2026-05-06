@@ -31,6 +31,15 @@ Notes:
 - `./scripts/check_local_box_baseline.sh --help` explains what it validates.
 - The workflow supports **`workflow_dispatch`** (manual run) via GitHub **Actions** → **local-box-baseline** → **Run workflow**.
 
+### Inspect workflow runs (GitHub CLI)
+
+Requires `gh` + `gh auth login`.
+
+```bash
+./scripts/check_local_box_ci_runs.sh --branch main --limit 20
+./scripts/check_local_box_ci_runs.sh --branch main --failed-only --limit 30
+```
+
 ## Go-live execution artifacts
 
 - Execution board: **`docs/GO_LIVE_CHECKLIST.md`**

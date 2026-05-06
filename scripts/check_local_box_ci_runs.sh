@@ -70,7 +70,7 @@ Options:
   --limit     Number of runs to fetch (default: 10)
   --branch    Filter output to one branch/ref name
   --cancelled-only  Show only cancelled runs (useful for concurrency checks)
-  --failed-only     Show only completed non-success, non-cancelled runs
+  --failed-only     Show only completed non-success, non-cancelled runs (excludes --cancelled-only)
   --latest-only     Keep only newest run per branch from the fetched set
   --summary         Print status/conclusion counts for filtered rows
   --require-latest-success  Exit non-zero unless latest run on --branch is successful
@@ -93,6 +93,10 @@ done
 
 if [[ "$REQUIRE_LATEST_SUCCESS" -eq 1 && -z "${BRANCH}" ]]; then
   echo "CI_RUNS_CHECK FAIL: --require-latest-success requires --branch <name>." >&2
+  exit 2
+fi
+if [[ "$CANCELLED_ONLY" -eq 1 && "$FAILED_ONLY" -eq 1 ]]; then
+  echo "CI_RUNS_CHECK FAIL: --cancelled-only and --failed-only are mutually exclusive." >&2
   exit 2
 fi
 if [[ "$LIMIT" =~ ^[0-9]+$ ]] && [[ "$LIMIT" -gt 0 ]]; then
