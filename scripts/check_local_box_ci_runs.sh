@@ -108,7 +108,7 @@ Options:
   --summary         Print status/conclusion counts for filtered rows (text mode only; cannot combine with --json)
   --require-latest-success  Exit non-zero unless latest run on --branch is successful
   --quiet           Suppress table/tips; useful with --require-latest-success in scripts
-  --json            Emit filtered rows as JSON (for automation; cannot combine with --summary)
+  --json            Emit filtered rows as JSON (for automation; cannot combine with --summary; implies quiet text mode)
   --fail-on-cancelled, --fail-on-canceled
                   Exit non-zero if any filtered row has conclusion=cancelled
   --fail-on-failed, --fail-on-non-success
@@ -148,6 +148,10 @@ fi
 if [[ "$SUMMARY" -eq 1 && "$JSON_OUTPUT" -eq 1 ]]; then
   echo "CI_RUNS_CHECK FAIL: --summary cannot be combined with --json." >&2
   exit 2
+fi
+if [[ "$JSON_OUTPUT" -eq 1 ]]; then
+  # Keep stdout machine-readable in JSON mode.
+  QUIET=1
 fi
 if [[ "$CANCELLED_ONLY" -eq 1 && "$FAILED_ONLY" -eq 1 ]]; then
   echo "CI_RUNS_CHECK FAIL: --cancelled-only/--canceled-only and --failed-only are mutually exclusive." >&2

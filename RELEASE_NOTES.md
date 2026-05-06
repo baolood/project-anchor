@@ -142,6 +142,7 @@ python3 -m pip install -r requirements.txt
 - **`check_local_box_ci_runs.sh`:** now rejects `--summary --json` as an explicit invalid combination (previously summary was silently skipped under JSON mode).
 - **`check_local_box_ci_runs.sh`:** `--help` and docs now explicitly call out `--summary` / `--json` mutual exclusion for faster operator feedback.
 - **`check_local_box_ci_runs.sh`:** cancelled-only vs failed-only mutual-exclusion error text now mentions both spellings (`--cancelled-only` / `--canceled-only`).
+- **`check_local_box_ci_runs.sh`:** `--json` now implies quiet text mode so stdout remains pure JSON without human-readable banners/tips.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.
