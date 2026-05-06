@@ -67,7 +67,7 @@ Concurrency behavior (expected):
   - `./scripts/check_local_box_ci_runs.sh`
   - `./scripts/check_local_box_ci_runs.sh --branch main --limit 20` (`--branch` is passed to **`gh`** so results are scoped to that branch)
   - `./scripts/check_local_box_ci_runs.sh --workflow local-box-baseline.yml --branch <your-branch>`
-  - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --cancelled-only`
+  - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --cancelled-only` (alias: `--canceled-only`)
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --failed-only`
   - `./scripts/check_local_box_ci_runs.sh --latest-only`
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --summary`
@@ -78,7 +78,7 @@ Concurrency behavior (expected):
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --fail-on-failed` (alias: `--fail-on-non-success`)
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --fail-on-incomplete` (alias: `--fail-on-non-completed`)
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --fail-on-empty`
-  - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --gate-strict` (requires `--branch`; includes `--fail-on-empty`; cannot be combined with `--cancelled-only` / `--failed-only`; prints preset expansion unless `--quiet`)
+  - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --gate-strict` (requires `--branch`; includes `--fail-on-empty`; cannot be combined with `--cancelled-only` / `--canceled-only` / `--failed-only`; prints preset expansion unless `--quiet`)
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --gate-strict --quiet` (CI-friendly: exit code only)
 
 Each workflow job sets **`timeout-minutes`** in **[`.github/workflows/local-box-baseline.yml`](.github/workflows/local-box-baseline.yml)** so a stuck runner does not run unbounded.

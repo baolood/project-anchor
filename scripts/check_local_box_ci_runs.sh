@@ -33,7 +33,7 @@ while (($# > 0)); do
       BRANCH="${2:-}"
       shift 2
       ;;
-    --cancelled-only)
+    --cancelled-only|--canceled-only)
       CANCELLED_ONLY=1
       shift
       ;;
@@ -83,14 +83,15 @@ while (($# > 0)); do
       ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled|--fail-on-canceled] [--fail-on-failed|--fail-on-non-success] [--fail-on-incomplete|--fail-on-non-completed] [--fail-on-empty] [--gate-strict]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only|--canceled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled|--fail-on-canceled] [--fail-on-failed|--fail-on-non-success] [--fail-on-incomplete|--fail-on-non-completed] [--fail-on-empty] [--gate-strict]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
   --limit     Number of runs to fetch (default: 10)
   --branch    Pass through to gh as run list --branch (recommended for ordering + --require-latest-success)
-  --cancelled-only  Show only cancelled runs (useful for concurrency checks)
-  --failed-only     Show only completed non-success, non-cancelled runs (excludes --cancelled-only)
+  --cancelled-only, --canceled-only
+                  Show only cancelled runs (useful for concurrency checks)
+  --failed-only     Show only completed non-success, non-cancelled runs (excludes --cancelled-only|--canceled-only)
   --latest-only     Keep only newest run per branch from the fetched set
   --summary         Print status/conclusion counts for filtered rows
   --require-latest-success  Exit non-zero unless latest run on --branch is successful
@@ -104,7 +105,7 @@ Options:
                   Exit non-zero if any filtered row has status other than completed
   --fail-on-empty    Exit non-zero if filtered output has zero rows
   --gate-strict      Convenience preset: --latest-only --fail-on-failed --fail-on-incomplete --fail-on-empty
-                     (requires --branch; mutually exclusive with --cancelled-only / --failed-only)
+                     (requires --branch; mutually exclusive with --cancelled-only / --canceled-only / --failed-only)
 
 See also: README.md (section "CI") for workflow jobs and reproducing failures locally.
 For per-job wall-clock caps see .github/workflows/local-box-baseline.yml (timeout-minutes).
