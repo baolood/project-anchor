@@ -139,11 +139,11 @@ if [[ "$CANCELLED_ONLY" -eq 1 && "$FAILED_ONLY" -eq 1 ]]; then
 fi
 if [[ "$GATE_STRICT" -eq 1 ]]; then
   if [[ -z "${BRANCH}" ]]; then
-    echo "CI_RUNS_CHECK FAIL: --gate-strict requires --branch <name>." >&2
+    echo "CI_RUNS_CHECK FAIL: --gate-strict/--strict requires --branch <name>." >&2
     exit 2
   fi
   if [[ "$CANCELLED_ONLY" -eq 1 || "$FAILED_ONLY" -eq 1 ]]; then
-    echo "CI_RUNS_CHECK FAIL: --gate-strict cannot be combined with --cancelled-only or --failed-only." >&2
+    echo "CI_RUNS_CHECK FAIL: --gate-strict/--strict cannot be combined with --cancelled-only / --canceled-only / --failed-only." >&2
     exit 2
   fi
   LATEST_ONLY=1
