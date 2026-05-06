@@ -40,7 +40,7 @@ GitHub Actions workflow **[`.github/workflows/local-box-baseline.yml`](.github/w
 3. Job **`check`** runs **`./scripts/check_local_box_baseline.sh`** (required paths include **`local_box`**, **`shared`**, **`risk_engine`**, **`artifacts/go-live/README.md`**, plus checklist `curl` guardrails)
 4. Job **`check`** runs **`./scripts/go_live_status_report.sh`** (parses **`docs/GO_LIVE_CHECKLIST.md`**)
 5. Job **`check`** smoke-tests **`event_store.init_db()`**, **`import local_box.runner`**, **`import local_box.control.server`**
-6. If either guardrail/baseline step fails, run locally: `./scripts/check_checklist_curl_guardrails.sh` then `./scripts/check_local_box_baseline.sh`
+6. If the **`check`** job fails, reproduce locally in workflow order: `./scripts/check_checklist_curl_guardrails.sh`, `./scripts/check_local_box_baseline.sh`, `./scripts/go_live_status_report.sh`, then the **Quick local checks** block below (Python smokes).
 
 Quick local options for the guardrail scanner:
 
@@ -69,6 +69,7 @@ Concurrency behavior (expected):
 ### Quick local checks (after `pip install`)
 
 ```bash
+./scripts/go_live_status_report.sh
 export PYTHONPATH=.
 python3 -c "from local_box.audit import event_store; event_store.init_db(); print(event_store.DB_PATH)"
 python3 -c "import local_box.runner; print('runner ok')"

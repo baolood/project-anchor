@@ -17,7 +17,7 @@ while (($# > 0)); do
 Usage: ./scripts/go_live_status_report.sh [--out <path>]
 
 Options:
-  --out <path>  Write report to file (stdout always prints).
+  --out <path>  Write report to file (stdout always prints; parent dirs created if missing).
 
 Env:
   CHECKLIST_FILE  Override checklist path.
@@ -77,6 +77,7 @@ PY
 echo "$report"
 
 if [[ -n "${OUT_FILE}" ]]; then
+  mkdir -p "$(dirname "$OUT_FILE")"
   printf '%s\n' "$report" > "$OUT_FILE"
   echo "WROTE_REPORT=$OUT_FILE"
 fi
