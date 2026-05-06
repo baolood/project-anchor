@@ -7,7 +7,7 @@ This **parent** repo holds orchestration docs, **`local_box/`**, **`shared/`**, 
 - **Architecture (commands / worker semantics):** [`ARCHITECTURE.md`](ARCHITECTURE.md)
 - **Operations / risk runbook:** [`RUNBOOK.md`](RUNBOOK.md)
 - **Go-live execution checklist:** [`docs/GO_LIVE_CHECKLIST.md`](docs/GO_LIVE_CHECKLIST.md)
-- **Go-live status reporter:** [`scripts/go_live_status_report.sh`](scripts/go_live_status_report.sh) (standup evidence: `--out artifacts/go-live/go_live_daily_status_$(date +%F).out` — parent dirs created if missing; see [`docs/GO_LIVE_CHECKLIST.md`](docs/GO_LIVE_CHECKLIST.md) §7 and [`artifacts/go-live/README.md`](artifacts/go-live/README.md); `/tmp/...` is only for ad-hoc checks; `artifacts/go-live/*.out` is gitignored)
+- **Go-live status reporter:** [`scripts/go_live_status_report.sh`](scripts/go_live_status_report.sh) (standup evidence: `--out artifacts/go-live/go_live_daily_status_$(date +%F).out` — parent dirs created if missing; `--out` must be a file path, not a directory; see [`docs/GO_LIVE_CHECKLIST.md`](docs/GO_LIVE_CHECKLIST.md) §7 and [`artifacts/go-live/README.md`](artifacts/go-live/README.md); `/tmp/...` is only for ad-hoc checks; `artifacts/go-live/*.out` is gitignored)
 - **Console (separate app):** [`anchor-console/README.md`](anchor-console/README.md)
 - **PR body template:** [`PR_DESCRIPTION.md`](PR_DESCRIPTION.md) (GitHub also loads [`.github/pull_request_template.md`](.github/pull_request_template.md) when opening a PR)
 - **Contributing guide:** [`CONTRIBUTING.md`](CONTRIBUTING.md)

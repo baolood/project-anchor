@@ -148,6 +148,7 @@ python3 -m pip install -r requirements.txt
 - **Docs (`docs/GO_LIVE_CHECKLIST.md`, `PR_DESCRIPTION.md`):** aligns CI triage notes with `--summary`/`--json` mutual exclusion and JSON quiet-mode expectations.
 - **`go_live_status_report.sh`:** now fails fast with a clear message when `--out` points to a directory instead of a file path.
 - **`go_live_status_report.sh --help`:** now documents that `--out` must be a file path (directory targets are rejected).
+- **Docs (`README.md`, `RUNBOOK.md`):** now mirror the `--out` file-path-only constraint for `go_live_status_report.sh`.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.
