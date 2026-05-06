@@ -42,7 +42,7 @@ Requires `gh` + `gh auth login`.
 ./scripts/check_local_box_ci_runs.sh --branch main --limit 20
 ./scripts/check_local_box_ci_runs.sh --branch main --failed-only --limit 30
 ./scripts/check_local_box_ci_runs.sh --branch main --latest-only --fail-on-failed  # alias: --fail-on-non-success
-./scripts/check_local_box_ci_runs.sh --branch main --latest-only --fail-on-incomplete
+./scripts/check_local_box_ci_runs.sh --branch main --latest-only --fail-on-incomplete  # alias: --fail-on-non-completed
 ./scripts/check_local_box_ci_runs.sh --branch main --latest-only --fail-on-empty
 ./scripts/check_local_box_ci_runs.sh --branch main --gate-strict
 ./scripts/check_local_box_ci_runs.sh --branch main --gate-strict --quiet

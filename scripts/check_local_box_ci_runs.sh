@@ -69,7 +69,7 @@ while (($# > 0)); do
       FAIL_ON_FAILED=1
       shift
       ;;
-    --fail-on-incomplete)
+    --fail-on-incomplete|--fail-on-non-completed)
       FAIL_ON_INCOMPLETE=1
       shift
       ;;
@@ -83,7 +83,7 @@ while (($# > 0)); do
       ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled] [--fail-on-failed|--fail-on-non-success] [--fail-on-incomplete] [--fail-on-empty] [--gate-strict]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled] [--fail-on-failed|--fail-on-non-success] [--fail-on-incomplete|--fail-on-non-completed] [--fail-on-empty] [--gate-strict]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
@@ -99,7 +99,8 @@ Options:
   --fail-on-cancelled  Exit non-zero if any filtered row has conclusion=cancelled
   --fail-on-failed, --fail-on-non-success
                   Exit non-zero if any filtered row is completed and non-success/non-cancelled
-  --fail-on-incomplete Exit non-zero if any filtered row has status other than completed
+  --fail-on-incomplete, --fail-on-non-completed
+                  Exit non-zero if any filtered row has status other than completed
   --fail-on-empty    Exit non-zero if filtered output has zero rows
   --gate-strict      Convenience preset: --latest-only --fail-on-failed --fail-on-incomplete --fail-on-empty
                      (requires --branch; mutually exclusive with --cancelled-only / --failed-only)

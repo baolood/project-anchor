@@ -127,6 +127,7 @@ python3 -m pip install -r requirements.txt
 - **`check_local_box_ci_runs.sh`:** adds **`--fail-on-failed`** for non-zero gating when filtered output contains completed failures.
 - **`check_local_box_ci_runs.sh`:** adds alias **`--fail-on-non-success`** for readability (same behavior as **`--fail-on-failed`**).
 - **`check_local_box_ci_runs.sh`:** adds **`--fail-on-incomplete`** to fail when filtered runs are still queued/in_progress (status != completed).
+- **`check_local_box_ci_runs.sh`:** adds alias **`--fail-on-non-completed`** (same behavior as **`--fail-on-incomplete`**).
 - **`check_local_box_ci_runs.sh`:** adds **`--gate-strict`** convenience preset (`--latest-only --fail-on-failed --fail-on-incomplete`).
 - **`check_local_box_ci_runs.sh`:** `--gate-strict` now rejects `--cancelled-only` / `--failed-only` combinations to prevent conflicting filters.
 - **`check_local_box_ci_runs.sh`:** `--gate-strict` now also requires `--branch <name>` to avoid cross-branch ambiguity in strict gates.
