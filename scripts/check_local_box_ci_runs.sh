@@ -19,17 +19,29 @@ FAIL_ON_INCOMPLETE=0
 FAIL_ON_EMPTY=0
 GATE_STRICT=0
 
+require_value() {
+  local opt="$1"
+  local val="${2:-}"
+  if [[ -z "$val" || "$val" == --* ]]; then
+    echo "CI_RUNS_CHECK FAIL: ${opt} requires a value." >&2
+    exit 2
+  fi
+}
+
 while (($# > 0)); do
   case "$1" in
     --workflow)
+      require_value "--workflow" "${2:-}"
       WORKFLOW_FILE="${2:-}"
       shift 2
       ;;
     --limit)
+      require_value "--limit" "${2:-}"
       LIMIT="${2:-}"
       shift 2
       ;;
     --branch)
+      require_value "--branch" "${2:-}"
       BRANCH="${2:-}"
       shift 2
       ;;

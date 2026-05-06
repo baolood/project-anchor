@@ -135,6 +135,7 @@ python3 -m pip install -r requirements.txt
 - **`check_local_box_ci_runs.sh`:** adds alias **`--strict`** (same behavior as **`--gate-strict`**).
 - **`check_local_box_ci_runs.sh`:** strict-mode error messages now mention both spellings (`--gate-strict` / `--strict`) for clarity.
 - **`check_local_box_ci_runs.sh`:** non-quiet `--gate-strict` prints the expanded preset flags for operator visibility.
+- **`check_local_box_ci_runs.sh`:** option parsing now fails fast with explicit messages when `--workflow`, `--limit`, or `--branch` are provided without a value.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.
 - **`check_local_box_ci_runs.sh`:** missing-`gh` error now prints a concrete install hint (macOS `brew install gh` + upstream URL).
