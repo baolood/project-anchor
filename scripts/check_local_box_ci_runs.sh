@@ -16,6 +16,7 @@ JSON_OUTPUT=0
 FAIL_ON_CANCELLED=0
 FAIL_ON_FAILED=0
 FAIL_ON_INCOMPLETE=0
+GATE_STRICT=0
 
 while (($# > 0)); do
   case "$1" in
@@ -71,9 +72,13 @@ while (($# > 0)); do
       FAIL_ON_INCOMPLETE=1
       shift
       ;;
+    --gate-strict)
+      GATE_STRICT=1
+      shift
+      ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled] [--fail-on-failed|--fail-on-non-success] [--fail-on-incomplete]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled] [--fail-on-failed|--fail-on-non-success] [--fail-on-incomplete] [--gate-strict]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
@@ -90,6 +95,7 @@ Options:
   --fail-on-failed, --fail-on-non-success
                   Exit non-zero if any filtered row is completed and non-success/non-cancelled
   --fail-on-incomplete Exit non-zero if any filtered row has status other than completed
+  --gate-strict      Convenience preset: --latest-only --fail-on-failed --fail-on-incomplete
 
 See also: README.md (section "CI") for workflow jobs and reproducing failures locally.
 For per-job wall-clock caps see .github/workflows/local-box-baseline.yml (timeout-minutes).
@@ -111,6 +117,11 @@ fi
 if [[ "$CANCELLED_ONLY" -eq 1 && "$FAILED_ONLY" -eq 1 ]]; then
   echo "CI_RUNS_CHECK FAIL: --cancelled-only and --failed-only are mutually exclusive." >&2
   exit 2
+fi
+if [[ "$GATE_STRICT" -eq 1 ]]; then
+  LATEST_ONLY=1
+  FAIL_ON_FAILED=1
+  FAIL_ON_INCOMPLETE=1
 fi
 if [[ "$LIMIT" =~ ^[0-9]+$ ]] && [[ "$LIMIT" -gt 0 ]]; then
   :
