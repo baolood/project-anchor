@@ -73,6 +73,7 @@ Options:
   --fail-on-cancelled  Exit non-zero if any filtered row has conclusion=cancelled
 
 See also: README.md (section "CI") for workflow jobs and reproducing failures locally.
+For per-job wall-clock caps see .github/workflows/local-box-baseline.yml (timeout-minutes).
 EOF
       exit 0
       ;;
