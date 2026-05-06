@@ -117,6 +117,7 @@ python3 -m pip install -r requirements.txt
 - `scripts/go_live_status_report.sh` ensures parent directories exist before writing `--out` (standup path convenience).
 - `local-box-baseline` workflow supports **`workflow_dispatch`** (GitHub **Actions** → **Run workflow**).
 - `local-box-baseline` sets explicit **`permissions: contents: read`** for the token (least privilege).
+- `local-box-baseline` jobs set **`timeout-minutes`** caps (curl guardrail `15`, check `30`) to shed stuck runs.
 
 ### Ops / migration
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Summarize go-live checklist status counts for daily standups.
+# CI: smoke step in local-box-baseline job "check"; see README.md (section "CI").
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

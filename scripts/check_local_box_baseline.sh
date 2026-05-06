@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Baseline presence check for local_box. Spec: docs/LOCAL_BOX_BASELINE_CHECK_SCRIPT_SPEC_V1.md
+# CI: local-box-baseline job "check"; see README.md (section "CI").
 # Run from repository root: ./scripts/check_local_box_baseline.sh
 set -euo pipefail
 

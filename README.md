@@ -69,6 +69,8 @@ Concurrency behavior (expected):
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --json`
   - `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --latest-only --fail-on-cancelled`
 
+Each workflow job sets **`timeout-minutes`** in **[`.github/workflows/local-box-baseline.yml`](.github/workflows/local-box-baseline.yml)** so a stuck runner does not run unbounded.
+
 ### Quick local checks (after `pip install`)
 
 ```bash
