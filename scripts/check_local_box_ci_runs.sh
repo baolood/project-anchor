@@ -96,6 +96,7 @@ Options:
                   Exit non-zero if any filtered row is completed and non-success/non-cancelled
   --fail-on-incomplete Exit non-zero if any filtered row has status other than completed
   --gate-strict      Convenience preset: --latest-only --fail-on-failed --fail-on-incomplete
+                     (mutually exclusive with --cancelled-only / --failed-only)
 
 See also: README.md (section "CI") for workflow jobs and reproducing failures locally.
 For per-job wall-clock caps see .github/workflows/local-box-baseline.yml (timeout-minutes).
@@ -119,6 +120,10 @@ if [[ "$CANCELLED_ONLY" -eq 1 && "$FAILED_ONLY" -eq 1 ]]; then
   exit 2
 fi
 if [[ "$GATE_STRICT" -eq 1 ]]; then
+  if [[ "$CANCELLED_ONLY" -eq 1 || "$FAILED_ONLY" -eq 1 ]]; then
+    echo "CI_RUNS_CHECK FAIL: --gate-strict cannot be combined with --cancelled-only or --failed-only." >&2
+    exit 2
+  fi
   LATEST_ONLY=1
   FAIL_ON_FAILED=1
   FAIL_ON_INCOMPLETE=1
