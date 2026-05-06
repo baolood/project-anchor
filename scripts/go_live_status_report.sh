@@ -8,9 +8,19 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CHECKLIST_FILE="${CHECKLIST_FILE:-$ROOT/docs/GO_LIVE_CHECKLIST.md}"
 OUT_FILE="${OUT_FILE:-}"
 
+require_value() {
+  local opt="$1"
+  local val="${2:-}"
+  if [[ -z "$val" || "$val" == --* ]]; then
+    echo "GO_LIVE_STATUS FAIL: ${opt} requires a value." >&2
+    exit 2
+  fi
+}
+
 while (($# > 0)); do
   case "$1" in
     --out)
+      require_value "--out" "${2:-}"
       OUT_FILE="${2:-}"
       shift 2
       ;;
