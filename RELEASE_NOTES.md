@@ -112,7 +112,7 @@ python3 -m pip install -r requirements.txt
 
 ### Changed
 
-- `scripts/check_local_box_baseline.sh` requires `artifacts/go-live/README.md`.
+- `scripts/check_local_box_baseline.sh` requires `docs/GO_LIVE_CHECKLIST.md` and `artifacts/go-live/README.md`.
 - Docs (`README.md`, `RUNBOOK.md`, `PR_DESCRIPTION.md`) aligned with CI job order and verifier commands.
 - `scripts/go_live_status_report.sh` ensures parent directories exist before writing `--out` (standup path convenience).
 - `local-box-baseline` workflow supports **`workflow_dispatch`** (GitHub **Actions** → **Run workflow**).
