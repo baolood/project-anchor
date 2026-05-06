@@ -50,7 +50,7 @@ Use this section when the PR is part of a hardening/governance wave and you want
 - **Portable paths:** scripts/docs avoid machine-specific absolute paths.
 - **Script safety:** strict bash mode and executable-bit normalization applied.
 - **Checklist networking:** `curl` timeout guardrails standardized (`--connect-timeout 5 --max-time 20`).
-- **CI guardrail:** dedicated `checklist-curl-guardrails` job + baseline integration + `workflow_dispatch` + per-job `timeout-minutes` caps; checkout **`persist-credentials: false`**; job **`check`** uses job-level **`PYTHONPATH=.`** for smoke steps; **`setup-python`** **pip** cache on **`requirements.txt`**.
+- **CI guardrail:** dedicated `checklist-curl-guardrails` job + baseline integration + `workflow_dispatch` + per-job `timeout-minutes` caps; checkout **`persist-credentials: false`**; job **`check`** uses job-level **`PYTHONPATH=.`** for smoke steps; **`setup-python`** **pip** cache on **`requirements.txt`** / **`requirements.in`**.
 - **Go-live tooling:** execution checklist, daily status reporter, `artifacts/go-live/` evidence layout; CI smoke + baseline require the tracked onboarding README.
 
 ### Recommended verifier commands
