@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Summarize go-live checklist status counts for daily standups.
 # CI: smoke step in local-box-baseline job "check"; see README.md (section "CI").
+# Default CHECKLIST_FILE must match check_local_box_baseline.sh REQUIRED_PATHS unless you override CHECKLIST_FILE.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
