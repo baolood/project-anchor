@@ -124,6 +124,7 @@ python3 -m pip install -r requirements.txt
 - **`local-box-baseline`:** **`actions/setup-python`** enables **pip** caching (`cache: pip`) with **`requirements.txt`** + **`requirements.in`** in **`cache-dependency-path`** so lock/in constraint changes refresh the cache key.
 - **`README.md`:** workflow status badge for **`local-box-baseline`** (default branch).
 - **`check_local_box_ci_runs.sh`:** adds **`--failed-only`** to isolate completed non-success, non-cancelled runs during triage; **`--failed-only`** cannot be combined with **`--cancelled-only`**.
+- **`check_local_box_ci_runs.sh`:** adds **`--fail-on-failed`** for non-zero gating when filtered output contains completed failures.
 - **`check_local_box_ci_runs.sh`:** **`--branch`** forwards to **`gh run list --branch`**; **`--require-latest-success`** uses the first row returned (branch-scoped, newest-first).
 - **Docs:** **`docs/GO_LIVE_CHECKLIST.md`** §1, **`PR_DESCRIPTION.md`**, and **`RUNBOOK.md`** updated for branch-scoped `gh` listing and **`--failed-only`** vs **`--cancelled-only`** mutual exclusion.
 - **`.github/pull_request_template.md`:** default PR body stub pointing contributors to **`PR_DESCRIPTION.md`** (also required by **`check_local_box_baseline.sh`**).

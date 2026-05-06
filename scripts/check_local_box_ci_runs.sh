@@ -14,6 +14,8 @@ REQUIRE_LATEST_SUCCESS=0
 QUIET=0
 JSON_OUTPUT=0
 FAIL_ON_CANCELLED=0
+FAIL_ON_FAILED=0
+FAIL_ON_FAILED=0
 
 while (($# > 0)); do
   case "$1" in
@@ -61,9 +63,13 @@ while (($# > 0)); do
       FAIL_ON_CANCELLED=1
       shift
       ;;
+    --fail-on-failed)
+      FAIL_ON_FAILED=1
+      shift
+      ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled]
+Usage: ./scripts/check_local_box_ci_runs.sh [--workflow <file>] [--limit <n>] [--branch <name>] [--cancelled-only] [--failed-only] [--latest-only] [--summary] [--require-latest-success] [--quiet] [--json] [--fail-on-cancelled] [--fail-on-failed]
 
 Options:
   --workflow  Workflow file name (default: local-box-baseline.yml)
@@ -77,6 +83,7 @@ Options:
   --quiet           Suppress table/tips; useful with --require-latest-success in scripts
   --json            Emit filtered rows as JSON (for automation)
   --fail-on-cancelled  Exit non-zero if any filtered row has conclusion=cancelled
+  --fail-on-failed     Exit non-zero if any filtered row is completed and non-success/non-cancelled
 
 See also: README.md (section "CI") for workflow jobs and reproducing failures locally.
 For per-job wall-clock caps see .github/workflows/local-box-baseline.yml (timeout-minutes).
@@ -210,6 +217,24 @@ if [[ "$FAIL_ON_CANCELLED" -eq 1 ]]; then
     exit 1
   fi
   [[ "$QUIET" -eq 0 ]] && echo "CI_RUNS_CHECK PASS: no cancelled runs in filtered output"
+fi
+if [[ "$FAIL_ON_FAILED" -eq 1 ]]; then
+  failed_count="$(printf '%s\n' "$output" | awk -F '\t' '$3=="completed" && $4!="success" && $4!="cancelled" {n++} END {print n+0}')"
+  if [[ "$failed_count" -gt 0 ]]; then
+    echo "CI_RUNS_CHECK FAIL: found ${failed_count} failed run(s) in filtered output" >&2
+    exit 1
+  fi
+  [[ "$QUIET" -eq 0 ]] && echo "CI_RUNS_CHECK PASS: no failed runs in filtered output"
+fi
+
+
+if [[ "$FAIL_ON_FAILED" -eq 1 ]]; then
+  failed_count="$(printf '%s\n' "$output" | awk -F '\t' '$3=="completed" && $4!="success" && $4!="cancelled" {n++} END {print n+0}')"
+  if [[ "$failed_count" -gt 0 ]]; then
+    echo "CI_RUNS_CHECK FAIL: found ${failed_count} failed run(s) in filtered output" >&2
+    exit 1
+  fi
+  [[ "$QUIET" -eq 0 ]] && echo "CI_RUNS_CHECK PASS: no failed runs in filtered output"
 fi
 
 if [[ "$QUIET" -eq 0 && "$JSON_OUTPUT" -eq 0 ]]; then
