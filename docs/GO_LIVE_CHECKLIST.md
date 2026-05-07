@@ -183,12 +183,12 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Evidence: **`docs/BACKUP_AND_RECOVERY.md`** (draft — fill §2 schedule/retention + §4 verification evidence)
 
 - [ ] **Restore drill (table-level + full restore)**  
-  - Owner: `<name>`  
-  - Status: `TODO`  
+  - Owner: **baolood** (Data/DB owner)  
+  - Status: `IN_PROGRESS`  
   - Acceptance:
     - Successful restore in test environment
     - RPO/RTO measured and within target
-  - Evidence: `<link>`
+  - Evidence: **`docs/RESTORE_DRILL_RUNBOOK.md`** (draft — fill drill A/B tables + §4 RPO/RTO measurements)
 
 - [ ] **Data migration rollback path verified**  
   - Owner: `<name>`  
