@@ -32,6 +32,7 @@ python3 -c "from local_box.audit import event_store; event_store.init_db(); prin
 Notes:
 - `./scripts/check_local_box_baseline.sh --help` explains what it validates (includes **`docs/GO_LIVE_CHECKLIST.md`**).
 - The workflow supports **`workflow_dispatch`** (manual run) via GitHub **Actions** → **local-box-baseline** → **Run workflow**.
+- In CI, **`go_live_status_report.sh`** runs **stdout only** (parses the checklist; no file artifact). Locally, use **`--out`** for standup evidence (must be a **file** path — see **`./scripts/go_live_status_report.sh --help`**).
 - In CI, job **`check`** sets **`PIP_NO_INPUT=1`** (and **`PIP_DISABLE_PIP_VERSION_CHECK=1`**) during **`pip install`** — optional for local scripts but matches CI behavior.
 
 ### Inspect workflow runs (GitHub CLI)
