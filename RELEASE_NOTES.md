@@ -155,6 +155,8 @@ python3 -m pip install -r requirements.txt
 - **`CONTRIBUTING.md`**, **`PR_DESCRIPTION.md`:** **How to verify**, **Recommended verifier commands**, and local repro blocks mirror the same optional `--out` comment.
 - **`RUNBOOK.md`:** Script maintenance guardrails baseline block includes the same optional `--out` comment.
 - **`local-box-baseline.yml`:** comment above the go-live reporter smoke step documents that CI uses stdout only and local `--out` must be a file path.
+- **`README.md`:** CI step list item for **`go_live_status_report.sh`** echoes the same stdout vs local **`--out`** distinction.
+- **`RUNBOOK.md`:** Parent repo CI summary adds the same **`go_live_status_report.sh`** stdout vs local **`--out`** note.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.
