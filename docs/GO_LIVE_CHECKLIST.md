@@ -166,11 +166,11 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Evidence: **`docs/ALERTING_ROUTING.md`** (draft — vendor + rule deployment + test alert ack pending)
 
 - [ ] **Synthetic checks for critical endpoints**  
-  - Owner: `<name>`  
-  - Status: `TODO`  
+  - Owner: **baolood** (Operations lead)  
+  - Status: `IN_PROGRESS`  
   - Acceptance:
     - Basic probes + dependency checks active
-  - Evidence: `<link>`
+  - Evidence: **`docs/SYNTHETIC_CHECKS.md`** (draft — fill probe URLs + tool/scheduler + routing wiring)
 
 
 ### Week 4 — Data Safety + Recovery Drill
