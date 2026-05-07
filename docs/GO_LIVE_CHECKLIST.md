@@ -125,12 +125,12 @@ Use this if you want immediate execution without waiting for a full planning mee
 ### Week 2 — Deployment + Rollback + Operational Runbooks
 
 - [ ] **One-command deployment runbook validated**  
-  - Owner: `<name>`  
-  - Status: `TODO`  
+  - Owner: **baolood** (Engineering lead)  
+  - Status: `IN_PROGRESS`  
   - Acceptance:
     - Stage deploy from clean checkout succeeds
     - Duration baseline recorded
-  - Evidence: `<link>`
+  - Evidence: **`docs/STAGE_DEPLOY_RUNBOOK.md`** (draft — fill duration table + first validated run sign-off)
 
 - [ ] **Rollback drill completed**  
   - Owner: `<name>`  

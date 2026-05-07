@@ -183,6 +183,10 @@ python3 -m pip install -r requirements.txt
 - **`CONTRIBUTING.md`:** Go-live execution artifacts list links **`docs/ENVIRONMENT_PARITY_CHECKLIST.md`**.
 - **`docs/ENVIRONMENT_PARITY_CHECKLIST.md`:** §1–§4 prefilled with real maintainer data (`Darwin/arm64`, Python **3.8.10**, SQLite **3.35.5**, default `anchor.db` path, guardrail file presence); §5 lists known deltas; sign-off captured for **`baolood`** dated **2026-05-07** (stage column intentionally TBD).
 - **`docs/GO_LIVE_CHECKLIST.md` §6:** **R-002** opened — Python version drift (local **3.8.10** vs CI **3.11**), owner **baolood**, ETA **2026-05-21**.
+- **`docs/STAGE_DEPLOY_RUNBOOK.md`:** Week 2 one-command **stage deploy** draft (compose path from **`RUNBOOK.md`** Daily Mode + post-deploy smoke + duration table placeholders).
+- **`docs/GO_LIVE_CHECKLIST.md` §4 Week 2:** “One-command deployment runbook validated” → `IN_PROGRESS` (owner **baolood**, evidence **`docs/STAGE_DEPLOY_RUNBOOK.md`**).
+- **`CONTRIBUTING.md`:** Go-live artifacts list links **`docs/STAGE_DEPLOY_RUNBOOK.md`**.
+- **`RUNBOOK.md`:** Daily Mode links the Week 2 stage deploy draft for discoverability.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.

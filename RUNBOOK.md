@@ -28,6 +28,8 @@ Daily progress snapshot:
 
 ## Daily Mode (default)
 
+Draft **one-command stage deploy** (Week 2 go-live board): **`docs/STAGE_DEPLOY_RUNBOOK.md`**.
+
 ### Start (backend + worker)
 
 With `docker-compose.override.yml` present, worker picks up daily defaults; no manual env needed:
