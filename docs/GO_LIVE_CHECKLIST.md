@@ -158,12 +158,12 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Evidence: **`docs/SERVICE_SLI_SLO.md`** (draft — §3 targets are placeholders until review sign-off)
 
 - [ ] **Alert rules + routing implemented**  
-  - Owner: `<name>`  
-  - Status: `TODO`  
+  - Owner: **baolood** (Operations lead)  
+  - Status: `IN_PROGRESS`  
   - Acceptance:
     - Critical alerts route to on-call
     - Alert test fired and acknowledged
-  - Evidence: `<link>`
+  - Evidence: **`docs/ALERTING_ROUTING.md`** (draft — vendor + rule deployment + test alert ack pending)
 
 - [ ] **Synthetic checks for critical endpoints**  
   - Owner: `<name>`  
