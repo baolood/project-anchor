@@ -191,11 +191,11 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Evidence: **`docs/RESTORE_DRILL_RUNBOOK.md`** (draft — fill drill A/B tables + §4 RPO/RTO measurements)
 
 - [ ] **Data migration rollback path verified**  
-  - Owner: `<name>`  
-  - Status: `TODO`  
+  - Owner: **baolood** (Data/DB owner)  
+  - Status: `IN_PROGRESS`  
   - Acceptance:
     - At least one rollback test from migration state
-  - Evidence: `<link>`
+  - Evidence: **`docs/MIGRATION_ROLLBACK_RUNBOOK.md`** (draft — choose S1/S2/S3 + fill §3 drill log)
 
 
 ### Week 5-6 — Security + Capacity + Final Hardening
