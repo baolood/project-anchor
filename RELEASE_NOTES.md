@@ -168,6 +168,7 @@ python3 -m pip install -r requirements.txt
 - **`AGENTS.md`:** concise defaults for automation agents (repro order + SSOT pointer).
 - **`docs/GITHUB_BRANCH_PROTECTION.md`:** repo-admin checklist to require **`local-box-baseline`** status checks on **`main`**.
 - **`README.md` / `CONTRIBUTING.md` / `PR_DESCRIPTION.md` / `RUNBOOK.md` / `docs/GO_LIVE_CHECKLIST.md` / `artifacts/go-live/README.md`:** summaries link **`docs/RULES.md`**; verifier blocks include **`./scripts/check_go_live_rules.sh`** where they mirror CI.
+- **`CONTRIBUTING.md`:** new **First-time setup** block (`brew install gh` → `gh auth login` → `./scripts/install_git_hooks.sh`) for fresh clones.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.

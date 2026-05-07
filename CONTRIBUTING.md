@@ -6,6 +6,16 @@ This repo is a **parent/orchestration** repository. Most changes fall into one o
 - **CI / guardrails** (`.github/workflows/local-box-baseline.yml`, `scripts/check_*`)
 - **Parent Python package** (`local_box/` + repo-root `requirements.txt`)
 
+## First-time setup (recommended)
+
+After cloning, in the repo root:
+
+```bash
+brew install gh                  # macOS; pick the equivalent on your platform
+gh auth login                    # one-time GitHub CLI auth (for ./scripts/check_local_box_ci_runs.sh)
+./scripts/install_git_hooks.sh   # enable pre-commit guardrails (baseline + go-live rules)
+```
+
 ## Developer workflow (quick)
 
 ```bash
