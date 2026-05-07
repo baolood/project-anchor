@@ -212,6 +212,9 @@ python3 -m pip install -r requirements.txt
 - **`docs/MIGRATION_ROLLBACK_RUNBOOK.md`:** Week 4 **migration rollback** draft (preconditions, strategies S1–S3, forward+rollback drill log, failure modes).
 - **`docs/GO_LIVE_CHECKLIST.md` §4 Week 4:** “Data migration rollback path verified” → `IN_PROGRESS` (owner **baolood**, evidence **`docs/MIGRATION_ROLLBACK_RUNBOOK.md`**).
 - **`CONTRIBUTING.md`:** Go-live artifacts list links **`docs/MIGRATION_ROLLBACK_RUNBOOK.md`**.
+- **`docs/SECRETS_AND_ROTATION.md`:** Week 5-6 **secrets + rotation** draft (inventory placeholders, no-plaintext scan, rotation table, mandatory rehearsal, §5 **G4** linkage).
+- **`docs/GO_LIVE_CHECKLIST.md` §4 Week 5-6:** “Secret management and key rotation policy” → `IN_PROGRESS` (owner **baolood**, evidence **`docs/SECRETS_AND_ROTATION.md`**).
+- **`CONTRIBUTING.md`:** Go-live artifacts list links **`docs/SECRETS_AND_ROTATION.md`**.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.

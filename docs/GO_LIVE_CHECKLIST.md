@@ -201,12 +201,12 @@ Use this if you want immediate execution without waiting for a full planning mee
 ### Week 5-6 — Security + Capacity + Final Hardening
 
 - [ ] **Secret management and key rotation policy**  
-  - Owner: `<name>`  
-  - Status: `TODO`  
+  - Owner: **baolood** (Security owner)  
+  - Status: `IN_PROGRESS`  
   - Acceptance:
     - No plaintext secrets in repo/config
     - Rotation procedure tested
-  - Evidence: `<link>`
+  - Evidence: **`docs/SECRETS_AND_ROTATION.md`** (draft — fill §1 inventory + §2 scan + §4 rehearsal)
 
 - [ ] **Permission minimization and audit**  
   - Owner: `<name>`  
