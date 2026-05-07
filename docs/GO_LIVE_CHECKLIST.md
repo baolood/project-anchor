@@ -209,11 +209,11 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Evidence: **`docs/SECRETS_AND_ROTATION.md`** (draft — fill §1 inventory + §2 scan + §4 rehearsal)
 
 - [ ] **Permission minimization and audit**  
-  - Owner: `<name>`  
-  - Status: `TODO`  
+  - Owner: **baolood** (Security owner)  
+  - Status: `IN_PROGRESS`  
   - Acceptance:
     - Service/account permissions reviewed and reduced
-  - Evidence: `<link>`
+  - Evidence: **`docs/PERMISSION_AUDIT.md`** (draft — fill §1 inventory + §3 reduction rows with before/after)
 
 - [ ] **Capacity and stress test**  
   - Owner: `<name>`  
