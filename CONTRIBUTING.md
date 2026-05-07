@@ -83,6 +83,8 @@ Do not combine **`--cancelled-only`** with **`--failed-only`** (the script exits
 
 To require **`local-box-baseline`** checks before merging to **`main`**, follow **`docs/GITHUB_BRANCH_PROTECTION.md`** (web UI is the most reliable path).
 
+Branching, tags, and rollback expectations for **`main`** live in **`docs/RELEASE_BRANCH_POLICY.md`** (draft until protection is GREEN — see **`docs/GO_LIVE_CHECKLIST.md`** §6 **R-001**).
+
 ## Pull requests
 
 GitHub opens **`.github/pull_request_template.md`** when you create a PR. The canonical checklist and wording live in **`PR_DESCRIPTION.md`** at the repo root — copy from there into the PR body. **`./scripts/check_local_box_baseline.sh`** treats the stub file as required (do not delete it without updating the baseline list).

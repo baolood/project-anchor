@@ -4,6 +4,8 @@ Goal: merges to **`main`** only happen when **`local-box-baseline`** is green, s
 
 This is a **repository settings** change. It must be done by someone with **admin** (or sufficient **branch protection** permissions) on the GitHub org/repo.
 
+See also **`docs/RELEASE_BRANCH_POLICY.md`** (branching / tags / rollback) once **`main`** protection is enabled.
+
 ## Web UI (recommended)
 
 1. Open the repo on GitHub → **Settings** → **Branches**.

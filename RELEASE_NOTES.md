@@ -171,7 +171,12 @@ python3 -m pip install -r requirements.txt
 - **`CONTRIBUTING.md`:** new **First-time setup** block (`brew install gh` → `gh auth login` → `./scripts/install_git_hooks.sh`) for fresh clones.
 - **`docs/GO_LIVE_CHECKLIST.md` §0:** milestones M0/M1 now have concrete **target dates** (M0 2026-05-29, M1 2026-07-10), testable acceptance lists tied to §4 sections, and an explicit **cutoff rule** (NO-GO + risk register row + reschedule cadence).
 - **`docs/GO_LIVE_CHECKLIST.md` §5:** hard gates expanded into IDs **G1–G6** with verifier role, evidence type, and linked-plan anchors per gate (no change in `- [ ]` count, so the reporter denominator stays stable).
-- **`docs/GO_LIVE_CHECKLIST.md` §4 Week 1:** “Define go-live gates” moved from `TODO` to `IN_PROGRESS` (G1–G6 drafted; owner sign-off pending).
+- **`docs/GO_LIVE_CHECKLIST.md` §4 Week 1:** “Define go-live gates” → `DONE` (evidence: §5 **G1–G6** + commit **`fd7d4d8`**); “Freeze release branch policy” → `IN_PROGRESS` with evidence **`docs/RELEASE_BRANCH_POLICY.md`**.
+- **`docs/GO_LIVE_CHECKLIST.md` §2:** interim owner matrix — all roles assigned to **`baolood`** until staffing splits.
+- **`docs/GO_LIVE_CHECKLIST.md` §6:** **R-001** opened — **`main`** branch protection not yet enforced (ETA **2026-05-14**).
+- **`docs/RELEASE_BRANCH_POLICY.md`:** draft policy for **`main`**, PR discipline, tags/rollback, submodule pointer bumps.
+- **`CONTRIBUTING.md`:** branch-protection section links **`docs/RELEASE_BRANCH_POLICY.md`** and **`docs/GO_LIVE_CHECKLIST.md`** §6 **R-001** until **`main`** protection is GREEN.
+- **`docs/GITHUB_BRANCH_PROTECTION.md`:** keeps **Web UI** steps; adds cross-link to **`docs/RELEASE_BRANCH_POLICY.md`** after protection is enabled.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.

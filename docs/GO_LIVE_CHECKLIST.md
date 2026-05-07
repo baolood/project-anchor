@@ -51,15 +51,15 @@ This section is the **canonical statement of intent**. Acceptance items here mus
 
 ## 2) Owner Matrix (Fill First)
 
-Fill this once before Day 1 execution:
+**Interim staffing (single maintainer):** all roles below map to **`baolood`** until split across people. Replace names/handles when staffing expands (do not delete the interim note — append the new assignees).
 
-- Release manager: `<name>`
-- Engineering lead: `<name>`
-- Operations lead: `<name>`
-- Security owner: `<name>`
-- Data/DB owner: `<name>`
-- On-call primary: `<name>`
-- On-call backup: `<name>`
+- Release manager: **baolood** (go/no-go chair per §9)
+- Engineering lead: **baolood**
+- Operations lead: **baolood**
+- Security owner: **baolood**
+- Data/DB owner: **baolood**
+- On-call primary: **baolood**
+- On-call backup: **baolood** (use external backup roster when available)
 
 ---
 
@@ -99,19 +99,19 @@ Use this if you want immediate execution without waiting for a full planning mee
 ### Week 1 — Release Gate Definition + Environment Baseline
 
 - [ ] **Define go-live gates (hard stop criteria)**  
-  - Owner: `<release manager>` (assignment pending)  
-  - Status: `IN_PROGRESS`  
+  - Owner: **baolood** (Release manager)  
+  - Status: `DONE`  
   - Acceptance:
     - Written list of mandatory gates → §5 (gate table **G1–G6**)
-    - Explicit go/no-go authority → §9 chair
-  - Evidence: §5 gate table (drafted), §9 review template; owner sign-off pending
+    - Explicit go/no-go authority → §9 chair = Release manager (**baolood**)
+  - Evidence: §5 (**G1–G6**), §9 template; gate IDs introduced in commit **`fd7d4d8`**
 
 - [ ] **Freeze release branch policy**  
-  - Owner: `<name>`  
-  - Status: `TODO`  
+  - Owner: **baolood** (Release manager)  
+  - Status: `IN_PROGRESS`  
   - Acceptance:
     - Branching, tagging, rollback policy documented
-  - Evidence: `<link>`
+  - Evidence: **`docs/RELEASE_BRANCH_POLICY.md`** (draft); GitHub branch protection on **`main`** still **OPEN** as **§6 / R-001**
 
 - [ ] **Prod-like environment parity check**  
   - Owner: `<name>`  
@@ -285,15 +285,15 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
 
 Use one row per active risk; update daily until closed.
 
-- Risk ID: `<R-001>`
-- Description: `<short risk statement>`
-- Impact: `<High|Medium|Low>`
-- Probability: `<High|Medium|Low>`
-- Owner: `<name>`
-- Mitigation: `<what we do now>`
-- Trigger/Signal: `<what indicates risk is materializing>`
-- Status: `<OPEN|MITIGATING|CLOSED>`
-- ETA to close: `<date>`
+- Risk ID: **R-001**
+- Description: **`main` branch protection not yet enforced** (merge can bypass required **`local-box-baseline`** checks until GitHub Settings are updated).
+- Impact: **High**
+- Probability: **High** (until Settings are GREEN)
+- Owner: **baolood**
+- Mitigation: Follow **`docs/GITHUB_BRANCH_PROTECTION.md`**; after enabling, run **`./scripts/check_local_box_ci_runs.sh --branch main --gate-strict --quiet`** once to confirm the required contexts match job ids (**`checklist-curl-guardrails`**, **`check`**).
+- Trigger/Signal: PR merged or push landed on **`main`** while protection is off; or CI red on **`main`** without a revert within SLA.
+- Status: **OPEN**
+- ETA to close: **2026-05-14**
 
 ---
 
@@ -331,7 +331,7 @@ Use this section in the final review meeting.
 
 - Review date/time: `<YYYY-MM-DD HH:MM>`
 - Release target window: `<window>`
-- Chair (decision owner): `<name>`
+- Chair (decision owner): **baolood** (Release manager per §2 — update if delegated)
 - Participants: `<names>`
 
 ### Gate results
