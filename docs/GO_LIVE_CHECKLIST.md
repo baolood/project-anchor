@@ -151,11 +151,11 @@ Use this if you want immediate execution without waiting for a full planning mee
 ### Week 3 — Observability + Alerting + Error Budget
 
 - [ ] **Define service SLI/SLO**  
-  - Owner: `<name>`  
-  - Status: `TODO`  
+  - Owner: **baolood** (Engineering lead)  
+  - Status: `IN_PROGRESS`  
   - Acceptance:
     - Availability, latency, error-rate SLOs agreed
-  - Evidence: `<link>`
+  - Evidence: **`docs/SERVICE_SLI_SLO.md`** (draft — §3 targets are placeholders until review sign-off)
 
 - [ ] **Alert rules + routing implemented**  
   - Owner: `<name>`  

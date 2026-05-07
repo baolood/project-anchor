@@ -194,6 +194,9 @@ python3 -m pip install -r requirements.txt
 - **`docs/ON_CALL_SOP.md`:** Week 2 **on-call SOP** draft (P0–P3 matrix, escalation ladder, first-response checklist, notification templates).
 - **`docs/GO_LIVE_CHECKLIST.md` §4 Week 2:** “On-call SOP draft complete” → `IN_PROGRESS` (owner **baolood**, evidence **`docs/ON_CALL_SOP.md`**).
 - **`CONTRIBUTING.md`:** Go-live artifacts list links **`docs/ON_CALL_SOP.md`**.
+- **`docs/SERVICE_SLI_SLO.md`:** Week 3 **SLI/SLO** draft (service table, SLI candidates, placeholder SLO targets, review cadence).
+- **`docs/GO_LIVE_CHECKLIST.md` §4 Week 3:** “Define service SLI/SLO” → `IN_PROGRESS` (owner **baolood**, evidence **`docs/SERVICE_SLI_SLO.md`**).
+- **`CONTRIBUTING.md`:** Go-live artifacts list links **`docs/SERVICE_SLI_SLO.md`**.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.

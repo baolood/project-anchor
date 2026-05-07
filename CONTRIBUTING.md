@@ -97,6 +97,7 @@ GitHub opens **`.github/pull_request_template.md`** when you create a PR. The ca
 - **Stage deploy runbook (Week 2, draft):** **`docs/STAGE_DEPLOY_RUNBOOK.md`**
 - **Rollback drill runbook (Week 2, draft):** **`docs/ROLLBACK_DRILL_RUNBOOK.md`**
 - **On-call SOP (Week 2, draft):** **`docs/ON_CALL_SOP.md`**
+- **SLI / SLO draft (Week 3):** **`docs/SERVICE_SLI_SLO.md`**
 - Daily snapshot tool: **`./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out`**
 - **`--out`** must target a file path, not a directory (see **`./scripts/go_live_status_report.sh --help`**).
 - `artifacts/go-live/*.out` is gitignored; the tracked pointer is `artifacts/go-live/README.md`.
