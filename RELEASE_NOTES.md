@@ -218,6 +218,9 @@ python3 -m pip install -r requirements.txt
 - **`docs/PERMISSION_AUDIT.md`:** Week 5-6 **permission minimization** draft (subject inventory, inputs, reduction log, audit cadence, §5 **G4** linkage).
 - **`docs/GO_LIVE_CHECKLIST.md` §4 Week 5-6:** “Permission minimization and audit” → `IN_PROGRESS` (owner **baolood**, evidence **`docs/PERMISSION_AUDIT.md`**).
 - **`CONTRIBUTING.md`:** Go-live artifacts list links **`docs/PERMISSION_AUDIT.md`**.
+- **`docs/CAPACITY_TEST_PLAN.md`:** Week 5-6 **capacity + stress test** draft (test inventory CT-01..CT-04 keyed to **`docs/SERVICE_SLI_SLO.md`**, traffic profile, drill log, §5 **G5** linkage).
+- **`docs/GO_LIVE_CHECKLIST.md` §4 Week 5-6:** “Capacity and stress test” → `IN_PROGRESS` (owner **baolood**, evidence **`docs/CAPACITY_TEST_PLAN.md`**).
+- **`CONTRIBUTING.md`:** Go-live artifacts list links **`docs/CAPACITY_TEST_PLAN.md`**.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.

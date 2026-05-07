@@ -216,12 +216,12 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Evidence: **`docs/PERMISSION_AUDIT.md`** (draft — fill §1 inventory + §3 reduction rows with before/after)
 
 - [ ] **Capacity and stress test**  
-  - Owner: `<name>`  
-  - Status: `TODO`  
+  - Owner: **baolood** (Engineering lead)  
+  - Status: `IN_PROGRESS`  
   - Acceptance:
     - Peak target traffic test completed
     - Degradation behavior documented
-  - Evidence: `<link>`
+  - Evidence: **`docs/CAPACITY_TEST_PLAN.md`** (draft — fill §3 traffic profile, run §2 CT-02 + CT-03 against stage, log §5)
 
 
 ### Week 7-8 — Controlled Launch
