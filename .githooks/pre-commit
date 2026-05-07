@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+if ! ./scripts/check_local_box_baseline.sh; then
+  echo "pre-commit: baseline check failed" >&2
+  exit 1
+fi
+
+if ! ./scripts/check_go_live_rules.sh; then
+  echo "pre-commit: go-live rules check failed" >&2
+  exit 1
+fi

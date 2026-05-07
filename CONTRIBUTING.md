@@ -14,6 +14,16 @@ export PYTHONPATH=.
 python3 -m pip install -r requirements.txt
 ```
 
+## Git hooks (optional)
+
+Install repo-managed hooks so **`git commit`** runs the same fast guardrails as CI expects (baseline + go-live rules):
+
+```bash
+./scripts/install_git_hooks.sh
+```
+
+Hooks live under **`.githooks/`** (not the default **`.git/hooks/`**). Remove with **`git config --unset core.hooksPath`** from the repo root if you need to disable them.
+
 ## CI and local reproduction
 
 GitHub Actions workflow: **`.github/workflows/local-box-baseline.yml`** (two jobs).
@@ -23,6 +33,7 @@ Local repro (same order as CI job **check**):
 ```bash
 ./scripts/check_checklist_curl_guardrails.sh
 ./scripts/check_local_box_baseline.sh
+./scripts/check_go_live_rules.sh
 ./scripts/go_live_status_report.sh
 # Optional standup artifact (--out must be a file path, not a directory):
 # ./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out
@@ -30,7 +41,8 @@ python3 -c "from local_box.audit import event_store; event_store.init_db(); prin
 ```
 
 Notes:
-- `./scripts/check_local_box_baseline.sh --help` explains what it validates (includes **`docs/GO_LIVE_CHECKLIST.md`**).
+- **Operational rules (SSOT):** **`docs/RULES.md`** — canonical **CI vs local** wording for **`go_live_status_report.sh`**; enforced by **`./scripts/check_go_live_rules.sh`**.
+- `./scripts/check_local_box_baseline.sh --help` explains what it validates (includes **`docs/RULES.md`**, **`docs/GO_LIVE_CHECKLIST.md`**).
 - The workflow supports **`workflow_dispatch`** (manual run) via GitHub **Actions** → **local-box-baseline** → **Run workflow**.
 - In CI, **`go_live_status_report.sh`** runs **stdout only** (parses the checklist; no file artifact). Locally, use **`--out`** for standup evidence (must be a **file** path — see **`./scripts/go_live_status_report.sh --help`**).
 - In CI, job **`check`** sets **`PIP_NO_INPUT=1`** (and **`PIP_DISABLE_PIP_VERSION_CHECK=1`**) during **`pip install`** — optional for local scripts but matches CI behavior.
@@ -57,6 +69,10 @@ Requires `gh` + `gh auth login`.
 Do not combine **`--cancelled-only`** with **`--failed-only`** (the script exits with an error). Also, **`--gate-strict` (alias: `--strict`)** requires **`--branch`** and cannot be combined with those two filter flags.
 `--summary` and `--json` are mutually exclusive, and `--json` implies quiet text mode so stdout stays machine-readable.
 
+## GitHub branch protection (repo admins)
+
+To require **`local-box-baseline`** checks before merging to **`main`**, follow **`docs/GITHUB_BRANCH_PROTECTION.md`** (web UI is the most reliable path).
+
 ## Pull requests
 
 GitHub opens **`.github/pull_request_template.md`** when you create a PR. The canonical checklist and wording live in **`PR_DESCRIPTION.md`** at the repo root — copy from there into the PR body. **`./scripts/check_local_box_baseline.sh`** treats the stub file as required (do not delete it without updating the baseline list).
@@ -64,6 +80,7 @@ GitHub opens **`.github/pull_request_template.md`** when you create a PR. The ca
 ## Go-live execution artifacts
 
 - Execution board: **`docs/GO_LIVE_CHECKLIST.md`**
+- **Operational rules (SSOT):** **`docs/RULES.md`**
 - Daily snapshot tool: **`./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out`**
 - **`--out`** must target a file path, not a directory (see **`./scripts/go_live_status_report.sh --help`**).
 - `artifacts/go-live/*.out` is gitignored; the tracked pointer is `artifacts/go-live/README.md`.

@@ -13,7 +13,8 @@ Usage: ./scripts/check_local_box_baseline.sh
 Verifies required parent-repo paths exist, then runs scripts/check_checklist_curl_guardrails.sh.
 
 Required paths include (among others) core local_box trees, requirements pins,
-docs/GO_LIVE_CHECKLIST.md, artifacts/go-live/README.md, and .github/pull_request_template.md.
+docs/RULES.md (operational rules SSOT), docs/GO_LIVE_CHECKLIST.md, artifacts/go-live/README.md,
+and .github/pull_request_template.md.
 
 See README.md (section "CI"). Spec: docs/LOCAL_BOX_BASELINE_CHECK_SCRIPT_SPEC_V1.md
 EOF
@@ -41,6 +42,8 @@ REQUIRED_PATHS=(
   "shared/schemas.py"
   "risk_engine/client.py"
   "local_box/gate/ticket_signature.py"
+  # Operational rules SSOT (go-live reporter CI vs local evidence; see scripts/check_go_live_rules.sh).
+  "docs/RULES.md"
   # Go-live execution board + CI reporter input (see scripts/go_live_status_report.sh).
   "docs/GO_LIVE_CHECKLIST.md"
   # Tracked onboarding for go-live daily snapshots (see docs/GO_LIVE_CHECKLIST.md §7).

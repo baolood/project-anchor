@@ -51,7 +51,7 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Baseline — required files + checklist curl guardrails
         run: ./scripts/check_local_box_baseline.sh
-      # Lock go-live rule wording: CI reporter is stdout-only; local --out must be a file path.
+      # Lock go-live rule anchors in docs/RULES.md (stdout-only + --out); see scripts/check_go_live_rules.sh.
       - name: Guardrail — go-live rules (stdout-only + --out)
         run: ./scripts/check_go_live_rules.sh
       # Local optional --out must be a file path, not a directory (see README / go_live_status_report.sh --help). CI prints to stdout only.

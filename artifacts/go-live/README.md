@@ -1,5 +1,7 @@
 # Go-live daily snapshots
 
+Canonical **CI vs local** reporter rules: [`docs/RULES.md`](../../docs/RULES.md).
+
 Local standup evidence from [`scripts/go_live_status_report.sh`](../../scripts/go_live_status_report.sh).
 
 - **Naming:** `go_live_daily_status_YYYY-MM-DD.out`

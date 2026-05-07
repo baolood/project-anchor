@@ -3,6 +3,7 @@
 Throughout this file, **`/path/to/project-anchor`** means your local clone of the repository (replace with the real directory).
 
 For launch planning and owner tracking, use **`docs/GO_LIVE_CHECKLIST.md`** as the execution board.
+Canonical **CI vs local go-live reporter** rules live in **`docs/RULES.md`** (enforced by **`scripts/check_go_live_rules.sh`**).
 Daily progress snapshot:
 ```bash
 ./scripts/go_live_status_report.sh
@@ -19,7 +20,7 @@ Daily progress snapshot:
 - **`actions/checkout`** sets **`persist-credentials: false`** (read-only clone only). Job **`check`** sets **`PYTHONPATH=.`** once for the Python smoke steps.
 - **`actions/setup-python`** uses **`cache: pip`** with **`cache-dependency-path`** covering **`requirements.txt`** and **`requirements.in`** so constraint edits invalidate the pip cache cleanly.
 - Job **`check`** exports **`PIP_NO_INPUT=1`** and **`PIP_DISABLE_PIP_VERSION_CHECK=1`** during **`pip`** steps (CI-safe, non-interactive). The workflow uses separate steps for **pip upgrade** vs **`requirements.txt` install** so failures are easier to read in Actions.
-- Two jobs: **`checklist-curl-guardrails`** (checklist `curl` policy) and **`check`** (deps, `check_local_box_baseline.sh`, `go_live_status_report.sh`, SQLite/import smokes).
+- Two jobs: **`checklist-curl-guardrails`** (checklist `curl` policy) and **`check`** (deps, `check_local_box_baseline.sh`, `check_go_live_rules.sh`, `go_live_status_report.sh`, SQLite/import smokes).
 - **`go_live_status_report.sh`** in CI prints to stdout only; local **`--out`** must be a file path (see **`./scripts/go_live_status_report.sh --help`**).
 - Full job order, failure triage, and `gh` examples: root **`README.md`** → section **CI** (this section is the short ops summary).
 - Quick fail triage helper: `./scripts/check_local_box_ci_runs.sh --branch <your-branch> --failed-only` (**`--branch`** is passed through to **`gh`**; scope per-branch before **`--limit`** truncates the list). For pipeline gating, add `--latest-only --fail-on-failed` (alias: `--fail-on-non-success`). Add `--fail-on-incomplete` (alias: `--fail-on-non-completed`) when gates must fail on queued/in-progress runs, and `--fail-on-empty` when missing rows should fail fast. Shortcut: `--gate-strict` (alias: `--strict`) (= `--latest-only --fail-on-cancelled --fail-on-failed --fail-on-incomplete --fail-on-empty`, requires `--branch`), and do not combine it with `--cancelled-only` / `--canceled-only` / `--failed-only` (canceled spelling alias exists for fail-on-cancelled). For automation, prefer `--gate-strict --quiet`.
@@ -91,7 +92,7 @@ For the **parent repository** `local_box` audit stack (not Docker `anchor-backen
    python3 -c "import local_box.runner; print('runner import ok')"
    ```
 
-4. **CI:** workflow **`.github/workflows/local-box-baseline.yml`** runs `pip install -r requirements.txt`, `./scripts/check_local_box_baseline.sh` (includes checklist curl guardrail scan), then SQLite **`init_db()`** smoke, **`import local_box.runner`**, and **`import local_box.control.server`** (Flask app). Concurrent runs on the same ref are cancelled via workflow **`concurrency`**.
+4. **CI:** workflow **`.github/workflows/local-box-baseline.yml`** runs `pip install -r requirements.txt`, `./scripts/check_local_box_baseline.sh` (includes checklist curl guardrail scan), `./scripts/check_go_live_rules.sh` (anchors in **`docs/RULES.md`**), `./scripts/go_live_status_report.sh`, then SQLite **`init_db()`** smoke, **`import local_box.runner`**, and **`import local_box.control.server`** (Flask app). Concurrent runs on the same ref are cancelled via workflow **`concurrency`**.
    - Expected signal under frequent pushes: older runs on the same ref can appear **Cancelled**; this is normal.
    - Validation rule: check the **latest run on the ref** for final PASS/FAIL.
    - Optional helper (requires GitHub CLI auth):
@@ -159,12 +160,13 @@ When adding or updating shell automation under `scripts/` (and checklist scripts
    - For parent baseline safety (matches CI `check` job order), run:
      ```bash
      ./scripts/check_local_box_baseline.sh
+     ./scripts/check_go_live_rules.sh
      ./scripts/go_live_status_report.sh
      # Optional standup artifact (--out must be a file path, not a directory):
      # ./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out
      python3 -c "from local_box.audit import event_store; event_store.init_db(); print('LOCAL_BOX_SQLITE_SMOKE ok')"
      ```
-   - Baseline also requires **`docs/GO_LIVE_CHECKLIST.md`** (go-live board / reporter input) and **`.github/pull_request_template.md`** (PR body stub); renaming or removing either file needs a matching edit to **`scripts/check_local_box_baseline.sh`**.
+   - Baseline also requires **`docs/RULES.md`** (operational rules SSOT), **`docs/GO_LIVE_CHECKLIST.md`** (go-live board / reporter input), and **`.github/pull_request_template.md`** (PR body stub); renaming or removing any of those paths needs a matching edit to **`scripts/check_local_box_baseline.sh`**.
 
 ## Verify
 

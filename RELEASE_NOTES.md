@@ -161,8 +161,13 @@ python3 -m pip install -r requirements.txt
 - **`artifacts/go-live/README.md`**, **`CONTRIBUTING.md`:** CI vs local **`go_live_status_report.sh`** behavior (stdout-only in Actions; **`--out`** file path locally) spelled out for snapshot writers.
 - **`docs/GO_LIVE_CHECKLIST.md`:** §1 **CI coupling** and §7 standup bullets contrast CI stdout-only runs vs local **`--out`** evidence; **`PR_DESCRIPTION.md`** hardening summary matches.
 - **`PR_DESCRIPTION.md`:** Go-live checklist item now repeats the same CI stdout-only vs local **`--out`** file-path distinction for PR authors.
-- **`scripts/check_go_live_rules.sh`** (new): minimal guardrail that fails fast if `PR_DESCRIPTION.md` / `RELEASE_NOTES.md` lose the **stdout-only** + **`--out`** rule wording.
-- **`local-box-baseline.yml`:** job **`check`** now runs **`./scripts/check_go_live_rules.sh`** between baseline and the reporter smoke, so the rule wording is enforced as a CI gate (must pass to merge).
+- **`docs/RULES.md`:** operational rules **SSOT** for **`go_live_status_report.sh`** (**stdout-only** in CI vs **`--out`** file path locally).
+- **`scripts/check_go_live_rules.sh`:** validates anchors in **`docs/RULES.md`** only (CI + local hooks share one contract).
+- **`local-box-baseline.yml`:** job **`check`** runs **`./scripts/check_go_live_rules.sh`** between baseline and the reporter smoke, so the SSOT anchors are enforced as a CI gate (must pass to merge).
+- **`.githooks/pre-commit`** + **`scripts/install_git_hooks.sh`:** optional **`git commit`** gate (baseline + go-live rules) via **`git config core.hooksPath`**.
+- **`AGENTS.md`:** concise defaults for automation agents (repro order + SSOT pointer).
+- **`docs/GITHUB_BRANCH_PROTECTION.md`:** repo-admin checklist to require **`local-box-baseline`** status checks on **`main`**.
+- **`README.md` / `CONTRIBUTING.md` / `PR_DESCRIPTION.md` / `RUNBOOK.md` / `docs/GO_LIVE_CHECKLIST.md` / `artifacts/go-live/README.md`:** summaries link **`docs/RULES.md`**; verifier blocks include **`./scripts/check_go_live_rules.sh`** where they mirror CI.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.
@@ -189,4 +194,5 @@ cd /path/to/project-anchor
 git pull
 ./scripts/go_live_status_report.sh
 ./scripts/check_local_box_baseline.sh
+./scripts/check_go_live_rules.sh
 ```

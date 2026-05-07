@@ -7,10 +7,12 @@ This **parent** repo holds orchestration docs, **`local_box/`**, **`shared/`**, 
 - **Architecture (commands / worker semantics):** [`ARCHITECTURE.md`](ARCHITECTURE.md)
 - **Operations / risk runbook:** [`RUNBOOK.md`](RUNBOOK.md)
 - **Go-live execution checklist:** [`docs/GO_LIVE_CHECKLIST.md`](docs/GO_LIVE_CHECKLIST.md)
-- **Go-live status reporter:** [`scripts/go_live_status_report.sh`](scripts/go_live_status_report.sh) (standup evidence: `--out artifacts/go-live/go_live_daily_status_$(date +%F).out` — parent dirs created if missing; `--out` must be a file path, not a directory; see [`docs/GO_LIVE_CHECKLIST.md`](docs/GO_LIVE_CHECKLIST.md) §7 and [`artifacts/go-live/README.md`](artifacts/go-live/README.md); `/tmp/...` is only for ad-hoc checks; `artifacts/go-live/*.out` is gitignored)
+- **Operational rules (SSOT):** [`docs/RULES.md`](docs/RULES.md) — canonical **CI vs local evidence** rules for `go_live_status_report.sh` (enforced by `scripts/check_go_live_rules.sh`)
+- **Go-live status reporter:** [`scripts/go_live_status_report.sh`](scripts/go_live_status_report.sh) (standup evidence: `--out artifacts/go-live/go_live_daily_status_$(date +%F).out` — parent dirs created if missing; `--out` must be a file path, not a directory; see [`docs/RULES.md`](docs/RULES.md), [`docs/GO_LIVE_CHECKLIST.md`](docs/GO_LIVE_CHECKLIST.md) §7 and [`artifacts/go-live/README.md`](artifacts/go-live/README.md); `/tmp/...` is only for ad-hoc checks; `artifacts/go-live/*.out` is gitignored)
 - **Console (separate app):** [`anchor-console/README.md`](anchor-console/README.md)
 - **PR body template:** [`PR_DESCRIPTION.md`](PR_DESCRIPTION.md) (GitHub also loads [`.github/pull_request_template.md`](.github/pull_request_template.md) when opening a PR)
 - **Contributing guide:** [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- **Automation defaults (AI / agents):** [`AGENTS.md`](AGENTS.md)
 - **Release notes template:** [`RELEASE_NOTES.md`](RELEASE_NOTES.md)
 
 ---
@@ -44,11 +46,12 @@ Workflow hardening in the YAML: **`actions/checkout`** uses **`persist-credentia
 
 1. Job **`checklist-curl-guardrails`** runs **`./scripts/check_checklist_curl_guardrails.sh`** (fast, script-policy only)
 2. Job **`check`** installs **`requirements.txt`**
-3. Job **`check`** runs **`./scripts/check_local_box_baseline.sh`** (`--help` explains scope; required paths include **`local_box`**, **`shared`**, **`risk_engine`**, **`docs/GO_LIVE_CHECKLIST.md`**, **`artifacts/go-live/README.md`**, **`.github/pull_request_template.md`**, plus checklist `curl` guardrails)
-4. Job **`check`** runs **`./scripts/go_live_status_report.sh`** (parses **`docs/GO_LIVE_CHECKLIST.md`**; CI prints to stdout only; locally **`--out`** must be a file path — see **`./scripts/go_live_status_report.sh --help`**)
-5. Job **`check`** smoke-tests **`event_store.init_db()`**, **`import local_box.runner`**, **`import local_box.control.server`**
-6. If job **`checklist-curl-guardrails`** fails, fix script policy first: run **`./scripts/check_checklist_curl_guardrails.sh`** (try **`--verbose`** or **`--changed-only`**). That job is independent of job **`check`**.
-7. If job **`check`** fails, reproduce locally in the same order: **`./scripts/check_checklist_curl_guardrails.sh`**, **`./scripts/check_local_box_baseline.sh`**, **`./scripts/go_live_status_report.sh`**, then the **Quick local checks** block below (Python smokes).
+3. Job **`check`** runs **`./scripts/check_local_box_baseline.sh`** (`--help` explains scope; required paths include **`local_box`**, **`shared`**, **`risk_engine`**, **`docs/RULES.md`**, **`docs/GO_LIVE_CHECKLIST.md`**, **`artifacts/go-live/README.md`**, **`.github/pull_request_template.md`**, plus checklist `curl` guardrails)
+4. Job **`check`** runs **`./scripts/check_go_live_rules.sh`** (fails fast if **`docs/RULES.md`** loses the **stdout-only** + **`--out`** anchors)
+5. Job **`check`** runs **`./scripts/go_live_status_report.sh`** (parses **`docs/GO_LIVE_CHECKLIST.md`**; CI prints to stdout only; locally **`--out`** must be a file path — see **`./scripts/go_live_status_report.sh --help`** and **`docs/RULES.md`**)
+6. Job **`check`** smoke-tests **`event_store.init_db()`**, **`import local_box.runner`**, **`import local_box.control.server`**
+7. If job **`checklist-curl-guardrails`** fails, fix script policy first: run **`./scripts/check_checklist_curl_guardrails.sh`** (try **`--verbose`** or **`--changed-only`**). That job is independent of job **`check`**.
+8. If job **`check`** fails, reproduce locally in the same order: **`./scripts/check_checklist_curl_guardrails.sh`**, **`./scripts/check_local_box_baseline.sh`**, **`./scripts/check_go_live_rules.sh`**, **`./scripts/go_live_status_report.sh`**, then the **Quick local checks** block below (Python smokes).
 
 Quick local options for the guardrail scanner:
 
@@ -87,6 +90,8 @@ Each workflow job sets **`timeout-minutes`** in **[`.github/workflows/local-box-
 ### Quick local checks (after `pip install`)
 
 ```bash
+./scripts/check_local_box_baseline.sh
+./scripts/check_go_live_rules.sh
 ./scripts/go_live_status_report.sh
 # Optional standup artifact (--out must be a file path, not a directory):
 # ./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out
