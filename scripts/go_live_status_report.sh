@@ -30,7 +30,7 @@ Usage: ./scripts/go_live_status_report.sh [--out <path>]
 
 Options:
   --out <path>  Write report to file (stdout always prints; parent dirs created if missing).
-                Must be a file path (directory targets are rejected).
+                Must be a file path (directory targets, including trailing "/" paths, are rejected).
 
 Env:
   CHECKLIST_FILE  Override checklist path.
@@ -91,6 +91,10 @@ PY
 echo "$report"
 
 if [[ -n "${OUT_FILE}" ]]; then
+  if [[ "${OUT_FILE}" == */ ]]; then
+    echo "GO_LIVE_STATUS FAIL: --out expects a file path, got directory-like path: ${OUT_FILE}" >&2
+    exit 2
+  fi
   if [[ -d "${OUT_FILE}" ]]; then
     echo "GO_LIVE_STATUS FAIL: --out expects a file path, got directory: ${OUT_FILE}" >&2
     exit 2

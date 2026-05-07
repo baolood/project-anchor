@@ -148,6 +148,7 @@ python3 -m pip install -r requirements.txt
 - **Docs (`docs/GO_LIVE_CHECKLIST.md`, `PR_DESCRIPTION.md`):** aligns CI triage notes with `--summary`/`--json` mutual exclusion and JSON quiet-mode expectations.
 - **`go_live_status_report.sh`:** now fails fast with a clear message when `--out` points to a directory instead of a file path.
 - **`go_live_status_report.sh --help`:** now documents that `--out` must be a file path (directory targets are rejected).
+- **`go_live_status_report.sh`:** now also rejects trailing-slash `--out` paths as directory-like targets with an explicit fail-fast message.
 - **Docs (`README.md`, `RUNBOOK.md`):** now mirror the `--out` file-path-only constraint for `go_live_status_report.sh`.
 - **Docs (`artifacts/go-live/README.md`, `CONTRIBUTING.md`, `docs/GO_LIVE_CHECKLIST.md` §7):** repeat the same `--out` file-path-only rule for contributors using the evidence layout.
 - **`PR_DESCRIPTION.md`:** hardening-wave **Go-live tooling** bullet now repeats the **`go_live_status_report.sh --out`** file-path-only constraint.
