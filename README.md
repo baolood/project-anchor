@@ -88,6 +88,8 @@ Each workflow job sets **`timeout-minutes`** in **[`.github/workflows/local-box-
 
 ```bash
 ./scripts/go_live_status_report.sh
+# Optional standup artifact (--out must be a file path, not a directory):
+# ./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out
 export PYTHONPATH=.
 python3 -c "from local_box.audit import event_store; event_store.init_db(); print(event_store.DB_PATH)"
 python3 -c "import local_box.runner; print('runner ok')"
