@@ -187,6 +187,10 @@ python3 -m pip install -r requirements.txt
 - **`docs/GO_LIVE_CHECKLIST.md` §4 Week 2:** “One-command deployment runbook validated” → `IN_PROGRESS` (owner **baolood**, evidence **`docs/STAGE_DEPLOY_RUNBOOK.md`**).
 - **`CONTRIBUTING.md`:** Go-live artifacts list links **`docs/STAGE_DEPLOY_RUNBOOK.md`**.
 - **`RUNBOOK.md`:** Daily Mode links the Week 2 stage deploy draft for discoverability.
+- **`docs/ROLLBACK_DRILL_RUNBOOK.md`:** Week 2 **rollback drill** draft (preconditions, two rollback paths, drill log table, post-rollback smoke).
+- **`docs/GO_LIVE_CHECKLIST.md` §4 Week 2:** “Rollback drill completed” → `IN_PROGRESS` (owner **baolood**, evidence **`docs/ROLLBACK_DRILL_RUNBOOK.md`**).
+- **`docs/RELEASE_BRANCH_POLICY.md`:** **Tags and rollback** now points to the Week 2 drill runbook for the structured procedure.
+- **`CONTRIBUTING.md`:** Go-live artifacts list links **`docs/ROLLBACK_DRILL_RUNBOOK.md`**.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.

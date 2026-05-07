@@ -15,6 +15,7 @@
 
 - **Release tags:** `vMAJOR.MINOR.PATCH` on commits that are intended rollback anchors (document the tag in the release PR / **`RELEASE_NOTES.md`**).
 - **Rollback:** revert the merge commit on `main` **or** redeploy from the previous tag, whichever matches your runtime; record which path was used in the incident or release notes.
+- **Drill procedure:** see **`docs/ROLLBACK_DRILL_RUNBOOK.md`** (Week 2 go-live board) for the structured roll-forward / roll-back drill, log table, and smoke step.
 
 ## Submodules / subtrees
 

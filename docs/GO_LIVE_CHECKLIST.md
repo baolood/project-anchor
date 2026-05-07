@@ -133,12 +133,12 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Evidence: **`docs/STAGE_DEPLOY_RUNBOOK.md`** (draft — fill duration table + first validated run sign-off)
 
 - [ ] **Rollback drill completed**  
-  - Owner: `<name>`  
-  - Status: `TODO`  
+  - Owner: **baolood** (Operations lead)  
+  - Status: `IN_PROGRESS`  
   - Acceptance:
     - Roll forward + rollback both tested
     - Recovery under agreed limit
-  - Evidence: `<link>`
+  - Evidence: **`docs/ROLLBACK_DRILL_RUNBOOK.md`** (draft — fill drill log + post-rollback smoke + agreed recovery target)
 
 - [ ] **On-call SOP draft complete**  
   - Owner: `<name>`  
