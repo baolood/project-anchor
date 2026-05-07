@@ -35,6 +35,14 @@ This section is the **canonical statement of intent**. Acceptance items here mus
   - Final go/no-go signoff captured in §8
 - **Cutoff rule:** if any acceptance item is not GREEN at the target date, declare **NO-GO** for M1, log the impacted gate(s) in §6, and rerun §9 review **weekly** until all gates are GREEN or scope is explicitly reduced (recorded in §9 minutes).
 
+### Current critical path (rolling)
+
+**Single convergence point:** a **stage / prod-like host** (URL + deploy target agreed and recorded in **`docs/ENVIRONMENT_PARITY_CHECKLIST.md`** §5) is the prerequisite that turns the Week 2–6 **`IN_PROGRESS`** runbooks from drafts into **`DONE`** (deploy, rollback, observability, backup/restore, capacity, secrets drills all execute against the same place).
+
+**Do this week:** stand up or lock that target host first; parallel track: close **§6 / R-001** (**`docs/GITHUB_BRANCH_PROTECTION.md`**) so merges cannot bypass CI.
+
+**WIP discipline:** do not open new §4 **`IN_PROGRESS`** work until an existing row moves to **`DONE`** or **`BLOCKED`** with owner + ETA — see **`docs/RULES.md`** (**WIP cap** + **WIP freeze**).
+
 ---
 
 ## 1) Governance Rules

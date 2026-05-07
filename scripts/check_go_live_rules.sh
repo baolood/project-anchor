@@ -3,6 +3,7 @@
 #   - Rule 1: CI reporter is "stdout-only" (anchor in docs/RULES.md)
 #   - Rule 2: local evidence uses "--out" (anchor in docs/RULES.md)
 #   - Rule 3: WIP cap on §4 IN_PROGRESS items (default 14, override via GOLIVE_WIP_LIMIT)
+#   - Rule 3b: optional WIP freeze from docs/RULES.md (baseline + until date; rejects cap inflation)
 #   - Rule 4: §4 DONE items must carry machine-verifiable evidence (no "<link>" placeholders)
 #   - Rule 5: §6 OPEN risks past their ETA must be RESOLVED or have ETA moved forward
 # CI: invoked from .github/workflows/local-box-baseline.yml (job "check").
@@ -42,22 +43,50 @@ if ! grep -q -- "--out" "$RULES"; then
   FAIL=1
 fi
 
-for anchor in "WIP cap" "DONE evidence" "Risk ETA"; do
+for anchor in "WIP cap" "DONE evidence" "Risk ETA" "WIP freeze baseline" "WIP freeze until"; do
   if ! grep -q "$anchor" "$RULES"; then
     echo "[fail] docs/RULES.md missing '${anchor}' anchor" >&2
     FAIL=1
   fi
 done
 
-if ! python3 - "$CHECKLIST" "$WIP_LIMIT" <<'PY'
+if ! python3 - "$RULES" "$CHECKLIST" "$WIP_LIMIT" <<'PY'
 import re
 import sys
 from datetime import date
 from pathlib import Path
 
-path = Path(sys.argv[1])
-wip_limit = int(sys.argv[2])
+rules_path = Path(sys.argv[1])
+path = Path(sys.argv[2])
+wip_limit = int(sys.argv[3])
+rules_text = rules_path.read_text(encoding="utf-8")
 text = path.read_text(encoding="utf-8")
+
+today = date.today()
+freeze_baseline_m = re.search(
+    r"\*\*WIP freeze baseline:\*\*\s*\*\*(\d+)\*\*",
+    rules_text,
+)
+freeze_until_m = re.search(
+    r"\*\*WIP freeze until:\*\*\s*\*\*(\d{4}-\d{2}-\d{2})\*\*",
+    rules_text,
+)
+freeze_baseline = int(freeze_baseline_m.group(1)) if freeze_baseline_m else None
+freeze_until = (
+    date.fromisoformat(freeze_until_m.group(1)) if freeze_until_m else None
+)
+freeze_active = (
+    freeze_baseline is not None
+    and freeze_until is not None
+    and today <= freeze_until
+)
+if freeze_baseline_m is None or freeze_until_m is None:
+    print(
+        "[fail] docs/RULES.md: could not parse WIP freeze baseline / until "
+        "(expected **WIP freeze baseline:** **N** and **WIP freeze until:** **YYYY-MM-DD**)",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 
 sections = re.split(r"(?m)^(?=## \d+\))", text)
 sec_by_num = {}
@@ -73,11 +102,30 @@ in_progress = len(re.findall(r"^\s*-\s*Status:\s*`IN_PROGRESS`", sec4, flags=re.
 done = len(re.findall(r"^\s*-\s*Status:\s*`DONE`", sec4, flags=re.MULTILINE))
 todo = len(re.findall(r"^\s*-\s*Status:\s*`TODO`", sec4, flags=re.MULTILINE))
 blocked = len(re.findall(r"^\s*-\s*Status:\s*`BLOCKED`", sec4, flags=re.MULTILINE))
+effective_cap = wip_limit
+if freeze_active:
+    if wip_limit > freeze_baseline:
+        print(
+            f"[fail] WIP freeze active until {freeze_until}: GOLIVE_WIP_LIMIT={wip_limit} "
+            f"exceeds freeze baseline {freeze_baseline}. Lower env, unset it, or end freeze in §9.",
+            file=sys.stderr,
+        )
+        fail = True
+    effective_cap = min(wip_limit, freeze_baseline)
+    print(
+        f"[info] WIP freeze ON (until {freeze_until}, baseline {freeze_baseline}); "
+        f"effective cap {effective_cap}"
+    )
+else:
+    print(
+        f"[info] WIP freeze OFF (baseline {freeze_baseline}, until {freeze_until}, today {today})"
+    )
+
 print(f"[info] §4 status: TODO={todo} IN_PROGRESS={in_progress} BLOCKED={blocked} DONE={done} (WIP cap {wip_limit})")
 
-if in_progress > wip_limit:
+if in_progress > effective_cap:
     print(
-        f"[fail] WIP cap exceeded: §4 IN_PROGRESS={in_progress} > limit {wip_limit}. "
+        f"[fail] WIP cap exceeded: §4 IN_PROGRESS={in_progress} > limit {effective_cap}. "
         f"Move an item to DONE or raise GOLIVE_WIP_LIMIT in a §9 review.",
         file=sys.stderr,
     )
@@ -111,7 +159,6 @@ for it in items:
 
 sec6 = sec_by_num.get(6, "")
 risks = re.split(r"(?m)^(?=- Risk ID:)", sec6)
-today = date.today()
 warn_window = 7
 for r in risks:
     if "Risk ID:" not in r:

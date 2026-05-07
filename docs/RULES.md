@@ -25,4 +25,9 @@ These rules turn the checklist itself into a machine-checked artifact. Anchors b
 - **DONE evidence:** every `Status: DONE` row in §4 must carry an `Evidence:` line containing at least one verifiable anchor — a backtick-wrapped path (e.g. **`docs/...`**), a `§N` cross-reference, or `commit <sha>`. Placeholder `<link>` is rejected. Wording anchor: **DONE evidence**.
 - **Risk ETA:** §6 risk rows with `Status: **OPEN**` and `ETA to close: **YYYY-MM-DD**` in the past fail this check. Either close the risk (`Status: **RESOLVED**`) or move the ETA forward in a §9 review minute. The script also prints a `[warn]` line when ETA is within the next 7 days. Wording anchor: **Risk ETA**.
 
-> Together these turn the checklist from a discipline document into a system constraint: new `IN_PROGRESS` cannot grow past the cap, `DONE` cannot be claimed without a real pointer, and an aging risk forces a review instead of quietly slipping.
+- **WIP freeze (time-boxed, no silent cap inflation):** while `today <=` **WIP freeze until**, §4 `IN_PROGRESS` must stay at or below **WIP freeze baseline**, and **`GOLIVE_WIP_LIMIT` must not exceed that baseline** (override is for lowering the cap only, or unset). Machine-parsed lines (edit dates in §9 when rolling the freeze):
+  - **WIP freeze baseline:** **14**
+  - **WIP freeze until:** **2026-05-14** (inclusive; enforcement lifts on **2026-05-15**)
+  - After the window ends, remove or roll forward these two lines in a §9 minute so the doc does not lie stale.
+
+> Together these turn the checklist from a discipline document into a system constraint: new `IN_PROGRESS` cannot grow past the cap, `DONE` cannot be claimed without a real pointer, an aging risk forces a review instead of quietly slipping, and the one-week **WIP freeze** blocks “raise the limit in CI” without human intent recorded in **`docs/RULES.md`**.
