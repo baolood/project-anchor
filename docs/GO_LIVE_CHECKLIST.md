@@ -12,10 +12,28 @@ Use this file as the single execution board:
 
 ## 0) Milestone Targets
 
-- **M0 — Internal beta ready (target: 2-4 weeks)**  
-  Core flows stable, deployment + rollback validated, on-call simulation done.
-- **M1 — Production ready (target: 6-10 weeks)**  
-  SLOs, alerting, backup/recovery drill, security and capacity gates all passed.
+This section is the **canonical statement of intent**. Acceptance items here must trace to checked work below; if any acceptance item is not GREEN by the **target date**, follow the **cutoff rule** (do not silently slip).
+
+### M0 — Internal beta ready
+
+- **Target date:** **2026-05-29** (planning anchor: 2026-05-07)
+- **Acceptance (all must be GREEN with evidence):**
+  - One-command stage deploy from clean checkout succeeds (§4 Week 2)
+  - Rollback drill within agreed recovery limit (§4 Week 2)
+  - On-call SOP draft signed off (§4 Week 2)
+  - §2 Owner Matrix fully populated
+- **Cutoff rule:** if any acceptance item is not GREEN at the target date, declare **NO-GO** for M0, log a row in §6 Risk Register (impact + owner + ETA), and reschedule M0 by exactly **one week** at the next §9 review.
+
+### M1 — Production ready
+
+- **Target date:** **2026-07-10** (planning anchor: 2026-05-07)
+- **Acceptance (all must be GREEN with evidence):**
+  - All §5 hard gates **G1–G6** GREEN
+  - Backup/restore drill within RPO/RTO target (§4 Week 4)
+  - Capacity/stress test within agreed degradation envelope (§4 Week 5-6)
+  - Security review complete: secrets policy + permission audit (§4 Week 5-6)
+  - Final go/no-go signoff captured in §8
+- **Cutoff rule:** if any acceptance item is not GREEN at the target date, declare **NO-GO** for M1, log the impacted gate(s) in §6, and rerun §9 review **weekly** until all gates are GREEN or scope is explicitly reduced (recorded in §9 minutes).
 
 ---
 
@@ -81,12 +99,12 @@ Use this if you want immediate execution without waiting for a full planning mee
 ### Week 1 — Release Gate Definition + Environment Baseline
 
 - [ ] **Define go-live gates (hard stop criteria)**  
-  - Owner: `<name>`  
-  - Status: `TODO`  
+  - Owner: `<release manager>` (assignment pending)  
+  - Status: `IN_PROGRESS`  
   - Acceptance:
-    - Written list of mandatory gates
-    - Explicit go/no-go authority
-  - Evidence: `<link>`
+    - Written list of mandatory gates → §5 (gate table **G1–G6**)
+    - Explicit go/no-go authority → §9 chair
+  - Evidence: §5 gate table (drafted), §9 review template; owner sign-off pending
 
 - [ ] **Freeze release branch policy**  
   - Owner: `<name>`  
@@ -234,14 +252,32 @@ Use this if you want immediate execution without waiting for a full planning mee
 
 ## 5) Hard Go/No-Go Gates (Must Be GREEN)
 
-- [ ] Deployment and rollback drills pass
-- [ ] P0/P1 alerting verified
-- [ ] Backup/restore drill pass (RPO/RTO within target)
-- [ ] Security review complete (secrets/permissions/vuln baseline)
-- [ ] Capacity test at target load pass
-- [ ] On-call roster and incident SOP active
+Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch is **NO-GO** and the §9 decision row records the blocking gate ID(s).
 
-If any item is not green, launch is **NO-GO**.
+- [ ] **G1 — Deployment and rollback drills pass**
+  - Verifier: Operations lead
+  - Evidence: stage deploy log + rollback drill log
+  - Linked plan: §4 Week 2
+- [ ] **G2 — P0/P1 alerting verified (test alert acked)**
+  - Verifier: Operations lead
+  - Evidence: alert test screenshot + on-call ack log
+  - Linked plan: §4 Week 3
+- [ ] **G3 — Backup/restore drill within RPO/RTO**
+  - Verifier: Data/DB owner
+  - Evidence: restore drill log + RPO/RTO measurement vs target
+  - Linked plan: §4 Week 4
+- [ ] **G4 — Security review complete (secrets + permissions + vuln baseline)**
+  - Verifier: Security owner
+  - Evidence: review report + audit checklist signoff
+  - Linked plan: §4 Week 5-6
+- [ ] **G5 — Capacity/stress test at target load pass**
+  - Verifier: Engineering lead
+  - Evidence: load test report + degradation behavior notes
+  - Linked plan: §4 Week 5-6
+- [ ] **G6 — On-call roster + incident SOP active**
+  - Verifier: Release manager
+  - Evidence: roster doc + SOP signoff
+  - Linked plan: §4 Week 2 + §4 Week 3
 
 ---
 

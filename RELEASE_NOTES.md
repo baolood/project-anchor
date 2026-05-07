@@ -169,6 +169,9 @@ python3 -m pip install -r requirements.txt
 - **`docs/GITHUB_BRANCH_PROTECTION.md`:** repo-admin checklist to require **`local-box-baseline`** status checks on **`main`**.
 - **`README.md` / `CONTRIBUTING.md` / `PR_DESCRIPTION.md` / `RUNBOOK.md` / `docs/GO_LIVE_CHECKLIST.md` / `artifacts/go-live/README.md`:** summaries link **`docs/RULES.md`**; verifier blocks include **`./scripts/check_go_live_rules.sh`** where they mirror CI.
 - **`CONTRIBUTING.md`:** new **First-time setup** block (`brew install gh` → `gh auth login` → `./scripts/install_git_hooks.sh`) for fresh clones.
+- **`docs/GO_LIVE_CHECKLIST.md` §0:** milestones M0/M1 now have concrete **target dates** (M0 2026-05-29, M1 2026-07-10), testable acceptance lists tied to §4 sections, and an explicit **cutoff rule** (NO-GO + risk register row + reschedule cadence).
+- **`docs/GO_LIVE_CHECKLIST.md` §5:** hard gates expanded into IDs **G1–G6** with verifier role, evidence type, and linked-plan anchors per gate (no change in `- [ ]` count, so the reporter denominator stays stable).
+- **`docs/GO_LIVE_CHECKLIST.md` §4 Week 1:** “Define go-live gates” moved from `TODO` to `IN_PROGRESS` (G1–G6 drafted; owner sign-off pending).
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.
