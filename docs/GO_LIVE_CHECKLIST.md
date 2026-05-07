@@ -267,6 +267,7 @@ Use one row per active risk; update daily until closed.
   - **Recommended commands:**
     - `mkdir -p artifacts/go-live` (optional — the reporter creates parent dirs for `--out` if missing)
     - `./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out`
+  - **`--out`** must be a file path (directory targets are rejected).
   - **Temporary local check only:** `/tmp` is fine for ad-hoc debugging (for example `./scripts/go_live_status_report.sh --out /tmp/go_live_daily_status.out`); it is not a durable standup artifact location.
   - **Git policy:** daily `.out` files are **run artifacts** — **do not commit them by default**. Repository **`.gitignore` ignores `artifacts/go-live/*.out`**. If you need a curated sample in git, use a different filename or path and document the exception in the PR.
 - Yesterday done:
