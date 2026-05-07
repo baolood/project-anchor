@@ -159,6 +159,8 @@ When adding or updating shell automation under `scripts/` (and checklist scripts
      ```bash
      ./scripts/check_local_box_baseline.sh
      ./scripts/go_live_status_report.sh
+     # Optional standup artifact (--out must be a file path, not a directory):
+     # ./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out
      python3 -c "from local_box.audit import event_store; event_store.init_db(); print('LOCAL_BOX_SQLITE_SMOKE ok')"
      ```
    - Baseline also requires **`docs/GO_LIVE_CHECKLIST.md`** (go-live board / reporter input) and **`.github/pull_request_template.md`** (PR body stub); renaming or removing either file needs a matching edit to **`scripts/check_local_box_baseline.sh`**.
