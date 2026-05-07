@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Enforces docs/RULES.md anchors + structural quality gates on docs/GO_LIVE_CHECKLIST.md:
+#   - Rule 1: CI reporter is "stdout-only" (anchor in docs/RULES.md)
+#   - Rule 2: local evidence uses "--out" (anchor in docs/RULES.md)
+#   - Rule 3: WIP cap on §4 IN_PROGRESS items (default 14, override via GOLIVE_WIP_LIMIT)
+#   - Rule 4: §4 DONE items must carry machine-verifiable evidence (no "<link>" placeholders)
+#   - Rule 5: §6 OPEN risks past their ETA must be RESOLVED or have ETA moved forward
+# CI: invoked from .github/workflows/local-box-baseline.yml (job "check").
 set -euo pipefail
 
 echo "[check] go-live rules"
@@ -9,22 +16,132 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || {
 }
 
 RULES="${ROOT}/docs/RULES.md"
+CHECKLIST="${ROOT}/docs/GO_LIVE_CHECKLIST.md"
+
 if [[ ! -f "$RULES" ]]; then
   echo "[fail] missing docs/RULES.md (SSOT)" >&2
   exit 1
 fi
 
+if [[ ! -f "$CHECKLIST" ]]; then
+  echo "[fail] missing docs/GO_LIVE_CHECKLIST.md" >&2
+  exit 1
+fi
+
+WIP_LIMIT="${GOLIVE_WIP_LIMIT:-14}"
+
 FAIL=0
 
-# Rule 1: CI reporter remains stdout-only (see docs/RULES.md).
 if ! grep -q "stdout-only" "$RULES"; then
   echo "[fail] docs/RULES.md missing stdout-only anchor" >&2
   FAIL=1
 fi
 
-# Rule 2: Local evidence continues to use --out (file path; see docs/RULES.md).
 if ! grep -q -- "--out" "$RULES"; then
   echo "[fail] docs/RULES.md missing --out anchor" >&2
+  FAIL=1
+fi
+
+for anchor in "WIP cap" "DONE evidence" "Risk ETA"; do
+  if ! grep -q "$anchor" "$RULES"; then
+    echo "[fail] docs/RULES.md missing '${anchor}' anchor" >&2
+    FAIL=1
+  fi
+done
+
+if ! python3 - "$CHECKLIST" "$WIP_LIMIT" <<'PY'
+import re
+import sys
+from datetime import date
+from pathlib import Path
+
+path = Path(sys.argv[1])
+wip_limit = int(sys.argv[2])
+text = path.read_text(encoding="utf-8")
+
+sections = re.split(r"(?m)^(?=## \d+\))", text)
+sec_by_num = {}
+for sec in sections:
+    m = re.match(r"## (\d+)\)", sec)
+    if m:
+        sec_by_num[int(m.group(1))] = sec
+
+fail = False
+
+sec4 = sec_by_num.get(4, "")
+in_progress = len(re.findall(r"^\s*-\s*Status:\s*`IN_PROGRESS`", sec4, flags=re.MULTILINE))
+done = len(re.findall(r"^\s*-\s*Status:\s*`DONE`", sec4, flags=re.MULTILINE))
+todo = len(re.findall(r"^\s*-\s*Status:\s*`TODO`", sec4, flags=re.MULTILINE))
+blocked = len(re.findall(r"^\s*-\s*Status:\s*`BLOCKED`", sec4, flags=re.MULTILINE))
+print(f"[info] §4 status: TODO={todo} IN_PROGRESS={in_progress} BLOCKED={blocked} DONE={done} (WIP cap {wip_limit})")
+
+if in_progress > wip_limit:
+    print(
+        f"[fail] WIP cap exceeded: §4 IN_PROGRESS={in_progress} > limit {wip_limit}. "
+        f"Move an item to DONE or raise GOLIVE_WIP_LIMIT in a §9 review.",
+        file=sys.stderr,
+    )
+    fail = True
+
+items = re.split(r"(?m)^(?=- \[ \] )", sec4)
+for it in items:
+    if "Status:" not in it:
+        continue
+    if not re.search(r"Status:\s*`DONE`", it):
+        continue
+    title_m = re.search(r"- \[ \] \*\*(.+?)\*\*", it)
+    title = title_m.group(1) if title_m else "<unknown>"
+    ev_m = re.search(r"Evidence:\s*(.+)", it)
+    if not ev_m:
+        print(f"[fail] DONE item without Evidence line: {title}", file=sys.stderr)
+        fail = True
+        continue
+    ev = ev_m.group(1).strip()
+    if "<link>" in ev:
+        print(f"[fail] DONE evidence still placeholder for: {title} -> {ev[:80]!r}", file=sys.stderr)
+        fail = True
+        continue
+    if not re.search(r"(`[^`]+`|§\d+|commit\s+[0-9a-f]{6,})", ev):
+        print(
+            f"[fail] DONE evidence lacks verifiable anchor (need `path` / §N / commit <sha>): "
+            f"{title} -> {ev[:80]!r}",
+            file=sys.stderr,
+        )
+        fail = True
+
+sec6 = sec_by_num.get(6, "")
+risks = re.split(r"(?m)^(?=- Risk ID:)", sec6)
+today = date.today()
+warn_window = 7
+for r in risks:
+    if "Risk ID:" not in r:
+        continue
+    rid_m = re.search(r"Risk ID:\s*\*\*(R-\d+)\*\*", r)
+    rid = rid_m.group(1) if rid_m else "<unknown>"
+    status_m = re.search(r"Status:\s*\*\*(\w+)\*\*", r)
+    status_val = status_m.group(1) if status_m else "<unknown>"
+    eta_m = re.search(r"ETA to close:\s*\*\*(\d{4}-\d{2}-\d{2})\*\*", r)
+    if not eta_m:
+        continue
+    try:
+        eta = date.fromisoformat(eta_m.group(1))
+    except ValueError:
+        continue
+    days_left = (eta - today).days
+    if status_val == "OPEN":
+        if eta < today:
+            print(
+                f"[fail] {rid}: ETA {eta} passed (status OPEN). Resolve, or move ETA in §9 review.",
+                file=sys.stderr,
+            )
+            fail = True
+        elif days_left <= warn_window:
+            print(f"[warn] {rid}: ETA {eta} in {days_left} day(s); status still OPEN")
+
+if fail:
+    sys.exit(1)
+PY
+then
   FAIL=1
 fi
 

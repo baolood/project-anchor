@@ -221,6 +221,8 @@ python3 -m pip install -r requirements.txt
 - **`docs/CAPACITY_TEST_PLAN.md`:** Week 5-6 **capacity + stress test** draft (test inventory CT-01..CT-04 keyed to **`docs/SERVICE_SLI_SLO.md`**, traffic profile, drill log, §5 **G5** linkage).
 - **`docs/GO_LIVE_CHECKLIST.md` §4 Week 5-6:** “Capacity and stress test” → `IN_PROGRESS` (owner **baolood**, evidence **`docs/CAPACITY_TEST_PLAN.md`**).
 - **`CONTRIBUTING.md`:** Go-live artifacts list links **`docs/CAPACITY_TEST_PLAN.md`**.
+- **`scripts/check_go_live_rules.sh`:** added three machine-checked quality gates against **`docs/GO_LIVE_CHECKLIST.md`** — **WIP cap** on §4 `IN_PROGRESS` (default **14**, override via `GOLIVE_WIP_LIMIT`), **DONE evidence** anchor enforcement (rejects `<link>`, requires backtick path / §N / `commit <sha>`), and **Risk ETA** enforcement on §6 (fails on past-due `OPEN` rows; warns within 7-day window). Prints a one-line `[info] §4 status:` heartbeat on every run.
+- **`docs/RULES.md`:** documented the three new anchors (**WIP cap**, **DONE evidence**, **Risk ETA**) so the SSOT statement remains self-describing; **`scripts/check_go_live_rules.sh`** verifies these anchor strings exist in the rules file.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.
