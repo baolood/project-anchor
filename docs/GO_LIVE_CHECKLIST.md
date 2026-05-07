@@ -176,11 +176,11 @@ Use this if you want immediate execution without waiting for a full planning mee
 ### Week 4 — Data Safety + Recovery Drill
 
 - [ ] **Backup strategy implemented**  
-  - Owner: `<name>`  
-  - Status: `TODO`  
+  - Owner: **baolood** (Data/DB owner)  
+  - Status: `IN_PROGRESS`  
   - Acceptance:
     - Backup schedule and retention documented
-  - Evidence: `<link>`
+  - Evidence: **`docs/BACKUP_AND_RECOVERY.md`** (draft — fill §2 schedule/retention + §4 verification evidence)
 
 - [ ] **Restore drill (table-level + full restore)**  
   - Owner: `<name>`  

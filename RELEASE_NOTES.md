@@ -203,6 +203,9 @@ python3 -m pip install -r requirements.txt
 - **`docs/SYNTHETIC_CHECKS.md`:** Week 3 **synthetic checks** draft (probe inventory, `curl` timeout policy, routing into alerts, local sanity command).
 - **`docs/GO_LIVE_CHECKLIST.md` §4 Week 3:** “Synthetic checks for critical endpoints” → `IN_PROGRESS` (owner **baolood**, evidence **`docs/SYNTHETIC_CHECKS.md`**).
 - **`CONTRIBUTING.md`:** Go-live artifacts list links **`docs/SYNTHETIC_CHECKS.md`**.
+- **`docs/BACKUP_AND_RECOVERY.md`:** Week 4 **backup strategy** draft (scope table, schedule/retention placeholders, SQLite backup example, verification, RPO/RTO placeholders).
+- **`docs/GO_LIVE_CHECKLIST.md` §4 Week 4:** “Backup strategy implemented” → `IN_PROGRESS` (owner **baolood**, evidence **`docs/BACKUP_AND_RECOVERY.md`**).
+- **`CONTRIBUTING.md`:** Go-live artifacts list links **`docs/BACKUP_AND_RECOVERY.md`**.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.
