@@ -158,6 +158,7 @@ python3 -m pip install -r requirements.txt
 - **`README.md`:** CI step list item for **`go_live_status_report.sh`** echoes the same stdout vs local **`--out`** distinction.
 - **`RUNBOOK.md`:** Parent repo CI summary adds the same **`go_live_status_report.sh`** stdout vs local **`--out`** note.
 - **`artifacts/go-live/README.md`**, **`CONTRIBUTING.md`:** CI vs local **`go_live_status_report.sh`** behavior (stdout-only in Actions; **`--out`** file path locally) spelled out for snapshot writers.
+- **`docs/GO_LIVE_CHECKLIST.md`:** §1 **CI coupling** and §7 standup bullets contrast CI stdout-only runs vs local **`--out`** evidence; **`PR_DESCRIPTION.md`** hardening summary matches.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.
