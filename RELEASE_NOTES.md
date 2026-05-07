@@ -224,6 +224,7 @@ python3 -m pip install -r requirements.txt
 - **`docs/GO_LIVE_CHECKLIST.md` §0:** added **Current critical path (rolling)** — stage/prod-like host as convergence point for Weeks 2–6; parallel **R-001**; pointer to **`docs/RULES.md`** WIP cap + WIP freeze.
 - **`docs/RULES.md`:** **WIP freeze baseline** / **WIP freeze until** (`2026-05-14` inclusive; lifts **2026-05-15**) — while active, **`GOLIVE_WIP_LIMIT`** cannot exceed the baseline (roll forward in §9). Coexists with **WIP cap**, **DONE evidence**, **Risk ETA** anchors.
 - **`scripts/check_go_live_rules.sh`:** reads freeze lines from **`docs/RULES.md`** (`[info] WIP freeze ON|OFF`); enforces freeze + existing §4 WIP cap / DONE evidence / §6 Risk ETA checks; grep-verifies **WIP freeze baseline** and **WIP freeze until** anchors in RULES.
+- **`docs/GO_LIVE_CHECKLIST.md` §9:** added **WIP freeze roll** subsection (`ROLL_FORWARD | LIFT | TIGHTEN_CAP` + reason + paste `[info] §4 status:` line) so the freeze cycle is closed-loop with **`docs/RULES.md`** edits — when the window ends the review minute carries explicit intent instead of letting **`WIP freeze until`** silently expire.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.

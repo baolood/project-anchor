@@ -368,6 +368,23 @@ Use this section in the final review meeting.
   1. `<blocker>` / `<owner>` / `<eta>`
   2. `<blocker>` / `<owner>` / `<eta>`
 
+### WIP freeze roll (machine-checked — see `docs/RULES.md`)
+
+When **`WIP freeze until`** is reached (current value lifts on **2026-05-15**), this review **must** explicitly record one of:
+
+- **Roll forward:** edit **`docs/RULES.md`** to set
+  - **`WIP freeze baseline:`** **`<new N>`** (usually current §4 `IN_PROGRESS` count from the `[info] §4 status:` line of the latest **`./scripts/check_go_live_rules.sh`** run)
+  - **`WIP freeze until:`** **`<new YYYY-MM-DD>`**
+- **Lift:** edit **`docs/RULES.md`** so today is past **`WIP freeze until`** (script will print `[info] WIP freeze OFF`); optionally adjust **WIP cap** default in the same file with reason.
+- **Tighten cap permanently:** lower the **WIP cap** default in **`docs/RULES.md`** to the new agreed number; re-run **`./scripts/check_go_live_rules.sh`** to confirm `[result] PASS`.
+
+Record the choice + reason here:
+
+- Roll outcome (`ROLL_FORWARD | LIFT | TIGHTEN_CAP`):
+- New baseline / until / cap:
+- Reason:
+- §4 snapshot at decision time (paste `[info] §4 status:` line):
+
 ---
 
 ## 10) Launch Week Run Sheet (T-7 to T+1)

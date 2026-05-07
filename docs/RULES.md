@@ -28,6 +28,6 @@ These rules turn the checklist itself into a machine-checked artifact. Anchors b
 - **WIP freeze (time-boxed, no silent cap inflation):** while `today <=` **WIP freeze until**, §4 `IN_PROGRESS` must stay at or below **WIP freeze baseline**, and **`GOLIVE_WIP_LIMIT` must not exceed that baseline** (override is for lowering the cap only, or unset). Machine-parsed lines (edit dates in §9 when rolling the freeze):
   - **WIP freeze baseline:** **14**
   - **WIP freeze until:** **2026-05-14** (inclusive; enforcement lifts on **2026-05-15**)
-  - After the window ends, remove or roll forward these two lines in a §9 minute so the doc does not lie stale.
+  - After the window ends, remove or roll forward these two lines in a §9 minute so the doc does not lie stale. The §9 template includes a **WIP freeze roll** subsection that records the decision (`ROLL_FORWARD | LIFT | TIGHTEN_CAP`) + reason + latest **`[info] §4 status:`** snapshot.
 
 > Together these turn the checklist from a discipline document into a system constraint: new `IN_PROGRESS` cannot grow past the cap, `DONE` cannot be claimed without a real pointer, an aging risk forces a review instead of quietly slipping, and the one-week **WIP freeze** blocks “raise the limit in CI” without human intent recorded in **`docs/RULES.md`**.
