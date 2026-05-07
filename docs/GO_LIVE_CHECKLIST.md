@@ -298,7 +298,8 @@ Use one row per active risk; update daily until closed.
 - Impact: **High**
 - Probability: **High** (until Settings are GREEN)
 - Owner: **baolood**
-- Mitigation: Follow **`docs/GITHUB_BRANCH_PROTECTION.md`**; after enabling, run **`./scripts/check_local_box_ci_runs.sh --branch main --gate-strict --quiet`** once (requires **`gh auth login`** first). Until **`gh`** is authenticated locally, treat API/CLI verification as **blocked** and use the GitHub **Settings** UI as source of truth.
+- Mitigation: Follow **`docs/GITHUB_BRANCH_PROTECTION.md`**; after enabling, run **`./scripts/check_local_box_ci_runs.sh --branch main --gate-strict --quiet`** once (requires **`gh auth login`** first). **`gh`** is now authenticated locally — API/CLI triage is **unblocked**; use GitHub **Settings** UI to confirm **`main`** branch protection remains the merge gate.
+- **CLI verification record (local, 2026-05-07):** `gh auth status` — logged in to github.com as **baolood** (HTTPS). **`./scripts/check_local_box_ci_runs.sh --branch main --limit 5 --gate-strict`** — PASS; latest **`local-box-baseline`** on **`main`**: workflow run **`25487425681`**, `completed` / `success`. **`--limit 5`** and **`--fail-on-empty`** (same limit) returned workflow rows as expected. This record does **not** close **R-001** until **`main`** branch protection is confirmed in **Settings** per **`docs/GITHUB_BRANCH_PROTECTION.md`**.
 - Trigger/Signal: PR merged or push landed on **`main`** while protection is off; or CI red on **`main`** without a revert within SLA.
 - Status: **OPEN**
 - ETA to close: **2026-05-14**
