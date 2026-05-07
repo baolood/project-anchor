@@ -295,6 +295,16 @@ Use one row per active risk; update daily until closed.
 - Status: **OPEN**
 - ETA to close: **2026-05-14**
 
+- Risk ID: **R-002**
+- Description: **Python version drift** — maintainer machine runs **3.8.10**; CI pins **3.11**. Parent smokes might pass locally but break in CI (or vice versa) when 3.9+ syntax / stdlib is introduced.
+- Impact: **Medium**
+- Probability: **Medium**
+- Owner: **baolood**
+- Mitigation: Install Python **3.11** locally (e.g. via `pyenv` or system installer) and re-run **`./scripts/check_local_box_baseline.sh`** + smokes; until then, treat **CI** as source of truth for parent Python tests and avoid claiming "works on my machine" before CI is GREEN.
+- Trigger/Signal: CI failure that does not reproduce locally (or local pass that CI rejects); contribution adds 3.9+-only constructs.
+- Status: **OPEN**
+- ETA to close: **2026-05-21**
+
 ---
 
 ## 7) Daily Standup Template
