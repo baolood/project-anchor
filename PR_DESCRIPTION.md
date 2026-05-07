@@ -19,6 +19,8 @@ cd /path/to/project-anchor
 export PYTHONPATH=.
 ./scripts/check_local_box_baseline.sh
 ./scripts/go_live_status_report.sh
+# Optional standup artifact (--out must be a file path, not a directory):
+# ./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out
 python3 -c "from local_box.audit import event_store; event_store.init_db(); print('LOCAL_BOX_SQLITE_SMOKE ok')"
 ```
 
@@ -63,4 +65,6 @@ cd /path/to/project-anchor
 ./scripts/check_checklist_curl_guardrails.sh
 ./scripts/check_local_box_baseline.sh
 ./scripts/go_live_status_report.sh
+# Optional standup artifact (--out must be a file path, not a directory):
+# ./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out
 ```

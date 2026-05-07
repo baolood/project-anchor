@@ -152,6 +152,7 @@ python3 -m pip install -r requirements.txt
 - **Docs (`artifacts/go-live/README.md`, `CONTRIBUTING.md`, `docs/GO_LIVE_CHECKLIST.md` §7):** repeat the same `--out` file-path-only rule for contributors using the evidence layout.
 - **`PR_DESCRIPTION.md`:** hardening-wave **Go-live tooling** bullet now repeats the **`go_live_status_report.sh --out`** file-path-only constraint.
 - **`README.md`:** **Quick local checks** block includes an optional `--out` example with the same file-path-only reminder.
+- **`CONTRIBUTING.md`**, **`PR_DESCRIPTION.md`:** **How to verify**, **Recommended verifier commands**, and local repro blocks mirror the same optional `--out` comment.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.
