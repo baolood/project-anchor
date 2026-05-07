@@ -154,6 +154,7 @@ python3 -m pip install -r requirements.txt
 - **`README.md`:** **Quick local checks** block includes an optional `--out` example with the same file-path-only reminder.
 - **`CONTRIBUTING.md`**, **`PR_DESCRIPTION.md`:** **How to verify**, **Recommended verifier commands**, and local repro blocks mirror the same optional `--out` comment.
 - **`RUNBOOK.md`:** Script maintenance guardrails baseline block includes the same optional `--out` comment.
+- **`local-box-baseline.yml`:** comment above the go-live reporter smoke step documents that CI uses stdout only and local `--out` must be a file path.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.
