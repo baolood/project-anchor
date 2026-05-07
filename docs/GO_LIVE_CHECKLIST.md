@@ -294,13 +294,15 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
 Use one row per active risk; update daily until closed.
 
 - Risk ID: **R-001**
-- Description: **`main` branch protection not yet enforced** (merge can bypass required **`local-box-baseline`** checks until GitHub Settings are updated).
-- Impact: **High**
-- Probability: **High** (until Settings are GREEN)
+- Description: **`main` branch protection partially enforced** — required status checks are configured and verified by CLI, but `enforce_admins` is still **`false`** so a repo admin can push directly to **`main`** and bypass the configured checks.
+- Impact: **High** (admin push can land code without CI gate)
+- Probability: **Medium** (single-maintainer repo; current workflow still relies on direct push to **`main`** for fast iteration)
 - Owner: **baolood**
-- Mitigation: Follow **`docs/GITHUB_BRANCH_PROTECTION.md`**; after enabling, run **`./scripts/check_local_box_ci_runs.sh --branch main --gate-strict --quiet`** once (requires **`gh auth login`** first). **`gh`** is now authenticated locally — API/CLI triage is **unblocked**; use GitHub **Settings** UI to confirm **`main`** branch protection remains the merge gate.
-- **CLI verification record (local, 2026-05-07):** `gh auth status` — logged in to github.com as **baolood** (HTTPS). **`./scripts/check_local_box_ci_runs.sh --branch main --limit 5 --gate-strict`** — PASS; latest **`local-box-baseline`** on **`main`**: workflow run **`25487425681`**, `completed` / `success`. **`--limit 5`** and **`--fail-on-empty`** (same limit) returned workflow rows as expected. This record does **not** close **R-001** until **`main`** branch protection is confirmed in **Settings** per **`docs/GITHUB_BRANCH_PROTECTION.md`**.
-- Trigger/Signal: PR merged or push landed on **`main`** while protection is off; or CI red on **`main`** without a revert within SLA.
+- Mitigation: Follow **`docs/GITHUB_BRANCH_PROTECTION.md`**; after enabling, run **`./scripts/check_local_box_ci_runs.sh --branch main --gate-strict --quiet`** once (requires **`gh auth login`** first). **`gh`** is authenticated locally — API/CLI triage is **unblocked**.
+- **API verification record (local, 2026-05-07):** **`gh api repos/baolood/project-anchor/branches/main/protection`** returned: **`required_status_checks.strict = true`**, **`required_status_checks.contexts = ["check", "checklist-curl-guardrails"]`** (both checks tied to **GitHub Actions** app id **`15368`**), **`required_pull_request_reviews.required_approving_review_count = 0`**, and **`enforce_admins.enabled = false`** — i.e. PR-side check enforcement is live, **but admin bypass is still open**.
+- **CLI verification record (local, 2026-05-07):** `gh auth status` — logged in to github.com as **baolood** (HTTPS, scopes: `gist read:org repo workflow`). **`./scripts/check_local_box_ci_runs.sh --branch main --limit 5 --gate-strict`** — **PASS** (latest run **`25491239855`** on **`main`**, `completed` / `success`).
+- **Half-closed state (deliberate):** the team chose **not** to flip **`enforce_admins`** yet so direct pushes to **`main`** remain available during the current go-live close-out cycle. The **next decision point** for closing **R-001** is whether to switch to a PR-only workflow (enable **`enforce_admins`** + remove the direct-push habit recorded in this file's recent commit history); until that decision is made and applied, **R-001** stays **OPEN**.
+- Trigger/Signal: PR merged or push landed on **`main`** while protection is off; or CI red on **`main`** without a revert within SLA; or an admin push lands on **`main`** without a corresponding **`local-box-baseline`** **`completed/success`** run.
 - Status: **OPEN**
 - ETA to close: **2026-05-14**
 
