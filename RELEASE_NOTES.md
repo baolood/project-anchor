@@ -177,6 +177,10 @@ python3 -m pip install -r requirements.txt
 - **`docs/RELEASE_BRANCH_POLICY.md`:** draft policy for **`main`**, PR discipline, tags/rollback, submodule pointer bumps.
 - **`CONTRIBUTING.md`:** branch-protection section links **`docs/RELEASE_BRANCH_POLICY.md`** and **`docs/GO_LIVE_CHECKLIST.md`** §6 **R-001** until **`main`** protection is GREEN.
 - **`docs/GITHUB_BRANCH_PROTECTION.md`:** keeps **Web UI** steps; adds cross-link to **`docs/RELEASE_BRANCH_POLICY.md`** after protection is enabled.
+- **`docs/ENVIRONMENT_PARITY_CHECKLIST.md`:** Week 1 parity working template (runtime, deps, SQLite defaults, guardrail paths, intentional deltas).
+- **`docs/GO_LIVE_CHECKLIST.md` §4 Week 1:** “Prod-like environment parity check” → `IN_PROGRESS` (owner **baolood**, evidence **`docs/ENVIRONMENT_PARITY_CHECKLIST.md`**).
+- **`docs/GO_LIVE_CHECKLIST.md` §6 / R-001:** mitigation now notes **`gh auth login`** prerequisite for strict **`check_local_box_ci_runs.sh`** gates.
+- **`CONTRIBUTING.md`:** Go-live execution artifacts list links **`docs/ENVIRONMENT_PARITY_CHECKLIST.md`**.
 - **`check_checklist_curl_guardrails.sh`:** `--changed-only` now also handles missing `git` binaries gracefully (verbose mode prints skipped source details) instead of raising Python exceptions.
 - **Docs:** add CI-friendly `--gate-strict --quiet` examples for scriptable exit-code checks.
 - **`check_local_box_ci_runs.sh --help`:** now includes common command examples, including strict gate usage.

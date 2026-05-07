@@ -114,12 +114,12 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Evidence: **`docs/RELEASE_BRANCH_POLICY.md`** (draft); GitHub branch protection on **`main`** still **OPEN** as **§6 / R-001**
 
 - [ ] **Prod-like environment parity check**  
-  - Owner: `<name>`  
-  - Status: `TODO`  
+  - Owner: **baolood** (Operations lead)  
+  - Status: `IN_PROGRESS`  
   - Acceptance:
     - Environment diff report (dev/stage/prod-like)
     - Critical config parity confirmed
-  - Evidence: `<link>`
+  - Evidence: **`docs/ENVIRONMENT_PARITY_CHECKLIST.md`** (working copy — fill §5 intentional deltas + sign-off when ready)
 
 
 ### Week 2 — Deployment + Rollback + Operational Runbooks
@@ -290,7 +290,7 @@ Use one row per active risk; update daily until closed.
 - Impact: **High**
 - Probability: **High** (until Settings are GREEN)
 - Owner: **baolood**
-- Mitigation: Follow **`docs/GITHUB_BRANCH_PROTECTION.md`**; after enabling, run **`./scripts/check_local_box_ci_runs.sh --branch main --gate-strict --quiet`** once to confirm the required contexts match job ids (**`checklist-curl-guardrails`**, **`check`**).
+- Mitigation: Follow **`docs/GITHUB_BRANCH_PROTECTION.md`**; after enabling, run **`./scripts/check_local_box_ci_runs.sh --branch main --gate-strict --quiet`** once (requires **`gh auth login`** first). Until **`gh`** is authenticated locally, treat API/CLI verification as **blocked** and use the GitHub **Settings** UI as source of truth.
 - Trigger/Signal: PR merged or push landed on **`main`** while protection is off; or CI red on **`main`** without a revert within SLA.
 - Status: **OPEN**
 - ETA to close: **2026-05-14**
