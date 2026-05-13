@@ -50,7 +50,7 @@
 
 | candidate_id | channel | message_sent | result | notes |
 |--------------|---------|--------------|--------|-------|
-| | | | | |
+| C01 | whatsapp | yes | scheduled | 首轮真实记录：pain / tool / demo 兴趣均为 PASS；合规项 PASS。详情见 §4 C01 行。 |
 | | | | | |
 
 ---
@@ -59,7 +59,7 @@
 
 | candidate_id | priority | channel | planned_contact_date | message_sent | replied | target_fit | demo_agreed | demo_schedule_at | status | owner | notes |
 |--------------|----------|---------|----------------------|--------------|---------|------------|-------------|------------------|--------|-------|-------|
-| C01 | P0 | private_chat | 2026-05-10 | no | no | unknown | pending |  | planned | baolood |  |
+| C01 | P0 | whatsapp | 2026-05-11 | yes | yes | yes | yes | TBD | scheduled | baolood | 首轮外联：pain_confirmed PASS；tool_value_confirmed PASS；demo_review_interest PASS。未要 API key / 资金 / 收益承诺。 |
 | C02 | P0 | private_chat | 2026-05-10 | no | no | unknown | pending |  | planned | baolood |  |
 | C03 | P0 | private_chat | 2026-05-11 | no | no | unknown | pending |  | planned | baolood |  |
 | C04 | P0 | private_chat | 2026-05-11 | no | no | unknown | pending |  | planned | baolood |  |

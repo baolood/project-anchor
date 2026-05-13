@@ -99,7 +99,7 @@ notes:
 
 | candidate_id | channel | script_version | date | outreach_status | response_summary |
 |--------------|---------|----------------|------|-----------------|------------------|
-| | | | | | |
+| C01 | whatsapp | private_v1 | 2026-05-11 | scheduled | pain/tool/demo PASS；合规 PASS（见 §6 首条） |
 | | | | | | |
 
 ---
@@ -110,22 +110,22 @@ notes:
 
 ```text
 [OUTREACH_ENTRY]
-date: 2026-05-09
+date: 2026-05-11
 candidate_id: C01
 priority: P0
-channel: private_chat
+channel: whatsapp
 script_version: private_v1
-outreach_status: planned
-response_summary:
+outreach_status: scheduled
+response_summary: pain_confirmed PASS; tool_value_confirmed PASS; demo_review_interest PASS; first contact round PASS
 screening_q1_crypto_traded_6m: unknown
 screening_q2_discipline_issue: unknown
 screening_q3_rule_check_helpful: unknown
-demo_scheduled_at:
+demo_scheduled_at: TBD
 demo_completed_at:
-signal_level: not_target
-next_action: send private_v1 on 2026-05-10
+signal_level: strong
+next_action: send simple demo page when ready; no further chat push per playbooks
 owner: baolood
-notes:
+notes: no API key; no fund/asset ask; no profit promise
 ```
 
 ```text
