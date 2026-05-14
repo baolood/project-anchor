@@ -43,7 +43,7 @@
 
 | candidate_id | feedback（摘要） | action_required | status |
 |--------------|------------------|-----------------|--------|
-| | | | |
+| C01 | R1：清单价值+风险覆盖 PASS；建议：市场/策略确认、交易后回顾（仅 backlog） | 英文版 Early Demo 页二次审阅 | noted |
 | | | | |
 
 ---
@@ -84,6 +84,26 @@ continue_decision: hold
 next_single_product_action: wait_for_first_3_to_5_interviews
 owner: baolood
 date: 2026-05-09
+```
+
+### 5.1 截至 2026-05-11 的真实增量（C01 · Early Demo R1）
+
+> 与 §3 虚构示例区分：以下为 **已发生** 的首轮反馈汇总。`continue_decision` 仍 **hold**（样本量 1，未达多人文档门槛）。**不** 承诺实现完整交易日志系统；仅记录候选改进方向。
+
+```text
+[FEEDBACK_SUMMARY]
+period: early_demo_round_1
+interview_count: 1
+strong_count: 1
+medium_count: 0
+weak_count: 0
+not_target_count: 0
+top_confirmed_pains: FOMO; emotional decisions; poor risk control
+top_objections: (none captured this round)
+continue_decision: hold
+next_single_product_action: prepare_english_copy_early_demo_page_for_second_review
+owner: baolood
+date: 2026-05-11
 ```
 
 ---

@@ -99,7 +99,7 @@ notes:
 
 | candidate_id | channel | script_version | date | outreach_status | response_summary |
 |--------------|---------|----------------|------|-----------------|------------------|
-| C01 | whatsapp | private_v1 | 2026-05-11 | scheduled | pain/tool/demo PASS；合规 PASS（见 §6 首条） |
+| C01 | whatsapp | private_v1 | 2026-05-11 | completed | R1 demo feedback PASS；见 §6 第二条 OUTREACH_ENTRY |
 | | | | | | |
 
 ---
@@ -126,6 +126,26 @@ signal_level: strong
 next_action: send simple demo page when ready; no further chat push per playbooks
 owner: baolood
 notes: no API key; no fund/asset ask; no profit promise
+```
+
+```text
+[OUTREACH_ENTRY]
+date: 2026-05-11
+candidate_id: C01
+priority: P0
+channel: whatsapp
+script_version: private_v1
+outreach_status: completed
+response_summary: Early Demo R1 feedback PASS. checklist_value: helps slow down, reduce FOMO/emotional entry. risk_checks: entry reason, emotion, size, stop, max loss, risk-reward. suggested_additions: market/strategy confirmation; post-trade review/journal (candidate backlog only, no product commitment).
+screening_q1_crypto_traded_6m: unknown
+screening_q2_discipline_issue: unknown
+screening_q3_rule_check_helpful: unknown
+demo_scheduled_at: TBD
+demo_completed_at: 2026-05-11
+signal_level: strong
+next_action: prepare_english_copy_early_demo_page_for_second_review; no further probing per playbook
+owner: baolood
+notes: demo_sent yes; format English explanation; no account/API/fund/profit/real-trading ask; PASS
 ```
 
 ```text

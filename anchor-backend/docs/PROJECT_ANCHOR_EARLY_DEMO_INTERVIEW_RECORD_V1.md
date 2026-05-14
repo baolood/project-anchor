@@ -146,7 +146,31 @@ notes:
 
 ---
 
-## 5. 信号判定规则
+## 5. 真实记录（C01 · Early Demo Review 第一轮反馈）
+
+> 仅记录事实摘要，不继续追问。合规：未要账户/API/资金/收益/实盘。
+
+```text
+[INTERVIEW_ENTRY]
+interview_date: 2026-05-11
+candidate_id: C01
+channel: whatsapp
+interviewer: baolood
+impulse_trade_story: (本轮未展开深挖；痛点侧已由反馈侧确认 FOMO / 情绪化 / 风控)
+first_reaction_to_demo: 检查清单有价值：能帮助普通交易者放慢速度、减少 FOMO 与情绪化决策
+operation_to_block_first: (未单独问「最想拦住的操作」；风险项覆盖已由反馈确认)
+willing_to_try: yes
+willing_to_pay: unknown
+price_range_monthly:
+max_concern:
+follow_up_action: 整理英文版 Early Demo 页后再请审阅一次；补充方向记为候选 backlog（市场/策略确认、交易后回顾/日志），不承诺完整系统
+signal_level: strong
+notes: risk_checks_covered: 入场理由、情绪控制、仓位、止损、可接受损失、风险回报。suggested_additions: 市场状况/策略确认检查；交易后回顾/日志。demo_sent=yes；format=英文说明；demo_feedback_collected=PASS
+```
+
+---
+
+## 6. 信号判定规则
 
 - `strong`: 明确承认纪律问题 + 愿继续试用或愿讨论付费
 - `medium`: 认可方向，有继续意愿，但价值感尚不稳定
@@ -155,7 +179,7 @@ notes:
 
 ---
 
-## 6. 使用规则
+## 7. 使用规则
 
 - 每场访谈结束后 24 小时内补完记录
 - `signal_level` 必填，不能留空
@@ -164,7 +188,7 @@ notes:
 
 ---
 
-## 7. 禁止事项
+## 8. 禁止事项
 
 - 不记录敏感身份与资产信息
 - 不记录任何 API key 或交易所凭据
@@ -173,7 +197,7 @@ notes:
 
 ---
 
-## 8. 回滚方式
+## 9. 回滚方式
 
 如果未提交：
 

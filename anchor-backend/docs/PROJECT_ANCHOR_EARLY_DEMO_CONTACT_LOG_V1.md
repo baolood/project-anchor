@@ -50,7 +50,7 @@
 
 | candidate_id | channel | message_sent | result | notes |
 |--------------|---------|--------------|--------|-------|
-| C01 | whatsapp | yes | scheduled | 首轮真实记录：pain / tool / demo 兴趣均为 PASS；合规项 PASS。详情见 §4 C01 行。 |
+| C01 | whatsapp | yes | completed | Early Demo R1：清单/风险/建议已记录；合规 PASS |
 | | | | | |
 
 ---
@@ -59,7 +59,7 @@
 
 | candidate_id | priority | channel | planned_contact_date | message_sent | replied | target_fit | demo_agreed | demo_schedule_at | status | owner | notes |
 |--------------|----------|---------|----------------------|--------------|---------|------------|-------------|------------------|--------|-------|-------|
-| C01 | P0 | whatsapp | 2026-05-11 | yes | yes | yes | yes | TBD | scheduled | baolood | 首轮外联：pain_confirmed PASS；tool_value_confirmed PASS；demo_review_interest PASS。未要 API key / 资金 / 收益承诺。 |
+| C01 | P0 | whatsapp | 2026-05-11 | yes | yes | yes | yes | TBD | completed | baolood | 首轮外联 PASS；Early Demo R1 反馈 PASS：清单价值、风险覆盖、补充建议已记录（见 INTERVIEW_RECORD / OUTREACH）。未要 API key / 资金 / 实盘。下一动作：仅英文版 Early Demo 页二次审阅，不承诺完整交易日志系统。 |
 | C02 | P0 | private_chat | 2026-05-10 | no | no | unknown | pending |  | planned | baolood |  |
 | C03 | P0 | private_chat | 2026-05-11 | no | no | unknown | pending |  | planned | baolood |  |
 | C04 | P0 | private_chat | 2026-05-11 | no | no | unknown | pending |  | planned | baolood |  |
