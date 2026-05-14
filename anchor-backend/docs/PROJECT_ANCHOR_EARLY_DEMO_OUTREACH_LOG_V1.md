@@ -99,7 +99,7 @@ notes:
 
 | candidate_id | channel | script_version | date | outreach_status | response_summary |
 |--------------|---------|----------------|------|-----------------|------------------|
-| C01 | whatsapp | private_v1 | 2026-05-11 | completed | 线锁定；最终收尾 PASS（FEEDBACK §5.4）；§6 C01 OUTREACH_ENTRY |
+| C01 | whatsapp | private_v1 | 2026-05-11 | completed | 线锁定；收尾事实见 FEEDBACK §5.4 对账；勿 C02 / 勿 cooldown 实现 |
 | | | | | | |
 
 ---
@@ -185,7 +185,7 @@ demo_completed_at:
 signal_level: medium
 next_action: stop; no further messages (no continue-testing / pay / exchange / trade-count / loss / why-cooldown questions)
 owner: baolood
-notes: C01 line locked complete; closing_message_sent recorded PASS in FEEDBACK §5.4. Do not build cooldown now. Backlog: cooldown_warning > strategy_confirmation > optional market_condition_check; confidence medium+.
+notes: C01 line locked; closing delivery vs repo: verify per FEEDBACK §5.4 (revert 47c1926 if repo ahead of facts). Do not build cooldown; no C02 push from this thread.
 ```
 
 ```text

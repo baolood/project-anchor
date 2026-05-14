@@ -50,7 +50,7 @@
 
 | candidate_id | channel | message_sent | result | notes |
 |--------------|---------|--------------|--------|-------|
-| C01 | whatsapp | yes | completed | 线锁定完成；`closing_message_sent` 仓库记 PASS（见 FEEDBACK §5.4）；勿再追问、勿扩功能 |
+| C01 | whatsapp | yes | completed | 线锁定；收尾以 **§5.4 事实对账** 为准（WhatsApp 实发 / 与仓库一致须负责人标 PASS）；勿再追问、勿扩功能、勿做 C02、勿实现 cooldown |
 | | | | | |
 
 ---
@@ -59,7 +59,7 @@
 
 | candidate_id | priority | channel | planned_contact_date | message_sent | replied | target_fit | demo_agreed | demo_schedule_at | status | owner | notes |
 |--------------|----------|---------|----------------------|--------------|---------|------------|-------------|------------------|--------|-------|-------|
-| C01 | P0 | whatsapp | 2026-05-11 | yes | yes | yes | yes | TBD | completed | baolood | C01 线**锁定完成**（仓库 PASS）。收尾：`closing_message_sent` **PASS**（§5.4）。外联 **stop**；禁止追问（含是否继续测试/付费/交易所/次数/亏损/为何选 cooldown）。首版：清单+风险+边界；cooldown **仅 backlog**。勿因 C01 再扩功能。 |
+| C01 | P0 | whatsapp | 2026-05-11 | yes | yes | yes | yes | TBD | completed | baolood | C01 线锁定；`47c1926` 已落档 final closeout **结构**。**禁止**仓库记录领先事实：WhatsApp 是否实发以 §5.4 双栏对账为准；未发勿标已发。外联 **stop**；禁止追问（测试/付费/交易所/次数/亏损/为何 cooldown）。首版：清单+风险+边界；cooldown **仅 backlog**。**勿**再扩功能、**勿**做 C02、**勿**实现 cooldown。 |
 | C02 | P0 | private_chat | 2026-05-10 | no | no | unknown | pending |  | planned | baolood |  |
 | C03 | P0 | private_chat | 2026-05-11 | no | no | unknown | pending |  | planned | baolood |  |
 | C04 | P0 | private_chat | 2026-05-11 | no | no | unknown | pending |  | planned | baolood |  |

@@ -43,7 +43,7 @@
 
 | candidate_id | feedback（摘要） | action_required | status |
 |--------------|------------------|-----------------|--------|
-| C01 | 线锁定完成；最终收尾验收 PASS（见 FEEDBACK §5.4）；C01 反馈已足，勿再扩功能 | 无 | noted |
+| C01 | 线锁定；`47c1926` 落档 closeout 结构；WhatsApp 实发须 §5.4 对账；勿扩功能、勿 C02、勿 cooldown 实现 | 无 | noted |
 | | | | |
 
 ---
@@ -146,9 +146,21 @@ backlog_ordering_note: cooldown_warning ranks above strategy_confirmation and op
 
 ### 5.4 锁状态（C01 线正式关闭 · 最终收尾验收）
 
-> C01 外联线**锁定完成**；仓库验收 **PASS**。`C01_validation: completed`；`signal: medium+`；`validated_backlog_priority: cooldown warning`；`current_implementation: no change`；`next_action: stop`。`closing_message_sent` 记为 **PASS**（由负责人按 playbook 发出约定英文收尾句后落档；即时通讯投递仓库无法核验）。**不得**再发任何问题，含：是否继续测试、是否愿意付费、用哪个交易所、交易多少次、亏损多少、为什么选 cooldown。首版产品范围不变：**交易前清单 + 风险提醒 + 明确边界**；无账户连接、无 API key、无实盘。Cooldown **仅 backlog**，不进入当前实现。
+> **`47c1926`**：C01 **final closeout 结构已落档**（流程与禁止追问、首版边界、backlog 口径）。**事实一致性**须单独守住，仓库不得领先于 WhatsApp 真值：
+>
+> - **若**已在 WhatsApp 发出约定收尾句：下方「实发 / 与仓库一致」两项可标 **PASS**，与 `47c1926` 中的简写 `closing_message_sent: PASS` **一致**，记录有效。
+> - **若**尚未发出：先立刻发出；或把仓库中暗示「已发」的字段改回 **`pending_human`** / **`pending_operator_verify`**；或 **`git revert 47c1926`** 后按事实重记（见本节末回滚）。
+> - **若**不确定：不要猜；打开 WhatsApp 核对——**没看到该句就发；已看到就不发**。
 
-收尾句（playbook 固定；勿再改口径追问）：
+**情况 A（已发）**：保持现状，不再操作。`C01 line: closed`；外联 **`next action: stop`**。
+
+**情况 B（未发）**：只发下面这一句，发完停止。
+
+**情况 C（不确定）**：按上段「打开 WhatsApp 核对」执行。
+
+**当前不做**：再扩功能、**不做 C02**、**不做 cooldown 实现**。
+
+收尾句（playbook 固定）：
 
 ```text
 Thank you, this is very helpful. I’ll keep the first version simple and record strategy confirmation, market-condition check, and cooldown warning as possible future improvements. I won’t add anything complex for now.
@@ -156,14 +168,20 @@ Thank you, this is very helpful. I’ll keep the first version simple and record
 
 ```text
 [C01 Final Closeout]
-closing_message_sent: PASS
+# Template labels (set PASS/FAIL after WhatsApp check; do not guess):
+# closing message actually sent on WhatsApp: PASS/FAIL
+# repo closing_message_sent value matches reality: PASS/FAIL
+closing_message_actually_sent_on_whatsapp: pending_operator_verify
+repo_closing_message_sent_value_matches_reality: pending_operator_verify
 no_further_probing: PASS
 C01_line_closed: PASS
 current_implementation_unchanged: PASS
 cooldown_remains_backlog_only: PASS
 ```
 
-> 回滚（仅当写错需撤销）：在 **`project-anchor` 仓库根** 执行 `git revert 6ff0f25`（撤销锁定/收尾块）、`git revert 90c4e07`（撤销真实性校准）或 `git revert c845213`（撤销 EN R2 文档块），再 `git push origin main`。
+> 负责人对账 WhatsApp 后：若两句均为 **PASS**，可与 `47c1926` 中的 `closing_message_sent: PASS` 并存为「已核对一致」。若仓库曾写 PASS 但事实未发：**先** `git revert 47c1926` **或** 手工改本节与 CONTACT/OUTREACH 相关表述，再 `git push`。
+>
+> 回滚（仅当写错或事实不一致需撤销）：在 **`project-anchor` 仓库根** 执行 `git revert 47c1926`（撤销 final closeout 落档）、`git revert 6ff0f25`、`git revert 90c4e07` 或 `git revert c845213`，再 `git push origin main`。
 
 ---
 
