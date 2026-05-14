@@ -207,6 +207,28 @@ no_real_trading_requested: PASS
 closing_line_to_send_once: Thank you, this is very helpful. I’ll keep the first version simple and record strategy confirmation, market-condition check, and cooldown warning as possible future improvements. I won’t add anything complex for now.
 ```
 
+### 5.2 补充记录（C01 · 真实性 / 优先级简明核对）
+
+> 仍不追问、不收集敏感细节。冷却相关：**仅 backlog 候选**，当前首版不开发冷却功能。
+
+```text
+[C01 Authenticity / Priority Check]
+picked_one_concrete_option: PASS
+validated_priority: cooldown warning
+personal_reason_given: PARTIAL/UNKNOWN
+AI-assisted_suspected: possible
+C01_signal_level_for_this_slice: medium+
+C01_line_closed: PASS
+no_further_probing: PASS
+
+forbidden_followups_do_not_ask:
+- why did you pick this?
+- how much did you lose?
+- how many trades?
+- which exchange?
+- willingness to pay?
+```
+
 ---
 
 ## 6. 信号判定规则

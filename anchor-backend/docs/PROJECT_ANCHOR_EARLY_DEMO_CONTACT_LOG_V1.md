@@ -50,7 +50,7 @@
 
 | candidate_id | channel | message_sent | result | notes |
 |--------------|---------|--------------|--------|-------|
-| C01 | whatsapp | yes | completed | R1+R2：清单/风险/边界/英文页 PASS；EN R2（截图）强信号；C01 线收尾，不再追问 |
+| C01 | whatsapp | yes | completed | R1+R2 PASS；补充：具体选项选中 cooldown（仅 backlog 优先候选）；个人细节少→不作绝对强验证；本段 medium+；C01 线已关，不再追问 |
 | | | | | |
 
 ---
@@ -59,7 +59,7 @@
 
 | candidate_id | priority | channel | planned_contact_date | message_sent | replied | target_fit | demo_agreed | demo_schedule_at | status | owner | notes |
 |--------------|----------|---------|----------------------|--------------|---------|------------|-------------|------------------|--------|-------|-------|
-| C01 | P0 | whatsapp | 2026-05-11 | yes | yes | yes | yes | TBD | completed | baolood | 首轮外联 PASS；R1+R2 完成：R1 见 INTERVIEW/OUTREACH；EN R2（/early-demo-en）PASS：英文清晰、清单价值、风险与边界、未来想法均已收集；未要账户/API/资金/收益承诺/实盘。C01 线停止外联追问；建议仅作 backlog，首版保持简单（见 FEEDBACK_SUMMARY §5.2）。 |
+| C01 | P0 | whatsapp | 2026-05-11 | yes | yes | yes | yes | TBD | completed | baolood | 首轮外联 PASS；R1+R2 完成；EN 页与边界仍可信；后续简明回复：明确选「亏损或交易过多后的冷却警告」为下一版**候选**优先级（仅 backlog，不实现）。个人细节不足→整体归因 medium+，非绝对强验证；AI 代答可能仍存在。C01 线关闭、禁止追问（不问原因/亏损额/次数/交易所/付费）。首版仍：交易前清单+风险+边界（见 FEEDBACK_SUMMARY §5.2–5.3）。 |
 | C02 | P0 | private_chat | 2026-05-10 | no | no | unknown | pending |  | planned | baolood |  |
 | C03 | P0 | private_chat | 2026-05-11 | no | no | unknown | pending |  | planned | baolood |  |
 | C04 | P0 | private_chat | 2026-05-11 | no | no | unknown | pending |  | planned | baolood |  |

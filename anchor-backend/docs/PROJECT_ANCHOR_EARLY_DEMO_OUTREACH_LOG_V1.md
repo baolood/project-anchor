@@ -99,7 +99,7 @@ notes:
 
 | candidate_id | channel | script_version | date | outreach_status | response_summary |
 |--------------|---------|----------------|------|-----------------|------------------|
-| C01 | whatsapp | private_v1 | 2026-05-11 | completed | R1+R2 PASS；R2=EN 页截图审阅；见 §6 C01 第二、三条 OUTREACH_ENTRY |
+| C01 | whatsapp | private_v1 | 2026-05-11 | completed | R1+R2 PASS；+ 2026-05-14 优先级/真实性简明核对（cooldown backlog 优先）；见 §6 C01 第二、三、四条 OUTREACH_ENTRY |
 | | | | | | |
 
 ---
@@ -166,6 +166,26 @@ signal_level: strong
 next_action: stop_c01_line_no_further_probing; send_one_line_closing_thank_you_only; no_immediate_feature_build_from_suggestions
 owner: baolood
 notes: no account connection requested PASS; no API key PASS; no fund/asset info PASS; no profit promise PASS; no real trading requested PASS. Suggested closing line to candidate (English, one message): "Thank you, this is very helpful. I’ll keep the first version simple and record strategy confirmation, market-condition check, and cooldown warning as possible future improvements. I won’t add anything complex for now."
+```
+
+```text
+[OUTREACH_ENTRY]
+date: 2026-05-14
+candidate_id: C01
+priority: P0
+channel: whatsapp
+script_version: private_v1
+outreach_status: completed
+response_summary: Authenticity/priority micro-check. picked_one_concrete_option PASS; validated_priority: cooldown warning (after losses or too many trades); personal_reason_given PARTIAL/UNKNOWN; AI-assisted suspected still possible; aggregate C01 signal for this slice medium+ (not absolute strong validation—sparse personal detail). cooldown_warning = backlog candidate only; no v1 implementation.
+screening_q1_crypto_traded_6m: unknown
+screening_q2_discipline_issue: unknown
+screening_q3_rule_check_helpful: unknown
+demo_scheduled_at: TBD
+demo_completed_at:
+signal_level: medium
+next_action: send_one_line_closing_thank_you_only_then_stop; no follow-up questions (no why pick / loss amount / trade count / exchange / willingness to pay)
+owner: baolood
+notes: C01 line closed PASS; no further probing PASS. Do not build cooldown feature now.
 ```
 
 ```text

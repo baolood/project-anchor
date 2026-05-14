@@ -43,7 +43,7 @@
 
 | candidate_id | feedback（摘要） | action_required | status |
 |--------------|------------------|-----------------|--------|
-| C01 | R1+R2 PASS；EN 页清晰、清单/风险/边界强认可；未来项仅 backlog | C01 线收尾；首版保持简单，不立刻扩功能 | noted |
+| C01 | R1+R2 PASS；EN 认可；另：选中 cooldown 为 backlog **优先候选**（medium+ 归因，非绝对强验证） | C01 线关闭；仅一句收尾；首版仍清单+风险+边界，不做冷却功能 | noted |
 | | | | |
 
 ---
@@ -108,7 +108,7 @@ date: 2026-05-11
 
 ### 5.2 截至 2026-05-11 的真实增量（C01 · Early Demo 英文页第二轮）
 
-> 验收集：`C01 EN demo feedback collected` PASS；`English page clear` PASS；`checklist useful` PASS；`risk checks covered` PASS；`boundaries trusted` PASS；`future ideas collected` PASS；`no further probing` PASS；无 API key / 资金信息 / 收益承诺。`C01 Round 2 overall` PASS。外联层：对 C01 **停止追问**；下列改进**仅 backlog**，不触发本轮开发（尤其：完整交易日志、行情判断模块、策略系统、连续亏损自动控制、自动交易）。
+> 验收集：`C01 EN demo feedback collected` PASS；`English page clear` PASS；`checklist useful` PASS；`risk checks covered` PASS；`boundaries trusted` PASS；`future ideas collected` PASS；`no further probing` PASS；无 API key / 资金信息 / 收益承诺。`C01 Round 2 overall` PASS。外联层：对 C01 **停止追问**；下列改进**仅 backlog**，不触发本轮开发（尤其：完整交易日志、行情判断模块、策略系统、连续亏损自动控制、自动交易）。后续若候选人从多选项中**明确选中 cooldown**：仅作 **backlog 排序候选**（见 §5.3），**仍不**进入首版实现。
 
 ```text
 [FEEDBACK_SUMMARY]
@@ -125,6 +125,23 @@ next_single_product_action: hold_keep_first_version_minimal_c01_suggestions_back
 owner: baolood
 date: 2026-05-11
 notes: C01 early_demo_line_status closed_for_further_probing; resume multi-candidate early demo per playbook when ready (operational), not bundled as a second product action here
+```
+
+### 5.3 截至 2026-05-14 的补充记录（C01 · 优先级与信号校准）
+
+> 非新增访谈样本；不调整 §5.1 周期计数。不因单次选中 cooldown 而进入实现；`cooldown warning` = **backlog candidate**，**not** current implementation。首版仍：**交易前检查清单 + 风险提示 + 明确边界**。
+
+```text
+[C01 Authenticity / Priority Check]
+picked_one_concrete_option: PASS
+validated_priority: cooldown warning
+personal_reason_given: PARTIAL/UNKNOWN
+AI-assisted_suspected: possible
+C01_signal_level_for_this_slice: medium+
+C01_line_closed: PASS
+no_further_probing: PASS
+
+backlog_ordering_note: cooldown_warning = first candidate among future ideas; no build commitment
 ```
 
 ---
