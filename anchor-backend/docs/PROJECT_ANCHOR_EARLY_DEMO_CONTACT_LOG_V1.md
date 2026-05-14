@@ -50,7 +50,7 @@
 
 | candidate_id | channel | message_sent | result | notes |
 |--------------|---------|--------------|--------|-------|
-| C01 | whatsapp | yes | completed | 线正式关闭（记录 PASS）：验证 completed；信号 medium+；cooldown=backlog 优先于另两项建议；首版不改；仅剩人工发收尾句后可将 FEEDBACK §5.4 closing_message_sent 标 PASS |
+| C01 | whatsapp | yes | completed | 线锁定完成；`closing_message_sent` 仓库记 PASS（见 FEEDBACK §5.4）；勿再追问、勿扩功能 |
 | | | | | |
 
 ---
@@ -59,7 +59,7 @@
 
 | candidate_id | priority | channel | planned_contact_date | message_sent | replied | target_fit | demo_agreed | demo_schedule_at | status | owner | notes |
 |--------------|----------|---------|----------------------|--------------|---------|------------|-------------|------------------|--------|-------|-------|
-| C01 | P0 | whatsapp | 2026-05-11 | yes | yes | yes | yes | TBD | completed | baolood | C01 线**正式关闭**（仓库记录 PASS）。状态锁定：validation completed；signal medium+；validated backlog priority = cooldown warning（排序高于策略确认、可选市场条件；**不**进当前实现）。next outreach action: **stop**。禁止追问含「是否继续测试」。首版：清单+风险+边界；无账户/API/实盘。收尾句见 OUTREACH / FEEDBACK §5.4；发出后由负责人把 `closing_message_sent` 改为 PASS。 |
+| C01 | P0 | whatsapp | 2026-05-11 | yes | yes | yes | yes | TBD | completed | baolood | C01 线**锁定完成**（仓库 PASS）。收尾：`closing_message_sent` **PASS**（§5.4）。外联 **stop**；禁止追问（含是否继续测试/付费/交易所/次数/亏损/为何选 cooldown）。首版：清单+风险+边界；cooldown **仅 backlog**。勿因 C01 再扩功能。 |
 | C02 | P0 | private_chat | 2026-05-10 | no | no | unknown | pending |  | planned | baolood |  |
 | C03 | P0 | private_chat | 2026-05-11 | no | no | unknown | pending |  | planned | baolood |  |
 | C04 | P0 | private_chat | 2026-05-11 | no | no | unknown | pending |  | planned | baolood |  |

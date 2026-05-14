@@ -222,12 +222,12 @@ C01_line_closed: PASS
 no_further_probing: PASS
 
 forbidden_followups_do_not_ask:
-- why did you pick this? / 为什么选这个
-- how much did you lose? / 亏多少
-- how many trades? / 交易多少次
-- which exchange? / 哪个交易所
-- willingness to pay? / 愿不愿意付费
-- will you keep testing? / 是否继续测试
+- 是否继续测试 / will you keep testing?
+- 是否愿意付费 / willingness to pay?
+- 用哪个交易所 / which exchange?
+- 交易多少次 / how many trades?
+- 亏损多少 / how much did you lose?
+- 为什么选 cooldown / why did you pick this?
 ```
 
 ---

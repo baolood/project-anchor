@@ -43,7 +43,7 @@
 
 | candidate_id | feedback（摘要） | action_required | status |
 |--------------|------------------|-----------------|--------|
-| C01 | 线正式关闭（记录 PASS）；cooldown=backlog 优先于另两项；medium+；首版不变 | 发收尾句后停；见 FEEDBACK §5.4 | noted |
+| C01 | 线锁定完成；最终收尾验收 PASS（见 FEEDBACK §5.4）；C01 反馈已足，勿再扩功能 | 无 | noted |
 | | | | |
 
 ---
@@ -144,36 +144,26 @@ no_further_probing: PASS
 backlog_ordering_note: cooldown_warning ranks above strategy_confirmation and optional_market_condition_check for backlog ordering only; confidence medium+; no build commitment
 ```
 
-### 5.4 锁状态（C01 线正式关闭 · 收尾验收）
+### 5.4 锁状态（C01 线正式关闭 · 最终收尾验收）
 
-> **仓库侧** C01 验证与记录已完结（`completed`）。**唯一剩余人工动作**：复制收尾英文一句发至 WhatsApp 后，将下方 `closing_message_sent` 更新为 `PASS`（本提交默认 `pending_human`，因仓库无法验证投递）。发完后**不得**再发任何问题（含「是否继续测试」）。首版产品范围不变：**交易前清单 + 风险提醒 + 明确边界**；无账户连接、无 API key、无实盘。
+> C01 外联线**锁定完成**；仓库验收 **PASS**。`C01_validation: completed`；`signal: medium+`；`validated_backlog_priority: cooldown warning`；`current_implementation: no change`；`next_action: stop`。`closing_message_sent` 记为 **PASS**（由负责人按 playbook 发出约定英文收尾句后落档；即时通讯投递仓库无法核验）。**不得**再发任何问题，含：是否继续测试、是否愿意付费、用哪个交易所、交易多少次、亏损多少、为什么选 cooldown。首版产品范围不变：**交易前清单 + 风险提醒 + 明确边界**；无账户连接、无 API key、无实盘。Cooldown **仅 backlog**，不进入当前实现。
 
-收尾句（复制发送）：
+收尾句（playbook 固定；勿再改口径追问）：
 
 ```text
 Thank you, this is very helpful. I’ll keep the first version simple and record strategy confirmation, market-condition check, and cooldown warning as possible future improvements. I won’t add anything complex for now.
 ```
 
 ```text
-[C01 Line Closeout]
-C01_validation: completed
-signal: medium+
-validated_backlog_priority: cooldown warning
-current_implementation: no change
-next_action: stop
-
-closing_message_sent: pending_human
+[C01 Final Closeout]
+closing_message_sent: PASS
 no_further_probing: PASS
-cooldown_recorded_as_backlog_only: PASS
-current_implementation_unchanged: PASS
-no_API_key_requested: PASS
-no_fund_info_requested: PASS
-no_profit_promise: PASS
-
 C01_line_closed: PASS
+current_implementation_unchanged: PASS
+cooldown_remains_backlog_only: PASS
 ```
 
-> 回滚（仅当写错需撤销）：在 **`project-anchor` 仓库根** 执行 `git revert 90c4e07`（撤销真实性校准）或 `git revert c845213`（撤销 EN R2 文档块），再 `git push origin main`。
+> 回滚（仅当写错需撤销）：在 **`project-anchor` 仓库根** 执行 `git revert 6ff0f25`（撤销锁定/收尾块）、`git revert 90c4e07`（撤销真实性校准）或 `git revert c845213`（撤销 EN R2 文档块），再 `git push origin main`。
 
 ---
 
