@@ -50,7 +50,7 @@
 
 | candidate_id | channel | message_sent | result | notes |
 |--------------|---------|--------------|--------|-------|
-| C01 | whatsapp | yes | completed | R1+R2 PASS；补充：具体选项选中 cooldown（仅 backlog 优先候选）；个人细节少→不作绝对强验证；本段 medium+；C01 线已关，不再追问 |
+| C01 | whatsapp | yes | completed | 线正式关闭（记录 PASS）：验证 completed；信号 medium+；cooldown=backlog 优先于另两项建议；首版不改；仅剩人工发收尾句后可将 FEEDBACK §5.4 closing_message_sent 标 PASS |
 | | | | | |
 
 ---
@@ -59,7 +59,7 @@
 
 | candidate_id | priority | channel | planned_contact_date | message_sent | replied | target_fit | demo_agreed | demo_schedule_at | status | owner | notes |
 |--------------|----------|---------|----------------------|--------------|---------|------------|-------------|------------------|--------|-------|-------|
-| C01 | P0 | whatsapp | 2026-05-11 | yes | yes | yes | yes | TBD | completed | baolood | 首轮外联 PASS；R1+R2 完成；EN 页与边界仍可信；后续简明回复：明确选「亏损或交易过多后的冷却警告」为下一版**候选**优先级（仅 backlog，不实现）。个人细节不足→整体归因 medium+，非绝对强验证；AI 代答可能仍存在。C01 线关闭、禁止追问（不问原因/亏损额/次数/交易所/付费）。首版仍：交易前清单+风险+边界（见 FEEDBACK_SUMMARY §5.2–5.3）。 |
+| C01 | P0 | whatsapp | 2026-05-11 | yes | yes | yes | yes | TBD | completed | baolood | C01 线**正式关闭**（仓库记录 PASS）。状态锁定：validation completed；signal medium+；validated backlog priority = cooldown warning（排序高于策略确认、可选市场条件；**不**进当前实现）。next outreach action: **stop**。禁止追问含「是否继续测试」。首版：清单+风险+边界；无账户/API/实盘。收尾句见 OUTREACH / FEEDBACK §5.4；发出后由负责人把 `closing_message_sent` 改为 PASS。 |
 | C02 | P0 | private_chat | 2026-05-10 | no | no | unknown | pending |  | planned | baolood |  |
 | C03 | P0 | private_chat | 2026-05-11 | no | no | unknown | pending |  | planned | baolood |  |
 | C04 | P0 | private_chat | 2026-05-11 | no | no | unknown | pending |  | planned | baolood |  |

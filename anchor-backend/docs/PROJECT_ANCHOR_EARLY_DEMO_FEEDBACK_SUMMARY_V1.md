@@ -43,7 +43,7 @@
 
 | candidate_id | feedback（摘要） | action_required | status |
 |--------------|------------------|-----------------|--------|
-| C01 | R1+R2 PASS；EN 认可；另：选中 cooldown 为 backlog **优先候选**（medium+ 归因，非绝对强验证） | C01 线关闭；仅一句收尾；首版仍清单+风险+边界，不做冷却功能 | noted |
+| C01 | 线正式关闭（记录 PASS）；cooldown=backlog 优先于另两项；medium+；首版不变 | 发收尾句后停；见 FEEDBACK §5.4 | noted |
 | | | | |
 
 ---
@@ -141,8 +141,39 @@ C01_signal_level_for_this_slice: medium+
 C01_line_closed: PASS
 no_further_probing: PASS
 
-backlog_ordering_note: cooldown_warning = first candidate among future ideas; no build commitment
+backlog_ordering_note: cooldown_warning ranks above strategy_confirmation and optional_market_condition_check for backlog ordering only; confidence medium+; no build commitment
 ```
+
+### 5.4 锁状态（C01 线正式关闭 · 收尾验收）
+
+> **仓库侧** C01 验证与记录已完结（`completed`）。**唯一剩余人工动作**：复制收尾英文一句发至 WhatsApp 后，将下方 `closing_message_sent` 更新为 `PASS`（本提交默认 `pending_human`，因仓库无法验证投递）。发完后**不得**再发任何问题（含「是否继续测试」）。首版产品范围不变：**交易前清单 + 风险提醒 + 明确边界**；无账户连接、无 API key、无实盘。
+
+收尾句（复制发送）：
+
+```text
+Thank you, this is very helpful. I’ll keep the first version simple and record strategy confirmation, market-condition check, and cooldown warning as possible future improvements. I won’t add anything complex for now.
+```
+
+```text
+[C01 Line Closeout]
+C01_validation: completed
+signal: medium+
+validated_backlog_priority: cooldown warning
+current_implementation: no change
+next_action: stop
+
+closing_message_sent: pending_human
+no_further_probing: PASS
+cooldown_recorded_as_backlog_only: PASS
+current_implementation_unchanged: PASS
+no_API_key_requested: PASS
+no_fund_info_requested: PASS
+no_profit_promise: PASS
+
+C01_line_closed: PASS
+```
+
+> 回滚（仅当写错需撤销）：在 **`project-anchor` 仓库根** 执行 `git revert 90c4e07`（撤销真实性校准）或 `git revert c845213`（撤销 EN R2 文档块），再 `git push origin main`。
 
 ---
 

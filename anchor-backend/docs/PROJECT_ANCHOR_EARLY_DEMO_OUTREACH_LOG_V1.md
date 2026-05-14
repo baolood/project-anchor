@@ -99,7 +99,7 @@ notes:
 
 | candidate_id | channel | script_version | date | outreach_status | response_summary |
 |--------------|---------|----------------|------|-----------------|------------------|
-| C01 | whatsapp | private_v1 | 2026-05-11 | completed | R1+R2 PASS；+ 2026-05-14 优先级/真实性简明核对（cooldown backlog 优先）；见 §6 C01 第二、三、四条 OUTREACH_ENTRY |
+| C01 | whatsapp | private_v1 | 2026-05-11 | completed | 线正式关闭；R1+R2+优先级核对；收尾验收见 FEEDBACK §5.4；§6 C01 第二、三、四条 OUTREACH_ENTRY |
 | | | | | | |
 
 ---
@@ -183,9 +183,9 @@ screening_q3_rule_check_helpful: unknown
 demo_scheduled_at: TBD
 demo_completed_at:
 signal_level: medium
-next_action: send_one_line_closing_thank_you_only_then_stop; no follow-up questions (no why pick / loss amount / trade count / exchange / willingness to pay)
+next_action: send_one_line_closing_thank_you_only_then_stop; no follow-up questions (why pick / loss amount / trade count / exchange / willingness to pay / continue testing)
 owner: baolood
-notes: C01 line closed PASS; no further probing PASS. Do not build cooldown feature now.
+notes: C01 line closed PASS; no further probing PASS. Do not build cooldown feature now. Backlog only: cooldown_warning priority higher than strategy_confirmation and market_condition_check; confidence medium+.
 ```
 
 ```text
