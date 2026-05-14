@@ -168,6 +168,45 @@ signal_level: strong
 notes: risk_checks_covered: 入场理由、情绪控制、仓位、止损、可接受损失、风险回报。suggested_additions: 市场状况/策略确认检查；交易后回顾/日志。demo_sent=yes；format=英文说明；demo_feedback_collected=PASS
 ```
 
+### 5.1 真实记录（C01 · Early Demo 英文页第二轮 / 异步截图审阅）
+
+> 非 20 分钟实时访谈；与 §3 模板字段对齐为摘要。不继续追问 C01。不承诺实现完整日志、行情模块、策略系统、连续亏损自动控制或自动交易。
+
+```text
+[C01 Early Demo EN Review Round]
+C01:
+channel: WhatsApp
+demo_en_sent: yes
+format: screenshots
+result: replied
+english_page_clear: PASS
+checklist_value_confirmed: PASS
+risk_checks_coverage_confirmed: PASS
+boundaries_clear: PASS
+future_ideas_feedback_collected: PASS
+
+positive_feedback:
+- layout clean, professional, easy to understand
+- focus on discipline rather than prediction is strong
+- checklist wording is simple, direct, psychologically effective
+- risk checks cover responsible trading fundamentals
+- boundaries are clear and increase credibility
+
+suggested_future_improvements: (backlog / future version candidates only)
+- strategy confirmation check
+- optional market-condition check
+- cooldown warning after consecutive losses or trades
+- keep interface minimal
+
+no_account_connection_requested: PASS
+no_API_key_requested: PASS
+no_fund_or_asset_info_requested: PASS
+no_profit_promise: PASS
+no_real_trading_requested: PASS
+
+closing_line_to_send_once: Thank you, this is very helpful. I’ll keep the first version simple and record strategy confirmation, market-condition check, and cooldown warning as possible future improvements. I won’t add anything complex for now.
+```
+
 ---
 
 ## 6. 信号判定规则

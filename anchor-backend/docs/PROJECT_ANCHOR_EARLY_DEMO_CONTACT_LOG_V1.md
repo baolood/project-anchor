@@ -50,7 +50,7 @@
 
 | candidate_id | channel | message_sent | result | notes |
 |--------------|---------|--------------|--------|-------|
-| C01 | whatsapp | yes | completed | Early Demo R1：清单/风险/建议已记录；合规 PASS |
+| C01 | whatsapp | yes | completed | R1+R2：清单/风险/边界/英文页 PASS；EN R2（截图）强信号；C01 线收尾，不再追问 |
 | | | | | |
 
 ---
@@ -59,7 +59,7 @@
 
 | candidate_id | priority | channel | planned_contact_date | message_sent | replied | target_fit | demo_agreed | demo_schedule_at | status | owner | notes |
 |--------------|----------|---------|----------------------|--------------|---------|------------|-------------|------------------|--------|-------|-------|
-| C01 | P0 | whatsapp | 2026-05-11 | yes | yes | yes | yes | TBD | completed | baolood | 首轮外联 PASS；Early Demo R1 反馈 PASS：清单价值、风险覆盖、补充建议已记录（见 INTERVIEW_RECORD / OUTREACH）。未要 API key / 资金 / 实盘。下一动作：仅英文版 Early Demo 页二次审阅，不承诺完整交易日志系统。 |
+| C01 | P0 | whatsapp | 2026-05-11 | yes | yes | yes | yes | TBD | completed | baolood | 首轮外联 PASS；R1+R2 完成：R1 见 INTERVIEW/OUTREACH；EN R2（/early-demo-en）PASS：英文清晰、清单价值、风险与边界、未来想法均已收集；未要账户/API/资金/收益承诺/实盘。C01 线停止外联追问；建议仅作 backlog，首版保持简单（见 FEEDBACK_SUMMARY §5.2）。 |
 | C02 | P0 | private_chat | 2026-05-10 | no | no | unknown | pending |  | planned | baolood |  |
 | C03 | P0 | private_chat | 2026-05-11 | no | no | unknown | pending |  | planned | baolood |  |
 | C04 | P0 | private_chat | 2026-05-11 | no | no | unknown | pending |  | planned | baolood |  |

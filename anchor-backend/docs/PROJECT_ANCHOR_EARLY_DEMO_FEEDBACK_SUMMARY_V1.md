@@ -43,7 +43,7 @@
 
 | candidate_id | feedback（摘要） | action_required | status |
 |--------------|------------------|-----------------|--------|
-| C01 | R1：清单价值+风险覆盖 PASS；建议：市场/策略确认、交易后回顾（仅 backlog） | 英文版 Early Demo 页二次审阅 | noted |
+| C01 | R1+R2 PASS；EN 页清晰、清单/风险/边界强认可；未来项仅 backlog | C01 线收尾；首版保持简单，不立刻扩功能 | noted |
 | | | | |
 
 ---
@@ -104,6 +104,27 @@ continue_decision: hold
 next_single_product_action: prepare_english_copy_early_demo_page_for_second_review
 owner: baolood
 date: 2026-05-11
+```
+
+### 5.2 截至 2026-05-11 的真实增量（C01 · Early Demo 英文页第二轮）
+
+> 验收集：`C01 EN demo feedback collected` PASS；`English page clear` PASS；`checklist useful` PASS；`risk checks covered` PASS；`boundaries trusted` PASS；`future ideas collected` PASS；`no further probing` PASS；无 API key / 资金信息 / 收益承诺。`C01 Round 2 overall` PASS。外联层：对 C01 **停止追问**；下列改进**仅 backlog**，不触发本轮开发（尤其：完整交易日志、行情判断模块、策略系统、连续亏损自动控制、自动交易）。
+
+```text
+[FEEDBACK_SUMMARY]
+period: early_demo_c01_en_review_round_2
+interview_count: 1
+strong_count: 1
+medium_count: 0
+weak_count: 0
+not_target_count: 0
+top_confirmed_pains: (unchanged from R1) FOMO; emotional decisions; poor risk control — R2 adds confirmation that English early-demo framing is understandable and trusted
+top_objections: (none captured)
+continue_decision: hold
+next_single_product_action: hold_keep_first_version_minimal_c01_suggestions_backlog_only_no_feature_build_now
+owner: baolood
+date: 2026-05-11
+notes: C01 early_demo_line_status closed_for_further_probing; resume multi-candidate early demo per playbook when ready (operational), not bundled as a second product action here
 ```
 
 ---

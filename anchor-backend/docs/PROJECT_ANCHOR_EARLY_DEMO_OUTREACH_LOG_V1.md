@@ -99,7 +99,7 @@ notes:
 
 | candidate_id | channel | script_version | date | outreach_status | response_summary |
 |--------------|---------|----------------|------|-----------------|------------------|
-| C01 | whatsapp | private_v1 | 2026-05-11 | completed | R1 demo feedback PASS；见 §6 第二条 OUTREACH_ENTRY |
+| C01 | whatsapp | private_v1 | 2026-05-11 | completed | R1+R2 PASS；R2=EN 页截图审阅；见 §6 C01 第二、三条 OUTREACH_ENTRY |
 | | | | | | |
 
 ---
@@ -146,6 +146,26 @@ signal_level: strong
 next_action: prepare_english_copy_early_demo_page_for_second_review; no further probing per playbook
 owner: baolood
 notes: demo_sent yes; format English explanation; no account/API/fund/profit/real-trading ask; PASS
+```
+
+```text
+[OUTREACH_ENTRY]
+date: 2026-05-11
+candidate_id: C01
+priority: P0
+channel: whatsapp
+script_version: private_v1
+outreach_status: completed
+response_summary: Early Demo EN R2 PASS (strong). english_page_clear PASS; checklist_value_confirmed PASS; risk_checks_coverage_confirmed PASS; boundaries_clear PASS; future_ideas_feedback_collected PASS. Positive: layout clean/professional; discipline-over-prediction framing; simple checklist wording; risk fundamentals; boundaries build trust. Future ideas (backlog only): strategy confirmation check; optional market-condition check; cooldown after consecutive losses/trades; keep UI minimal. demo_en_sent yes; format screenshots; replied yes.
+screening_q1_crypto_traded_6m: unknown
+screening_q2_discipline_issue: unknown
+screening_q3_rule_check_helpful: unknown
+demo_scheduled_at: TBD
+demo_completed_at: 2026-05-11
+signal_level: strong
+next_action: stop_c01_line_no_further_probing; send_one_line_closing_thank_you_only; no_immediate_feature_build_from_suggestions
+owner: baolood
+notes: no account connection requested PASS; no API key PASS; no fund/asset info PASS; no profit promise PASS; no real trading requested PASS. Suggested closing line to candidate (English, one message): "Thank you, this is very helpful. I’ll keep the first version simple and record strategy confirmation, market-condition check, and cooldown warning as possible future improvements. I won’t add anything complex for now."
 ```
 
 ```text
