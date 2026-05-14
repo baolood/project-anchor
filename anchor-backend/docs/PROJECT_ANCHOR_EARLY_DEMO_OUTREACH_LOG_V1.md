@@ -99,7 +99,7 @@ notes:
 
 | candidate_id | channel | script_version | date | outreach_status | response_summary |
 |--------------|---------|----------------|------|-----------------|------------------|
-| C01 | whatsapp | private_v1 | 2026-05-11 | completed | 线锁定；收尾事实见 FEEDBACK §5.4 对账；勿 C02 / 勿 cooldown 实现 |
+| C01 | whatsapp | private_v1 | 2026-05-11 | completed | `88a5244` 事实对齐；收尾 pending_operator_verify（§5.4） |
 | | | | | | |
 
 ---
@@ -185,7 +185,7 @@ demo_completed_at:
 signal_level: medium
 next_action: stop; no further messages (no continue-testing / pay / exchange / trade-count / loss / why-cooldown questions)
 owner: baolood
-notes: C01 line locked; closing delivery vs repo: verify per FEEDBACK §5.4 (revert 47c1926 if repo ahead of facts). Do not build cooldown; no C02 push from this thread.
+notes: 88a5244 fact-alignment PASS; closing pending_operator_verify per FEEDBACK §5.4. Do not mix anchor-console dirty state into this line.
 ```
 
 ```text
