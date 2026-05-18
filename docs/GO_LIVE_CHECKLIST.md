@@ -372,6 +372,19 @@ Use this section in the final review meeting.
   1. `<blocker>` / `<owner>` / `<eta>`
   2. `<blocker>` / `<owner>` / `<eta>`
 
+### Recorded §9 reviews (append-only)
+
+#### 2026-05-18 — R-001 / go-live posture
+
+- R-001 §9 outcome: keep blocking go-live
+- Status (§6): remain **OPEN** (not closed)
+- Decision: **NO-GO** for live trading
+- Reason: `main` branch protection remains partially enforced; **`enforce_admins` is still `false`**; no new PR-only / admin-enforcement evidence is available.
+- Next action: decide **`enforce_admins` + PR-only** path or continue documented admin bypass.
+- Evidence required before close: `gh api` branch protection output + **`local-box-baseline`** green after protection change.
+- §6 R-001 ETA: unchanged (**2026-05-21**)
+- Note: CI green on **`main`** does **not** imply go-live approval while **R-001** is **OPEN**.
+
 ### WIP freeze roll (machine-checked — see `docs/RULES.md`)
 
 When **`WIP freeze until`** is reached (current value lifts on **2026-05-15**), this review **must** explicitly record one of:
