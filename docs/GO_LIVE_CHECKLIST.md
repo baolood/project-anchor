@@ -304,7 +304,8 @@ Use one row per active risk; update daily until closed.
 - **Half-closed state (deliberate):** the team chose **not** to flip **`enforce_admins`** yet so direct pushes to **`main`** remain available during the current go-live close-out cycle. The **next decision point** for closing **R-001** is whether to switch to a PR-only workflow (enable **`enforce_admins`** + remove the direct-push habit recorded in this file's recent commit history); until that decision is made and applied, **R-001** stays **OPEN**.
 - Trigger/Signal: PR merged or push landed on **`main`** while protection is off; or CI red on **`main`** without a revert within SLA; or an admin push lands on **`main`** without a corresponding **`local-box-baseline`** **`completed/success`** run.
 - Status: **OPEN**
-- ETA to close: **2026-05-14**
+- ETA to close: **2026-05-21**
+- Review note: R-001 remains open and must be reviewed in §9 before go-live.
 
 - Risk ID: **R-002**
 - Description: **Python version drift** — maintainer machine runs **3.8.10**; CI pins **3.11**. Parent smokes might pass locally but break in CI (or vice versa) when 3.9+ syntax / stdlib is introduced.
