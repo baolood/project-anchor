@@ -1,6 +1,7 @@
 import asyncio
 import os
 import random
+import re
 import uuid
 from datetime import datetime
 
@@ -789,6 +790,140 @@ def _json_dumps(obj) -> str:
     return json.dumps(obj, ensure_ascii=False)
 
 
+_TRADE_GATE_ALLOWED_EMOTIONAL_STATES = frozenset(
+    {"calm", "FOMO", "anxious", "revenge trading", "uncertain"}
+)
+_TRADE_GATE_EXIT_PLAN_TESTABLE_HINTS = (
+    "if ",
+    "when ",
+    "break",
+    "above",
+    "below",
+    "loss",
+    "stop",
+    "invalidation",
+    "exit",
+    "price",
+    "%",
+)
+_TRADE_GATE_ASSET_SYMBOL_MAP = {
+    "BTC": "BTCUSDT",
+    "BTCUSDT": "BTCUSDT",
+}
+_TRADE_GATE_FORBIDDEN_INPUT_FIELDS = frozenset(
+    {
+        "account_id",
+        "api_key",
+        "exchange",
+        "passphrase",
+        "secret",
+        "secret_key",
+    }
+)
+
+
+def _normalize_trade_gate_symbol(asset: object) -> str | None:
+    if not isinstance(asset, str):
+        return None
+    normalized = asset.strip().upper()
+    if not normalized:
+        return None
+    return _TRADE_GATE_ASSET_SYMBOL_MAP.get(normalized, normalized)
+
+
+def _coerce_positive_float(value: object) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if number <= 0:
+        return None
+    return number
+
+
+def _has_testable_exit_plan(exit_plan: str) -> bool:
+    normalized = exit_plan.strip().lower()
+    if not normalized:
+        return False
+    if normalized in {"stop trading", "pause", "wait", "hold"}:
+        return False
+    if any(token in normalized for token in _TRADE_GATE_EXIT_PLAN_TESTABLE_HINTS):
+        return True
+    return bool(re.search(r"\d", normalized))
+
+
+def _validate_trade_gate_dry_run_request(body: dict) -> tuple[bool, str | None]:
+    forbidden = next(
+        (
+            key
+            for key in body.keys()
+            if isinstance(key, str) and key.lower() in _TRADE_GATE_FORBIDDEN_INPUT_FIELDS
+        ),
+        None,
+    )
+    entry_reason = str(body.get("entry_reason", "")).strip()
+    exit_plan = str(body.get("exit_plan", "")).strip()
+    emotional_state = body.get("emotional_state")
+    asset = body.get("asset")
+    direction = body.get("direction")
+    hypothetical_notional = body.get("hypothetical_notional")
+    gate_decision = body.get("gate_decision")
+
+    if forbidden is not None:
+        return (False, f"FORBIDDEN_FIELD:{forbidden}")
+    if gate_decision != "SIMULATE_ONLY":
+        return (False, "GATE_PAUSE")
+    if not entry_reason:
+        return (False, "GATE_ENTRY_REASON_REQUIRED")
+    if not exit_plan:
+        return (False, "GATE_EXIT_PLAN_REQUIRED")
+    if not _has_testable_exit_plan(exit_plan):
+        return (False, "GATE_EXIT_PLAN_NOT_TESTABLE")
+    if emotional_state not in _TRADE_GATE_ALLOWED_EMOTIONAL_STATES:
+        return (False, "GATE_EMOTIONAL_STATE_INVALID")
+    if emotional_state != "calm":
+        return (False, "GATE_EMOTIONAL_STATE_NOT_CALM")
+    if _normalize_trade_gate_symbol(asset) is None:
+        return (False, "GATE_ASSET_REQUIRED")
+    if direction not in {"BUY", "SELL"}:
+        return (False, "GATE_DIRECTION_INVALID")
+    if _coerce_positive_float(hypothetical_notional) is None:
+        return (False, "GATE_NOTIONAL_INVALID")
+    if _coerce_positive_float(body.get("stop_loss")) is None and _coerce_positive_float(
+        body.get("stop_price")
+    ) is None:
+        return (False, "GATE_STOP_REQUIRED")
+    return (True, None)
+
+
+def _build_trade_gate_dry_run_payload(body: dict) -> dict:
+    notional = _coerce_positive_float(body.get("hypothetical_notional"))
+    stop_loss = _coerce_positive_float(body.get("stop_loss"))
+    stop_price = _coerce_positive_float(body.get("stop_price"))
+    payload = {
+        "symbol": _normalize_trade_gate_symbol(body.get("asset")),
+        "side": body.get("direction"),
+        "notional": notional,
+        "notional_usd": notional,
+        "execution_mode": "dry_run",
+        "source": "trade_gate_v1",
+        "gate_decision": "SIMULATE_ONLY",
+        "gate_evaluated_at": body.get("gate_evaluated_at") or _now_z(),
+        "entry_reason": str(body.get("entry_reason", "")).strip(),
+        "exit_plan": str(body.get("exit_plan", "")).strip(),
+        "emotional_state": body.get("emotional_state"),
+        "client_session_id": body.get("client_session_id"),
+        "copy_result_hash": body.get("copy_result_hash"),
+    }
+    if stop_loss is not None:
+        payload["stop_loss"] = stop_loss
+    if stop_price is not None:
+        payload["stop_price"] = stop_price
+    return {k: v for k, v in payload.items() if v is not None}
+
+
 async def _create_domain_command(cmd_id_prefix: str, cmd_type: str, payload: dict | None = None, cmd_id: str | None = None) -> dict:
     pool = await _get_domain_pg_pool()
     if cmd_id is None:
@@ -928,6 +1063,24 @@ async def create_domain_quote(body: dict = Body(default_factory=dict)):
     if "price" in payload and payload["price"] is None:
         del payload["price"]
     return await _create_domain_command("quote", "QUOTE", payload)
+
+
+@app.post("/trade-gate/dry-run-intents")
+async def create_trade_gate_dry_run_intent(body: dict = Body(default_factory=dict)):
+    request_body = dict(body) if body else {}
+    is_valid, reject_reason = _validate_trade_gate_dry_run_request(request_body)
+    if not is_valid:
+        return {
+            "status": "error",
+            "error": reject_reason,
+        }
+
+    payload = _build_trade_gate_dry_run_payload(request_body)
+    command = await _create_domain_command("order", "ORDER", payload)
+    return {
+        "status": "ok",
+        "command_id": command["id"],
+    }
 
 
 @app.post("/domain-commands/{domain_id}/retry")
