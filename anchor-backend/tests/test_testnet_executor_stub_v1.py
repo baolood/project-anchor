@@ -12,9 +12,11 @@ def _testnet_payload(**overrides):
         "symbol": "BTCUSDT",
         "side": "BUY",
         "notional": "4",
+        "stop_price": "68000",
         "order_type": "market",
         "idempotency_key": "testnet:trade_gate_v1:BTCUSDT:BUY:4:test",
         "source": "trade_gate_v1",
+        "created_by": "baolood",
     }
     payload.update(overrides)
     return payload
@@ -33,6 +35,9 @@ class TestnetExecutorStubV1Test(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["symbol"], "BTCUSDT")
         self.assertEqual(result["side"], "BUY")
         self.assertEqual(result["notional"], 4.0)
+        self.assertEqual(result["source"], "trade_gate_v1")
+        self.assertEqual(result["created_by"], "baolood")
+        self.assertEqual(result["stop_price"], 68000.0)
         self.assertTrue(result["testnet_stub"])
         self.assertFalse(result["external_call"])
         self.assertEqual(result["testnet_order_id"], "testnet-stub-order-testnet-1")
@@ -62,6 +67,47 @@ class TestnetExecutorStubV1Test(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(output["ok"])
         self.assertEqual(output["error"]["code"], "TESTNET_CONTRACT_REJECTED")
         self.assertEqual(output["error"]["reason"], "forbidden_secret_field:api_key")
+
+    def test_order_action_rejects_missing_created_by(self) -> None:
+        output = OrderAction().run(
+            {
+                "id": "order-created-by-1",
+                "type": "ORDER",
+                "payload": _testnet_payload(created_by=""),
+            }
+        )
+
+        self.assertFalse(output["ok"])
+        self.assertEqual(output["error"]["code"], "TESTNET_CONTRACT_REJECTED")
+        self.assertEqual(output["error"]["reason"], "missing_created_by")
+
+    def test_order_action_rejects_invalid_source(self) -> None:
+        output = OrderAction().run(
+            {
+                "id": "order-source-1",
+                "type": "ORDER",
+                "payload": _testnet_payload(source="random_script"),
+            }
+        )
+
+        self.assertFalse(output["ok"])
+        self.assertEqual(output["error"]["code"], "TESTNET_CONTRACT_REJECTED")
+        self.assertEqual(output["error"]["reason"], "invalid_source")
+
+    def test_order_action_rejects_missing_stop_price(self) -> None:
+        payload = _testnet_payload()
+        del payload["stop_price"]
+        output = OrderAction().run(
+            {
+                "id": "order-stop-1",
+                "type": "ORDER",
+                "payload": payload,
+            }
+        )
+
+        self.assertFalse(output["ok"])
+        self.assertEqual(output["error"]["code"], "TESTNET_CONTRACT_REJECTED")
+        self.assertEqual(output["error"]["reason"], "missing_stop_price")
 
     async def test_runner_emits_testnet_stub_events_and_marks_done(self) -> None:
         picked = {

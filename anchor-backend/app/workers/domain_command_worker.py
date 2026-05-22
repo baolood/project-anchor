@@ -441,6 +441,7 @@ class OrderAction(Action):
     name = "ORDER"
 
     _TESTNET_MARKETS = {"binance_testnet"}
+    _TESTNET_SOURCES = {"trade_gate_v1", "ops_manual"}
     _FORBIDDEN_TESTNET_SECRET_FIELDS = {
         "api_key",
         "api_secret",
@@ -479,6 +480,26 @@ class OrderAction(Action):
         if not isinstance(idempotency_key, str) or not idempotency_key.strip():
             return self._reject("TESTNET_CONTRACT_REJECTED", reason="missing_idempotency_key")
 
+        source = payload.get("source")
+        if not isinstance(source, str) or source not in self._TESTNET_SOURCES:
+            return self._reject("TESTNET_CONTRACT_REJECTED", reason="invalid_source")
+
+        created_by = payload.get("created_by")
+        if not isinstance(created_by, str) or not created_by.strip():
+            return self._reject("TESTNET_CONTRACT_REJECTED", reason="missing_created_by")
+
+        raw_stop_price = payload.get("stop_price")
+        if raw_stop_price is None:
+            return self._reject("TESTNET_CONTRACT_REJECTED", reason="missing_stop_price")
+        if isinstance(raw_stop_price, bool):
+            return self._reject("TESTNET_CONTRACT_REJECTED", reason="invalid_stop_price")
+        try:
+            stop_price = float(raw_stop_price)
+        except (TypeError, ValueError):
+            return self._reject("TESTNET_CONTRACT_REJECTED", reason="invalid_stop_price")
+        if stop_price <= 0:
+            return self._reject("TESTNET_CONTRACT_REJECTED", reason="invalid_stop_price")
+
         for key in payload.keys():
             if isinstance(key, str) and key.lower() in self._FORBIDDEN_TESTNET_SECRET_FIELDS:
                 return self._reject(
@@ -500,6 +521,9 @@ class OrderAction(Action):
                 "side": side,
                 "notional": notional,
                 "order_type": order_type,
+                "source": source,
+                "created_by": created_by.strip(),
+                "stop_price": stop_price,
                 "testnet_order_id": f"testnet-stub-{command_id}",
                 "external_status": "STUB_ACCEPTED",
                 "kill_switch_required_before_real_executor": True,
