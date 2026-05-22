@@ -112,6 +112,51 @@ class TestnetExecutorStubV1Test(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(events[1]["payload"]["execution_mode"], "testnet")
         self.assertFalse(events[1]["payload"]["external_call"])
 
+    async def test_runner_does_not_emit_testnet_stub_event_on_rejected_payload(self) -> None:
+        picked = {
+            "id": "order-testnet-3",
+            "type": "ORDER",
+            "attempt": 1,
+            "payload": _testnet_payload(idempotency_key=""),
+        }
+        events = []
+
+        async def pick_one():
+            return picked
+
+        async def append_event(command_id, event_type, attempt, payload):
+            events.append(
+                {
+                    "command_id": command_id,
+                    "event_type": event_type,
+                    "attempt": attempt,
+                    "payload": payload,
+                }
+            )
+
+        mark_done = AsyncMock(return_value=0)
+        mark_failed = AsyncMock(return_value=1)
+        runner = DomainCommandRunner(
+            pick_one,
+            lambda command_type: OrderAction() if command_type == "ORDER" else None,
+            mark_done,
+            mark_failed,
+            now_ts_fn=lambda: 123,
+            append_event_fn=append_event,
+        )
+
+        result = await runner.run_one()
+
+        self.assertEqual(
+            result,
+            {"id": "order-testnet-3", "type": "ORDER", "final_status": "FAILED"},
+        )
+        mark_done.assert_not_awaited()
+        mark_failed.assert_awaited_once()
+        event_types = [event["event_type"] for event in events]
+        self.assertEqual(event_types, ["PICKED", "ACTION_FAIL", "MARK_FAILED"])
+        self.assertNotIn("TESTNET_EXECUTOR_STUB", event_types)
+
 
 if __name__ == "__main__":
     unittest.main()

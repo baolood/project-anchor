@@ -270,10 +270,13 @@ class DomainCommandRunner:
 
         if self._append_event:
             try:
+                result_obj = out.get("result")
                 if (
-                    cmd_type == "ORDER"
-                    and isinstance(payload, dict)
-                    and str(payload.get("execution_mode") or "").strip().lower() == "testnet"
+                    out.get("ok") is True
+                    and cmd_type == "ORDER"
+                    and isinstance(result_obj, dict)
+                    and result_obj.get("execution_mode") == "testnet"
+                    and result_obj.get("testnet_stub") is True
                 ):
                     await self._append_event(
                         cid,
@@ -283,11 +286,11 @@ class DomainCommandRunner:
                             "type": cmd_type,
                             "attempt": attempt,
                             "execution_mode": "testnet",
-                            "external_call": False,
+                            "external_call": bool(result_obj.get("external_call", False)),
                         },
                     )
                 if out.get("ok") is True:
-                    await self._append_event(cid, "ACTION_OK", attempt, {"type": cmd_type, "attempt": attempt, "result": _result_summary(out.get("result"))})
+                    await self._append_event(cid, "ACTION_OK", attempt, {"type": cmd_type, "attempt": attempt, "result": _result_summary(result_obj)})
                 else:
                     await self._append_event(cid, "ACTION_FAIL", attempt, {"type": cmd_type, "attempt": attempt, "error": out.get("error")})
             except Exception:
