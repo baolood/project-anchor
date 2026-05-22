@@ -440,8 +440,88 @@ register(PingAction())
 class OrderAction(Action):
     name = "ORDER"
 
+    _TESTNET_MARKETS = {"binance_testnet"}
+    _FORBIDDEN_TESTNET_SECRET_FIELDS = {
+        "api_key",
+        "api_secret",
+        "secret",
+        "secret_key",
+        "passphrase",
+        "private_key",
+    }
+
+    @staticmethod
+    def _reject(code: str, **detail: Any) -> ActionOutput:
+        error = {"code": code}
+        if detail:
+            error.update(detail)
+        return {"ok": False, "result": None, "error": error}
+
+    def _run_testnet_stub(
+        self,
+        command: Dict[str, Any],
+        payload: Dict[str, Any],
+        symbol: str,
+        side: str,
+        notional: float,
+    ) -> ActionOutput:
+        market = payload.get("market")
+        if not isinstance(market, str) or market not in self._TESTNET_MARKETS:
+            return self._reject("TESTNET_CONTRACT_REJECTED", reason="invalid_market")
+
+        order_type = payload.get("order_type")
+        if order_type not in {"market", "limit"}:
+            return self._reject("TESTNET_CONTRACT_REJECTED", reason="invalid_order_type")
+        if order_type == "limit" and payload.get("limit_price") is None:
+            return self._reject("TESTNET_CONTRACT_REJECTED", reason="missing_limit_price")
+
+        idempotency_key = payload.get("idempotency_key")
+        if not isinstance(idempotency_key, str) or not idempotency_key.strip():
+            return self._reject("TESTNET_CONTRACT_REJECTED", reason="missing_idempotency_key")
+
+        for key in payload.keys():
+            if isinstance(key, str) and key.lower() in self._FORBIDDEN_TESTNET_SECRET_FIELDS:
+                return self._reject(
+                    "TESTNET_CONTRACT_REJECTED",
+                    reason=f"forbidden_secret_field:{key}",
+                )
+
+        command_id = str(command.get("id") or "unknown")
+        return {
+            "ok": True,
+            "result": {
+                "ok": True,
+                "type": "order",
+                "execution_mode": "testnet",
+                "testnet_stub": True,
+                "external_call": False,
+                "market": market,
+                "symbol": symbol,
+                "side": side,
+                "notional": notional,
+                "order_type": order_type,
+                "testnet_order_id": f"testnet-stub-{command_id}",
+                "external_status": "STUB_ACCEPTED",
+                "kill_switch_required_before_real_executor": True,
+                "ts": cw._now_ts(),
+            },
+            "error": None,
+        }
+
     def run(self, command: Dict[str, Any]) -> ActionOutput:
         payload = command.get("payload") or {}
+
+        execution_mode = payload.get("execution_mode")
+        if execution_mode is not None:
+            if not isinstance(execution_mode, str):
+                return self._reject("invalid_execution_mode")
+            execution_mode = execution_mode.strip().lower()
+            if execution_mode == "live":
+                return self._reject("LIVE_EXECUTION_DISABLED")
+            if execution_mode not in {"dry_run", "testnet", "paper"}:
+                return self._reject("invalid_execution_mode")
+        else:
+            execution_mode = "dry_run"
 
         symbol = payload.get("symbol")
         if not symbol:
@@ -466,6 +546,9 @@ class OrderAction(Action):
             return {"ok": False, "result": None, "error": {"code": "invalid_notional"}}
         if notional > 1000:
             return {"ok": False, "result": None, "error": {"code": "notional_too_large"}}
+
+        if execution_mode == "testnet":
+            return self._run_testnet_stub(command, payload, symbol, side, notional)
 
         return {
             "ok": True,
