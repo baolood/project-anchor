@@ -35,7 +35,7 @@ def _result_summary(obj: Any, max_keys: int = 5) -> Dict[str, Any]:
 
 
 def _testnet_preflight_failure(code: str, **detail: Any) -> Dict[str, Any]:
-    error = {"code": code}
+    error = {"code": code, "failure_family": code}
     if detail:
         error.update(detail)
     return {"ok": False, "result": None, "error": error}
@@ -65,9 +65,12 @@ def _run_testnet_boundary_preflight(payload: Dict[str, Any]) -> Tuple[Dict[str, 
         return (
             _testnet_preflight_failure(
                 "KILL_SWITCH_ON",
+                gate="kill_switch",
                 external_request_started=False,
+                external_order_id_present=False,
                 execution_mode="testnet",
                 kill_switch_source=kill_switch_meta["source"],
+                canonical_path="ORDER:testnet",
             ),
             kill_switch_meta,
         )
@@ -80,11 +83,14 @@ def _run_testnet_boundary_preflight(payload: Dict[str, Any]) -> Tuple[Dict[str, 
         return (
             _testnet_preflight_failure(
                 "TESTNET_BASE_URL_INVALID",
+                gate="host_safety",
                 external_request_started=False,
+                external_order_id_present=False,
                 execution_mode="testnet",
                 market=market or None,
                 configured_origin=normalized_origin,
                 host_label=profile["host_label"] if profile else None,
+                canonical_path="ORDER:testnet",
             ),
             kill_switch_meta,
         )
@@ -98,11 +104,14 @@ def _run_testnet_boundary_preflight(payload: Dict[str, Any]) -> Tuple[Dict[str, 
         return (
             _testnet_preflight_failure(
                 "TESTNET_CREDENTIALS_MISSING",
+                gate="credential_presence",
                 external_request_started=False,
+                external_order_id_present=False,
                 execution_mode="testnet",
                 host_label=profile["host_label"],
                 configured_origin=normalized_origin,
                 key_id_present=bool(credential_values["key_id"]),
+                canonical_path="ORDER:testnet",
             ),
             kill_switch_meta,
         )
@@ -110,12 +119,15 @@ def _run_testnet_boundary_preflight(payload: Dict[str, Any]) -> Tuple[Dict[str, 
     return (
         _testnet_preflight_failure(
             "TESTNET_EXECUTOR_NOT_IMPLEMENTED",
+            gate="executor_boundary",
             external_request_started=False,
+            external_order_id_present=False,
             execution_mode="testnet",
             host_label=profile["host_label"],
             configured_origin=normalized_origin,
             key_id_present=True,
             preflight_passed=True,
+            canonical_path="ORDER:testnet",
         ),
         kill_switch_meta,
     )
@@ -389,6 +401,8 @@ class DomainCommandRunner:
                             "enabled": emit_kill_switch_checked["enabled"],
                             "source": emit_kill_switch_checked["source"],
                             "execution_mode": "testnet",
+                            "gate": "kill_switch",
+                            "canonical_path": "ORDER:testnet",
                         },
                     )
                 result_obj = out.get("result")

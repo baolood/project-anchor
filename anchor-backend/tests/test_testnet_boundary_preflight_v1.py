@@ -90,7 +90,12 @@ class TestnetBoundaryPreflightV1Test(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(event_types, ["PICKED", "KILL_SWITCH_CHECKED", "ACTION_FAIL", "MARK_FAILED"])
         self.assertEqual(events[1]["payload"]["source"], "env")
         self.assertTrue(events[1]["payload"]["enabled"])
+        self.assertEqual(events[1]["payload"]["gate"], "kill_switch")
         self.assertEqual(events[2]["payload"]["error"]["code"], "KILL_SWITCH_ON")
+        self.assertEqual(events[2]["payload"]["error"]["failure_family"], "KILL_SWITCH_ON")
+        self.assertEqual(events[2]["payload"]["error"]["gate"], "kill_switch")
+        self.assertFalse(events[2]["payload"]["error"]["external_request_started"])
+        self.assertFalse(events[2]["payload"]["error"]["external_order_id_present"])
 
     async def test_runner_rejects_invalid_testnet_base_url_before_external_request(self) -> None:
         result, events, mark_done, mark_failed = await self._run_runner(
@@ -113,6 +118,8 @@ class TestnetBoundaryPreflightV1Test(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(event_types, ["PICKED", "KILL_SWITCH_CHECKED", "ACTION_FAIL", "MARK_FAILED"])
         self.assertFalse(events[1]["payload"]["enabled"])
         self.assertEqual(events[2]["payload"]["error"]["code"], "TESTNET_BASE_URL_INVALID")
+        self.assertEqual(events[2]["payload"]["error"]["failure_family"], "TESTNET_BASE_URL_INVALID")
+        self.assertEqual(events[2]["payload"]["error"]["gate"], "host_safety")
         self.assertNotIn("TESTNET_EXECUTOR_STUB", event_types)
 
     async def test_runner_rejects_missing_testnet_credentials_before_external_request(self) -> None:
@@ -132,6 +139,9 @@ class TestnetBoundaryPreflightV1Test(unittest.IsolatedAsyncioTestCase):
         event_types = [event["event_type"] for event in events]
         self.assertEqual(event_types, ["PICKED", "KILL_SWITCH_CHECKED", "ACTION_FAIL", "MARK_FAILED"])
         self.assertEqual(events[2]["payload"]["error"]["code"], "TESTNET_CREDENTIALS_MISSING")
+        self.assertEqual(events[2]["payload"]["error"]["failure_family"], "TESTNET_CREDENTIALS_MISSING")
+        self.assertEqual(events[2]["payload"]["error"]["gate"], "credential_presence")
+        self.assertEqual(events[2]["payload"]["error"]["host_label"], "binance_futures_testnet")
         self.assertNotIn("TESTNET_EXECUTOR_STUB", event_types)
         self.assertNotIn("ACTION_OK", event_types)
         self.assertNotIn("MARK_DONE", event_types)

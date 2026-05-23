@@ -15,7 +15,28 @@ def _trim_payload(payload: Dict[str, Any], max_bytes: int = PAYLOAD_MAX_BYTES) -
         return {}
     # Prefer small summary keys
     small = {}
-    for k in ("code", "message", "type", "attempt", "ts", "error", "result_summary"):
+    for k in (
+        "code",
+        "message",
+        "type",
+        "attempt",
+        "ts",
+        "error",
+        "result_summary",
+        "enabled",
+        "source",
+        "execution_mode",
+        "gate",
+        "failure_family",
+        "external_request_started",
+        "external_order_id_present",
+        "host_label",
+        "configured_origin",
+        "market",
+        "canonical_path",
+        "key_id_present",
+        "preflight_passed",
+    ):
         if k in payload and payload[k] is not None:
             v = payload[k]
             if isinstance(v, (str, int, float, bool)):
