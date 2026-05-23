@@ -1,5 +1,7 @@
+import os
 import unittest
 from unittest.mock import AsyncMock
+from unittest.mock import patch
 
 from app.actions.runner import DomainCommandRunner
 from app.workers.domain_command_worker import OrderAction
@@ -109,7 +111,7 @@ class TestnetExecutorStubV1Test(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(output["error"]["code"], "TESTNET_CONTRACT_REJECTED")
         self.assertEqual(output["error"]["reason"], "missing_stop_price")
 
-    async def test_runner_emits_testnet_stub_events_and_marks_done(self) -> None:
+    async def test_runner_blocks_testnet_stub_before_done_when_preflight_fails(self) -> None:
         picked = {
             "id": "order-testnet-2",
             "type": "ORDER",
@@ -142,21 +144,32 @@ class TestnetExecutorStubV1Test(unittest.IsolatedAsyncioTestCase):
             append_event_fn=append_event,
         )
 
-        result = await runner.run_one()
+        with patch.dict(
+            os.environ,
+            {
+                "ANCHOR_KILL_SWITCH": "",
+                "TESTNET_EXCHANGE_BASE_URL": "https://testnet.binancefuture.com",
+                "TESTNET_EXCHANGE_API_KEY": "",
+                "TESTNET_EXCHANGE_API_SECRET": "",
+                "TESTNET_EXCHANGE_KEY_ID": "",
+            },
+            clear=False,
+        ):
+            result = await runner.run_one()
 
         self.assertEqual(
             result,
-            {"id": "order-testnet-2", "type": "ORDER", "final_status": "DONE"},
+            {"id": "order-testnet-2", "type": "ORDER", "final_status": "FAILED"},
         )
-        mark_done.assert_awaited_once()
-        mark_failed.assert_not_awaited()
+        mark_done.assert_not_awaited()
+        mark_failed.assert_awaited_once()
         event_types = [event["event_type"] for event in events]
         self.assertEqual(
             event_types,
-            ["PICKED", "TESTNET_EXECUTOR_STUB", "ACTION_OK", "MARK_DONE"],
+            ["PICKED", "KILL_SWITCH_CHECKED", "ACTION_FAIL", "MARK_FAILED"],
         )
-        self.assertEqual(events[1]["payload"]["execution_mode"], "testnet")
-        self.assertFalse(events[1]["payload"]["external_call"])
+        self.assertFalse(events[1]["payload"]["enabled"])
+        self.assertEqual(events[2]["payload"]["error"]["code"], "TESTNET_CREDENTIALS_MISSING")
 
     async def test_runner_does_not_emit_testnet_stub_event_on_rejected_payload(self) -> None:
         picked = {

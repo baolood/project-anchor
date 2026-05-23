@@ -6,13 +6,23 @@ No prints inside; returns a result dict for the worker to log.
 import json
 import os
 import time
+from urllib.parse import urlsplit
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from app.actions.context import ActionContext
 from app.actions.pipeline import run_action_with_pipeline
 from app.actions.steps import default_pipeline_steps
+from app.ops.kill_switch import get_kill_switch_state
 from app.policies.runner import run_policies
 from app.policies.protocol import Policy
+
+
+_TESTNET_VENUE_PROFILES: Dict[str, Dict[str, Any]] = {
+    "binance_testnet": {
+        "origins": {"https://testnet.binancefuture.com"},
+        "host_label": "binance_futures_testnet",
+    },
+}
 
 
 def _result_summary(obj: Any, max_keys: int = 5) -> Dict[str, Any]:
@@ -22,6 +32,93 @@ def _result_summary(obj: Any, max_keys: int = 5) -> Dict[str, Any]:
     if not isinstance(obj, dict):
         return {"result_summary": str(obj)[:200]}
     return {k: obj[k] for k in list(obj.keys())[:max_keys] if k in ("ok", "type", "attempt", "ts", "code", "message")}
+
+
+def _testnet_preflight_failure(code: str, **detail: Any) -> Dict[str, Any]:
+    error = {"code": code}
+    if detail:
+        error.update(detail)
+    return {"ok": False, "result": None, "error": error}
+
+
+def _normalize_origin(raw_url: str) -> Optional[str]:
+    try:
+        parsed = urlsplit(raw_url.strip())
+    except Exception:
+        return None
+    scheme = (parsed.scheme or "").lower()
+    host = (parsed.hostname or "").lower()
+    if scheme != "https" or not host:
+        return None
+    if host in {"localhost", "127.0.0.1"}:
+        return None
+    port = parsed.port
+    if port in (None, 443):
+        return f"{scheme}://{host}"
+    return f"{scheme}://{host}:{port}"
+
+
+def _run_testnet_boundary_preflight(payload: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    enabled, source = get_kill_switch_state()
+    kill_switch_meta = {"enabled": bool(enabled), "source": source or "unknown"}
+    if enabled:
+        return (
+            _testnet_preflight_failure(
+                "KILL_SWITCH_ON",
+                external_request_started=False,
+                execution_mode="testnet",
+                kill_switch_source=kill_switch_meta["source"],
+            ),
+            kill_switch_meta,
+        )
+
+    market = str(payload.get("market") or "").strip().lower()
+    profile = _TESTNET_VENUE_PROFILES.get(market)
+    raw_base_url = str(os.getenv("TESTNET_EXCHANGE_BASE_URL") or "").strip()
+    normalized_origin = _normalize_origin(raw_base_url) if raw_base_url else None
+    if profile is None or normalized_origin is None or normalized_origin not in profile["origins"]:
+        return (
+            _testnet_preflight_failure(
+                "TESTNET_BASE_URL_INVALID",
+                external_request_started=False,
+                execution_mode="testnet",
+                market=market or None,
+                configured_origin=normalized_origin,
+                host_label=profile["host_label"] if profile else None,
+            ),
+            kill_switch_meta,
+        )
+
+    credential_values = {
+        "api_key": str(os.getenv("TESTNET_EXCHANGE_API_KEY") or "").strip(),
+        "api_secret": str(os.getenv("TESTNET_EXCHANGE_API_SECRET") or "").strip(),
+        "key_id": str(os.getenv("TESTNET_EXCHANGE_KEY_ID") or "").strip(),
+    }
+    if not all(credential_values.values()):
+        return (
+            _testnet_preflight_failure(
+                "TESTNET_CREDENTIALS_MISSING",
+                external_request_started=False,
+                execution_mode="testnet",
+                host_label=profile["host_label"],
+                configured_origin=normalized_origin,
+                key_id_present=bool(credential_values["key_id"]),
+            ),
+            kill_switch_meta,
+        )
+
+    return (
+        _testnet_preflight_failure(
+            "TESTNET_EXECUTOR_NOT_IMPLEMENTED",
+            external_request_started=False,
+            execution_mode="testnet",
+            host_label=profile["host_label"],
+            configured_origin=normalized_origin,
+            key_id_present=True,
+            preflight_passed=True,
+        ),
+        kill_switch_meta,
+    )
 
 
 class DomainCommandRunner:
@@ -268,8 +365,32 @@ class DomainCommandRunner:
                 except Exception:
                     pass
 
+        emit_kill_switch_checked: Optional[Dict[str, Any]] = None
+        result_obj = out.get("result")
+        if (
+            cmd_type == "ORDER"
+            and out.get("ok") is True
+            and isinstance(result_obj, dict)
+            and result_obj.get("execution_mode") == "testnet"
+            and result_obj.get("testnet_stub") is True
+        ):
+            out, emit_kill_switch_checked = _run_testnet_boundary_preflight(payload)
+
         if self._append_event:
             try:
+                if emit_kill_switch_checked is not None:
+                    await self._append_event(
+                        cid,
+                        "KILL_SWITCH_CHECKED",
+                        attempt,
+                        {
+                            "type": cmd_type,
+                            "attempt": attempt,
+                            "enabled": emit_kill_switch_checked["enabled"],
+                            "source": emit_kill_switch_checked["source"],
+                            "execution_mode": "testnet",
+                        },
+                    )
                 result_obj = out.get("result")
                 if (
                     out.get("ok") is True
