@@ -117,19 +117,118 @@ def _run_testnet_boundary_preflight(payload: Dict[str, Any]) -> Tuple[Dict[str, 
         )
 
     return (
-        _testnet_preflight_failure(
-            "TESTNET_EXECUTOR_NOT_IMPLEMENTED",
-            gate="executor_boundary",
-            external_request_started=False,
-            external_order_id_present=False,
-            execution_mode="testnet",
-            host_label=profile["host_label"],
-            configured_origin=normalized_origin,
-            key_id_present=True,
-            preflight_passed=True,
-            canonical_path="ORDER:testnet",
-        ),
+        {
+            "ok": True,
+            "result": {
+                "execution_mode": "testnet",
+                "preflight_passed": True,
+                "host_label": profile["host_label"],
+                "configured_origin": normalized_origin,
+                "key_id_present": True,
+                "canonical_path": "ORDER:testnet",
+            },
+            "error": None,
+        },
         kill_switch_meta,
+    )
+
+
+def _run_mocked_testnet_external_executor(
+    command_id: str,
+    attempt: int,
+    payload: Dict[str, Any],
+    preflight_result: Dict[str, Any],
+    now_ts: int,
+) -> Tuple[Dict[str, Any], Dict[str, Any], str, Dict[str, Any]]:
+    outcome = str(os.getenv("TESTNET_EXECUTOR_MOCK_OUTCOME") or "success").strip().lower()
+    host_label = str(preflight_result.get("host_label") or "")
+    configured_origin = str(preflight_result.get("configured_origin") or "")
+    canonical_path = str(preflight_result.get("canonical_path") or "ORDER:testnet")
+    common = {
+        "type": "ORDER",
+        "attempt": attempt,
+        "execution_mode": "testnet",
+        "host_label": host_label,
+        "configured_origin": configured_origin,
+        "canonical_path": canonical_path,
+    }
+    requested_payload = {
+        **common,
+        "external_request_started": True,
+    }
+
+    failure_map = {
+        "auth_failed": ("TESTNET_EXECUTOR_AUTH_FAILED", "mock_auth_failed"),
+        "validation_failed": ("TESTNET_EXECUTOR_VALIDATION_FAILED", "mock_validation_failed"),
+        "rejected": ("TESTNET_EXECUTOR_REJECTED", "mock_rejected"),
+        "timeout": ("TESTNET_EXECUTOR_TIMEOUT", "mock_timeout"),
+        "network_error": ("TESTNET_EXECUTOR_NETWORK_ERROR", "mock_network_error"),
+    }
+    if outcome == "success":
+        external_order_id = f"mock-testnet-order-{command_id}"
+        return (
+            {
+                "ok": True,
+                "result": {
+                    "ok": True,
+                    "type": "order",
+                    "execution_mode": "testnet",
+                    "market": payload.get("market"),
+                    "symbol": payload.get("symbol"),
+                    "side": payload.get("side"),
+                    "notional": float(payload.get("notional") or 0),
+                    "order_type": payload.get("order_type"),
+                    "source": payload.get("source"),
+                    "created_by": payload.get("created_by"),
+                    "stop_price": float(payload.get("stop_price") or 0),
+                    "idempotency_key": payload.get("idempotency_key"),
+                    "host_label": host_label,
+                    "external_order_id": external_order_id,
+                    "external_status": "MOCK_ACCEPTED",
+                    "mocked_external_request": True,
+                    "ts": now_ts,
+                },
+                "error": None,
+            },
+            requested_payload,
+            "TESTNET_EXECUTOR_ACCEPTED",
+            {
+                **common,
+                "external_request_started": True,
+                "external_order_id": external_order_id,
+                "external_status": "MOCK_ACCEPTED",
+            },
+        )
+
+    failure_family, failure_reason = failure_map.get(
+        outcome,
+        ("TESTNET_EXECUTOR_UNEXPECTED", f"mock_{outcome or 'unexpected'}"),
+    )
+    return (
+        {
+            "ok": False,
+            "result": None,
+            "error": {
+                "code": failure_family,
+                "failure_family": failure_family,
+                "failure_reason": failure_reason,
+                "gate": "external_executor",
+                "external_request_started": True,
+                "external_order_id_present": False,
+                "execution_mode": "testnet",
+                "host_label": host_label,
+                "configured_origin": configured_origin,
+                "canonical_path": canonical_path,
+            },
+        },
+        requested_payload,
+        "TESTNET_EXECUTOR_REJECTED",
+        {
+            **common,
+            "failure_family": failure_family,
+            "failure_reason": failure_reason,
+            "external_request_started": True,
+        },
     )
 
 
@@ -378,6 +477,9 @@ class DomainCommandRunner:
                     pass
 
         emit_kill_switch_checked: Optional[Dict[str, Any]] = None
+        emit_testnet_requested: Optional[Dict[str, Any]] = None
+        emit_testnet_terminal_type: Optional[str] = None
+        emit_testnet_terminal_payload: Optional[Dict[str, Any]] = None
         result_obj = out.get("result")
         if (
             cmd_type == "ORDER"
@@ -386,7 +488,34 @@ class DomainCommandRunner:
             and result_obj.get("execution_mode") == "testnet"
             and result_obj.get("testnet_stub") is True
         ):
-            out, emit_kill_switch_checked = _run_testnet_boundary_preflight(payload)
+            preflight_out, emit_kill_switch_checked = _run_testnet_boundary_preflight(payload)
+            if preflight_out.get("ok") is True:
+                preflight_result = preflight_out.get("result") or {}
+                if str(os.getenv("TESTNET_EXECUTOR_MODE") or "").strip().lower() == "mock":
+                    out, emit_testnet_requested, emit_testnet_terminal_type, emit_testnet_terminal_payload = (
+                        _run_mocked_testnet_external_executor(
+                            cid,
+                            attempt,
+                            payload,
+                            preflight_result if isinstance(preflight_result, dict) else {},
+                            self._now_ts(),
+                        )
+                    )
+                else:
+                    out = _testnet_preflight_failure(
+                        "TESTNET_EXECUTOR_NOT_IMPLEMENTED",
+                        gate="executor_boundary",
+                        external_request_started=False,
+                        external_order_id_present=False,
+                        execution_mode="testnet",
+                        host_label=preflight_result.get("host_label"),
+                        configured_origin=preflight_result.get("configured_origin"),
+                        key_id_present=bool(preflight_result.get("key_id_present")),
+                        preflight_passed=True,
+                        canonical_path=preflight_result.get("canonical_path", "ORDER:testnet"),
+                    )
+            else:
+                out = preflight_out
 
         if self._append_event:
             try:
@@ -404,6 +533,20 @@ class DomainCommandRunner:
                             "gate": "kill_switch",
                             "canonical_path": "ORDER:testnet",
                         },
+                    )
+                if emit_testnet_requested is not None:
+                    await self._append_event(
+                        cid,
+                        "TESTNET_EXECUTOR_REQUESTED",
+                        attempt,
+                        emit_testnet_requested,
+                    )
+                if emit_testnet_terminal_type is not None and emit_testnet_terminal_payload is not None:
+                    await self._append_event(
+                        cid,
+                        emit_testnet_terminal_type,
+                        attempt,
+                        emit_testnet_terminal_payload,
                     )
                 result_obj = out.get("result")
                 if (
