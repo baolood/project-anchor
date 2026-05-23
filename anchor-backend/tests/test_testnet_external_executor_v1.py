@@ -140,6 +140,71 @@ class TestnetExternalExecutorV1Test(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(events[3]["payload"]["failure_family"], "TESTNET_EXECUTOR_TIMEOUT")
         self.assertEqual(events[4]["payload"]["error"]["failure_family"], "TESTNET_EXECUTOR_TIMEOUT")
 
+    async def test_runner_emits_mocked_validation_failed_external_chain(self) -> None:
+        result, events, mark_done, mark_failed = await self._run_runner(
+            {"TESTNET_EXECUTOR_MOCK_OUTCOME": "validation_failed"}
+        )
+
+        self.assertEqual(
+            result,
+            {"id": "order-external-1", "type": "ORDER", "final_status": "FAILED"},
+        )
+        mark_done.assert_not_awaited()
+        mark_failed.assert_awaited_once()
+        event_types = [event["event_type"] for event in events]
+        self.assertEqual(
+            event_types,
+            [
+                "PICKED",
+                "KILL_SWITCH_CHECKED",
+                "TESTNET_EXECUTOR_REQUESTED",
+                "TESTNET_EXECUTOR_REJECTED",
+                "ACTION_FAIL",
+                "MARK_FAILED",
+            ],
+        )
+        self.assertEqual(events[3]["payload"]["failure_family"], "TESTNET_EXECUTOR_VALIDATION_FAILED")
+        self.assertEqual(events[3]["payload"]["failure_reason"], "mock_validation_failed")
+        self.assertEqual(events[4]["payload"]["error"]["failure_family"], "TESTNET_EXECUTOR_VALIDATION_FAILED")
+        self.assertFalse(events[4]["payload"]["error"]["external_order_id_present"])
+
+    async def test_runner_emits_mocked_network_error_external_chain(self) -> None:
+        result, events, mark_done, mark_failed = await self._run_runner(
+            {"TESTNET_EXECUTOR_MOCK_OUTCOME": "network_error"}
+        )
+
+        self.assertEqual(
+            result,
+            {"id": "order-external-1", "type": "ORDER", "final_status": "FAILED"},
+        )
+        mark_done.assert_not_awaited()
+        mark_failed.assert_awaited_once()
+        event_types = [event["event_type"] for event in events]
+        self.assertEqual(event_types[2], "TESTNET_EXECUTOR_REQUESTED")
+        self.assertEqual(event_types[3], "TESTNET_EXECUTOR_REJECTED")
+        self.assertEqual(events[3]["payload"]["failure_family"], "TESTNET_EXECUTOR_NETWORK_ERROR")
+        self.assertEqual(events[4]["payload"]["error"]["failure_family"], "TESTNET_EXECUTOR_NETWORK_ERROR")
+        self.assertTrue(events[4]["payload"]["error"]["external_request_started"])
+
+    async def test_runner_maps_unknown_mock_outcome_to_unexpected_family(self) -> None:
+        result, events, mark_done, mark_failed = await self._run_runner(
+            {"TESTNET_EXECUTOR_MOCK_OUTCOME": "weird_case"}
+        )
+
+        self.assertEqual(
+            result,
+            {"id": "order-external-1", "type": "ORDER", "final_status": "FAILED"},
+        )
+        mark_done.assert_not_awaited()
+        mark_failed.assert_awaited_once()
+        event_types = [event["event_type"] for event in events]
+        self.assertEqual(event_types[2], "TESTNET_EXECUTOR_REQUESTED")
+        self.assertEqual(event_types[3], "TESTNET_EXECUTOR_REJECTED")
+        self.assertEqual(events[3]["payload"]["failure_family"], "TESTNET_EXECUTOR_UNEXPECTED")
+        self.assertEqual(events[3]["payload"]["failure_reason"], "mock_weird_case")
+        self.assertEqual(events[4]["payload"]["error"]["failure_family"], "TESTNET_EXECUTOR_UNEXPECTED")
+        self.assertEqual(events[4]["payload"]["error"]["gate"], "external_executor")
+
 
 if __name__ == "__main__":
     unittest.main()
