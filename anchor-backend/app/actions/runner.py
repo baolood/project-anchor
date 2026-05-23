@@ -12,6 +12,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 from app.actions.context import ActionContext
 from app.actions.pipeline import run_action_with_pipeline
 from app.actions.steps import default_pipeline_steps
+from app.executors import testnet_order_executor as real_testnet_executor
 from app.ops.kill_switch import get_kill_switch_state
 from app.policies.runner import run_policies
 from app.policies.protocol import Policy
@@ -491,7 +492,8 @@ class DomainCommandRunner:
             preflight_out, emit_kill_switch_checked = _run_testnet_boundary_preflight(payload)
             if preflight_out.get("ok") is True:
                 preflight_result = preflight_out.get("result") or {}
-                if str(os.getenv("TESTNET_EXECUTOR_MODE") or "").strip().lower() == "mock":
+                executor_mode = str(os.getenv("TESTNET_EXECUTOR_MODE") or "").strip().lower()
+                if executor_mode == "mock":
                     out, emit_testnet_requested, emit_testnet_terminal_type, emit_testnet_terminal_payload = (
                         _run_mocked_testnet_external_executor(
                             cid,
@@ -500,6 +502,30 @@ class DomainCommandRunner:
                             preflight_result if isinstance(preflight_result, dict) else {},
                             self._now_ts(),
                         )
+                    )
+                elif executor_mode == "real":
+                    out, emit_testnet_requested, emit_testnet_terminal_type, emit_testnet_terminal_payload = (
+                        real_testnet_executor.run_real_testnet_order_request(
+                            cid,
+                            attempt,
+                            payload,
+                            preflight_result if isinstance(preflight_result, dict) else {},
+                            self._now_ts(),
+                        )
+                    )
+                elif executor_mode:
+                    out = _testnet_preflight_failure(
+                        "TESTNET_EXECUTOR_MODE_INVALID",
+                        gate="executor_boundary",
+                        external_request_started=False,
+                        external_order_id_present=False,
+                        execution_mode="testnet",
+                        configured_executor_mode=executor_mode,
+                        host_label=preflight_result.get("host_label"),
+                        configured_origin=preflight_result.get("configured_origin"),
+                        key_id_present=bool(preflight_result.get("key_id_present")),
+                        preflight_passed=True,
+                        canonical_path=preflight_result.get("canonical_path", "ORDER:testnet"),
                     )
                 else:
                     out = _testnet_preflight_failure(
