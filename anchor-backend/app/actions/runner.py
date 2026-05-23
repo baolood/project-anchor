@@ -134,24 +134,49 @@ def _run_testnet_boundary_preflight(payload: Dict[str, Any]) -> Tuple[Dict[str, 
     )
 
 
-def _run_mocked_testnet_external_executor(
+def _build_testnet_transport_input(
     command_id: str,
     attempt: int,
     payload: Dict[str, Any],
     preflight_result: Dict[str, Any],
+) -> Dict[str, Any]:
+    return {
+        "command_id": command_id,
+        "attempt": attempt,
+        "execution_mode": "testnet",
+        "market": payload.get("market"),
+        "symbol": payload.get("symbol"),
+        "side": payload.get("side"),
+        "notional": float(payload.get("notional") or 0),
+        "order_type": payload.get("order_type"),
+        "source": payload.get("source"),
+        "created_by": payload.get("created_by"),
+        "stop_price": float(payload.get("stop_price") or 0),
+        "idempotency_key": payload.get("idempotency_key"),
+        "host_label": preflight_result.get("host_label"),
+        "configured_origin": preflight_result.get("configured_origin"),
+        "canonical_path": preflight_result.get("canonical_path", "ORDER:testnet"),
+        "key_id_present": bool(preflight_result.get("key_id_present")),
+    }
+
+
+def _run_mocked_testnet_external_executor(
+    transport_input: Dict[str, Any],
     now_ts: int,
 ) -> Tuple[Dict[str, Any], Dict[str, Any], str, Dict[str, Any]]:
     outcome = str(os.getenv("TESTNET_EXECUTOR_MOCK_OUTCOME") or "success").strip().lower()
-    host_label = str(preflight_result.get("host_label") or "")
-    configured_origin = str(preflight_result.get("configured_origin") or "")
-    canonical_path = str(preflight_result.get("canonical_path") or "ORDER:testnet")
+    host_label = str(transport_input.get("host_label") or "")
+    configured_origin = str(transport_input.get("configured_origin") or "")
+    canonical_path = str(transport_input.get("canonical_path") or "ORDER:testnet")
     common = {
         "type": "ORDER",
-        "attempt": attempt,
+        "attempt": int(transport_input.get("attempt") or 0),
         "execution_mode": "testnet",
         "host_label": host_label,
         "configured_origin": configured_origin,
         "canonical_path": canonical_path,
+        "executor_mode_label": "mock",
+        "timeout_policy_label": "single_attempt_v1",
     }
     requested_payload = {
         **common,
@@ -166,7 +191,7 @@ def _run_mocked_testnet_external_executor(
         "network_error": ("TESTNET_EXECUTOR_NETWORK_ERROR", "mock_network_error"),
     }
     if outcome == "success":
-        external_order_id = f"mock-testnet-order-{command_id}"
+        external_order_id = f"mock-testnet-order-{transport_input.get('command_id')}"
         return (
             {
                 "ok": True,
@@ -174,16 +199,18 @@ def _run_mocked_testnet_external_executor(
                     "ok": True,
                     "type": "order",
                     "execution_mode": "testnet",
-                    "market": payload.get("market"),
-                    "symbol": payload.get("symbol"),
-                    "side": payload.get("side"),
-                    "notional": float(payload.get("notional") or 0),
-                    "order_type": payload.get("order_type"),
-                    "source": payload.get("source"),
-                    "created_by": payload.get("created_by"),
-                    "stop_price": float(payload.get("stop_price") or 0),
-                    "idempotency_key": payload.get("idempotency_key"),
+                    "market": transport_input.get("market"),
+                    "symbol": transport_input.get("symbol"),
+                    "side": transport_input.get("side"),
+                    "notional": float(transport_input.get("notional") or 0),
+                    "order_type": transport_input.get("order_type"),
+                    "source": transport_input.get("source"),
+                    "created_by": transport_input.get("created_by"),
+                    "stop_price": float(transport_input.get("stop_price") or 0),
+                    "idempotency_key": transport_input.get("idempotency_key"),
                     "host_label": host_label,
+                    "executor_mode_label": "mock",
+                    "timeout_policy_label": "single_attempt_v1",
                     "external_order_id": external_order_id,
                     "external_status": "MOCK_ACCEPTED",
                     "mocked_external_request": True,
@@ -220,6 +247,8 @@ def _run_mocked_testnet_external_executor(
                 "host_label": host_label,
                 "configured_origin": configured_origin,
                 "canonical_path": canonical_path,
+                "executor_mode_label": "mock",
+                "timeout_policy_label": "single_attempt_v1",
             },
         },
         requested_payload,
@@ -492,24 +521,24 @@ class DomainCommandRunner:
             preflight_out, emit_kill_switch_checked = _run_testnet_boundary_preflight(payload)
             if preflight_out.get("ok") is True:
                 preflight_result = preflight_out.get("result") or {}
+                transport_input = _build_testnet_transport_input(
+                    cid,
+                    attempt,
+                    payload,
+                    preflight_result if isinstance(preflight_result, dict) else {},
+                )
                 executor_mode = str(os.getenv("TESTNET_EXECUTOR_MODE") or "").strip().lower()
                 if executor_mode == "mock":
                     out, emit_testnet_requested, emit_testnet_terminal_type, emit_testnet_terminal_payload = (
                         _run_mocked_testnet_external_executor(
-                            cid,
-                            attempt,
-                            payload,
-                            preflight_result if isinstance(preflight_result, dict) else {},
+                            transport_input,
                             self._now_ts(),
                         )
                     )
                 elif executor_mode == "real":
                     out, emit_testnet_requested, emit_testnet_terminal_type, emit_testnet_terminal_payload = (
                         real_testnet_executor.run_real_testnet_order_request(
-                            cid,
-                            attempt,
-                            payload,
-                            preflight_result if isinstance(preflight_result, dict) else {},
+                            transport_input,
                             self._now_ts(),
                         )
                     )

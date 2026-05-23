@@ -3,22 +3,21 @@ from typing import Any, Dict, Optional, Tuple
 
 
 def run_real_testnet_order_request(
-    command_id: str,
-    attempt: int,
-    payload: Dict[str, Any],
-    preflight_result: Dict[str, Any],
+    transport_input: Dict[str, Any],
     now_ts: int,
 ) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]], Optional[str], Optional[Dict[str, Any]]]:
-    host_label = str(preflight_result.get("host_label") or "")
-    configured_origin = str(preflight_result.get("configured_origin") or "")
-    canonical_path = str(preflight_result.get("canonical_path") or "ORDER:testnet")
+    host_label = str(transport_input.get("host_label") or "")
+    configured_origin = str(transport_input.get("configured_origin") or "")
+    canonical_path = str(transport_input.get("canonical_path") or "ORDER:testnet")
     common = {
         "type": "ORDER",
-        "attempt": attempt,
+        "attempt": int(transport_input.get("attempt") or 0),
         "execution_mode": "testnet",
         "host_label": host_label,
         "configured_origin": configured_origin,
         "canonical_path": canonical_path,
+        "executor_mode_label": "real",
+        "timeout_policy_label": "single_attempt_v1",
     }
     real_wire_enabled = (str(os.getenv("TESTNET_EXECUTOR_REAL_ENABLE") or "").strip() == "1")
     if not real_wire_enabled:
@@ -36,6 +35,8 @@ def run_real_testnet_order_request(
                     "host_label": host_label,
                     "configured_origin": configured_origin,
                     "canonical_path": canonical_path,
+                    "executor_mode_label": "real",
+                    "timeout_policy_label": "single_attempt_v1",
                 },
             },
             None,
@@ -57,6 +58,8 @@ def run_real_testnet_order_request(
                 "host_label": host_label,
                 "configured_origin": configured_origin,
                 "canonical_path": canonical_path,
+                "executor_mode_label": "real",
+                "timeout_policy_label": "single_attempt_v1",
                 "ts": now_ts,
             },
         },

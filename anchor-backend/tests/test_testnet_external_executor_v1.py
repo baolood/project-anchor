@@ -102,6 +102,8 @@ class TestnetExternalExecutorV1Test(unittest.IsolatedAsyncioTestCase):
                 "host_label": "binance_futures_testnet",
                 "configured_origin": "https://testnet.binancefuture.com",
                 "canonical_path": "ORDER:testnet",
+                "executor_mode_label": "real",
+                "timeout_policy_label": "single_attempt_v1",
                 "external_request_started": True,
             },
             "TESTNET_EXECUTOR_ACCEPTED",
@@ -112,6 +114,8 @@ class TestnetExternalExecutorV1Test(unittest.IsolatedAsyncioTestCase):
                 "host_label": "binance_futures_testnet",
                 "configured_origin": "https://testnet.binancefuture.com",
                 "canonical_path": "ORDER:testnet",
+                "executor_mode_label": "real",
+                "timeout_policy_label": "single_attempt_v1",
                 "external_request_started": True,
                 "external_order_id": "real-testnet-order-1",
                 "external_status": "FILLED",
@@ -144,6 +148,8 @@ class TestnetExternalExecutorV1Test(unittest.IsolatedAsyncioTestCase):
                 "host_label": "binance_futures_testnet",
                 "configured_origin": "https://testnet.binancefuture.com",
                 "canonical_path": "ORDER:testnet",
+                "executor_mode_label": "real",
+                "timeout_policy_label": "single_attempt_v1",
                 "external_request_started": True,
             },
             "TESTNET_EXECUTOR_REJECTED",
@@ -154,6 +160,8 @@ class TestnetExternalExecutorV1Test(unittest.IsolatedAsyncioTestCase):
                 "host_label": "binance_futures_testnet",
                 "configured_origin": "https://testnet.binancefuture.com",
                 "canonical_path": "ORDER:testnet",
+                "executor_mode_label": "real",
+                "timeout_policy_label": "single_attempt_v1",
                 "failure_family": "TESTNET_EXECUTOR_AUTH_FAILED",
                 "failure_reason": "real_auth_failed",
                 "external_request_started": True,
@@ -183,8 +191,11 @@ class TestnetExternalExecutorV1Test(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(events[2]["payload"]["canonical_path"], "ORDER:testnet")
         self.assertTrue(events[2]["payload"]["external_request_started"])
+        self.assertEqual(events[2]["payload"]["executor_mode_label"], "mock")
+        self.assertEqual(events[2]["payload"]["timeout_policy_label"], "single_attempt_v1")
         self.assertEqual(events[3]["payload"]["external_status"], "MOCK_ACCEPTED")
         self.assertTrue(events[3]["payload"]["external_order_id"].startswith("mock-testnet-order-"))
+        self.assertEqual(events[3]["payload"]["executor_mode_label"], "mock")
 
     async def test_runner_emits_mocked_auth_failed_external_chain(self) -> None:
         result, events, mark_done, mark_failed = await self._run_runner(
@@ -212,6 +223,7 @@ class TestnetExternalExecutorV1Test(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(events[3]["payload"]["failure_family"], "TESTNET_EXECUTOR_AUTH_FAILED")
         self.assertEqual(events[4]["payload"]["error"]["failure_family"], "TESTNET_EXECUTOR_AUTH_FAILED")
         self.assertTrue(events[4]["payload"]["error"]["external_request_started"])
+        self.assertEqual(events[3]["payload"]["executor_mode_label"], "mock")
 
     async def test_runner_emits_mocked_timeout_external_chain(self) -> None:
         result, events, mark_done, mark_failed = await self._run_runner(
@@ -229,6 +241,7 @@ class TestnetExternalExecutorV1Test(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(event_types[3], "TESTNET_EXECUTOR_REJECTED")
         self.assertEqual(events[3]["payload"]["failure_family"], "TESTNET_EXECUTOR_TIMEOUT")
         self.assertEqual(events[4]["payload"]["error"]["failure_family"], "TESTNET_EXECUTOR_TIMEOUT")
+        self.assertEqual(events[3]["payload"]["timeout_policy_label"], "single_attempt_v1")
 
     async def test_runner_emits_mocked_validation_failed_external_chain(self) -> None:
         result, events, mark_done, mark_failed = await self._run_runner(
@@ -257,6 +270,7 @@ class TestnetExternalExecutorV1Test(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(events[3]["payload"]["failure_reason"], "mock_validation_failed")
         self.assertEqual(events[4]["payload"]["error"]["failure_family"], "TESTNET_EXECUTOR_VALIDATION_FAILED")
         self.assertFalse(events[4]["payload"]["error"]["external_order_id_present"])
+        self.assertEqual(events[3]["payload"]["executor_mode_label"], "mock")
 
     async def test_runner_emits_mocked_network_error_external_chain(self) -> None:
         result, events, mark_done, mark_failed = await self._run_runner(
@@ -275,6 +289,7 @@ class TestnetExternalExecutorV1Test(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(events[3]["payload"]["failure_family"], "TESTNET_EXECUTOR_NETWORK_ERROR")
         self.assertEqual(events[4]["payload"]["error"]["failure_family"], "TESTNET_EXECUTOR_NETWORK_ERROR")
         self.assertTrue(events[4]["payload"]["error"]["external_request_started"])
+        self.assertEqual(events[3]["payload"]["timeout_policy_label"], "single_attempt_v1")
 
     async def test_runner_maps_unknown_mock_outcome_to_unexpected_family(self) -> None:
         result, events, mark_done, mark_failed = await self._run_runner(
@@ -294,6 +309,7 @@ class TestnetExternalExecutorV1Test(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(events[3]["payload"]["failure_reason"], "mock_weird_case")
         self.assertEqual(events[4]["payload"]["error"]["failure_family"], "TESTNET_EXECUTOR_UNEXPECTED")
         self.assertEqual(events[4]["payload"]["error"]["gate"], "external_executor")
+        self.assertEqual(events[3]["payload"]["executor_mode_label"], "mock")
 
     async def test_runner_real_mode_stays_disabled_without_explicit_enable_flag(self) -> None:
         result, events, mark_done, mark_failed = await self._run_runner(
@@ -313,6 +329,7 @@ class TestnetExternalExecutorV1Test(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(event_types, ["PICKED", "KILL_SWITCH_CHECKED", "ACTION_FAIL", "MARK_FAILED"])
         self.assertEqual(events[2]["payload"]["error"]["failure_family"], "TESTNET_REAL_WIRE_DISABLED")
         self.assertFalse(events[2]["payload"]["error"]["external_request_started"])
+        self.assertEqual(events[2]["payload"]["error"]["executor_mode_label"], "real")
         self.assertNotIn("TESTNET_EXECUTOR_REQUESTED", event_types)
 
     async def test_runner_invalid_executor_mode_does_not_silently_go_real(self) -> None:
@@ -363,6 +380,8 @@ class TestnetExternalExecutorV1Test(unittest.IsolatedAsyncioTestCase):
             ],
         )
         self.assertEqual(events[3]["payload"]["external_order_id"], "real-testnet-order-1")
+        self.assertEqual(events[2]["payload"]["executor_mode_label"], "real")
+        self.assertEqual(events[2]["payload"]["timeout_policy_label"], "single_attempt_v1")
 
     async def test_runner_real_mode_can_emit_rejected_chain_when_helper_is_patched(self) -> None:
         with patch(
@@ -396,6 +415,7 @@ class TestnetExternalExecutorV1Test(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(events[3]["payload"]["failure_family"], "TESTNET_EXECUTOR_AUTH_FAILED")
         self.assertEqual(events[4]["payload"]["error"]["failure_family"], "TESTNET_EXECUTOR_AUTH_FAILED")
+        self.assertEqual(events[3]["payload"]["executor_mode_label"], "real")
 
 
 if __name__ == "__main__":
