@@ -81,10 +81,11 @@ Use when:
 
 ## 4. Current synthetic examples
 
-This directory currently contains two synthetic examples:
+This directory currently contains three synthetic examples:
 
 - [FIRST_REAL_REQUEST_2026-05-23_order-example-blocked.md](/Users/baolood/Projects/project-anchor/docs/reviews/real_testnet/FIRST_REAL_REQUEST_2026-05-23_order-example-blocked.md)
 - [FIRST_REAL_REQUEST_2026-05-23_order-example-pass.md](/Users/baolood/Projects/project-anchor/docs/reviews/real_testnet/FIRST_REAL_REQUEST_2026-05-23_order-example-pass.md)
+- [FIRST_REAL_REQUEST_2026-05-24_order-example-fail.md](/Users/baolood/Projects/project-anchor/docs/reviews/real_testnet/FIRST_REAL_REQUEST_2026-05-24_order-example-fail.md)
 
 They exist only to demonstrate format and result labeling.
 
@@ -114,13 +115,13 @@ Not allowed:
 After this readme, the next natural bounded round is:
 
 ```text
-Real Testnet First Real Request FAIL Artifact Example V1
+Real Testnet Review Artifact Index V1
 ```
 
 Scope:
 
 ```text
 docs-only
-add one synthetic FAIL artifact example so all three result labels
-BLOCKED / PASS / FAIL are represented in this directory
+add one short index page that points to README plus
+BLOCKED / PASS / FAIL examples from a single entrypoint
 ```
