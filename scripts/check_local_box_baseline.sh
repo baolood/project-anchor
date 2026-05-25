@@ -70,5 +70,12 @@ if ! "${ROOT}/scripts/check_checklist_curl_guardrails.sh"; then
   exit 1
 fi
 
+# First-controlled-send status stack must stay internally consistent while
+# the project remains in its current synthetic-only posture.
+if ! "${ROOT}/scripts/check_first_controlled_send_status_integration.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: first-controlled-send status integration check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
