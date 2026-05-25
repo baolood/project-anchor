@@ -71,9 +71,16 @@ if ! "${ROOT}/scripts/check_checklist_curl_guardrails.sh"; then
 fi
 
 # First-controlled-send status stack must stay internally consistent while
-# the project remains in its current synthetic-only posture.
+# the project remains in its current reviewed posture.
 if ! "${ROOT}/scripts/check_first_controlled_send_status_integration.sh"; then
   echo "LOCAL_BOX_BASELINE_CHECK FAIL: first-controlled-send status integration check failed" >&2
+  exit 1
+fi
+
+# Real handoff adapter skeleton must keep its bounded mock-posture contract
+# before any future credential handoff implementation is allowed to start.
+if ! "${ROOT}/scripts/check_real_handoff_adapter_skeleton.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff adapter skeleton check failed" >&2
   exit 1
 fi
 
