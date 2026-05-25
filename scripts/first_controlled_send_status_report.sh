@@ -11,6 +11,7 @@ SUMMARY_SCRIPT="${ROOT}/scripts/check_first_controlled_send_gate_summary.sh"
 ARTIFACT_DIR="${ROOT}/docs/reviews/real_testnet"
 
 OUT_FILE="${OUT_FILE:-}"
+CHECK_DOMAIN_GATE=0
 
 require_value() {
   local opt="$1"
@@ -28,12 +29,17 @@ while (($# > 0)); do
       OUT_FILE="${2:-}"
       shift 2
       ;;
+    --check-domain-gate)
+      CHECK_DOMAIN_GATE=1
+      shift
+      ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/first_controlled_send_status_report.sh [--out <path>]
+Usage: ./scripts/first_controlled_send_status_report.sh [--out <path>] [--check-domain-gate]
 
 Options:
   --out <path>  Write the report to a file (stdout always prints).
+  --check-domain-gate  Exit non-zero unless DOMAIN_WORTH_BUYING=yes.
 
 Fields:
   STATE                  synthetic_only / actual_missing / review_pack_missing / ready_for_real_review
@@ -107,4 +113,12 @@ if [[ -n "$OUT_FILE" ]]; then
   mkdir -p "$(dirname "$OUT_FILE")"
   printf '%s\n' "$report" > "$OUT_FILE"
   echo "WROTE_REPORT=$OUT_FILE"
+fi
+
+if ((CHECK_DOMAIN_GATE == 1)); then
+  if [[ "$domain_worth_buying" != "yes" ]]; then
+    echo "FIRST_CONTROLLED_SEND_DOMAIN_GATE BLOCKED: DOMAIN_WORTH_BUYING=${domain_worth_buying}" >&2
+    exit 1
+  fi
+  echo "FIRST_CONTROLLED_SEND_DOMAIN_GATE PASS: DOMAIN_WORTH_BUYING=yes"
 fi
