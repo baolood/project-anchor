@@ -110,6 +110,14 @@ EOF
 echo "$report"
 
 if [[ -n "$OUT_FILE" ]]; then
+  if [[ "${OUT_FILE}" == */ ]]; then
+    echo "FIRST_CONTROLLED_SEND_STATUS FAIL: --out expects a file path, got directory-like path: ${OUT_FILE}" >&2
+    exit 2
+  fi
+  if [[ -d "${OUT_FILE}" ]]; then
+    echo "FIRST_CONTROLLED_SEND_STATUS FAIL: --out expects a file path, got directory: ${OUT_FILE}" >&2
+    exit 2
+  fi
   mkdir -p "$(dirname "$OUT_FILE")"
   printf '%s\n' "$report" > "$OUT_FILE"
   echo "WROTE_REPORT=$OUT_FILE"
