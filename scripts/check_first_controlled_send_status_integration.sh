@@ -48,6 +48,15 @@ status_output="$("$STATUS_SCRIPT")"
 state="$(grep '^STATE=' <<<"$status_output" | cut -d= -f2-)"
 domain_worth_buying="$(grep '^DOMAIN_WORTH_BUYING=' <<<"$status_output" | cut -d= -f2-)"
 external_showcase_ready="$(grep '^EXTERNAL_SHOWCASE_READY=' <<<"$status_output" | cut -d= -f2-)"
+real_handoff_adapter="$(grep '^REAL_HANDOFF_ADAPTER=' <<<"$status_output" | cut -d= -f2-)"
+real_handoff_mode="$(grep '^REAL_HANDOFF_MODE=' <<<"$status_output" | cut -d= -f2-)"
+external_request_allowed="$(grep '^EXTERNAL_REQUEST_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
+runtime_mutation_allowed="$(grep '^RUNTIME_MUTATION_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
+
+[[ "$real_handoff_adapter" == "present" ]] || fail "real handoff adapter should be present in review status output"
+[[ "$real_handoff_mode" == "mock_only" ]] || fail "real handoff adapter should stay in mock_only mode"
+[[ "$external_request_allowed" == "no" ]] || fail "real handoff adapter must not allow external requests"
+[[ "$runtime_mutation_allowed" == "no" ]] || fail "real handoff adapter must not allow runtime mutation"
 
 case "$state" in
   synthetic_only)

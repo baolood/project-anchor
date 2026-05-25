@@ -9,6 +9,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || {
 
 SUMMARY_SCRIPT="${ROOT}/scripts/check_first_controlled_send_gate_summary.sh"
 ARTIFACT_DIR="${ROOT}/docs/reviews/real_testnet"
+ADAPTER_MODULE_DIR="${ROOT}/anchor-backend"
 
 OUT_FILE="${OUT_FILE:-}"
 CHECK_DOMAIN_GATE=0
@@ -54,6 +55,10 @@ Fields:
   ACTUAL_ARTIFACTS       count of FIRST_CONTROLLED_SEND actual artifacts
   DOMAIN_WORTH_BUYING    yes/no
   EXTERNAL_SHOWCASE_READY yes/no
+  REAL_HANDOFF_ADAPTER   present / missing
+  REAL_HANDOFF_MODE      mock_only / drifted / unknown
+  EXTERNAL_REQUEST_ALLOWED yes/no
+  RUNTIME_MUTATION_ALLOWED yes/no
 
 This report does not authorize a real controlled send or live trading.
 EOF
@@ -104,6 +109,39 @@ if [[ "$state" == "ready_for_real_review" ]]; then
   external_showcase_ready="yes"
 fi
 
+adapter_report="$(
+  cd "$ADAPTER_MODULE_DIR"
+  python3 - <<'PY'
+from app.executors.testnet_real_handoff_adapter import build_real_handoff_adapter_skeleton
+
+
+adapter = build_real_handoff_adapter_skeleton(
+    {
+        "TESTNET_EXCHANGE_BASE_URL": "https://testnet.binancefuture.com",
+        "TESTNET_EXECUTOR_MODE": "mock",
+        "TESTNET_EXECUTOR_REAL_ENABLE": "0",
+        "TESTNET_EXCHANGE_API_KEY": "",
+        "TESTNET_EXCHANGE_API_SECRET": "",
+        "TESTNET_EXCHANGE_KEY_ID": "",
+    }
+)
+
+runtime = adapter["current_runtime"]
+mode = "mock_only" if runtime["credential_free_mock_posture"] else "drifted"
+
+print("REAL_HANDOFF_ADAPTER=present")
+print(f"REAL_HANDOFF_MODE={mode}")
+print(
+    "EXTERNAL_REQUEST_ALLOWED="
+    + ("yes" if adapter["allows_external_request"] else "no")
+)
+print(
+    "RUNTIME_MUTATION_ALLOWED="
+    + ("yes" if adapter["allows_runtime_mutation"] else "no")
+)
+PY
+)"
+
 report="$(cat <<EOF
 FIRST_CONTROLLED_SEND_STATUS_REPORT
 STATE=${state}
@@ -111,6 +149,7 @@ LEGACY_EXAMPLES=${legacy_examples}
 ACTUAL_ARTIFACTS=${actual_artifacts}
 DOMAIN_WORTH_BUYING=${domain_worth_buying}
 EXTERNAL_SHOWCASE_READY=${external_showcase_ready}
+${adapter_report}
 EOF
 )"
 
