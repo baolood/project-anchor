@@ -12,6 +12,7 @@ ARTIFACT_DIR="${ROOT}/docs/reviews/real_testnet"
 
 OUT_FILE="${OUT_FILE:-}"
 CHECK_DOMAIN_GATE=0
+REQUIRE_STATE=""
 
 require_value() {
   local opt="$1"
@@ -33,13 +34,19 @@ while (($# > 0)); do
       CHECK_DOMAIN_GATE=1
       shift
       ;;
+    --require-state)
+      require_value "--require-state" "${2:-}"
+      REQUIRE_STATE="${2:-}"
+      shift 2
+      ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/first_controlled_send_status_report.sh [--out <path>] [--check-domain-gate]
+Usage: ./scripts/first_controlled_send_status_report.sh [--out <path>] [--check-domain-gate] [--require-state <value>]
 
 Options:
   --out <path>  Write the report to a file (stdout always prints).
   --check-domain-gate  Exit non-zero unless DOMAIN_WORTH_BUYING=yes.
+  --require-state <value>  Exit non-zero unless STATE matches the given value.
 
 Fields:
   STATE                  synthetic_only / actual_missing / review_pack_missing / ready_for_real_review
@@ -129,4 +136,12 @@ if ((CHECK_DOMAIN_GATE == 1)); then
     exit 1
   fi
   echo "FIRST_CONTROLLED_SEND_DOMAIN_GATE PASS: DOMAIN_WORTH_BUYING=yes"
+fi
+
+if [[ -n "$REQUIRE_STATE" ]]; then
+  if [[ "$state" != "$REQUIRE_STATE" ]]; then
+    echo "FIRST_CONTROLLED_SEND_STATE_GATE BLOCKED: expected STATE=${REQUIRE_STATE}, got STATE=${state}" >&2
+    exit 1
+  fi
+  echo "FIRST_CONTROLLED_SEND_STATE_GATE PASS: STATE=${state}"
 fi
