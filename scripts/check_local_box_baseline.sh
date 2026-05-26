@@ -127,19 +127,10 @@ if ! bash "${ROOT}/scripts/check_real_handoff_opening_bundle_line.sh"; then
   exit 1
 fi
 
-# Real handoff opening decision packet contract must stay review-safe before
-# any future opening decision packet can move closer to credential injection or
-# runtime changes.
-if ! "${ROOT}/scripts/check_real_handoff_opening_decision_packet_contract.sh"; then
-  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff opening decision packet contract check failed" >&2
-  exit 1
-fi
-
-# Real handoff opening decision packet review surfaces must stay aligned so
-# reviewers do not see conflicting evidence between the standalone
-# opening-decision-packet report and the status stack.
-if ! bash "${ROOT}/scripts/check_real_handoff_opening_decision_packet_report_integration.sh"; then
-  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff opening decision packet report integration check failed" >&2
+# Real handoff opening decision packet line must stay bounded as one closeout gate:
+# opening-decision-packet contract matrix + opening-decision-packet review-surface alignment.
+if ! bash "${ROOT}/scripts/check_real_handoff_opening_decision_packet_line.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff opening decision packet line check failed" >&2
   exit 1
 fi
 
