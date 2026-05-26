@@ -113,18 +113,10 @@ if ! bash "${ROOT}/scripts/check_real_credential_placeholder_line.sh"; then
   exit 1
 fi
 
-# Real handoff opening prereq contract must stay review-safe before any future
-# opening task can move closer to real credential injection.
-if ! "${ROOT}/scripts/check_real_handoff_opening_prereq_contract.sh"; then
-  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff opening prereq contract check failed" >&2
-  exit 1
-fi
-
-# Real handoff opening prereq review surfaces must stay aligned so reviewers do
-# not see conflicting evidence between the standalone opening-prereq report and
-# the status stack.
-if ! bash "${ROOT}/scripts/check_real_handoff_opening_prereq_report_integration.sh"; then
-  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff opening prereq report integration check failed" >&2
+# Real handoff opening prereq line must stay bounded as one closeout gate:
+# opening-prereq contract matrix + opening-prereq review-surface alignment.
+if ! bash "${ROOT}/scripts/check_real_handoff_opening_prereq_line.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff opening prereq line check failed" >&2
   exit 1
 fi
 
