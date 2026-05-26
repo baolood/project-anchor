@@ -186,5 +186,12 @@ if ! "${ROOT}/scripts/check_real_handoff_executor_activation_window_contract.sh"
   exit 1
 fi
 
+# Real handoff executor activation launch gate must stay fail-closed before any
+# future executor activation can move closer to external requests.
+if ! "${ROOT}/scripts/check_real_handoff_executor_activation_launch_gate_contract.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff executor activation launch gate contract check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
