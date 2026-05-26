@@ -68,6 +68,10 @@ real_handoff_opening_bundle_contract="$(grep '^REAL_HANDOFF_OPENING_BUNDLE_CONTR
 real_handoff_opening_bundle_boundary="$(grep '^REAL_HANDOFF_OPENING_BUNDLE_BOUNDARY=' <<<"$status_output" | cut -d= -f2-)"
 opening_bundle_external_request_allowed="$(grep '^OPENING_BUNDLE_EXTERNAL_REQUEST_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
 opening_bundle_runtime_mutation_allowed="$(grep '^OPENING_BUNDLE_RUNTIME_MUTATION_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
+real_handoff_opening_decision_packet_contract="$(grep '^REAL_HANDOFF_OPENING_DECISION_PACKET_CONTRACT=' <<<"$status_output" | cut -d= -f2-)"
+real_handoff_opening_decision_packet_boundary="$(grep '^REAL_HANDOFF_OPENING_DECISION_PACKET_BOUNDARY=' <<<"$status_output" | cut -d= -f2-)"
+opening_decision_packet_external_request_allowed="$(grep '^OPENING_DECISION_PACKET_EXTERNAL_REQUEST_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
+opening_decision_packet_runtime_mutation_allowed="$(grep '^OPENING_DECISION_PACKET_RUNTIME_MUTATION_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
 
 [[ "$real_handoff_adapter" == "present" ]] || fail "real handoff adapter should be present in review status output"
 [[ "$real_handoff_mode" == "mock_only" ]] || fail "real handoff adapter should stay in mock_only mode"
@@ -89,6 +93,10 @@ opening_bundle_runtime_mutation_allowed="$(grep '^OPENING_BUNDLE_RUNTIME_MUTATIO
 [[ "$real_handoff_opening_bundle_boundary" == "review_only" ]] || fail "real handoff opening bundle contract should stay review_only"
 [[ "$opening_bundle_external_request_allowed" == "no" ]] || fail "opening bundle contract must not allow external requests"
 [[ "$opening_bundle_runtime_mutation_allowed" == "no" ]] || fail "opening bundle contract must not allow runtime mutation"
+[[ "$real_handoff_opening_decision_packet_contract" == "present" ]] || fail "real handoff opening decision packet contract should be present in review status output"
+[[ "$real_handoff_opening_decision_packet_boundary" == "review_only" ]] || fail "real handoff opening decision packet contract should stay review_only"
+[[ "$opening_decision_packet_external_request_allowed" == "no" ]] || fail "opening decision packet contract must not allow external requests"
+[[ "$opening_decision_packet_runtime_mutation_allowed" == "no" ]] || fail "opening decision packet contract must not allow runtime mutation"
 
 case "$state" in
   synthetic_only)

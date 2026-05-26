@@ -75,6 +75,10 @@ Fields:
   REAL_HANDOFF_OPENING_BUNDLE_BOUNDARY review_only / invalid
   OPENING_BUNDLE_EXTERNAL_REQUEST_ALLOWED yes/no
   OPENING_BUNDLE_RUNTIME_MUTATION_ALLOWED yes/no
+  REAL_HANDOFF_OPENING_DECISION_PACKET_CONTRACT present / missing
+  REAL_HANDOFF_OPENING_DECISION_PACKET_BOUNDARY review_only / invalid
+  OPENING_DECISION_PACKET_EXTERNAL_REQUEST_ALLOWED yes/no
+  OPENING_DECISION_PACKET_RUNTIME_MUTATION_ALLOWED yes/no
 
 This report does not authorize a real controlled send or live trading.
 EOF
@@ -288,6 +292,43 @@ print("OPENING_BUNDLE_RUNTIME_MUTATION_ALLOWED=no")
 PY
 )"
 
+opening_decision_packet_report="$(
+  python3 - <<'PY'
+payload = {
+    "packet_id": "real-handoff-opening-decision-packet-20260526-001",
+    "reviewed_state": "ready_for_real_review",
+    "opening_bundle_line_status": "green",
+    "evidence_command_id": "order-mocksmoke-20260525111528",
+    "artifact_path": "docs/reviews/real_testnet/FIRST_CONTROLLED_SEND_2026-05-25_order-mocksmoke-20260525111528.md",
+    "decision_packet_path": "docs/REAL_TESTNET_FIRST_CONTROLLED_SEND_DECISION_BUNDLE_V1.md",
+    "expected_executor_mode": "mock",
+    "expected_real_enable": "0",
+    "credential_slots_requested": [
+        "TESTNET_EXCHANGE_API_KEY",
+        "TESTNET_EXCHANGE_API_SECRET",
+        "TESTNET_EXCHANGE_KEY_ID",
+    ],
+    "reviewer_role": "operator_reviewer",
+    "ticket_ref": "RHODP-001",
+    "notes": "bounded opening decision packet contract",
+}
+
+boundary = "review_only"
+if payload["expected_executor_mode"] != "mock" or payload["expected_real_enable"] != "0":
+    boundary = "invalid"
+if (
+    payload["reviewed_state"] != "ready_for_real_review"
+    or payload["opening_bundle_line_status"] != "green"
+):
+    boundary = "invalid"
+
+print("REAL_HANDOFF_OPENING_DECISION_PACKET_CONTRACT=present")
+print(f"REAL_HANDOFF_OPENING_DECISION_PACKET_BOUNDARY={boundary}")
+print("OPENING_DECISION_PACKET_EXTERNAL_REQUEST_ALLOWED=no")
+print("OPENING_DECISION_PACKET_RUNTIME_MUTATION_ALLOWED=no")
+PY
+)"
+
 report="$(cat <<EOF
 FIRST_CONTROLLED_SEND_STATUS_REPORT
 STATE=${state}
@@ -300,6 +341,7 @@ ${task_input_report}
 ${placeholder_report}
 ${opening_prereq_report}
 ${opening_bundle_report}
+${opening_decision_packet_report}
 EOF
 )"
 
