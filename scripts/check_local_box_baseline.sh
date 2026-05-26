@@ -165,5 +165,12 @@ if ! "${ROOT}/scripts/check_real_handoff_execution_request_approval_gate_contrac
   exit 1
 fi
 
+# Real handoff executor activation preflight contract must stay review-safe
+# before any future executor activation can move closer to external requests.
+if ! "${ROOT}/scripts/check_real_handoff_executor_activation_preflight_contract.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff executor activation preflight contract check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
