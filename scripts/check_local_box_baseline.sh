@@ -120,5 +120,12 @@ if ! bash "${ROOT}/scripts/check_real_handoff_opening_prereq_line.sh"; then
   exit 1
 fi
 
+# Real handoff opening bundle contract must stay review-safe before any future
+# opening bundle can move closer to credential injection or runtime changes.
+if ! "${ROOT}/scripts/check_real_handoff_opening_bundle_contract.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff opening bundle contract check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
