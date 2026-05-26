@@ -6,7 +6,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/check_real_handoff_explicit_send_approval_packet_boundary.sh
+Usage: ./scripts/check_real_handoff_explicit_send_approval_packet_boundary.sh [--fixture NAME]
 
 Checks whether a future testnet external request has a bounded explicit send
 approval packet only.
@@ -33,6 +33,14 @@ if (($# > 0)); then
       usage
       exit 0
       ;;
+    --fixture)
+      if (($# != 2)); then
+        usage >&2
+        exit 2
+      fi
+      FIXTURE_NAME="$2"
+      export FIXTURE_NAME
+      ;;
     *)
       usage >&2
       exit 2
@@ -41,6 +49,8 @@ if (($# > 0)); then
 fi
 
 python3 - <<'PY'
+import os
+
 ALLOWED_KEYS = {
     "approval_packet_id",
     "send_approval_packet_boundary",
@@ -166,20 +176,35 @@ base = {
     "payload_notes": "bounded explicit send approval packet",
 }
 
-covered = [
-    assert_case("explicit_send_approval_clean", dict(base), True),
-    assert_case("approval_packet_missing", dict(base, approval_packet_id=""), False),
-    assert_case("operator_identity_missing", dict(base, operator_identity_present=""), False),
-    assert_case("approval_timestamp_missing", dict(base, approval_timestamp_present=""), False),
-    assert_case("approved_command_id_missing", dict(base, approved_command_id_present=""), False),
-    assert_case("approved_execution_mode_not_testnet", dict(base, approved_execution_mode="real"), False),
-    assert_case("review_verdict_not_pass", dict(base, review_verdict_pass="no"), True),
-    assert_case("rollback_packet_missing", dict(base, rollback_packet_present="no"), True),
-    assert_case("send_window_not_current", dict(base, send_window_current="no"), True),
-    assert_case("live_trading_requested", dict(base, live_trading="true"), False),
-    assert_case("raw_secret_present", dict(base, payload_notes="contains real-secret"), False),
-    assert_case("external_request_started_true", dict(base, external_request_started="true"), False),
-]
+fixtures = {
+    "explicit_send_approval_clean_pass_but_runtime_send_blocked": (dict(base), True),
+    "approval_packet_missing": (dict(base, approval_packet_id=""), False),
+    "operator_identity_missing": (dict(base, operator_identity_present=""), False),
+    "approval_timestamp_missing": (dict(base, approval_timestamp_present=""), False),
+    "approved_command_id_missing": (dict(base, approved_command_id_present=""), False),
+    "approved_execution_mode_not_testnet": (dict(base, approved_execution_mode="real"), False),
+    "review_verdict_not_pass": (dict(base, send_approval_packet_boundary="BLOCKED", review_verdict_pass="no"), True),
+    "rollback_packet_missing": (dict(base, send_approval_packet_boundary="BLOCKED", rollback_packet_present="no"), True),
+    "send_window_not_current": (dict(base, send_approval_packet_boundary="BLOCKED", send_window_current="no"), True),
+    "live_trading_requested": (dict(base, live_trading="true"), False),
+    "raw_secret_present": (dict(base, payload_notes="contains real-secret"), False),
+    "external_request_started_true": (dict(base, external_request_started="true"), False),
+}
+
+requested_fixture = os.getenv("FIXTURE_NAME", "").strip()
+if requested_fixture:
+    if requested_fixture not in fixtures:
+        raise SystemExit(
+            "REAL_HANDOFF_EXPLICIT_SEND_APPROVAL_PACKET_BOUNDARY_CHECK FAIL: "
+            f"unknown fixture {requested_fixture!r}"
+        )
+    payload, should_pass = fixtures[requested_fixture]
+    covered = [assert_case(requested_fixture, payload, should_pass)]
+else:
+    covered = [
+        assert_case(name, payload, should_pass)
+        for name, (payload, should_pass) in fixtures.items()
+    ]
 
 print("SEND_APPROVAL_PACKET_BOUNDARY=PASS")
 print("APPROVED_EXECUTION_MODE=testnet")
