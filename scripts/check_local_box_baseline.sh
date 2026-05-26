@@ -106,18 +106,10 @@ if ! "${ROOT}/scripts/check_real_handoff_task_input_line.sh"; then
   exit 1
 fi
 
-# Real credential placeholders may only appear as explicit placeholders; any
-# real-looking value or execution intent must stay blocked before handoff.
-if ! "${ROOT}/scripts/check_real_credential_placeholder_boundary.sh"; then
-  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real credential placeholder boundary check failed" >&2
-  exit 1
-fi
-
-# Real credential placeholder review surfaces must stay aligned so reviewers do
-# not see conflicting evidence between the standalone placeholder report and
-# the first-controlled-send status stack.
-if ! "${ROOT}/scripts/check_real_credential_placeholder_report_integration.sh"; then
-  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real credential placeholder report integration check failed" >&2
+# Real credential placeholder line must stay bounded as one closeout gate:
+# placeholder boundary matrix + placeholder review-surface alignment.
+if ! bash "${ROOT}/scripts/check_real_credential_placeholder_line.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real credential placeholder line check failed" >&2
   exit 1
 fi
 
