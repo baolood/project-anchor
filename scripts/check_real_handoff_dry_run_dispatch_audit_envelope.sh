@@ -5,7 +5,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/check_real_handoff_dry_run_dispatch_audit_envelope.sh
+Usage: ./scripts/check_real_handoff_dry_run_dispatch_audit_envelope.sh [--fixture <name>]
 
 Checks that a future dry-run dispatch produces an auditable envelope.
 
@@ -24,20 +24,33 @@ is BLOCKED.
 EOF
 }
 
-if (($# > 0)); then
+FIXTURE="matrix"
+
+while (($# > 0)); do
   case "$1" in
     -h|--help)
       usage
       exit 0
+      ;;
+    --fixture)
+      shift
+      if (($# == 0)); then
+        echo "REAL_HANDOFF_DRY_RUN_DISPATCH_AUDIT_ENVELOPE_CHECK FAIL: --fixture requires a value" >&2
+        exit 2
+      fi
+      FIXTURE="$1"
       ;;
     *)
       usage >&2
       exit 2
       ;;
   esac
-fi
+  shift
+done
 
-python3 - <<'PY'
+FIXTURE="${FIXTURE}" python3 - <<'PY'
+import os
+
 ALLOWED_KEYS = {
     "audit_envelope_id",
     "adapter_mode",
@@ -135,16 +148,29 @@ base = {
     "payload_notes": "bounded dry run dispatch audit envelope",
 }
 
-covered = [
-    assert_case("dry_run_audit_clean", dict(base), True),
-    assert_case("adapter_mode_real", dict(base, adapter_mode="real"), False),
-    assert_case("external_request_started", dict(base, external_request_started="true"), False),
-    assert_case("runtime_mutation", dict(base, runtime_mutation="true"), False),
-    assert_case("live_trading", dict(base, live_trading="true"), False),
-    assert_case("audit_result_missing", dict(base, audit_result_present="false"), False),
-    assert_case("review_verdict_not_required", dict(base, review_verdict_required="false"), False),
-    assert_case("raw_secret_present", dict(base, payload_notes="contains real-secret"), False),
-]
+cases = {
+    "clean_dry_run_pass": (dict(base), True),
+    "external_request_started_true_blocked": (dict(base, external_request_started="true"), False),
+    "runtime_mutation_true_blocked": (dict(base, runtime_mutation="true"), False),
+    "live_trading_true_blocked": (dict(base, live_trading="true"), False),
+    "audit_result_missing_blocked": (dict(base, audit_result_present="false"), False),
+    "review_verdict_missing_blocked": (dict(base, review_verdict_required="false"), False),
+    "adapter_mode_not_dry_run_blocked": (dict(base, adapter_mode="real"), False),
+    "raw_secret_present_blocked": (dict(base, payload_notes="contains real-secret"), False),
+}
+
+fixture = os.environ.get("FIXTURE", "matrix")
+
+if fixture == "matrix":
+    covered = [assert_case(name, payload, should_pass) for name, (payload, should_pass) in cases.items()]
+else:
+    if fixture not in cases:
+        raise SystemExit(
+            "REAL_HANDOFF_DRY_RUN_DISPATCH_AUDIT_ENVELOPE_CHECK FAIL: "
+            f"unsupported fixture {fixture}"
+        )
+    payload, should_pass = cases[fixture]
+    covered = [assert_case(fixture, payload, should_pass)]
 
 print("DRY_RUN_DISPATCH_AUDIT_ENVELOPE=PASS")
 print("ADAPTER_MODE=dry_run")
