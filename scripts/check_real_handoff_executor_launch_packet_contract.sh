@@ -5,7 +5,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/check_real_handoff_executor_launch_packet_contract.sh
+Usage: ./scripts/check_real_handoff_executor_launch_packet_contract.sh [--fixture <name>]
 
 Checks a fixture matrix for the future real handoff executor-launch-packet
 contract.
@@ -35,20 +35,33 @@ requests, or authorize live trading.
 EOF
 }
 
-if (($# > 0)); then
+FIXTURE="matrix"
+
+while (($# > 0)); do
   case "$1" in
     -h|--help)
       usage
       exit 0
+      ;;
+    --fixture)
+      shift
+      if (($# == 0)); then
+        echo "REAL_HANDOFF_EXECUTOR_LAUNCH_PACKET_CONTRACT_CHECK FAIL: --fixture requires a value" >&2
+        exit 2
+      fi
+      FIXTURE="$1"
       ;;
     *)
       usage >&2
       exit 2
       ;;
   esac
-fi
+  shift
+done
 
-python3 - <<'PY'
+FIXTURE="${FIXTURE}" python3 - <<'PY'
+import os
+
 ALLOWED_KEYS = {
     "launch_packet_id",
     "reviewed_state",
@@ -180,20 +193,33 @@ base = {
     "notes": "bounded executor launch packet contract",
 }
 
-covered = [
-    assert_case("minimal_valid_executor_launch_packet", dict(base), True),
-    assert_case("launch_gate_not_green", dict(base, executor_activation_launch_gate_status="blocked"), False),
-    assert_case("launch_now_requested", dict(base, launch_packet_mode="launch_now"), False),
-    assert_case("review_artifact_missing", dict(base, review_artifact_status="missing"), False),
-    assert_case("rollback_plan_missing", dict(base, rollback_plan_status="missing"), False),
-    assert_case("real_mode_requested", dict(base, expected_executor_mode="real"), False),
-    assert_case("real_enable_requested", dict(base, expected_real_enable="1"), False),
-    assert_case("credential_state_unknown", dict(base, credential_state="unknown"), False),
-    assert_case("unapproved_exchange_base_url", dict(base, approved_exchange_base_url="https://evil.example.com"), False),
-    assert_case("external_request_now_true", dict(base, external_request_now="true"), False),
-    assert_case("live_trading_requested", dict(base, live_trading_requested="true"), False),
-    assert_case("secret_value_present", dict(base, api_key="real-key"), False),
-]
+cases = {
+    "not_launchable_default": (dict(base), True),
+    "launch_gate_not_green": (dict(base, executor_activation_launch_gate_status="blocked"), False),
+    "launch_now_requested": (dict(base, launch_packet_mode="launch_now"), False),
+    "review_artifact_missing": (dict(base, review_artifact_status="missing"), False),
+    "rollback_plan_missing": (dict(base, rollback_plan_status="missing"), False),
+    "real_mode_requested": (dict(base, expected_executor_mode="real"), False),
+    "real_enable_requested": (dict(base, expected_real_enable="1"), False),
+    "credential_state_unknown": (dict(base, credential_state="unknown"), False),
+    "unapproved_exchange_base_url": (dict(base, approved_exchange_base_url="https://evil.example.com"), False),
+    "external_request_now_true": (dict(base, external_request_now="true"), False),
+    "live_trading_requested": (dict(base, live_trading_requested="true"), False),
+    "secret_value_present": (dict(base, api_key="real-key"), False),
+}
+
+fixture = os.environ.get("FIXTURE", "matrix")
+
+if fixture == "matrix":
+    covered = [assert_case(name, payload, should_pass) for name, (payload, should_pass) in cases.items()]
+else:
+    if fixture not in cases:
+        raise SystemExit(
+            "REAL_HANDOFF_EXECUTOR_LAUNCH_PACKET_CONTRACT_CHECK FAIL: "
+            f"unsupported fixture {fixture}"
+        )
+    payload, should_pass = cases[fixture]
+    covered = [assert_case(fixture, payload, should_pass)]
 
 print(
     "REAL_HANDOFF_EXECUTOR_LAUNCH_PACKET_CONTRACT_CHECK PASS: fixture matrix intact for "

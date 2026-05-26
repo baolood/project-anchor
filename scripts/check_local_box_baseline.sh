@@ -194,8 +194,9 @@ if ! "${ROOT}/scripts/check_real_handoff_executor_activation_launch_gate_contrac
   exit 1
 fi
 
-# Real handoff executor launch packet contract must stay review-safe before any
-# future executor launch can move closer to external requests.
+# Real handoff executor launch packet contract must stay review-safe as a
+# fixture matrix before any future executor launch can move closer to external
+# requests.
 if ! "${ROOT}/scripts/check_real_handoff_executor_launch_packet_contract.sh"; then
   echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff executor launch packet contract check failed" >&2
   exit 1
