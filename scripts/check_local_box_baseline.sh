@@ -106,5 +106,12 @@ if ! "${ROOT}/scripts/check_real_handoff_task_input_line.sh"; then
   exit 1
 fi
 
+# Real credential placeholders may only appear as explicit placeholders; any
+# real-looking value or execution intent must stay blocked before handoff.
+if ! "${ROOT}/scripts/check_real_credential_placeholder_boundary.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real credential placeholder boundary check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
