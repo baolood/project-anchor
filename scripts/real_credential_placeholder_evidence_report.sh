@@ -20,6 +20,13 @@ while (($# > 0)); do
     --fixture)
       require_value "--fixture" "${2:-}"
       FIXTURE="${2:-}"
+      case "$FIXTURE" in
+        review|drift_real_posture|real_key_value_present|real_secret_value_present|runtime_mutation_intent_present|external_request_intent_present|live_trading_intent_present) ;;
+        *)
+          echo "REAL_CREDENTIAL_PLACEHOLDER_EVIDENCE FAIL: unsupported fixture: ${FIXTURE}" >&2
+          exit 2
+          ;;
+      esac
       shift 2
       ;;
     --out)
@@ -29,11 +36,13 @@ while (($# > 0)); do
       ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/real_credential_placeholder_evidence_report.sh [--fixture <review|drift>] [--out <path>]
+Usage: ./scripts/real_credential_placeholder_evidence_report.sh [--fixture <name>] [--out <path>]
 
 Fields:
   REAL_CREDENTIAL_PLACEHOLDER_EVIDENCE
   FIXTURE
+  PLACEHOLDER_VALIDATION
+  PLACEHOLDER_BLOCKED_REASONS
   REAL_CREDENTIAL_PLACEHOLDER_BOUNDARY
   REAL_CREDENTIAL_PLACEHOLDER_POLICY
   PLACEHOLDER_EXTERNAL_REQUEST_ALLOWED
@@ -45,8 +54,13 @@ Fields:
   PLACEHOLDER_SLOTS
 
 Fixtures:
-  review  placeholder-only bounded posture
-  drift   intentionally invalid posture for review evidence only
+  review
+  drift_real_posture
+  real_key_value_present
+  real_secret_value_present
+  runtime_mutation_intent_present
+  external_request_intent_present
+  live_trading_intent_present
 
 This report does not inject credentials, mutate runtime, issue external
 requests, or authorize live trading.
@@ -79,17 +93,20 @@ payload = {
 
 if fixture == "review":
     pass
-elif fixture == "drift":
+elif fixture == "drift_real_posture":
     payload["expected_executor_mode"] = "real"
     payload["expected_real_enable"] = "1"
     payload["notes"] = "drift fixture for review evidence only"
-else:
-    print(
-        "REAL_CREDENTIAL_PLACEHOLDER_EVIDENCE FAIL: unsupported fixture: "
-        f"{fixture}",
-        file=sys.stderr,
-    )
-    sys.exit(2)
+elif fixture == "real_key_value_present":
+    payload["TESTNET_EXCHANGE_API_KEY"] = "real-key"
+elif fixture == "real_secret_value_present":
+    payload["TESTNET_EXCHANGE_API_SECRET"] = "real-secret"
+elif fixture == "runtime_mutation_intent_present":
+    payload["notes"] = "export TESTNET_EXECUTOR_REAL_ENABLE=1 before handoff"
+elif fixture == "external_request_intent_present":
+    payload["notes"] = "send now external request after placeholder review"
+elif fixture == "live_trading_intent_present":
+    payload["notes"] = "live trading approval follows this placeholder handoff"
 
 slots = [
     "TESTNET_EXCHANGE_API_KEY",
@@ -98,11 +115,33 @@ slots = [
 ]
 
 policy = "placeholder_only"
+blocked_reasons = []
 if payload["expected_executor_mode"] != "mock" or payload["expected_real_enable"] != "0":
     policy = "invalid"
+    blocked_reasons.append("invalid_expected_executor_posture")
+if payload["TESTNET_EXCHANGE_API_KEY"] not in {"<placeholder>", "<redacted>", "NOT_COLLECTED", ""}:
+    policy = "invalid"
+    blocked_reasons.append("real_key_value_present")
+if payload["TESTNET_EXCHANGE_API_SECRET"] not in {"<placeholder>", "<redacted>", "NOT_COLLECTED", ""}:
+    policy = "invalid"
+    blocked_reasons.append("real_secret_value_present")
+notes = payload["notes"].lower()
+if "external request" in notes or "send now" in notes:
+    policy = "invalid"
+    blocked_reasons.append("external_request_intent_present")
+if "live trading" in notes or "go live now" in notes:
+    policy = "invalid"
+    blocked_reasons.append("live_trading_intent_present")
+if "export testnet_executor_real_enable=1" in notes:
+    policy = "invalid"
+    blocked_reasons.append("runtime_mutation_intent_present")
+
+validation = "PASS" if not blocked_reasons else "BLOCKED"
 
 print("REAL_CREDENTIAL_PLACEHOLDER_EVIDENCE")
 print(f"FIXTURE={fixture}")
+print(f"PLACEHOLDER_VALIDATION={validation}")
+print("PLACEHOLDER_BLOCKED_REASONS=" + (",".join(blocked_reasons) or "none"))
 print("REAL_CREDENTIAL_PLACEHOLDER_BOUNDARY=present")
 print(f"REAL_CREDENTIAL_PLACEHOLDER_POLICY={policy}")
 print("PLACEHOLDER_EXTERNAL_REQUEST_ALLOWED=no")
