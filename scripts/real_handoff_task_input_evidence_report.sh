@@ -4,6 +4,7 @@
 set -euo pipefail
 
 OUT_FILE="${OUT_FILE:-}"
+FIXTURE="review"
 
 require_value() {
   local opt="$1"
@@ -16,6 +17,18 @@ require_value() {
 
 while (($# > 0)); do
   case "$1" in
+    --fixture)
+      require_value "--fixture" "${2:-}"
+      FIXTURE="${2:-}"
+      case "$FIXTURE" in
+        review|drift) ;;
+        *)
+          echo "REAL_HANDOFF_TASK_INPUT_EVIDENCE FAIL: unsupported fixture: ${FIXTURE}" >&2
+          exit 2
+          ;;
+      esac
+      shift 2
+      ;;
     --out)
       require_value "--out" "${2:-}"
       OUT_FILE="${2:-}"
@@ -23,10 +36,16 @@ while (($# > 0)); do
       ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/real_handoff_task_input_evidence_report.sh [--out <path>]
+Usage: ./scripts/real_handoff_task_input_evidence_report.sh [--fixture <review|drift>] [--out <path>]
+
+Options:
+  --fixture <review|drift>  Emit evidence for the bounded review-only fixture
+                            or a drifted real-posture request fixture.
+  --out <path>              Write the report to a file (stdout always prints).
 
 Fields:
   REAL_HANDOFF_TASK_INPUT_EVIDENCE
+  FIXTURE
   REAL_HANDOFF_TASK_INPUT_CONTRACT
   REAL_HANDOFF_TASK_INPUT_BOUNDARY
   TASK_INPUT_EXTERNAL_REQUEST_ALLOWED
@@ -38,7 +57,7 @@ Fields:
   TASK_INPUT_CREDENTIAL_SLOT_COUNT
   TASK_INPUT_CREDENTIAL_SLOTS
 
-This report uses a bounded review-only fixture. It does not inject
+This report uses bounded local fixtures only. It does not inject
 credentials, mutate runtime, issue external requests, or authorize live
 trading.
 EOF
@@ -53,7 +72,10 @@ EOF
 done
 
 report="$(
-  python3 - <<'PY'
+  FIXTURE="${FIXTURE}" python3 - <<'PY'
+import os
+
+fixture_name = os.environ["FIXTURE"]
 payload = {
     "handoff_id": "real-handoff-20260526-001",
     "requested_by": "baolood",
@@ -73,11 +95,19 @@ payload = {
     "notes": "bounded handoff planning input",
 }
 
+if fixture_name == "drift":
+    payload["expected_executor_mode"] = "real"
+    payload["expected_real_enable"] = "1"
+
 slots = payload["credential_slots_requested"]
+boundary = "review_only"
+if payload["expected_executor_mode"] != "mock" or payload["expected_real_enable"] != "0":
+    boundary = "invalid"
 
 print("REAL_HANDOFF_TASK_INPUT_EVIDENCE")
+print(f"FIXTURE={fixture_name}")
 print("REAL_HANDOFF_TASK_INPUT_CONTRACT=present")
-print("REAL_HANDOFF_TASK_INPUT_BOUNDARY=review_only")
+print(f"REAL_HANDOFF_TASK_INPUT_BOUNDARY={boundary}")
 print("TASK_INPUT_EXTERNAL_REQUEST_ALLOWED=no")
 print("TASK_INPUT_RUNTIME_MUTATION_ALLOWED=no")
 print("TASK_INPUT_LIVE_TRADING_ALLOWED=no")
