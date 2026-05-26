@@ -99,18 +99,10 @@ if ! "${ROOT}/scripts/check_real_handoff_adapter_runtime_fixture_drift.sh"; then
   exit 1
 fi
 
-# Future real handoff task input must stay bounded to review-only evidence and
-# requested credential slots, without secret values or runtime/external toggles.
-if ! "${ROOT}/scripts/check_real_handoff_task_input_contract.sh"; then
-  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff task input contract check failed" >&2
-  exit 1
-fi
-
-# Real handoff task-input review surfaces must stay aligned so reviewers do not
-# see conflicting evidence between the standalone task-input report and the
-# status stack.
-if ! "${ROOT}/scripts/check_real_handoff_task_input_report_integration.sh"; then
-  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff task input report integration check failed" >&2
+# Real handoff task-input line must stay bounded as one closeout gate:
+# review-only contract + review-surface alignment.
+if ! "${ROOT}/scripts/check_real_handoff_task_input_line.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff task input line check failed" >&2
   exit 1
 fi
 
