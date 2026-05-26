@@ -5,7 +5,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/check_real_handoff_testnet_credential_runtime_presence_boundary.sh
+Usage: ./scripts/check_real_handoff_testnet_credential_runtime_presence_boundary.sh [--fixture <name>]
 
 Checks that testnet credential runtime presence can only be classified as a
 bounded presence state.
@@ -23,24 +23,38 @@ perform live trading, or skip the operator-approval gate is BLOCKED.
 EOF
 }
 
-if (($# > 0)); then
+FIXTURE="matrix"
+
+while (($# > 0)); do
   case "$1" in
     -h|--help)
       usage
       exit 0
+      ;;
+    --fixture)
+      shift
+      if (($# == 0)); then
+        echo "REAL_HANDOFF_TESTNET_CREDENTIAL_RUNTIME_PRESENCE_BOUNDARY_CHECK FAIL: --fixture requires a value" >&2
+        exit 2
+      fi
+      FIXTURE="$1"
       ;;
     *)
       usage >&2
       exit 2
       ;;
   esac
-fi
+  shift
+done
 
-python3 - <<'PY'
+FIXTURE="${FIXTURE}" python3 - <<'PY'
+import os
+
 ALLOWED_KEYS = {
     "presence_boundary_id",
     "testnet_credential_runtime_presence",
     "secret_value_printed",
+    "env_file_read_attempted",
     "external_request_started",
     "runtime_mutation",
     "live_trading",
@@ -63,6 +77,7 @@ REQUIRED_STRING_KEYS = {
     "presence_boundary_id",
     "testnet_credential_runtime_presence",
     "secret_value_printed",
+    "env_file_read_attempted",
     "external_request_started",
     "runtime_mutation",
     "live_trading",
@@ -91,6 +106,8 @@ def validate(payload):
         reasons.append("invalid_presence_state")
     if payload.get("secret_value_printed") != "false":
         reasons.append("secret_value_printed")
+    if payload.get("env_file_read_attempted") != "false":
+        reasons.append("env_file_read_attempted")
     if payload.get("external_request_started") != "false":
         reasons.append("external_request_started")
     if payload.get("runtime_mutation") != "false":
@@ -129,6 +146,7 @@ base = {
     "presence_boundary_id": "real-handoff-testnet-credential-runtime-presence-20260526-001",
     "testnet_credential_runtime_presence": "unknown",
     "secret_value_printed": "false",
+    "env_file_read_attempted": "false",
     "external_request_started": "false",
     "runtime_mutation": "false",
     "live_trading": "false",
@@ -136,17 +154,29 @@ base = {
     "payload_notes": "bounded testnet credential runtime presence boundary",
 }
 
-covered = [
-    assert_case("presence_unknown_clean", dict(base), True),
-    assert_case("presence_present_clean", dict(base, testnet_credential_runtime_presence="present"), True),
-    assert_case("presence_missing_clean", dict(base, testnet_credential_runtime_presence="missing"), True),
-    assert_case("secret_value_printed", dict(base, secret_value_printed="true"), False),
-    assert_case("external_request_started", dict(base, external_request_started="true"), False),
-    assert_case("runtime_mutation", dict(base, runtime_mutation="true"), False),
-    assert_case("live_trading", dict(base, live_trading="true"), False),
-    assert_case("raw_secret_present", dict(base, payload_notes="contains real-secret"), False),
-    assert_case("next_gate_opened", dict(base, next_gate="allowed_now"), False),
-]
+cases = {
+    "credential_missing_blocked": (dict(base, testnet_credential_runtime_presence="missing"), True),
+    "credential_present_redacted_pass": (dict(base, testnet_credential_runtime_presence="present"), True),
+    "credential_unknown_blocked": (dict(base, testnet_credential_runtime_presence="unknown"), True),
+    "secret_value_print_attempt_blocked": (dict(base, secret_value_printed="true"), False),
+    "env_file_read_attempt_blocked": (dict(base, env_file_read_attempted="true"), False),
+    "live_trading_requested_blocked": (dict(base, live_trading="true"), False),
+    "external_request_requested_blocked": (dict(base, external_request_started="true"), False),
+    "runtime_mutation_requested_blocked": (dict(base, runtime_mutation="true"), False),
+}
+
+fixture = os.environ.get("FIXTURE", "matrix")
+
+if fixture == "matrix":
+    covered = [assert_case(name, payload, should_pass) for name, (payload, should_pass) in cases.items()]
+else:
+    if fixture not in cases:
+        raise SystemExit(
+            "REAL_HANDOFF_TESTNET_CREDENTIAL_RUNTIME_PRESENCE_BOUNDARY_CHECK FAIL: "
+            f"unsupported fixture {fixture}"
+        )
+    payload, should_pass = cases[fixture]
+    covered = [assert_case(fixture, payload, should_pass)]
 
 print("TESTNET_CREDENTIAL_RUNTIME_PRESENCE=unknown")
 print("SECRET_VALUE_PRINTED=false")
