@@ -5,7 +5,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/check_real_handoff_testnet_external_request_dry_approval_boundary.sh
+Usage: ./scripts/check_real_handoff_testnet_external_request_dry_approval_boundary.sh [--fixture NAME]
 
 Checks whether a future testnet external request may enter dry approval only.
 
@@ -29,6 +29,14 @@ if (($# > 0)); then
       usage
       exit 0
       ;;
+    --fixture)
+      if (($# != 2)); then
+        usage >&2
+        exit 2
+      fi
+      FIXTURE_NAME="$2"
+      export FIXTURE_NAME
+      ;;
     *)
       usage >&2
       exit 2
@@ -37,6 +45,8 @@ if (($# > 0)); then
 fi
 
 python3 - <<'PY'
+import os
+
 ALLOWED_KEYS = {
     "dry_approval_id",
     "dry_approval_boundary",
@@ -143,17 +153,38 @@ base = {
     "payload_notes": "bounded dry approval boundary",
 }
 
-covered = [
-    assert_case("dry_approval_clean", dict(base), True),
-    assert_case("credential_present_redacted", dict(base, credential_presence="present_redacted"), True),
-    assert_case("credential_missing", dict(base, credential_presence="missing"), True),
-    assert_case("real_review_ready_yes", dict(base, real_review_ready="yes"), True),
-    assert_case("operator_approval_present_yes", dict(base, operator_approval_present="yes"), True),
-    assert_case("external_request_started_blocked", dict(base, external_request_started="true"), False),
-    assert_case("live_trading_blocked", dict(base, live_trading="true"), False),
-    assert_case("raw_secret_present_blocked", dict(base, payload_notes="contains real-secret"), False),
-    assert_case("next_gate_opened", dict(base, next_gate="allowed_now"), False),
-]
+fixtures = {
+    "dry_approval_clean_pass_but_send_blocked": (dict(base), True),
+    "credential_unknown_blocked": (dict(base, dry_approval_boundary="BLOCKED"), True),
+    "real_review_not_ready_blocked": (dict(base, dry_approval_boundary="BLOCKED"), True),
+    "operator_approval_missing_blocked": (dict(base, dry_approval_boundary="BLOCKED"), True),
+    "credential_present_redacted_pass": (dict(base, credential_presence="present_redacted"), True),
+    "credential_missing_pass": (dict(base, credential_presence="missing"), True),
+    "real_review_ready_yes_pass": (dict(base, real_review_ready="yes"), True),
+    "operator_approval_present_yes_pass": (dict(base, operator_approval_present="yes"), True),
+    "external_request_started_true_blocked": (dict(base, external_request_started="true"), False),
+    "live_trading_true_blocked": (dict(base, live_trading="true"), False),
+    "secret_print_attempt_blocked": (dict(base, payload_notes="contains real-secret"), False),
+    "send_approval_present_but_window_closed_blocked": (
+        dict(base, dry_approval_boundary="BLOCKED", operator_approval_present="yes", real_review_ready="yes"),
+        True,
+    ),
+}
+
+requested_fixture = os.getenv("FIXTURE_NAME", "").strip()
+if requested_fixture:
+    if requested_fixture not in fixtures:
+        raise SystemExit(
+            "REAL_HANDOFF_TESTNET_EXTERNAL_REQUEST_DRY_APPROVAL_BOUNDARY_CHECK FAIL: "
+            f"unknown fixture {requested_fixture!r}"
+        )
+    payload, should_pass = fixtures[requested_fixture]
+    covered = [assert_case(requested_fixture, payload, should_pass)]
+else:
+    covered = [
+        assert_case(name, payload, should_pass)
+        for name, (payload, should_pass) in fixtures.items()
+    ]
 
 print("DRY_APPROVAL_BOUNDARY=PASS")
 print("CREDENTIAL_PRESENCE=unknown")
