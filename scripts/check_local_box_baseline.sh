@@ -237,5 +237,12 @@ if ! "${ROOT}/scripts/check_real_handoff_executor_final_dispatch_preflight_contr
   exit 1
 fi
 
+# Real handoff executor dry-run dispatch boundary must stay dry-run only before
+# any future executor dispatch can move closer to external requests.
+if ! "${ROOT}/scripts/check_real_handoff_executor_dry_run_dispatch_boundary.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff executor dry-run dispatch boundary check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
