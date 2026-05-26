@@ -92,5 +92,12 @@ if ! "${ROOT}/scripts/check_real_handoff_adapter_report_integration.sh"; then
   exit 1
 fi
 
+# Drift posture must remain visibly blocked before any real credential
+# handoff work can move past review-safe fixtures.
+if ! "${ROOT}/scripts/check_real_handoff_adapter_runtime_fixture_drift.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff adapter runtime fixture drift check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0

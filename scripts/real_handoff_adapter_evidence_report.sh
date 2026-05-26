@@ -9,6 +9,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || {
 }
 
 OUT_FILE="${OUT_FILE:-}"
+FIXTURE="mock"
 
 require_value() {
   local opt="$1"
@@ -21,6 +22,18 @@ require_value() {
 
 while (($# > 0)); do
   case "$1" in
+    --fixture)
+      require_value "--fixture" "${2:-}"
+      FIXTURE="${2:-}"
+      case "$FIXTURE" in
+        mock|drift) ;;
+        *)
+          echo "REAL_HANDOFF_ADAPTER_EVIDENCE FAIL: unsupported fixture: ${FIXTURE}" >&2
+          exit 2
+          ;;
+      esac
+      shift 2
+      ;;
     --out)
       require_value "--out" "${2:-}"
       OUT_FILE="${2:-}"
@@ -28,10 +41,16 @@ while (($# > 0)); do
       ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/real_handoff_adapter_evidence_report.sh [--out <path>]
+Usage: ./scripts/real_handoff_adapter_evidence_report.sh [--fixture <mock|drift>] [--out <path>]
+
+Options:
+  --fixture <mock|drift>  Emit evidence for the bounded mock fixture or a
+                          drifted real-mode fixture.
+  --out <path>            Write the report to a file (stdout always prints).
 
 Fields:
   REAL_HANDOFF_ADAPTER
+  FIXTURE
   REAL_HANDOFF_MODE
   EXTERNAL_REQUEST_ALLOWED
   RUNTIME_MUTATION_ALLOWED
@@ -42,7 +61,7 @@ Fields:
   BLOCKED_REASONS
   FUTURE_HANDOFF_KEYS
 
-This report uses the canonical mock fixture only. It does not inject
+This report uses bounded local fixtures only. It does not inject
 credentials, mutate runtime, issue external requests, or authorize live
 trading.
 EOF
@@ -58,20 +77,26 @@ done
 
 report="$(
   cd "${ROOT}/anchor-backend"
-  python3 - <<'PY'
+  FIXTURE="${FIXTURE}" python3 - <<'PY'
+import os
+
 from app.executors.testnet_real_handoff_adapter import build_real_handoff_adapter_skeleton
 
+fixture_name = os.environ["FIXTURE"]
+fixture = {
+    "TESTNET_EXCHANGE_BASE_URL": "https://testnet.binancefuture.com",
+    "TESTNET_EXECUTOR_MODE": "mock",
+    "TESTNET_EXECUTOR_REAL_ENABLE": "0",
+    "TESTNET_EXCHANGE_API_KEY": "",
+    "TESTNET_EXCHANGE_API_SECRET": "",
+    "TESTNET_EXCHANGE_KEY_ID": "",
+}
 
-adapter = build_real_handoff_adapter_skeleton(
-    {
-        "TESTNET_EXCHANGE_BASE_URL": "https://testnet.binancefuture.com",
-        "TESTNET_EXECUTOR_MODE": "mock",
-        "TESTNET_EXECUTOR_REAL_ENABLE": "0",
-        "TESTNET_EXCHANGE_API_KEY": "",
-        "TESTNET_EXCHANGE_API_SECRET": "",
-        "TESTNET_EXCHANGE_KEY_ID": "",
-    }
-)
+if fixture_name == "drift":
+    fixture["TESTNET_EXECUTOR_MODE"] = "real"
+    fixture["TESTNET_EXECUTOR_REAL_ENABLE"] = "1"
+
+adapter = build_real_handoff_adapter_skeleton(fixture)
 
 runtime = adapter["current_runtime"]
 mode = "mock_only" if runtime["credential_free_mock_posture"] else "drifted"
@@ -80,6 +105,7 @@ future_keys = ",".join(adapter["future_handoff_keys"])
 
 print("REAL_HANDOFF_ADAPTER_EVIDENCE")
 print("REAL_HANDOFF_ADAPTER=present")
+print(f"FIXTURE={fixture_name}")
 print(f"REAL_HANDOFF_MODE={mode}")
 print(
     "EXTERNAL_REQUEST_ALLOWED="
