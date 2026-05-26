@@ -134,5 +134,13 @@ if ! bash "${ROOT}/scripts/check_real_handoff_opening_decision_packet_line.sh"; 
   exit 1
 fi
 
+# Real handoff opening signoff packet contract must stay review-safe before any
+# future opening signoff packet can move closer to credential injection or
+# runtime changes.
+if ! "${ROOT}/scripts/check_real_handoff_opening_signoff_packet_contract.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff opening signoff packet contract check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
