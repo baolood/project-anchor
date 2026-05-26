@@ -258,5 +258,12 @@ if ! "${ROOT}/scripts/check_real_handoff_testnet_credential_runtime_presence_bou
   exit 1
 fi
 
+# Real handoff testnet external request dry approval must stay request-free
+# before any future explicit send approval can be considered.
+if ! "${ROOT}/scripts/check_real_handoff_testnet_external_request_dry_approval_boundary.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff testnet external request dry approval boundary check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
