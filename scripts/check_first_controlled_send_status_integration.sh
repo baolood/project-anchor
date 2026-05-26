@@ -52,11 +52,19 @@ real_handoff_adapter="$(grep '^REAL_HANDOFF_ADAPTER=' <<<"$status_output" | cut 
 real_handoff_mode="$(grep '^REAL_HANDOFF_MODE=' <<<"$status_output" | cut -d= -f2-)"
 external_request_allowed="$(grep '^EXTERNAL_REQUEST_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
 runtime_mutation_allowed="$(grep '^RUNTIME_MUTATION_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
+real_handoff_task_input_contract="$(grep '^REAL_HANDOFF_TASK_INPUT_CONTRACT=' <<<"$status_output" | cut -d= -f2-)"
+real_handoff_task_input_boundary="$(grep '^REAL_HANDOFF_TASK_INPUT_BOUNDARY=' <<<"$status_output" | cut -d= -f2-)"
+task_input_external_request_allowed="$(grep '^TASK_INPUT_EXTERNAL_REQUEST_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
+task_input_runtime_mutation_allowed="$(grep '^TASK_INPUT_RUNTIME_MUTATION_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
 
 [[ "$real_handoff_adapter" == "present" ]] || fail "real handoff adapter should be present in review status output"
 [[ "$real_handoff_mode" == "mock_only" ]] || fail "real handoff adapter should stay in mock_only mode"
 [[ "$external_request_allowed" == "no" ]] || fail "real handoff adapter must not allow external requests"
 [[ "$runtime_mutation_allowed" == "no" ]] || fail "real handoff adapter must not allow runtime mutation"
+[[ "$real_handoff_task_input_contract" == "present" ]] || fail "real handoff task input contract should be present in review status output"
+[[ "$real_handoff_task_input_boundary" == "review_only" ]] || fail "real handoff task input contract should stay review_only"
+[[ "$task_input_external_request_allowed" == "no" ]] || fail "real handoff task input contract must not allow external requests"
+[[ "$task_input_runtime_mutation_allowed" == "no" ]] || fail "real handoff task input contract must not allow runtime mutation"
 
 case "$state" in
   synthetic_only)

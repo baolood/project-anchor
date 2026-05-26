@@ -59,6 +59,10 @@ Fields:
   REAL_HANDOFF_MODE      mock_only / drifted / unknown
   EXTERNAL_REQUEST_ALLOWED yes/no
   RUNTIME_MUTATION_ALLOWED yes/no
+  REAL_HANDOFF_TASK_INPUT_CONTRACT present / missing
+  REAL_HANDOFF_TASK_INPUT_BOUNDARY review_only / invalid
+  TASK_INPUT_EXTERNAL_REQUEST_ALLOWED yes/no
+  TASK_INPUT_RUNTIME_MUTATION_ALLOWED yes/no
 
 This report does not authorize a real controlled send or live trading.
 EOF
@@ -142,6 +146,38 @@ print(
 PY
 )"
 
+task_input_report="$(
+  python3 - <<'PY'
+payload = {
+    "handoff_id": "real-handoff-20260526-001",
+    "requested_by": "baolood",
+    "reviewed_state": "ready_for_real_review",
+    "evidence_command_id": "order-mocksmoke-20260525111528",
+    "artifact_path": "docs/reviews/real_testnet/FIRST_CONTROLLED_SEND_2026-05-25_order-mocksmoke-20260525111528.md",
+    "host_label": "binance_futures_testnet",
+    "configured_origin": "https://testnet.binancefuture.com",
+    "expected_executor_mode": "mock",
+    "expected_real_enable": "0",
+    "credential_slots_requested": [
+        "TESTNET_EXCHANGE_API_KEY",
+        "TESTNET_EXCHANGE_API_SECRET",
+        "TESTNET_EXCHANGE_KEY_ID",
+    ],
+    "ticket_ref": "RH-001",
+    "notes": "bounded handoff planning input",
+}
+
+boundary = "review_only"
+if payload["expected_executor_mode"] != "mock" or payload["expected_real_enable"] != "0":
+    boundary = "invalid"
+
+print("REAL_HANDOFF_TASK_INPUT_CONTRACT=present")
+print(f"REAL_HANDOFF_TASK_INPUT_BOUNDARY={boundary}")
+print("TASK_INPUT_EXTERNAL_REQUEST_ALLOWED=no")
+print("TASK_INPUT_RUNTIME_MUTATION_ALLOWED=no")
+PY
+)"
+
 report="$(cat <<EOF
 FIRST_CONTROLLED_SEND_STATUS_REPORT
 STATE=${state}
@@ -150,6 +186,7 @@ ACTUAL_ARTIFACTS=${actual_artifacts}
 DOMAIN_WORTH_BUYING=${domain_worth_buying}
 EXTERNAL_SHOWCASE_READY=${external_showcase_ready}
 ${adapter_report}
+${task_input_report}
 EOF
 )"
 
