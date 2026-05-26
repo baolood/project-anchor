@@ -67,6 +67,10 @@ Fields:
   REAL_CREDENTIAL_PLACEHOLDER_POLICY placeholder_only / invalid
   PLACEHOLDER_EXTERNAL_REQUEST_ALLOWED yes/no
   PLACEHOLDER_RUNTIME_MUTATION_ALLOWED yes/no
+  REAL_HANDOFF_OPENING_PREREQ_CONTRACT present / missing
+  REAL_HANDOFF_OPENING_PREREQ_BOUNDARY review_only / invalid
+  OPENING_PREREQ_EXTERNAL_REQUEST_ALLOWED yes/no
+  OPENING_PREREQ_RUNTIME_MUTATION_ALLOWED yes/no
 
 This report does not authorize a real controlled send or live trading.
 EOF
@@ -204,6 +208,45 @@ print("PLACEHOLDER_RUNTIME_MUTATION_ALLOWED=no")
 PY
 )"
 
+opening_prereq_report="$(
+  python3 - <<'PY'
+payload = {
+    "opening_id": "real-handoff-opening-20260526-001",
+    "reviewed_state": "ready_for_real_review",
+    "evidence_command_id": "order-mocksmoke-20260525111528",
+    "artifact_path": "docs/reviews/real_testnet/FIRST_CONTROLLED_SEND_2026-05-25_order-mocksmoke-20260525111528.md",
+    "adapter_line_status": "green",
+    "task_input_line_status": "green",
+    "placeholder_line_status": "green",
+    "expected_executor_mode": "mock",
+    "expected_real_enable": "0",
+    "credential_slots_requested": [
+        "TESTNET_EXCHANGE_API_KEY",
+        "TESTNET_EXCHANGE_API_SECRET",
+        "TESTNET_EXCHANGE_KEY_ID",
+    ],
+    "ticket_ref": "RHO-001",
+    "notes": "bounded opening prereq contract",
+}
+
+boundary = "review_only"
+if payload["expected_executor_mode"] != "mock" or payload["expected_real_enable"] != "0":
+    boundary = "invalid"
+if (
+    payload["reviewed_state"] != "ready_for_real_review"
+    or payload["adapter_line_status"] != "green"
+    or payload["task_input_line_status"] != "green"
+    or payload["placeholder_line_status"] != "green"
+):
+    boundary = "invalid"
+
+print("REAL_HANDOFF_OPENING_PREREQ_CONTRACT=present")
+print(f"REAL_HANDOFF_OPENING_PREREQ_BOUNDARY={boundary}")
+print("OPENING_PREREQ_EXTERNAL_REQUEST_ALLOWED=no")
+print("OPENING_PREREQ_RUNTIME_MUTATION_ALLOWED=no")
+PY
+)"
+
 report="$(cat <<EOF
 FIRST_CONTROLLED_SEND_STATUS_REPORT
 STATE=${state}
@@ -214,6 +257,7 @@ EXTERNAL_SHOWCASE_READY=${external_showcase_ready}
 ${adapter_report}
 ${task_input_report}
 ${placeholder_report}
+${opening_prereq_report}
 EOF
 )"
 

@@ -60,6 +60,10 @@ real_credential_placeholder_boundary="$(grep '^REAL_CREDENTIAL_PLACEHOLDER_BOUND
 real_credential_placeholder_policy="$(grep '^REAL_CREDENTIAL_PLACEHOLDER_POLICY=' <<<"$status_output" | cut -d= -f2-)"
 placeholder_external_request_allowed="$(grep '^PLACEHOLDER_EXTERNAL_REQUEST_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
 placeholder_runtime_mutation_allowed="$(grep '^PLACEHOLDER_RUNTIME_MUTATION_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
+real_handoff_opening_prereq_contract="$(grep '^REAL_HANDOFF_OPENING_PREREQ_CONTRACT=' <<<"$status_output" | cut -d= -f2-)"
+real_handoff_opening_prereq_boundary="$(grep '^REAL_HANDOFF_OPENING_PREREQ_BOUNDARY=' <<<"$status_output" | cut -d= -f2-)"
+opening_prereq_external_request_allowed="$(grep '^OPENING_PREREQ_EXTERNAL_REQUEST_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
+opening_prereq_runtime_mutation_allowed="$(grep '^OPENING_PREREQ_RUNTIME_MUTATION_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
 
 [[ "$real_handoff_adapter" == "present" ]] || fail "real handoff adapter should be present in review status output"
 [[ "$real_handoff_mode" == "mock_only" ]] || fail "real handoff adapter should stay in mock_only mode"
@@ -73,6 +77,10 @@ placeholder_runtime_mutation_allowed="$(grep '^PLACEHOLDER_RUNTIME_MUTATION_ALLO
 [[ "$real_credential_placeholder_policy" == "placeholder_only" ]] || fail "real credential placeholder policy should stay placeholder_only"
 [[ "$placeholder_external_request_allowed" == "no" ]] || fail "placeholder boundary must not allow external requests"
 [[ "$placeholder_runtime_mutation_allowed" == "no" ]] || fail "placeholder boundary must not allow runtime mutation"
+[[ "$real_handoff_opening_prereq_contract" == "present" ]] || fail "real handoff opening prereq contract should be present in review status output"
+[[ "$real_handoff_opening_prereq_boundary" == "review_only" ]] || fail "real handoff opening prereq contract should stay review_only"
+[[ "$opening_prereq_external_request_allowed" == "no" ]] || fail "opening prereq contract must not allow external requests"
+[[ "$opening_prereq_runtime_mutation_allowed" == "no" ]] || fail "opening prereq contract must not allow runtime mutation"
 
 case "$state" in
   synthetic_only)
