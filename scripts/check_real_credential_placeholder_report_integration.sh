@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Verifies that the standalone real credential placeholder evidence report
+# agrees with the first-controlled-send status report on the bounded
+# placeholder-only contract surface.
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: ./scripts/check_real_credential_placeholder_report_integration.sh
+
+Checks that:
+- real_credential_placeholder_evidence_report.sh emits the bounded placeholder evidence
+- first_controlled_send_status_report.sh exposes the same placeholder-only posture
+- both surfaces keep external requests, runtime mutation, and live trading disabled
+
+This script does not inject credentials, mutate runtime, issue external
+requests, or authorize live trading.
+EOF
+}
+
+if (($# > 0)); then
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      usage >&2
+      exit 2
+      ;;
+  esac
+fi
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || {
+  echo "REAL_CREDENTIAL_PLACEHOLDER_REPORT_INTEGRATION FAIL: cannot resolve repository root" >&2
+  exit 1
+}
+
+STATUS_SCRIPT="${ROOT}/scripts/first_controlled_send_status_report.sh"
+EVIDENCE_SCRIPT="${ROOT}/scripts/real_credential_placeholder_evidence_report.sh"
+
+fail() {
+  echo "REAL_CREDENTIAL_PLACEHOLDER_REPORT_INTEGRATION FAIL: $1" >&2
+  exit 1
+}
+
+status_output="$("$STATUS_SCRIPT")"
+evidence_output="$("$EVIDENCE_SCRIPT")"
+
+status_boundary="$(grep '^REAL_CREDENTIAL_PLACEHOLDER_BOUNDARY=' <<<"$status_output" | cut -d= -f2-)"
+status_policy="$(grep '^REAL_CREDENTIAL_PLACEHOLDER_POLICY=' <<<"$status_output" | cut -d= -f2-)"
+status_external_request="$(grep '^PLACEHOLDER_EXTERNAL_REQUEST_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
+status_runtime_mutation="$(grep '^PLACEHOLDER_RUNTIME_MUTATION_ALLOWED=' <<<"$status_output" | cut -d= -f2-)"
+
+evidence_boundary="$(grep '^REAL_CREDENTIAL_PLACEHOLDER_BOUNDARY=' <<<"$evidence_output" | cut -d= -f2-)"
+evidence_policy="$(grep '^REAL_CREDENTIAL_PLACEHOLDER_POLICY=' <<<"$evidence_output" | cut -d= -f2-)"
+evidence_external_request="$(grep '^PLACEHOLDER_EXTERNAL_REQUEST_ALLOWED=' <<<"$evidence_output" | cut -d= -f2-)"
+evidence_runtime_mutation="$(grep '^PLACEHOLDER_RUNTIME_MUTATION_ALLOWED=' <<<"$evidence_output" | cut -d= -f2-)"
+evidence_live_trading="$(grep '^PLACEHOLDER_LIVE_TRADING_ALLOWED=' <<<"$evidence_output" | cut -d= -f2-)"
+
+[[ "$status_boundary" == "present" ]] || fail "status report should expose real credential placeholder boundary"
+[[ "$evidence_boundary" == "present" ]] || fail "evidence report should expose real credential placeholder boundary"
+[[ "$status_boundary" == "$evidence_boundary" ]] || fail "boundary presence drift between status and evidence reports"
+
+[[ "$status_policy" == "placeholder_only" ]] || fail "status report should stay placeholder_only"
+[[ "$evidence_policy" == "placeholder_only" ]] || fail "evidence report should stay placeholder_only"
+[[ "$status_policy" == "$evidence_policy" ]] || fail "policy drift between status and evidence reports"
+
+[[ "$status_external_request" == "no" ]] || fail "status report must keep external requests disabled"
+[[ "$evidence_external_request" == "no" ]] || fail "evidence report must keep external requests disabled"
+[[ "$status_external_request" == "$evidence_external_request" ]] || fail "external-request flag drift between status and evidence reports"
+
+[[ "$status_runtime_mutation" == "no" ]] || fail "status report must keep runtime mutation disabled"
+[[ "$evidence_runtime_mutation" == "no" ]] || fail "evidence report must keep runtime mutation disabled"
+[[ "$status_runtime_mutation" == "$evidence_runtime_mutation" ]] || fail "runtime-mutation flag drift between status and evidence reports"
+
+[[ "$evidence_live_trading" == "no" ]] || fail "evidence report must keep live trading disabled"
+
+echo "REAL_CREDENTIAL_PLACEHOLDER_REPORT_INTEGRATION PASS: review surfaces aligned"

@@ -113,5 +113,13 @@ if ! "${ROOT}/scripts/check_real_credential_placeholder_boundary.sh"; then
   exit 1
 fi
 
+# Real credential placeholder review surfaces must stay aligned so reviewers do
+# not see conflicting evidence between the standalone placeholder report and
+# the first-controlled-send status stack.
+if ! "${ROOT}/scripts/check_real_credential_placeholder_report_integration.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real credential placeholder report integration check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
