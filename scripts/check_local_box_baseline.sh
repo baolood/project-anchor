@@ -265,5 +265,12 @@ if ! "${ROOT}/scripts/check_real_handoff_testnet_external_request_dry_approval_b
   exit 1
 fi
 
+# Real handoff explicit send approval packet must stay request-free before any
+# future runtime send approval can be considered.
+if ! "${ROOT}/scripts/check_real_handoff_explicit_send_approval_packet_boundary.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff explicit send approval packet boundary check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
