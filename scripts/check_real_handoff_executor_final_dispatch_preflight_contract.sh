@@ -5,7 +5,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/check_real_handoff_executor_final_dispatch_preflight_contract.sh
+Usage: ./scripts/check_real_handoff_executor_final_dispatch_preflight_contract.sh [--fixture <name>]
 
 Checks a fixture matrix for the future real handoff executor-final-dispatch-
 preflight contract.
@@ -32,20 +32,33 @@ requests, or authorize live trading.
 EOF
 }
 
-if (($# > 0)); then
+FIXTURE="matrix"
+
+while (($# > 0)); do
   case "$1" in
     -h|--help)
       usage
       exit 0
+      ;;
+    --fixture)
+      shift
+      if (($# == 0)); then
+        echo "REAL_HANDOFF_EXECUTOR_FINAL_DISPATCH_PREFLIGHT_CONTRACT_CHECK FAIL: --fixture requires a value" >&2
+        exit 2
+      fi
+      FIXTURE="$1"
       ;;
     *)
       usage >&2
       exit 2
       ;;
   esac
-fi
+  shift
+done
 
-python3 - <<'PY'
+FIXTURE="${FIXTURE}" python3 - <<'PY'
+import os
+
 ALLOWED_KEYS = {
     "dispatch_preflight_id",
     "reviewed_state",
@@ -183,18 +196,31 @@ base = {
     "ticket_ref": "RHEFDP-001",
 }
 
-covered = [
-    assert_case("clean_blocked_by_default", dict(base), True),
-    assert_case("external_request_explicit_approval_missing", dict(base, external_request_explicit_approval="true"), False),
-    assert_case("credential_runtime_not_verified", dict(base, credential_runtime_verified="true"), False),
-    assert_case("testnet_only_not_confirmed", dict(base, testnet_only_confirmed="true"), False),
-    assert_case("operator_window_not_current", dict(base, operator_window_current="true"), False),
-    assert_case("rollback_packet_not_current", dict(base, rollback_packet_current="true"), False),
-    assert_case("review_artifact_not_current", dict(base, review_artifact_current="true"), False),
-    assert_case("live_trading_requested", dict(base, live_trading_requested="true"), False),
-    assert_case("raw_secret_present_in_payload", dict(base, payload_notes="contains real-secret"), False),
-    assert_case("unexpected_exchange_base_url", dict(base, approved_exchange_base_url="https://evil.example.com"), False),
-]
+cases = {
+    "clean_blocked_by_default": (dict(base), True),
+    "external_request_approval_missing": (dict(base, external_request_explicit_approval="true"), False),
+    "credential_runtime_not_verified": (dict(base, credential_runtime_verified="true"), False),
+    "testnet_only_not_confirmed": (dict(base, testnet_only_confirmed="true"), False),
+    "operator_window_not_current": (dict(base, operator_window_current="true"), False),
+    "rollback_packet_not_current": (dict(base, rollback_packet_current="true"), False),
+    "review_artifact_not_current": (dict(base, review_artifact_current="true"), False),
+    "live_trading_requested": (dict(base, live_trading_requested="true"), False),
+    "raw_secret_present_in_payload": (dict(base, payload_notes="contains real-secret"), False),
+    "unexpected_exchange_base_url": (dict(base, approved_exchange_base_url="https://evil.example.com"), False),
+}
+
+fixture = os.environ.get("FIXTURE", "matrix")
+
+if fixture == "matrix":
+    covered = [assert_case(name, payload, should_pass) for name, (payload, should_pass) in cases.items()]
+else:
+    if fixture not in cases:
+        raise SystemExit(
+            "REAL_HANDOFF_EXECUTOR_FINAL_DISPATCH_PREFLIGHT_CONTRACT_CHECK FAIL: "
+            f"unsupported fixture {fixture}"
+        )
+    payload, should_pass = cases[fixture]
+    covered = [assert_case(fixture, payload, should_pass)]
 
 print(
     "REAL_HANDOFF_EXECUTOR_FINAL_DISPATCH_PREFLIGHT_CONTRACT_CHECK PASS: fixture matrix intact for "
