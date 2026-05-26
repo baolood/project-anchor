@@ -127,5 +127,13 @@ if ! "${ROOT}/scripts/check_real_handoff_opening_bundle_contract.sh"; then
   exit 1
 fi
 
+# Real handoff opening bundle review surfaces must stay aligned so reviewers do
+# not see conflicting evidence between the standalone opening-bundle report and
+# the status stack.
+if ! bash "${ROOT}/scripts/check_real_handoff_opening_bundle_report_integration.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff opening bundle report integration check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
