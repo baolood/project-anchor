@@ -150,5 +150,13 @@ if ! "${ROOT}/scripts/check_real_handoff_opening_task_contract.sh"; then
   exit 1
 fi
 
+# Real handoff execution request envelope contract must stay review-safe before
+# any future executor-facing request can move closer to credential injection,
+# runtime changes, or external requests.
+if ! "${ROOT}/scripts/check_real_handoff_execution_request_envelope_contract.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff execution request envelope contract check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
