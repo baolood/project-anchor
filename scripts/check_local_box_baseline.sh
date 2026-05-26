@@ -99,5 +99,12 @@ if ! "${ROOT}/scripts/check_real_handoff_adapter_runtime_fixture_drift.sh"; then
   exit 1
 fi
 
+# Future real handoff task input must stay bounded to review-only evidence and
+# requested credential slots, without secret values or runtime/external toggles.
+if ! "${ROOT}/scripts/check_real_handoff_task_input_contract.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff task input contract check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
