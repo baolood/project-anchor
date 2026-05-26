@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Emits a machine-readable evidence snapshot for the bounded real credential
-# placeholder boundary using a placeholder-only fixture.
+# placeholder boundary using review-safe fixtures.
 set -euo pipefail
 
 OUT_FILE="${OUT_FILE:-}"
+FIXTURE="review"
 
 require_value() {
   local opt="$1"
@@ -16,6 +17,11 @@ require_value() {
 
 while (($# > 0)); do
   case "$1" in
+    --fixture)
+      require_value "--fixture" "${2:-}"
+      FIXTURE="${2:-}"
+      shift 2
+      ;;
     --out)
       require_value "--out" "${2:-}"
       OUT_FILE="${2:-}"
@@ -23,10 +29,11 @@ while (($# > 0)); do
       ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/real_credential_placeholder_evidence_report.sh [--out <path>]
+Usage: ./scripts/real_credential_placeholder_evidence_report.sh [--fixture <review|drift>] [--out <path>]
 
 Fields:
   REAL_CREDENTIAL_PLACEHOLDER_EVIDENCE
+  FIXTURE
   REAL_CREDENTIAL_PLACEHOLDER_BOUNDARY
   REAL_CREDENTIAL_PLACEHOLDER_POLICY
   PLACEHOLDER_EXTERNAL_REQUEST_ALLOWED
@@ -37,9 +44,12 @@ Fields:
   PLACEHOLDER_SLOT_COUNT
   PLACEHOLDER_SLOTS
 
-This report uses a bounded placeholder-only fixture. It does not inject
-credentials, mutate runtime, issue external requests, or authorize live
-trading.
+Fixtures:
+  review  placeholder-only bounded posture
+  drift   intentionally invalid posture for review evidence only
+
+This report does not inject credentials, mutate runtime, issue external
+requests, or authorize live trading.
 EOF
       exit 0
       ;;
@@ -52,7 +62,12 @@ EOF
 done
 
 report="$(
-  python3 - <<'PY'
+  PLACEHOLDER_FIXTURE="$FIXTURE" python3 - <<'PY'
+import os
+import sys
+
+fixture = os.environ["PLACEHOLDER_FIXTURE"]
+
 payload = {
     "TESTNET_EXCHANGE_API_KEY": "<placeholder>",
     "TESTNET_EXCHANGE_API_SECRET": "<placeholder>",
@@ -62,15 +77,34 @@ payload = {
     "notes": "review-only placeholder contract",
 }
 
+if fixture == "review":
+    pass
+elif fixture == "drift":
+    payload["expected_executor_mode"] = "real"
+    payload["expected_real_enable"] = "1"
+    payload["notes"] = "drift fixture for review evidence only"
+else:
+    print(
+        "REAL_CREDENTIAL_PLACEHOLDER_EVIDENCE FAIL: unsupported fixture: "
+        f"{fixture}",
+        file=sys.stderr,
+    )
+    sys.exit(2)
+
 slots = [
     "TESTNET_EXCHANGE_API_KEY",
     "TESTNET_EXCHANGE_API_SECRET",
     "TESTNET_EXCHANGE_KEY_ID",
 ]
 
+policy = "placeholder_only"
+if payload["expected_executor_mode"] != "mock" or payload["expected_real_enable"] != "0":
+    policy = "invalid"
+
 print("REAL_CREDENTIAL_PLACEHOLDER_EVIDENCE")
+print(f"FIXTURE={fixture}")
 print("REAL_CREDENTIAL_PLACEHOLDER_BOUNDARY=present")
-print("REAL_CREDENTIAL_PLACEHOLDER_POLICY=placeholder_only")
+print(f"REAL_CREDENTIAL_PLACEHOLDER_POLICY={policy}")
 print("PLACEHOLDER_EXTERNAL_REQUEST_ALLOWED=no")
 print("PLACEHOLDER_RUNTIME_MUTATION_ALLOWED=no")
 print("PLACEHOLDER_LIVE_TRADING_ALLOWED=no")
