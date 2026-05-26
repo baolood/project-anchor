@@ -142,5 +142,13 @@ if ! "${ROOT}/scripts/check_real_handoff_opening_signoff_packet_contract.sh"; th
   exit 1
 fi
 
+# Real handoff opening task contract must stay review-safe before any future
+# opening task can move closer to credential injection, runtime changes, or
+# external requests.
+if ! "${ROOT}/scripts/check_real_handoff_opening_task_contract.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff opening task contract check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
