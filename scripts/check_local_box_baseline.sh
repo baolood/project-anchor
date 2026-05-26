@@ -84,5 +84,13 @@ if ! "${ROOT}/scripts/check_real_handoff_adapter_skeleton.sh"; then
   exit 1
 fi
 
+# Real handoff review surfaces must stay aligned so reviewers do not see
+# conflicting evidence between the standalone adapter report and the status
+# stack.
+if ! "${ROOT}/scripts/check_real_handoff_adapter_report_integration.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff adapter report integration check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
