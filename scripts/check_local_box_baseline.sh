@@ -113,5 +113,12 @@ if ! bash "${ROOT}/scripts/check_real_credential_placeholder_line.sh"; then
   exit 1
 fi
 
+# Real handoff opening prereq contract must stay review-safe before any future
+# opening task can move closer to real credential injection.
+if ! "${ROOT}/scripts/check_real_handoff_opening_prereq_contract.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff opening prereq contract check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
