@@ -21,7 +21,7 @@ while (($# > 0)); do
       require_value "--fixture" "${2:-}"
       FIXTURE="${2:-}"
       case "$FIXTURE" in
-        review|drift) ;;
+        review|drift_real_posture|secret_value_present|runtime_mutation_requested|external_request_requested|live_trading_requested|missing_evidence_command_id) ;;
         *)
           echo "REAL_HANDOFF_TASK_INPUT_EVIDENCE FAIL: unsupported fixture: ${FIXTURE}" >&2
           exit 2
@@ -36,17 +36,25 @@ while (($# > 0)); do
       ;;
     -h|--help)
       cat <<'EOF'
-Usage: ./scripts/real_handoff_task_input_evidence_report.sh [--fixture <review|drift>] [--out <path>]
+Usage: ./scripts/real_handoff_task_input_evidence_report.sh [--fixture <name>] [--out <path>]
 
 Options:
-  --fixture <review|drift>  Emit evidence for the bounded review-only fixture
-                            or a drifted real-posture request fixture.
+  --fixture <name>          One of:
+                            review
+                            drift_real_posture
+                            secret_value_present
+                            runtime_mutation_requested
+                            external_request_requested
+                            live_trading_requested
+                            missing_evidence_command_id
   --out <path>              Write the report to a file (stdout always prints).
 
 Fields:
   REAL_HANDOFF_TASK_INPUT_EVIDENCE
   FIXTURE
   REAL_HANDOFF_TASK_INPUT_CONTRACT
+  TASK_INPUT_VALIDATION
+  TASK_INPUT_BLOCKED_REASONS
   REAL_HANDOFF_TASK_INPUT_BOUNDARY
   TASK_INPUT_EXTERNAL_REQUEST_ALLOWED
   TASK_INPUT_RUNTIME_MUTATION_ALLOWED
@@ -95,18 +103,49 @@ payload = {
     "notes": "bounded handoff planning input",
 }
 
-if fixture_name == "drift":
+if fixture_name == "drift_real_posture":
     payload["expected_executor_mode"] = "real"
     payload["expected_real_enable"] = "1"
+elif fixture_name == "secret_value_present":
+    payload["TESTNET_EXCHANGE_API_KEY"] = "real-key"
+elif fixture_name == "runtime_mutation_requested":
+    payload["runtime_patch"] = "export TESTNET_EXECUTOR_REAL_ENABLE=1"
+elif fixture_name == "external_request_requested":
+    payload["allow_external_request"] = "yes"
+elif fixture_name == "live_trading_requested":
+    payload["allow_live_trading"] = "yes"
+elif fixture_name == "missing_evidence_command_id":
+    payload["evidence_command_id"] = ""
 
 slots = payload["credential_slots_requested"]
 boundary = "review_only"
+blocked_reasons = []
 if payload["expected_executor_mode"] != "mock" or payload["expected_real_enable"] != "0":
     boundary = "invalid"
+    blocked_reasons.append("invalid_expected_executor_posture")
+if "TESTNET_EXCHANGE_API_KEY" in payload:
+    boundary = "invalid"
+    blocked_reasons.append("secret_value_present")
+if "runtime_patch" in payload:
+    boundary = "invalid"
+    blocked_reasons.append("runtime_mutation_requested")
+if "allow_external_request" in payload:
+    boundary = "invalid"
+    blocked_reasons.append("external_request_requested")
+if "allow_live_trading" in payload:
+    boundary = "invalid"
+    blocked_reasons.append("live_trading_requested")
+if not str(payload["evidence_command_id"]).strip():
+    boundary = "invalid"
+    blocked_reasons.append("missing_evidence_command_id")
+
+validation = "PASS" if not blocked_reasons else "BLOCKED"
 
 print("REAL_HANDOFF_TASK_INPUT_EVIDENCE")
 print(f"FIXTURE={fixture_name}")
 print("REAL_HANDOFF_TASK_INPUT_CONTRACT=present")
+print(f"TASK_INPUT_VALIDATION={validation}")
+print("TASK_INPUT_BLOCKED_REASONS=" + (",".join(blocked_reasons) or "none"))
 print(f"REAL_HANDOFF_TASK_INPUT_BOUNDARY={boundary}")
 print("TASK_INPUT_EXTERNAL_REQUEST_ALLOWED=no")
 print("TASK_INPUT_RUNTIME_MUTATION_ALLOWED=no")
