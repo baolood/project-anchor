@@ -244,5 +244,12 @@ if ! "${ROOT}/scripts/check_real_handoff_executor_dry_run_dispatch_boundary.sh";
   exit 1
 fi
 
+# Real handoff dry-run dispatch audit envelope must stay auditable before any
+# future executor dispatch can move closer to external requests.
+if ! "${ROOT}/scripts/check_real_handoff_dry_run_dispatch_audit_envelope.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff dry-run dispatch audit envelope check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
