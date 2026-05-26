@@ -63,6 +63,10 @@ Fields:
   REAL_HANDOFF_TASK_INPUT_BOUNDARY review_only / invalid
   TASK_INPUT_EXTERNAL_REQUEST_ALLOWED yes/no
   TASK_INPUT_RUNTIME_MUTATION_ALLOWED yes/no
+  REAL_CREDENTIAL_PLACEHOLDER_BOUNDARY present / missing
+  REAL_CREDENTIAL_PLACEHOLDER_POLICY placeholder_only / invalid
+  PLACEHOLDER_EXTERNAL_REQUEST_ALLOWED yes/no
+  PLACEHOLDER_RUNTIME_MUTATION_ALLOWED yes/no
 
 This report does not authorize a real controlled send or live trading.
 EOF
@@ -178,6 +182,28 @@ print("TASK_INPUT_RUNTIME_MUTATION_ALLOWED=no")
 PY
 )"
 
+placeholder_report="$(
+  python3 - <<'PY'
+payload = {
+    "TESTNET_EXCHANGE_API_KEY": "<placeholder>",
+    "TESTNET_EXCHANGE_API_SECRET": "<placeholder>",
+    "TESTNET_EXCHANGE_KEY_ID": "NOT_COLLECTED",
+    "expected_executor_mode": "mock",
+    "expected_real_enable": "0",
+    "notes": "review-only placeholder contract",
+}
+
+policy = "placeholder_only"
+if payload["expected_executor_mode"] != "mock" or payload["expected_real_enable"] != "0":
+    policy = "invalid"
+
+print("REAL_CREDENTIAL_PLACEHOLDER_BOUNDARY=present")
+print(f"REAL_CREDENTIAL_PLACEHOLDER_POLICY={policy}")
+print("PLACEHOLDER_EXTERNAL_REQUEST_ALLOWED=no")
+print("PLACEHOLDER_RUNTIME_MUTATION_ALLOWED=no")
+PY
+)"
+
 report="$(cat <<EOF
 FIRST_CONTROLLED_SEND_STATUS_REPORT
 STATE=${state}
@@ -187,6 +213,7 @@ DOMAIN_WORTH_BUYING=${domain_worth_buying}
 EXTERNAL_SHOWCASE_READY=${external_showcase_ready}
 ${adapter_report}
 ${task_input_report}
+${placeholder_report}
 EOF
 )"
 
