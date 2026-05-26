@@ -209,5 +209,12 @@ if ! "${ROOT}/scripts/check_real_handoff_executor_launch_intent_contract.sh"; th
   exit 1
 fi
 
+# Real handoff executor launch window contract must stay review-safe before any
+# future executor launch can move closer to external requests.
+if ! "${ROOT}/scripts/check_real_handoff_executor_launch_window_contract.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff executor launch window contract check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
