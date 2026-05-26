@@ -158,5 +158,12 @@ if ! "${ROOT}/scripts/check_real_handoff_execution_request_envelope_contract.sh"
   exit 1
 fi
 
+# Real handoff execution request approval gate must stay review-safe before any
+# future executor-facing request can move closer to external requests.
+if ! "${ROOT}/scripts/check_real_handoff_execution_request_approval_gate_contract.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff execution request approval gate contract check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
