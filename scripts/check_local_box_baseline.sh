@@ -251,5 +251,12 @@ if ! "${ROOT}/scripts/check_real_handoff_dry_run_dispatch_audit_envelope.sh"; th
   exit 1
 fi
 
+# Real handoff testnet credential runtime presence must stay bounded before any
+# future operator approval can move closer to credential-backed dispatch.
+if ! "${ROOT}/scripts/check_real_handoff_testnet_credential_runtime_presence_boundary.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff testnet credential runtime presence boundary check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
