@@ -72,6 +72,7 @@ ALLOWED_KEYS = {
     "runtime_mutation_requested",
     "review_artifact_status",
     "operator_signoff_status",
+    "rollback_packet_status",
     "rollback_plan_status",
     "expected_executor_mode",
     "expected_real_enable",
@@ -105,6 +106,7 @@ REQUIRED_STRING_KEYS = {
     "runtime_mutation_requested",
     "review_artifact_status",
     "operator_signoff_status",
+    "rollback_packet_status",
     "rollback_plan_status",
     "expected_executor_mode",
     "expected_real_enable",
@@ -146,6 +148,8 @@ def validate(payload):
         reasons.append("review_artifact_missing")
     if payload.get("operator_signoff_status") != "present":
         reasons.append("operator_signoff_missing")
+    if payload.get("rollback_packet_status") != "present":
+        reasons.append("rollback_packet_missing")
     if payload.get("rollback_plan_status") != "present":
         reasons.append("rollback_plan_missing")
     if payload.get("expected_executor_mode") != "mock":
@@ -190,6 +194,7 @@ base = {
     "runtime_mutation_requested": "false",
     "review_artifact_status": "present",
     "operator_signoff_status": "present",
+    "rollback_packet_status": "present",
     "rollback_plan_status": "present",
     "expected_executor_mode": "mock",
     "expected_real_enable": "0",
@@ -198,15 +203,16 @@ base = {
 }
 
 cases = {
-    "not_approved_default": (dict(base), True),
+    "clean_blocked_by_default": (dict(base), True),
     "approval_missing": (dict(base, approval_state="missing"), False),
-    "window_closed_violation": (dict(base, activation_window_open="true"), False),
-    "credential_unknown": (dict(base, credential_state="unknown"), False),
-    "approved_but_still_blocked": (dict(base, external_request_explicitly_approved="true"), False),
-    "live_requested": (dict(base, live_trading_requested="true"), False),
+    "activation_window_closed": (dict(base, activation_window_open="true"), False),
+    "credential_state_unknown": (dict(base, credential_state="unknown"), False),
+    "external_request_not_explicitly_approved": (dict(base, external_request_explicitly_approved="true"), False),
+    "live_trading_requested": (dict(base, live_trading_requested="true"), False),
     "runtime_mutation_requested": (dict(base, runtime_mutation_requested="true"), False),
     "review_artifact_missing": (dict(base, review_artifact_status="missing"), False),
     "operator_signoff_missing": (dict(base, operator_signoff_status="missing"), False),
+    "rollback_packet_missing": (dict(base, rollback_packet_status="missing"), False),
     "rollback_plan_missing": (dict(base, rollback_plan_status="missing"), False),
     "secret_value_present": (dict(base, api_key="real-key"), False),
 }
