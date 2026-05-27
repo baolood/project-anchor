@@ -321,6 +321,13 @@ if ! "${ROOT}/scripts/check_real_testnet_first_controlled_send_schedule_packet.s
   exit 1
 fi
 
+# First-controlled-send candidate-window record must stay bounded as a
+# docs-only bridge before any future real window opening can be considered.
+if ! "${ROOT}/scripts/check_real_testnet_first_controlled_send_candidate_window_record.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: first controlled send candidate window record check failed" >&2
+  exit 1
+fi
+
 # Real testnet external executor mocked V1 must stay offline, explicitly gated,
 # and reviewable before any future real-wire expansion is considered.
 if ! "${ROOT}/scripts/check_real_testnet_external_executor_mocked_v1.sh"; then
