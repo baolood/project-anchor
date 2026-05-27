@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
-# Verifies the bounded explicit-send-approval packet for a future testnet
+# Verifies the bounded explicit-runtime-send boundary for a future testnet
 # external request without issuing any request, printing credentials, or
 # changing runtime.
 set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/check_real_handoff_explicit_send_approval_packet_boundary.sh [--fixture NAME]
+Usage: ./scripts/check_real_handoff_explicit_runtime_send_boundary.sh [--fixture NAME]
 
-Checks whether a future testnet external request has a bounded explicit send
-approval packet only.
+Checks whether a future testnet external request may reach the final explicit
+runtime-send boundary only.
 
 This boundary must always keep:
-- SEND_APPROVAL_PACKET_BOUNDARY=PASS|BLOCKED
+- RUNTIME_SEND_BOUNDARY=PASS|BLOCKED
 - APPROVED_EXECUTION_MODE=testnet
-- OPERATOR_IDENTITY_PRESENT=yes|no
-- REVIEW_VERDICT_PASS=yes|no
+- EXPLICIT_RUNTIME_SEND_PRESENT=yes|no
+- CREDENTIAL_RUNTIME_VERIFIED=yes|no
 - ROLLBACK_PACKET_PRESENT=yes|no
 - SEND_WINDOW_CURRENT=yes|no
 - EXTERNAL_REQUEST_STARTED=false
 - LIVE_TRADING=false
-- NEXT_GATE=blocked_until_explicit_runtime_send
+- NEXT_GATE=blocked_before_real_request
 
 Any attempt to start an external request, print credentials, mutate runtime, or
 open live trading is BLOCKED.
@@ -52,12 +52,12 @@ python3 - <<'PY'
 import os
 
 ALLOWED_KEYS = {
-    "approval_packet_id",
-    "send_approval_packet_boundary",
-    "operator_identity_present",
-    "approval_timestamp_present",
-    "approved_command_id_present",
+    "runtime_send_boundary_id",
+    "runtime_send_boundary",
+    "approval_packet_present",
+    "explicit_runtime_send_present",
     "approved_execution_mode",
+    "credential_runtime_verified",
     "review_verdict_pass",
     "rollback_packet_present",
     "send_window_current",
@@ -79,12 +79,12 @@ FORBIDDEN_KEYS = {
 }
 
 REQUIRED_STRING_KEYS = {
-    "approval_packet_id",
-    "send_approval_packet_boundary",
-    "operator_identity_present",
-    "approval_timestamp_present",
-    "approved_command_id_present",
+    "runtime_send_boundary_id",
+    "runtime_send_boundary",
+    "approval_packet_present",
+    "explicit_runtime_send_present",
     "approved_execution_mode",
+    "credential_runtime_verified",
     "review_verdict_pass",
     "rollback_packet_present",
     "send_window_current",
@@ -112,13 +112,13 @@ def validate(payload):
         if not isinstance(value, str) or not value.strip():
             reasons.append(f"invalid_required_field:{key}")
 
-    if payload.get("send_approval_packet_boundary") not in ALLOWED_BOUNDARY:
-        reasons.append("invalid_send_approval_packet_boundary")
+    if payload.get("runtime_send_boundary") not in ALLOWED_BOUNDARY:
+        reasons.append("invalid_runtime_send_boundary")
 
     for key in (
-        "operator_identity_present",
-        "approval_timestamp_present",
-        "approved_command_id_present",
+        "approval_packet_present",
+        "explicit_runtime_send_present",
+        "credential_runtime_verified",
         "review_verdict_pass",
         "rollback_packet_present",
         "send_window_current",
@@ -132,8 +132,8 @@ def validate(payload):
         reasons.append("external_request_started")
     if payload.get("live_trading") != "false":
         reasons.append("live_trading")
-    if payload.get("next_gate") != "blocked_until_explicit_runtime_send":
-        reasons.append("next_gate_not_blocked_until_explicit_runtime_send")
+    if payload.get("next_gate") != "blocked_before_real_request":
+        reasons.append("next_gate_not_blocked_before_real_request")
 
     notes = payload.get("payload_notes")
     if notes is not None and not isinstance(notes, str):
@@ -153,7 +153,7 @@ def assert_case(name, payload, should_pass):
     passed = not reasons
     if passed != should_pass:
         raise SystemExit(
-            "REAL_HANDOFF_EXPLICIT_SEND_APPROVAL_PACKET_BOUNDARY_CHECK FAIL: "
+            "REAL_HANDOFF_EXPLICIT_RUNTIME_SEND_BOUNDARY_CHECK FAIL: "
             f"{name}: expected {'PASS' if should_pass else 'BLOCKED'}, got "
             f"{'PASS' if passed else 'BLOCKED'} ({';'.join(reasons) or 'none'})"
         )
@@ -161,41 +161,40 @@ def assert_case(name, payload, should_pass):
 
 
 base = {
-    "approval_packet_id": "real-handoff-explicit-send-approval-packet-20260526-001",
-    "send_approval_packet_boundary": "PASS",
-    "operator_identity_present": "yes",
-    "approval_timestamp_present": "yes",
-    "approved_command_id_present": "yes",
+    "runtime_send_boundary_id": "real-handoff-explicit-runtime-send-boundary-20260527-001",
+    "runtime_send_boundary": "BLOCKED",
+    "approval_packet_present": "yes",
+    "explicit_runtime_send_present": "yes",
     "approved_execution_mode": "testnet",
+    "credential_runtime_verified": "yes",
     "review_verdict_pass": "yes",
     "rollback_packet_present": "yes",
     "send_window_current": "yes",
     "external_request_started": "false",
     "live_trading": "false",
-    "next_gate": "blocked_until_explicit_runtime_send",
-    "payload_notes": "bounded explicit send approval packet",
+    "next_gate": "blocked_before_real_request",
+    "payload_notes": "bounded explicit runtime send boundary",
 }
 
 fixtures = {
-    "explicit_send_approval_clean_pass_but_runtime_send_blocked": (dict(base), True),
-    "approval_packet_missing": (dict(base, approval_packet_id=""), False),
-    "operator_identity_missing": (dict(base, operator_identity_present=""), False),
-    "approval_timestamp_missing": (dict(base, approval_timestamp_present=""), False),
-    "approved_command_id_missing": (dict(base, approved_command_id_present=""), False),
-    "approved_execution_mode_not_testnet": (dict(base, approved_execution_mode="real"), False),
-    "review_verdict_not_pass": (dict(base, send_approval_packet_boundary="BLOCKED", review_verdict_pass="no"), True),
-    "rollback_packet_missing": (dict(base, send_approval_packet_boundary="BLOCKED", rollback_packet_present="no"), True),
-    "send_window_not_current": (dict(base, send_approval_packet_boundary="BLOCKED", send_window_current="no"), True),
-    "live_trading_requested": (dict(base, live_trading="true"), False),
-    "raw_secret_present": (dict(base, payload_notes="contains real-secret"), False),
-    "external_request_started_true": (dict(base, external_request_started="true"), False),
+    "runtime_send_clean_blocked_by_default": (dict(base), True),
+    "approval_packet_missing": (dict(base, runtime_send_boundary="PASS", approval_packet_present=""), False),
+    "explicit_runtime_send_missing": (dict(base, runtime_send_boundary="PASS", explicit_runtime_send_present=""), False),
+    "approved_execution_mode_not_testnet": (dict(base, runtime_send_boundary="PASS", approved_execution_mode="real"), False),
+    "credential_runtime_not_verified": (dict(base, runtime_send_boundary="BLOCKED", credential_runtime_verified="no"), True),
+    "review_verdict_not_pass": (dict(base, runtime_send_boundary="BLOCKED", review_verdict_pass="no"), True),
+    "rollback_packet_missing": (dict(base, runtime_send_boundary="BLOCKED", rollback_packet_present="no"), True),
+    "send_window_not_current": (dict(base, runtime_send_boundary="BLOCKED", send_window_current="no"), True),
+    "live_trading_requested": (dict(base, runtime_send_boundary="PASS", live_trading="true"), False),
+    "raw_secret_present": (dict(base, runtime_send_boundary="PASS", payload_notes="contains real-secret"), False),
+    "external_request_started_true": (dict(base, runtime_send_boundary="PASS", external_request_started="true"), False),
 }
 
 requested_fixture = os.getenv("FIXTURE_NAME", "").strip()
 if requested_fixture:
     if requested_fixture not in fixtures:
         raise SystemExit(
-            "REAL_HANDOFF_EXPLICIT_SEND_APPROVAL_PACKET_BOUNDARY_CHECK FAIL: "
+            "REAL_HANDOFF_EXPLICIT_RUNTIME_SEND_BOUNDARY_CHECK FAIL: "
             f"unknown fixture {requested_fixture!r}"
         )
     payload, should_pass = fixtures[requested_fixture]
@@ -209,10 +208,10 @@ else:
 summary_payload = covered[0][1] if requested_fixture else base
 summary_result = covered[0][2] if requested_fixture else True
 
-print(f"SEND_APPROVAL_PACKET_BOUNDARY={summary_payload['send_approval_packet_boundary']}")
+print(f"RUNTIME_SEND_BOUNDARY={summary_payload['runtime_send_boundary']}")
 print(f"APPROVED_EXECUTION_MODE={summary_payload['approved_execution_mode']}")
-print(f"OPERATOR_IDENTITY_PRESENT={summary_payload['operator_identity_present']}")
-print(f"REVIEW_VERDICT_PASS={summary_payload['review_verdict_pass']}")
+print(f"EXPLICIT_RUNTIME_SEND_PRESENT={summary_payload['explicit_runtime_send_present']}")
+print(f"CREDENTIAL_RUNTIME_VERIFIED={summary_payload['credential_runtime_verified']}")
 print(f"ROLLBACK_PACKET_PRESENT={summary_payload['rollback_packet_present']}")
 print(f"SEND_WINDOW_CURRENT={summary_payload['send_window_current']}")
 print("EXTERNAL_REQUEST_STARTED=false")
@@ -221,7 +220,7 @@ print(f"NEXT_GATE={summary_payload['next_gate']}")
 print(f"FIXTURE_EXPECTED_RESULT={'PASS' if summary_result else 'BLOCKED'}")
 print(f"FIXTURE_VALIDATION_RESULT={'PASS' if summary_result else 'BLOCKED'}")
 print(
-    "REAL_HANDOFF_EXPLICIT_SEND_APPROVAL_PACKET_BOUNDARY_CHECK PASS: fixture matrix intact for "
+    "REAL_HANDOFF_EXPLICIT_RUNTIME_SEND_BOUNDARY_CHECK PASS: fixture matrix intact for "
     + ",".join(name for name, _, _ in covered)
 )
 PY

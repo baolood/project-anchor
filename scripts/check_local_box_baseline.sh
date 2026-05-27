@@ -272,5 +272,12 @@ if ! "${ROOT}/scripts/check_real_handoff_explicit_send_approval_packet_boundary.
   exit 1
 fi
 
+# Real handoff explicit runtime send boundary must stay hard-blocked before
+# any future real external request can be considered.
+if ! "${ROOT}/scripts/check_real_handoff_explicit_runtime_send_boundary.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real handoff explicit runtime send boundary check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
