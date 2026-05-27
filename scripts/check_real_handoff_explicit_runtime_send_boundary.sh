@@ -14,8 +14,10 @@ runtime-send boundary only.
 This boundary must always keep:
 - RUNTIME_SEND_BOUNDARY=PASS|BLOCKED
 - APPROVED_EXECUTION_MODE=testnet
+- APPROVAL_PACKET_PRESENT=yes|no
 - EXPLICIT_RUNTIME_SEND_PRESENT=yes|no
 - CREDENTIAL_RUNTIME_VERIFIED=yes|no
+- REVIEW_VERDICT_PASS=yes|no
 - ROLLBACK_PACKET_PRESENT=yes|no
 - SEND_WINDOW_CURRENT=yes|no
 - EXTERNAL_REQUEST_STARTED=false
@@ -185,6 +187,8 @@ fixtures = {
     "review_verdict_not_pass": (dict(base, runtime_send_boundary="BLOCKED", review_verdict_pass="no"), True),
     "rollback_packet_missing": (dict(base, runtime_send_boundary="BLOCKED", rollback_packet_present="no"), True),
     "send_window_not_current": (dict(base, runtime_send_boundary="BLOCKED", send_window_current="no"), True),
+    "next_gate_not_blocked_before_real_request": (dict(base, runtime_send_boundary="PASS", next_gate="ready_to_send"), False),
+    "runtime_patch_present": (dict(base, runtime_send_boundary="PASS", runtime_patch="export TESTNET_EXECUTOR_REAL_ENABLE=1"), False),
     "live_trading_requested": (dict(base, runtime_send_boundary="PASS", live_trading="true"), False),
     "raw_secret_present": (dict(base, runtime_send_boundary="PASS", payload_notes="contains real-secret"), False),
     "external_request_started_true": (dict(base, runtime_send_boundary="PASS", external_request_started="true"), False),
@@ -210,8 +214,10 @@ summary_result = covered[0][2] if requested_fixture else True
 
 print(f"RUNTIME_SEND_BOUNDARY={summary_payload['runtime_send_boundary']}")
 print(f"APPROVED_EXECUTION_MODE={summary_payload['approved_execution_mode']}")
+print(f"APPROVAL_PACKET_PRESENT={summary_payload['approval_packet_present']}")
 print(f"EXPLICIT_RUNTIME_SEND_PRESENT={summary_payload['explicit_runtime_send_present']}")
 print(f"CREDENTIAL_RUNTIME_VERIFIED={summary_payload['credential_runtime_verified']}")
+print(f"REVIEW_VERDICT_PASS={summary_payload['review_verdict_pass']}")
 print(f"ROLLBACK_PACKET_PRESENT={summary_payload['rollback_packet_present']}")
 print(f"SEND_WINDOW_CURRENT={summary_payload['send_window_current']}")
 print("EXTERNAL_REQUEST_STARTED=false")
