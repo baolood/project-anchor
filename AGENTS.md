@@ -33,6 +33,45 @@ bash scripts/check_backend_testnet_executor_smoke.sh
 
 Use **`scripts/check_backend_testnet_executor_smoke.sh --test <file>`** only for narrower follow-up checks; the default expectation for merge-ready validation is the full smoke set.
 
+## Local OSS agent rule
+
+Local OSS coding agents such as **Codex + Ollama**, **Codex --oss**, or
+**llama.cpp** may be used only as draft helpers for low-risk work.
+
+Allowed uses:
+
+- draft docs or closeout text
+- suggest small bash/script edits
+- scan for repeated guardrail patterns
+- draft fixture matrices
+- suggest low-risk refactors for later review
+
+Disallowed uses:
+
+- `git commit`, `git push`, PR creation, or branch mutation
+- cloud-host changes
+- `env`, secret, or credential handling
+- external request execution
+- runtime mutation
+- docker, nginx, firewall, or deploy changes
+- real or simulated live-trading enablement
+- real testnet send execution
+
+Required flow:
+
+```text
+local OSS agent produces draft patch/text only
+-> Codex or human reviews the draft
+-> required checks run locally
+-> human confirms before commit
+-> explicit authorization before push
+```
+
+Use **`scripts/prepare_oss_agent_draft_prompt.sh`** to generate a safe
+draft-only prompt for local OSS helpers. The helper output must be treated as
+untrusted draft material until reviewed and validated inside this repository
+workflow.
+
 ## Git hooks (optional for humans; agents should still run commands)
 
 ```bash
