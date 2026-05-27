@@ -23,6 +23,16 @@ Run in order (matches CI job **`check`** guardrails + smokes intent):
 
 Then the Python smokes from **`README.md`** → **Quick local checks** (or **`PR_DESCRIPTION.md`** → **How to verify**).
 
+## Backend testnet/executor rule
+
+If a task touches **`anchor-backend/testnet/executor`** behavior, or related real/testnet executor logic under **`anchor-backend/`**, also run:
+
+```bash
+bash scripts/check_backend_testnet_executor_smoke.sh
+```
+
+Use **`scripts/check_backend_testnet_executor_smoke.sh --test <file>`** only for narrower follow-up checks; the default expectation for merge-ready validation is the full smoke set.
+
 ## Git hooks (optional for humans; agents should still run commands)
 
 ```bash
