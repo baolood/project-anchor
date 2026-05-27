@@ -314,6 +314,13 @@ if ! "${ROOT}/scripts/check_real_testnet_first_controlled_send_decision_bundle_c
   exit 1
 fi
 
+# First-controlled-send schedule packet must stay bounded as a docs-only
+# operational evidence packet before any future scheduling can be considered.
+if ! "${ROOT}/scripts/check_real_testnet_first_controlled_send_schedule_packet.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: first controlled send schedule packet check failed" >&2
+  exit 1
+fi
+
 # Real testnet external executor mocked V1 must stay offline, explicitly gated,
 # and reviewable before any future real-wire expansion is considered.
 if ! "${ROOT}/scripts/check_real_testnet_external_executor_mocked_v1.sh"; then
