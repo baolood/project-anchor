@@ -13,3 +13,23 @@ if ! ./scripts/check_go_live_rules.sh; then
   echo "pre-commit: go-live rules check failed" >&2
   exit 1
 fi
+
+run_backend_testnet_executor_smoke=false
+while IFS= read -r path; do
+  case "$path" in
+    anchor-backend/app/actions/runner.py|\
+    anchor-backend/app/executors/testnet_*|\
+    anchor-backend/tests/test_testnet_*|\
+    scripts/check_backend_testnet_executor_smoke.sh)
+      run_backend_testnet_executor_smoke=true
+      break
+      ;;
+  esac
+done < <(git diff --cached --name-only --diff-filter=ACMR)
+
+if [[ "$run_backend_testnet_executor_smoke" == "true" ]]; then
+  if ! bash ./scripts/check_backend_testnet_executor_smoke.sh; then
+    echo "pre-commit: backend testnet executor smoke failed" >&2
+    exit 1
+  fi
+fi
