@@ -279,5 +279,12 @@ if ! "${ROOT}/scripts/check_real_handoff_explicit_runtime_send_boundary.sh"; the
   exit 1
 fi
 
+# Real testnet external executor mocked V1 must stay offline, explicitly gated,
+# and reviewable before any future real-wire expansion is considered.
+if ! "${ROOT}/scripts/check_real_testnet_external_executor_mocked_v1.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: real testnet external executor mocked V1 check failed" >&2
+  exit 1
+fi
+
 echo "LOCAL_BOX_BASELINE_CHECK PASS: required local_box baseline objects present"
 exit 0
