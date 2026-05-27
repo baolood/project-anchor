@@ -349,6 +349,13 @@ if ! "${ROOT}/scripts/check_real_testnet_first_controlled_send_window_open_close
   exit 1
 fi
 
+# First-controlled-send window-open record must stay bounded as a docs-only
+# operational record before any future send attempt can be considered.
+if ! "${ROOT}/scripts/check_real_testnet_first_controlled_send_window_open_record.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: first controlled send window open record check failed" >&2
+  exit 1
+fi
+
 # Real testnet external executor mocked V1 must stay offline, explicitly gated,
 # and reviewable before any future real-wire expansion is considered.
 if ! "${ROOT}/scripts/check_real_testnet_external_executor_mocked_v1.sh"; then
