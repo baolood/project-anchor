@@ -286,6 +286,13 @@ if ! "${ROOT}/scripts/check_real_testnet_first_real_request_gate_bundle_closeout
   exit 1
 fi
 
+# First-controlled-send readiness review must stay bounded as a review-only
+# pre-scheduling surface before any future scheduling can be considered.
+if ! "${ROOT}/scripts/check_real_testnet_first_controlled_send_readiness_review.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: first controlled send readiness review check failed" >&2
+  exit 1
+fi
+
 # Real testnet external executor mocked V1 must stay offline, explicitly gated,
 # and reviewable before any future real-wire expansion is considered.
 if ! "${ROOT}/scripts/check_real_testnet_external_executor_mocked_v1.sh"; then
