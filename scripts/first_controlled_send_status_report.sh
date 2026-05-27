@@ -329,6 +329,35 @@ print("OPENING_DECISION_PACKET_RUNTIME_MUTATION_ALLOWED=no")
 PY
 )"
 
+explicit_runtime_send_report="$(
+  python3 - <<'PY'
+payload = {
+    "runtime_send_boundary_id": "real-handoff-explicit-runtime-send-boundary-20260527-001",
+    "runtime_send_boundary": "BLOCKED",
+    "approval_packet_present": "yes",
+    "explicit_runtime_send_present": "yes",
+    "approved_execution_mode": "testnet",
+    "credential_runtime_verified": "yes",
+    "review_verdict_pass": "yes",
+    "rollback_packet_present": "yes",
+    "send_window_current": "yes",
+    "next_gate": "blocked_before_real_request",
+}
+
+print(f"REAL_HANDOFF_EXPLICIT_RUNTIME_SEND_BOUNDARY={payload['runtime_send_boundary']}")
+print(f"EXPLICIT_RUNTIME_SEND_APPROVAL_PACKET_PRESENT={payload['approval_packet_present']}")
+print(f"EXPLICIT_RUNTIME_SEND_PRESENT={payload['explicit_runtime_send_present']}")
+print(f"EXPLICIT_RUNTIME_SEND_CREDENTIAL_RUNTIME_VERIFIED={payload['credential_runtime_verified']}")
+print(f"EXPLICIT_RUNTIME_SEND_REVIEW_VERDICT_PASS={payload['review_verdict_pass']}")
+print(f"EXPLICIT_RUNTIME_SEND_ROLLBACK_PACKET_PRESENT={payload['rollback_packet_present']}")
+print(f"EXPLICIT_RUNTIME_SEND_WINDOW_CURRENT={payload['send_window_current']}")
+print("EXPLICIT_RUNTIME_SEND_EXTERNAL_REQUEST_ALLOWED=no")
+print("EXPLICIT_RUNTIME_SEND_RUNTIME_MUTATION_ALLOWED=no")
+print(f"EXPLICIT_RUNTIME_SEND_NEXT_GATE={payload['next_gate']}")
+print(f"EXPLICIT_RUNTIME_SEND_APPROVED_EXECUTION_MODE={payload['approved_execution_mode']}")
+PY
+)"
+
 report="$(cat <<EOF
 FIRST_CONTROLLED_SEND_STATUS_REPORT
 STATE=${state}
@@ -342,6 +371,7 @@ ${placeholder_report}
 ${opening_prereq_report}
 ${opening_bundle_report}
 ${opening_decision_packet_report}
+${explicit_runtime_send_report}
 EOF
 )"
 
