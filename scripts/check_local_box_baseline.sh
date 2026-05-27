@@ -279,6 +279,13 @@ if ! "${ROOT}/scripts/check_real_handoff_explicit_runtime_send_line.sh"; then
   exit 1
 fi
 
+# First-real-request gate bundle closeout must stay coherent as a docs-only
+# decision stack before any future actual controlled send can be considered.
+if ! "${ROOT}/scripts/check_real_testnet_first_real_request_gate_bundle_closeout.sh"; then
+  echo "LOCAL_BOX_BASELINE_CHECK FAIL: first real request gate bundle closeout check failed" >&2
+  exit 1
+fi
+
 # Real testnet external executor mocked V1 must stay offline, explicitly gated,
 # and reviewable before any future real-wire expansion is considered.
 if ! "${ROOT}/scripts/check_real_testnet_external_executor_mocked_v1.sh"; then
