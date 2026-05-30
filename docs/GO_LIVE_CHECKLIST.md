@@ -411,6 +411,19 @@ Use this section in the final review meeting.
 - §6 R-002 ETA: moved to **2026-06-06**
 - Note: runtime proof hold, dry-run **DONE**, and guardrail governance freeze do **not** imply go-live approval while **R-001** or **R-002** is **OPEN**.
 
+#### 2026-05-30 — R-001 admin enforcement decision after branch protection read-only check
+
+- R-001 §9 outcome: keep blocking go-live
+- Status (§6): remain **OPEN** (not closed)
+- Decision: **NO-GO** for live trading
+- Admin enforcement decision: do **not** enable **`enforce_admins`** in this step.
+- PR-only decision: do **not** switch to PR-only in this step.
+- Reason: the current terminal-only recovery workflow still depends on direct pushes for small, low-risk documentation fixes. GitHub branch protection read-only check confirms required checks are configured, but **`enforce_admins.enabled = false`**, so admin bypass remains real and accepted as an open risk for now.
+- Evidence: branch protection API read-only check showed **`required_status_checks.strict = true`**, required contexts **`check`** and **`checklist-curl-guardrails`**, **`required_approving_review_count = 0`**, and **`enforce_admins.enabled = false`**.
+- Next action: keep R-001 open until a separate workflow migration explicitly enables **`enforce_admins`** and removes direct-push reliance.
+- §6 R-001 ETA: remains **2026-06-06**
+- Note: this decision records the current risk posture; it does not close R-001 and does not authorize real external request or live trading.
+
 ### WIP freeze roll (machine-checked — see `docs/RULES.md`)
 
 When **`WIP freeze until`** is reached (current value lifts on **2026-05-15**), this review **must** explicitly record one of:
