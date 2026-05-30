@@ -424,6 +424,19 @@ Use this section in the final review meeting.
 - §6 R-001 ETA: remains **2026-06-06**
 - Note: this decision records the current risk posture; it does not close R-001 and does not authorize real external request or live trading.
 
+#### 2026-05-30 — R-002 Python 3.11 local baseline evidence
+
+- R-002 §9 outcome: close candidate, pending CI confirmation
+- Status (§6): remain **OPEN** in this step
+- Decision: **NO-GO** for live trading
+- Evidence: local **`python3.11`** is available at **`/opt/homebrew/bin/python3.11`** and reports **Python 3.11.15**.
+- Evidence: **`PYTHON=python3.11 bash scripts/check_local_box_baseline.sh`** completed **PASS** locally.
+- Evidence: **`bash scripts/check_go_live_rules.sh`** completed **PASS** after the Python 3.11 baseline check.
+- Reason: the local Python 3.11 path now exists and can run the baseline, reducing R-002 from an unresolved local-runtime availability risk to a close candidate. R-002 is not closed in this step because this record still needs a pushed commit and successful **`local-box-baseline`** CI confirmation.
+- Next action: push this record and confirm GitHub Actions **`local-box-baseline`** completes successfully on **`main`**.
+- §6 R-002 ETA: remains **2026-06-06**
+- Note: Python 3.11 local baseline evidence does not imply go-live approval while R-001 remains **OPEN** and live trading remains **NO-GO**.
+
 ### WIP freeze roll (machine-checked — see `docs/RULES.md`)
 
 When **`WIP freeze until`** is reached (current value lifts on **2026-05-15**), this review **must** explicitly record one of:
