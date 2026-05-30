@@ -308,12 +308,12 @@ Use one row per active risk; update daily until closed.
 - Review note: R-001 remains open and must be reviewed in §9 before go-live.
 
 - Risk ID: **R-002**
-- Description: **Python version drift** — maintainer machine runs **3.8.10**; CI pins **3.11**. Parent smokes might pass locally but break in CI (or vice versa) when 3.9+ syntax / stdlib is introduced.
+- Description: **Python version drift** — maintainer machine no longer runs the earlier recorded **3.8.10** path; current observed local runtimes are **python 3.12.4** (`/opt/anaconda3/bin/python`) and **python3 3.14.5** (`/opt/homebrew/bin/python3`), while CI still pins **3.11**. Parent smokes might pass locally but break in CI (or vice versa) because the local and CI Python minors are still not aligned.
 - Impact: **Medium**
 - Probability: **Medium**
 - Owner: **baolood**
-- Mitigation: Install Python **3.11** locally (e.g. via `pyenv` or system installer) and re-run **`./scripts/check_local_box_baseline.sh`** + smokes; until then, treat **CI** as source of truth for parent Python tests and avoid claiming "works on my machine" before CI is GREEN.
-- Trigger/Signal: CI failure that does not reproduce locally (or local pass that CI rejects); contribution adds 3.9+-only constructs.
+- Mitigation: either run parent smokes through a local Python **3.11** environment or keep treating **CI** as source of truth for parent Python tests; after any local runtime alignment, re-run **`./scripts/check_local_box_baseline.sh`** + smokes. Until then, do not claim "works on my machine" before CI is GREEN.
+- Trigger/Signal: CI failure that does not reproduce locally, local pass that CI rejects, or contribution depends on behavior available in local **3.12/3.14** but not guaranteed under CI **3.11**.
 - Status: **OPEN**
 - ETA to close: **2026-06-06**
 
