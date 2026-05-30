@@ -304,7 +304,7 @@ Use one row per active risk; update daily until closed.
 - **Half-closed state (deliberate):** the team chose **not** to flip **`enforce_admins`** yet so direct pushes to **`main`** remain available during the current go-live close-out cycle. The **next decision point** for closing **R-001** is whether to switch to a PR-only workflow (enable **`enforce_admins`** + remove the direct-push habit recorded in this file's recent commit history); until that decision is made and applied, **R-001** stays **OPEN**.
 - Trigger/Signal: PR merged or push landed on **`main`** while protection is off; or CI red on **`main`** without a revert within SLA; or an admin push lands on **`main`** without a corresponding **`local-box-baseline`** **`completed/success`** run.
 - Status: **OPEN**
-- ETA to close: **2026-05-29**
+- ETA to close: **2026-06-06**
 - Review note: R-001 remains open and must be reviewed in §9 before go-live.
 
 - Risk ID: **R-002**
@@ -315,7 +315,7 @@ Use one row per active risk; update daily until closed.
 - Mitigation: Install Python **3.11** locally (e.g. via `pyenv` or system installer) and re-run **`./scripts/check_local_box_baseline.sh`** + smokes; until then, treat **CI** as source of truth for parent Python tests and avoid claiming "works on my machine" before CI is GREEN.
 - Trigger/Signal: CI failure that does not reproduce locally (or local pass that CI rejects); contribution adds 3.9+-only constructs.
 - Status: **OPEN**
-- ETA to close: **2026-05-29**
+- ETA to close: **2026-06-06**
 
 ---
 
@@ -397,6 +397,19 @@ Use this section in the final review meeting.
 - §6 R-001 ETA: moved to **2026-05-29**
 - §6 R-002 ETA: moved to **2026-05-29**
 - Note: dry-run **DONE** and risk **FAILED** path validation does **not** imply go-live approval while **R-001** or **R-002** is **OPEN**.
+
+#### 2026-05-30 — R-001 / R-002 ETA review after runtime-proof hold and guardrail freeze
+
+- R-001 §9 outcome: keep blocking go-live
+- R-002 §9 outcome: keep blocking go-live
+- Status (§6): both remain **OPEN** (not closed)
+- Decision: **NO-GO** for live trading
+- Reason: runtime proof docs-only expansion is stopped and guardrail governance expansion is frozen, but branch admin bypass (**R-001**) and local/CI Python version drift (**R-002**) still remain unresolved go-live risks. The current runtime-proof posture remains **HOLD_FOR_REAL_COLLECTION_CONDITIONS**; this does not authorize live trading.
+- Next action: decide and apply the **`enforce_admins` + PR-only** path for **R-001**; align local Python runtime with CI Python **3.11+** and rerun baseline checks for **R-002**.
+- Evidence required before close: branch protection `gh api` output + **`local-box-baseline`** green after protection change for **R-001**; local Python **3.11+** baseline/smoke evidence + CI green for **R-002**.
+- §6 R-001 ETA: moved to **2026-06-06**
+- §6 R-002 ETA: moved to **2026-06-06**
+- Note: runtime proof hold, dry-run **DONE**, and guardrail governance freeze do **not** imply go-live approval while **R-001** or **R-002** is **OPEN**.
 
 ### WIP freeze roll (machine-checked — see `docs/RULES.md`)
 
