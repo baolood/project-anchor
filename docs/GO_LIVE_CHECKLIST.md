@@ -308,14 +308,15 @@ Use one row per active risk; update daily until closed.
 - Review note: R-001 remains open and must be reviewed in §9 before go-live.
 
 - Risk ID: **R-002**
-- Description: **Python version drift** — maintainer machine no longer runs the earlier recorded **3.8.10** path; current observed local runtimes are **python 3.12.4** (`/opt/anaconda3/bin/python`) and **python3 3.14.5** (`/opt/homebrew/bin/python3`), while CI still pins **3.11**. Parent smokes might pass locally but break in CI (or vice versa) because the local and CI Python minors are still not aligned.
+- Description: **Python version drift** — local Python **3.11.15** is now available at **`/opt/homebrew/bin/python3.11`** and has been used to run the parent baseline successfully. The earlier local drift concern is closed for the current go-live checklist scope.
 - Impact: **Medium**
-- Probability: **Medium**
+- Probability: **Low**
 - Owner: **baolood**
-- Mitigation: either run parent smokes through a local Python **3.11** environment or keep treating **CI** as source of truth for parent Python tests; after any local runtime alignment, re-run **`./scripts/check_local_box_baseline.sh`** + smokes. Until then, do not claim "works on my machine" before CI is GREEN.
-- Trigger/Signal: CI failure that does not reproduce locally, local pass that CI rejects, or contribution depends on behavior available in local **3.12/3.14** but not guaranteed under CI **3.11**.
-- Status: **OPEN**
-- ETA to close: **2026-06-06**
+- Mitigation: keep using **`python3.11`** for parent baseline/smoke checks when local evidence is required, and continue treating CI as the final source of truth.
+- Trigger/Signal: CI failure that does not reproduce locally, local pass that CI rejects, or loss/removal of the local **python3.11** runtime.
+- Status: **DONE**
+- Closed on: **2026-05-30**
+- Close evidence: local **`PYTHON=python3.11 bash scripts/check_local_box_baseline.sh`** PASS; local **`bash scripts/check_go_live_rules.sh`** PASS; GitHub Actions **`local-box-baseline`** run **`26680725818`** completed **success** for commit **`e729525023684eb2642e60589206d11cc3ad37c4`**.
 
 ---
 
@@ -436,6 +437,16 @@ Use this section in the final review meeting.
 - Next action: push this record and confirm GitHub Actions **`local-box-baseline`** completes successfully on **`main`**.
 - §6 R-002 ETA: remains **2026-06-06**
 - Note: Python 3.11 local baseline evidence does not imply go-live approval while R-001 remains **OPEN** and live trading remains **NO-GO**.
+
+#### 2026-05-30 — R-002 close decision after Python 3.11 baseline and CI confirmation
+
+- R-002 §9 outcome: close
+- Status (§6): **DONE**
+- Decision: **NO-GO** for live trading
+- Reason: local **`python3.11`** is available at **`/opt/homebrew/bin/python3.11`** and reports **Python 3.11.15**; **`PYTHON=python3.11 bash scripts/check_local_box_baseline.sh`** completed **PASS**; **`bash scripts/check_go_live_rules.sh`** completed **PASS**; GitHub Actions **`local-box-baseline`** run **`26680725818`** completed **success** on commit **`e729525023684eb2642e60589206d11cc3ad37c4`**.
+- Close evidence: local Python 3.11 baseline PASS + go-live rules PASS + CI success.
+- Remaining blocker: R-001 remains **OPEN** because admin bypass is still accepted as an open risk.
+- Note: closing R-002 does **not** authorize real external request or live trading while R-001 remains **OPEN**.
 
 ### WIP freeze roll (machine-checked — see `docs/RULES.md`)
 
