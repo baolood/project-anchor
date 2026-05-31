@@ -121,13 +121,13 @@ Use this if you want immediate execution without waiting for a full planning mee
     - Branching, tagging, rollback policy documented
   - Evidence: **`docs/RELEASE_BRANCH_POLICY.md`** (active); **`enforce_admins.enabled = true`** on **`main`**; PR-only path verified before enforcement by PR **#13** and after enforcement by PR **#14** / PR **#15**
 
-- [ ] **Prod-like environment parity check**  
+- [x] **Prod-like environment parity check**
   - Owner: **baolood** (Operations lead)  
-  - Status: `IN_PROGRESS`  
+  - Status: `DONE`
   - Acceptance:
     - Environment diff report (dev/stage/prod-like)
     - Critical config parity confirmed
-  - Evidence: **`docs/ENVIRONMENT_PARITY_CHECKLIST.md`** (target host now locked to Vultr `45.76.190.109` / `vultr`; remaining blocker is parent Python minor parity decision: local/CI `3.11` vs target `3.10.12`)
+  - Evidence: **`docs/ENVIRONMENT_PARITY_CHECKLIST.md`** (target host locked to Vultr `45.76.190.109` / `vultr`; explicit parent-check path **`PYTHON=python3.11`** validated on host while preserving runtime/container posture)
 
 
 ### Week 2 — Deployment + Rollback + Operational Runbooks
