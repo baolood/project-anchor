@@ -11,7 +11,7 @@ Use this when satisfying **`docs/GO_LIVE_CHECKLIST.md`** §4 Week 1 — **Prod-l
 | Check | Local (this maintainer) | CI (`local-box-baseline` job `check`) | Stage / prod-like (target) | Match? |
 |-------|-------------------------|----------------------------------------|----------------------------|--------|
 | OS / arch | `Darwin 25.4.0 arm64` | `ubuntu-latest` (x86_64) | `Linux x86_64` on Vultr single-VM host `vultr` | **N**: local differs; CI and stage are both Linux/x86_64. |
-| Python **minor** | **3.11.15** (`/opt/homebrew/bin/python3.11`) | **3.11** (workflow `python-version`) | **3.10.12** | **N**: stage target still lags the current local/CI parent baseline minor. |
+| Python **minor** | **3.11.15** (`/opt/homebrew/bin/python3.11`) | **3.11** (workflow `python-version`) | default `python3` is **3.10.12**; parent baseline validated with **`python3.11`** (`3.11.0rc1`) | **Y** for the agreed parent-check path: explicit `PYTHON=python3.11` is now available and validated on the target host. |
 | `PYTHONPATH` for smokes | unset by default; `export PYTHONPATH=.` per `README.md` | `.` (job env) | unset by default; `PYTHONPATH=.` verified for parent import smoke | **Y** when operators follow the documented `export`. |
 
 ## 2) Dependencies
@@ -41,7 +41,7 @@ Use this when satisfying **`docs/GO_LIVE_CHECKLIST.md`** §4 Week 1 — **Prod-l
 
 ## 5) Intentional / known deltas (must be listed, not hidden)
 
-1. **Python minor still diverges on the target host.** Local parent evidence now runs on **3.11.15**, CI runs **3.11**, but the current stage/prod-like target reports **3.10.12**. This no longer blocks **R-002** (local drift is closed), but it still blocks calling Week 1 parity fully confirmed.
+1. **Host default `python3` still differs, but the parent validation path is now aligned.** Local parent evidence runs on **3.11.15**, CI runs **3.11**, and the stage target now has explicit **`python3.11`** (`3.11.0rc1`) available for parent baseline checks. The default host `python3` remains **3.10.12**, but that no longer blocks Week 1 parity because the agreed parent-check path is explicit `PYTHON=python3.11`.
 2. **OS/arch differs across local vs CI/stage.** Local is `Darwin/arm64`; CI and the target host are `Linux/x86_64`. Parent code is pure Python — flag any binary wheels or platform-specific paths added later.
 3. **Local Git hooks optional.** `.githooks/pre-commit` is real protection only after `./scripts/install_git_hooks.sh`. CI guardrails do not depend on it.
 4. **Stage / prod-like host is now locked.** Use Vultr host `45.76.190.109` (`hostname: vultr`) as the shared Week 2–6 reference target until replaced by an explicit migration decision. Remaining blocker is parity completion, not target identity.
@@ -49,6 +49,6 @@ Use this when satisfying **`docs/GO_LIVE_CHECKLIST.md`** §4 Week 1 — **Prod-l
 ## 6) Sign-off
 
 - Prepared by: **baolood** / **2026-05-07**
-- Reviewed by: Release manager (**baolood**, interim) / target host now defined; full parity sign-off still pending Python-minor alignment decision
+- Reviewed by: Release manager (**baolood**, interim) / target host defined and explicit `python3.11` parent-check path validated on `2026-05-31`
 
-When the remaining Python-minor decision is resolved (either align the target to **3.11** or explicitly sign off the **3.10.12** delta), update **`docs/GO_LIVE_CHECKLIST.md`** Week 1 parity item to `DONE` and link the commit that finalized this file.
+Week 1 parity may now be treated as `DONE` for the parent repo because the target host is fixed and the explicit `python3.11` parent-check path has been validated. Future host-change work may still choose to switch the default `python3`, but that is no longer required for this checklist row.
