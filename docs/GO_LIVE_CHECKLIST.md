@@ -448,6 +448,18 @@ Use this section in the final review meeting.
 - Remaining blocker: R-001 remains **OPEN** because admin bypass is still accepted as an open risk.
 - Note: closing R-002 does **not** authorize real external request or live trading while R-001 remains **OPEN**.
 
+#### 2026-05-31 — R-001 close-decision candidate after PR-only dry run
+- R-001 §9 outcome: close decision candidate formed
+- Status (§6): remain **OPEN** in this step
+- Decision: **NO-GO** for live trading
+- Evidence: PR-only workflow has now been proven through branch **push** and **pull_request** CI on **`chore/r001-pr-only-dry-run`** with commit **`3572b3a`** and follow-up docs note **`f253595`**.
+- Evidence: branch push CI **`26700385849`** and branch-update push CI **`26700691080`** completed **success**.
+- Evidence: PR CI **`26700573569`** and PR-update CI **`26700691732`** completed **success** for PR **#13**.
+- Interpretation: the workflow path needed for a future PR-only migration is no longer theoretical; it has now been rehearsed successfully.
+- Remaining blocker: **`enforce_admins`** is still **not enabled**, GitHub branch protection has not been changed, and direct push to **`main`** is still technically possible for an admin.
+- Next action: make an explicit separate decision on whether to enable **`enforce_admins`** and retire documented direct-push reliance.
+- Note: this entry does not close R-001, does not change branch protection, and does not authorize real external request or live trading.
+
 #### 2026-05-31 — R-001 PR-only dry-run workflow passed
 - R-001 §9 outcome: PR-only workflow dry run passed
 - Status (§6): remain **OPEN** (not closed)
