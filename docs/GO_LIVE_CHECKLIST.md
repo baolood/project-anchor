@@ -132,13 +132,13 @@ Use this if you want immediate execution without waiting for a full planning mee
 
 ### Week 2 — Deployment + Rollback + Operational Runbooks
 
-- [ ] **One-command deployment runbook validated**  
+- [x] **One-command deployment runbook validated**
   - Owner: **baolood** (Engineering lead)  
-  - Status: `IN_PROGRESS`  
+  - Status: `DONE`
   - Acceptance:
     - Stage deploy from clean checkout succeeds
     - Duration baseline recorded
-  - Evidence: **`docs/STAGE_DEPLOY_RUNBOOK.md`** (draft — fill duration table + first validated run sign-off)
+  - Evidence: **`docs/STAGE_DEPLOY_RUNBOOK.md`** (hardened V1, first controlled validation completed on 2026-05-31); **`docs/ONE_COMMAND_DEPLOYMENT_RUNBOOK_FIRST_CONTROLLED_VALIDATION_CLOSEOUT_V1.md`** (precheck + controlled deploy + postcheck + coarse duration markers recorded; `PYTHON=python3.11` baseline PASS; go-live rules PASS; real external request remains NOT AUTHORIZED)
 
 - [ ] **Rollback drill completed**  
   - Owner: **baolood** (Operations lead)  
