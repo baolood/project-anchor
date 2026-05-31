@@ -448,6 +448,17 @@ Use this section in the final review meeting.
 - Remaining blocker: R-001 remains **OPEN** because admin bypass is still accepted as an open risk.
 - Note: closing R-002 does **not** authorize real external request or live trading while R-001 remains **OPEN**.
 
+#### 2026-05-31 — R-001 PR-only dry-run workflow passed
+- R-001 §9 outcome: PR-only workflow dry run passed
+- Status (§6): remain **OPEN** (not closed)
+- Decision: **NO-GO** for live trading
+- Evidence: branch **`chore/r001-pr-only-dry-run`** was pushed successfully with commit **`3572b3a`**.
+- Evidence: GitHub Actions **`local-box-baseline`** run **`26700385849`** completed **success** for the branch **`push`** event.
+- Evidence: PR **#13** (**https://github.com/baolood/project-anchor/pull/13**) opened successfully against **`main`**.
+- Evidence: GitHub Actions **`local-box-baseline`** run **`26700573569`** completed **success** for the **`pull_request`** event.
+- Boundary: this proves branch -> PR -> CI workflow viability only; it does not enable **`enforce_admins`**, does not change GitHub branch protection, and does not close R-001.
+- Note: real external request remains **NOT AUTHORIZED** and live trading remains **NO-GO**.
+
 #### 2026-05-30 — R-001 PR-only dry-run branch started
 - R-001 §9 outcome: PR-only workflow dry run started
 - Status (§6): remain **OPEN** (not closed)
