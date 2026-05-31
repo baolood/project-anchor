@@ -1,13 +1,13 @@
 # Stage deploy runbook — hardened V1
 
-**Status:** hardened draft — not yet validated by a real deploy run.
+**Status:** first controlled validation completed on 2026-05-31; retained as active validated baseline for future stage deploy runs.
 **GO_LIVE_CHECKLIST link:** §4 Week 2 — `One-command deployment runbook validated`.
 **Owner:** baolood.
 
 ## 0) Current decision
 
-This runbook is now prepared for a future first controlled validation on the stage host.
-This document does **not** authorize the deploy itself.
+This runbook has now been exercised once through a first controlled validation on the stage host.
+This document does **not** authorize real external request, live trading, or any production execution mode change.
 
 Current boundary:
 
@@ -39,6 +39,7 @@ Known host context:
 - Host-local dirty file may exist:
   - `anchor-backend/docker-compose.override.yml`
 - This dirty file must not be overwritten by the deploy validation unless separately authorized.
+- First controlled validation executed against host checkout revision `deda43e`; the known dirty file remained `anchor-backend/docker-compose.override.yml` before and after validation.
 
 ## 2) Python path
 
@@ -115,7 +116,7 @@ It must not be executed until a separate validation task explicitly authorizes:
 
 ## 5) Post-deploy validation
 
-After a future authorized deploy validation, collect:
+After an authorized deploy validation, collect:
 
 ```bash
 cd /root/project-anchor
@@ -190,15 +191,15 @@ Rollback action must be separately authorized unless the failure is limited to c
 
 ## 8) Duration baseline
 
-Fill during first authorized validation:
+Observed during first authorized validation on 2026-05-31:
 
 | Step | Started UTC | Finished UTC | Wall seconds | Result | Notes |
 |------|-------------|--------------|--------------|--------|-------|
-| precheck | | | | | |
-| deploy command | | | | | |
-| postcheck | | | | | |
-| parent baseline | | | | | |
-| go-live rules | | | | | |
+| precheck | 2026-05-31T14:48:30+00:00 | 2026-05-31T14:48:30+00:00 | snapshot | PASS | Host identity, repo path, Python 3.11, Docker state, `/health`, and `/ops/state` all visible before deploy execution. |
+| deploy command | 2026-05-31T14:48:30+00:00 | 2026-05-31T14:49:17+00:00 | ~47 | PASS | Backend image rebuilt, backend container recreated, worker recycled and started. Finish marker based on host-side `StartedAt` for worker. |
+| postcheck | 2026-05-31T14:49:40+00:00 | 2026-05-31T14:49:40+00:00 | snapshot | PASS | Backend and worker visible; `/health` OK; `/ops/state` reachable; worker heartbeat fresh. |
+| parent baseline | 2026-05-31T14:49:40+00:00 | 2026-05-31T14:49:40+00:00 | logged in evidence | PASS | `PYTHON=python3.11 bash scripts/check_local_box_baseline.sh` returned `BASELINE_RC=0`. |
+| go-live rules | 2026-05-31T14:49:40+00:00 | 2026-05-31T14:49:40+00:00 | logged in evidence | PASS | `bash scripts/check_go_live_rules.sh` returned `GO_LIVE_RULES_RC=0`. |
 
 ## 9) First validation closeout template
 
@@ -238,6 +239,8 @@ decision:
 - Deploy command explicit: YES
 - Postcheck explicit: YES
 - Rollback decision surface explicit: YES
-- First real validation performed by this document: NO
+- First real validation performed by this document: YES
+- First validation result: PASS
+- Validation evidence bundle: `docs/ONE_COMMAND_DEPLOYMENT_RUNBOOK_FIRST_CONTROLLED_VALIDATION_CLOSEOUT_V1.md`
 - Real external request authorized: NO
 - Live trading: NO-GO
