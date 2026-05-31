@@ -127,7 +127,7 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Acceptance:
     - Environment diff report (dev/stage/prod-like)
     - Critical config parity confirmed
-  - Evidence: **`docs/ENVIRONMENT_PARITY_CHECKLIST.md`** (working copy — fill §5 intentional deltas + sign-off when ready)
+  - Evidence: **`docs/ENVIRONMENT_PARITY_CHECKLIST.md`** (target host now locked to Vultr `45.76.190.109` / `vultr`; remaining blocker is parent Python minor parity decision: local/CI `3.11` vs target `3.10.12`)
 
 
 ### Week 2 — Deployment + Rollback + Operational Runbooks
