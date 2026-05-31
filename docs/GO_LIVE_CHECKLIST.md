@@ -448,6 +448,14 @@ Use this section in the final review meeting.
 - Remaining blocker: R-001 remains **OPEN** because admin bypass is still accepted as an open risk.
 - Note: closing R-002 does **not** authorize real external request or live trading while R-001 remains **OPEN**.
 
+#### 2026-05-31 — R-001 post-enforcement PR-path verification started
+- R-001 §9 outcome: post-enforcement PR-path verification started
+- Status (§6): remain **OPEN** in this step
+- Decision: **NO-GO** for live trading
+- Evidence: **`enforce_admins`** is now enabled on **`main`** while required checks remain **`check`** and **`checklist-curl-guardrails`** with strict status checks still enforced.
+- Purpose: verify that a small docs-only branch -> PR -> CI path still works after admin direct-push bypass is removed.
+- Boundary: this step does not close R-001, does not authorize real external request, and does not change runtime or live trading posture.
+
 #### 2026-05-31 — R-001 close-decision candidate after PR-only dry run
 - R-001 §9 outcome: close decision candidate formed
 - Status (§6): remain **OPEN** in this step
