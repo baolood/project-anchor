@@ -448,6 +448,13 @@ Use this section in the final review meeting.
 - Remaining blocker: R-001 remains **OPEN** because admin bypass is still accepted as an open risk.
 - Note: closing R-002 does **not** authorize real external request or live trading while R-001 remains **OPEN**.
 
+#### 2026-05-30 — R-001 PR-only dry-run branch started
+- R-001 §9 outcome: PR-only workflow dry run started
+- Status (§6): remain **OPEN** (not closed)
+- Decision: **NO-GO** for live trading
+- Reason: a local branch **`chore/r001-pr-only-dry-run`** was created to verify that future small documentation changes can move through branch → PR → CI instead of direct pushes to **`main`**.
+- Boundary: this does not enable **`enforce_admins`**, does not change GitHub branch protection, and does not close R-001.
+- Note: this is workflow rehearsal only; real external request remains **NOT AUTHORIZED** and live trading remains **NO-GO**.
 ### WIP freeze roll (machine-checked — see `docs/RULES.md`)
 
 When **`WIP freeze until`** is reached (current value lifts on **2026-05-15**), this review **must** explicitly record one of:
