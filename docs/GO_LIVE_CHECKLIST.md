@@ -294,18 +294,20 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
 Use one row per active risk; update daily until closed.
 
 - Risk ID: **R-001**
-- Description: **`main` branch protection partially enforced** — required status checks are configured and verified by CLI, but `enforce_admins` is still **`false`** so a repo admin can push directly to **`main`** and bypass the configured checks.
+- Description: **`main` branch protection enforced for admins** — required status checks remain configured and verified by CLI, and **`enforce_admins`** is now enabled so admin direct-push bypass is no longer accepted on **`main`**.
 - Impact: **High** (admin push can land code without CI gate)
-- Probability: **Medium** (single-maintainer repo; current workflow still relies on direct push to **`main`** for fast iteration)
+- Probability: **Low** (post-enforcement PR path has been re-verified; direct admin bypass is no longer the default operating mode)
 - Owner: **baolood**
-- Mitigation: Follow **`docs/GITHUB_BRANCH_PROTECTION.md`**; after enabling, run **`./scripts/check_local_box_ci_runs.sh --branch main --gate-strict --quiet`** once (requires **`gh auth login`** first). **`gh`** is authenticated locally — API/CLI triage is **unblocked**.
-- **API verification record (local, 2026-05-07):** **`gh api repos/baolood/project-anchor/branches/main/protection`** returned: **`required_status_checks.strict = true`**, **`required_status_checks.contexts = ["check", "checklist-curl-guardrails"]`** (both checks tied to **GitHub Actions** app id **`15368`**), **`required_pull_request_reviews.required_approving_review_count = 0`**, and **`enforce_admins.enabled = false`** — i.e. PR-side check enforcement is live, **but admin bypass is still open**.
+- Mitigation: Follow **`docs/GITHUB_BRANCH_PROTECTION.md`**; keep **`enforce_admins`** enabled, keep required checks **`check`** and **`checklist-curl-guardrails`** present, and verify future main changes continue to arrive through the PR path. **`gh`** is authenticated locally — API/CLI triage is **unblocked**.
+- **API verification record (local, 2026-05-31):** **`gh api repos/baolood/project-anchor/branches/main/protection`** returned: **`required_status_checks.strict = true`**, **`required_status_checks.contexts = ["check", "checklist-curl-guardrails"]`** (both checks tied to **GitHub Actions** app id **`15368`**), **`required_pull_request_reviews.required_approving_review_count = 0`**, and **`enforce_admins.enabled = true`** — i.e. admin bypass is now removed from the accepted main workflow posture.
 - **CLI verification record (local, 2026-05-07):** `gh auth status` — logged in to github.com as **baolood** (HTTPS, scopes: `gist read:org repo workflow`). **`./scripts/check_local_box_ci_runs.sh --branch main --limit 5 --gate-strict`** — **PASS** (latest run **`25491239855`** on **`main`**, `completed` / `success`).
-- **Half-closed state (deliberate):** the team chose **not** to flip **`enforce_admins`** yet so direct pushes to **`main`** remain available during the current go-live close-out cycle. The **next decision point** for closing **R-001** is whether to switch to a PR-only workflow (enable **`enforce_admins`** + remove the direct-push habit recorded in this file's recent commit history); until that decision is made and applied, **R-001** stays **OPEN**.
-- Trigger/Signal: PR merged or push landed on **`main`** while protection is off; or CI red on **`main`** without a revert within SLA; or an admin push lands on **`main`** without a corresponding **`local-box-baseline`** **`completed/success`** run.
-- Status: **OPEN**
-- ETA to close: **2026-06-06**
-- Review note: R-001 remains open and must be reviewed in §9 before go-live.
+- **Closure state:** **`enforce_admins`** has now been enabled and the PR-only path has been re-verified after enforcement, so the admin-bypass risk tracked by **R-001** is considered closed. This does **not** authorize go-live, real external request, or live trading.
+- Trigger/Signal: any future branch protection drift that disables **`enforce_admins`**, removes required checks, disables **`strict = true`**, or demonstrates that admin direct-push bypass has become possible again on **`main`**.
+- Status: **DONE**
+- Closed on: **2026-05-31**
+- Close evidence: **`enforce_admins.enabled = true`**; required checks **`check`** and **`checklist-curl-guardrails`** remain configured with **`strict = true`**; post-enforcement PR path verified by PR **#14**; main **`local-box-baseline`** run **`26701688720`** completed **success** on merge commit **`92801fb`**.
+- ETA to close: **CLOSED**
+- Review note: R-001 is closed for the admin-bypass risk only; §9 retains the evidence trail, and go-live still requires separate blocker clearance.
 
 - Risk ID: **R-002**
 - Description: **Python version drift** — local Python **3.11.15** is now available at **`/opt/homebrew/bin/python3.11`** and has been used to run the parent baseline successfully. The earlier local drift concern is closed for the current go-live checklist scope.
@@ -486,6 +488,14 @@ Use this section in the final review meeting.
 - Reason: a local branch **`chore/r001-pr-only-dry-run`** was created to verify that future small documentation changes can move through branch → PR → CI instead of direct pushes to **`main`**.
 - Boundary: this does not enable **`enforce_admins`**, does not change GitHub branch protection, and does not close R-001.
 - Note: this is workflow rehearsal only; real external request remains **NOT AUTHORIZED** and live trading remains **NO-GO**.
+#### 2026-05-31 — R-001 close decision after enforce-admins migration and post-enforcement PR verification
+- R-001 §9 outcome: close
+- Status (§6): **DONE**
+- Decision: **NO-GO** for live trading
+- Reason: **`enforce_admins.enabled = true`** is now verified on **`main`** branch protection; required checks **`check`** and **`checklist-curl-guardrails`** remain configured; **`required_status_checks.strict = true`** remains enabled; PR-only path was verified after enforcement through PR **#14**, which merged to **`main`** as **`92801fb`**.
+- Close evidence: branch protection API verification, PR **#14** post-enforcement merge, and main **`local-box-baseline`** run **`26701688720`** completed **success**.
+- Remaining blocker: runtime proof / real evidence collection is still not complete; closing R-001 does **not** authorize real external request or live trading.
+- Note: R-001 is closed only for the branch-admin-bypass risk. **go-live remains NO-GO**, **real external request remains NOT AUTHORIZED**, and **live trading remains NO-GO**.
 ### WIP freeze roll (machine-checked — see `docs/RULES.md`)
 
 When **`WIP freeze until`** is reached (current value lifts on **2026-05-15**), this review **must** explicitly record one of:
