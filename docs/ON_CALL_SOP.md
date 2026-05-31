@@ -1,8 +1,10 @@
-# On-call SOP (draft — Week 2)
+# On-call SOP
 
-**Status:** draft — satisfies **`docs/GO_LIVE_CHECKLIST.md`** §4 Week 2 — **On-call SOP draft complete** until reviewed and signed.
+**Status:** active interim draft-complete baseline — satisfies **`docs/GO_LIVE_CHECKLIST.md`** §4 Week 2 — **On-call SOP draft complete** in **solo internal review mode**. A second human review is still deferred until the roster splits.
 
 **Owner:** **baolood** (On-call primary, interim — same person holds backup until roster expands).
+
+**Current qualification:** **solo internal review mode**. This SOP is sufficient for the current single-operator phase because the acceptance bar for the Week 2 checklist item is the presence of an incident severity matrix and an escalation flow. It does **not** claim that the team already has a multi-person on-call rotation.
 
 **Related:** **`RUNBOOK.md`**, **`docs/GO_LIVE_CHECKLIST.md`** §6 Risk Register, **`docs/STAGE_DEPLOY_RUNBOOK.md`**, **`docs/ROLLBACK_DRILL_RUNBOOK.md`**.
 
@@ -75,4 +77,4 @@ Next: <next action or ETA>
 - Draft author: **baolood** / **2026-05-07**
 - Reviewed by (Release manager): `<name>` / `<date>` — when staffing splits, require a second human here
 
-When the matrix and escalation table are reviewed, update **`docs/GO_LIVE_CHECKLIST.md`** Week 2 row to `DONE` and link the commit or ticket with review notes.
+This Week 2 item can remain `DONE` while the team is still in solo internal review mode. When staffing splits, add a second-human review entry here and refresh the evidence link in **`docs/GO_LIVE_CHECKLIST.md`**.

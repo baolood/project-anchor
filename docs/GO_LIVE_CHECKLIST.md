@@ -148,12 +148,12 @@ Use this if you want immediate execution without waiting for a full planning mee
     - Recovery under agreed limit
   - Evidence: **`docs/ROLLBACK_DRILL_RUNBOOK.md`** (draft — fill drill log + post-rollback smoke + agreed recovery target)
 
-- [ ] **On-call SOP draft complete**  
+- [x] **On-call SOP draft complete**
   - Owner: **baolood** (Release manager / on-call primary, interim)  
-  - Status: `IN_PROGRESS`  
+  - Status: `DONE`
   - Acceptance:
     - Incident severity matrix + escalation flow
-  - Evidence: **`docs/ON_CALL_SOP.md`** (draft — second-human review pending when roster splits)
+  - Evidence: **`docs/ON_CALL_SOP.md`** (active interim draft-complete baseline — severity matrix + escalation flow present; current qualification: **solo internal review mode**; second-human review pending when roster splits)
 
 
 ### Week 3 — Observability + Alerting + Error Budget
