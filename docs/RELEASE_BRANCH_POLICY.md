@@ -1,6 +1,6 @@
-# Release branch policy (draft)
+# Release branch policy
 
-**Status:** draft — GitHub **branch protection** on `main` must still be applied per **`docs/GITHUB_BRANCH_PROTECTION.md`**. Until that is GREEN, treat direct pushes to `main` as **technical debt** tracked in **`docs/GO_LIVE_CHECKLIST.md`** §6 (**R-001**).
+**Status:** active — GitHub **branch protection** on `main` is now enforced for admins, required checks remain **`check`** and **`checklist-curl-guardrails`**, and the PR-only path has been re-verified after enforcement.
 
 ## Default branch
 
@@ -8,8 +8,9 @@
 
 ## Merge discipline
 
-- **Target:** all changes land via **pull request**; **`local-box-baseline`** (jobs **`checklist-curl-guardrails`** and **`check`**) must be **required** on `main` before merge.
-- **Interim:** if protection is not yet enabled, every maintainer must still run the same order locally as CI (**`README.md`** → CI / **`CONTRIBUTING.md`** → local repro) before push.
+- **Required workflow:** all changes land via **pull request**; **`local-box-baseline`** (jobs **`checklist-curl-guardrails`** and **`check`**) must remain **required** on `main` before merge.
+- **Admin bypass:** **`enforce_admins`** is enabled on `main`, so the same protection posture applies to admins as well as non-admin contributors.
+- **Verification record:** PR-only flow was verified before enforcement via PR **#13**, and re-verified after enforcement via PR **#14** and PR **#15**.
 
 ## Tags and rollback
 

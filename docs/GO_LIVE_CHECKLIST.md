@@ -114,12 +114,12 @@ Use this if you want immediate execution without waiting for a full planning mee
     - Explicit go/no-go authority → §9 chair = Release manager (**baolood**)
   - Evidence: §5 (**G1–G6**), §9 template; gate IDs introduced in commit **`fd7d4d8`**
 
-- [ ] **Freeze release branch policy**  
+- [x] **Freeze release branch policy**
   - Owner: **baolood** (Release manager)  
-  - Status: `IN_PROGRESS`  
+  - Status: `DONE`
   - Acceptance:
     - Branching, tagging, rollback policy documented
-  - Evidence: **`docs/RELEASE_BRANCH_POLICY.md`** (draft); GitHub branch protection on **`main`** still **OPEN** as **§6 / R-001**
+  - Evidence: **`docs/RELEASE_BRANCH_POLICY.md`** (active); **`enforce_admins.enabled = true`** on **`main`**; PR-only path verified before enforcement by PR **#13** and after enforcement by PR **#14** / PR **#15**
 
 - [ ] **Prod-like environment parity check**  
   - Owner: **baolood** (Operations lead)  
