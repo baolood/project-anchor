@@ -140,13 +140,13 @@ Use this if you want immediate execution without waiting for a full planning mee
     - Duration baseline recorded
   - Evidence: **`docs/STAGE_DEPLOY_RUNBOOK.md`** (hardened V1, first controlled validation completed on 2026-05-31); **`docs/ONE_COMMAND_DEPLOYMENT_RUNBOOK_FIRST_CONTROLLED_VALIDATION_CLOSEOUT_V1.md`** (precheck + controlled deploy + postcheck + coarse duration markers recorded; `PYTHON=python3.11` baseline PASS; go-live rules PASS; real external request remains NOT AUTHORIZED)
 
-- [ ] **Rollback drill completed**  
+- [x] **Rollback drill completed**
   - Owner: **baolood** (Operations lead)  
-  - Status: `IN_PROGRESS`  
+  - Status: `DONE`
   - Acceptance:
     - Roll forward + rollback both tested
     - Recovery under agreed limit
-  - Evidence: **`docs/ROLLBACK_DRILL_RUNBOOK.md`** (destructive rollback execution recorded, but agreed recovery target still unfilled); **`docs/ROLLBACK_DRILL_AUTHORIZATION_REVIEW_V1.md`** (rollback drill authorization approved); **`docs/ROLLBACK_DRILL_FIRST_CONTROLLED_VALIDATION_CLOSEOUT_V1.md`** (decision-only drill PASS on explicit stage host, rollback target identified); **`docs/ROLLBACK_DRILL_EXECUTION_AUTHORIZATION_REVIEW_V1.md`** (destructive execution drill authorized); **`docs/ROLLBACK_DRILL_FIRST_DESTRUCTIVE_EXECUTION_CLOSEOUT_V1.md`** (destructive rollback execution PASS to `d76bb0a`, recovery time `26s`, health/ops/baseline/go-live rules PASS; Week 2 remains IN_PROGRESS until agreed recovery limit is explicitly recorded)
+  - Evidence: **`docs/ROLLBACK_DRILL_RUNBOOK.md`** (destructive rollback execution recorded and judged within agreed target `≤ 10 min`); **`docs/ROLLBACK_DRILL_AUTHORIZATION_REVIEW_V1.md`** (rollback drill authorization approved); **`docs/ROLLBACK_DRILL_FIRST_CONTROLLED_VALIDATION_CLOSEOUT_V1.md`** (decision-only drill PASS on explicit stage host, rollback target identified); **`docs/ROLLBACK_DRILL_EXECUTION_AUTHORIZATION_REVIEW_V1.md`** (destructive execution drill authorized); **`docs/ROLLBACK_DRILL_FIRST_DESTRUCTIVE_EXECUTION_CLOSEOUT_V1.md`** (destructive rollback execution PASS to `d76bb0a`, recovery time `26s`, health/ops/baseline/go-live rules PASS); **`docs/ROLLBACK_RECOVERY_TARGET_DECISION_V1.md`** (agreed recovery target fixed at `≤ 10 min`, observed `26s` judged PASS)
 
 - [x] **On-call SOP draft complete**
   - Owner: **baolood** (Release manager / on-call primary, interim)  
