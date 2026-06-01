@@ -173,12 +173,12 @@ Use this if you want immediate execution without waiting for a full planning mee
     - Alert test fired and acknowledged
   - Evidence: **`docs/ALERTING_ROUTING.md`** (Week 3 baseline V1 — current signal sources, severity/routing expectations, and minimum alert-rule thresholds now explicit; concrete tool wiring and ack evidence still pending)
 
-- [ ] **Synthetic checks for critical endpoints**  
+- [x] **Synthetic checks for critical endpoints**
   - Owner: **baolood** (Operations lead)  
-  - Status: `IN_PROGRESS`  
+  - Status: `DONE`
   - Acceptance:
     - Basic probes + dependency checks active
-  - Evidence: **`docs/SYNTHETIC_CHECKS_CRITICAL_ENDPOINTS_V1.md`** (Week 3 baseline V1 — critical endpoint set, probe methods, PASS/FAIL rules, and SLI/alert linkage now explicit); **`docs/SYNTHETIC_CHECKS_EXECUTION_AUTHORIZATION_REVIEW_V1.md`** (first controlled execution authorized, but not executed by the review itself); **`docs/SYNTHETIC_CHECKS_FIRST_CONTROLLED_EXECUTION_CLOSEOUT_V1.md`** (first controlled execution PASS on stage host; row still remains `IN_PROGRESS` because scheduled / repeatable activation evidence is still pending)
+  - Evidence: **`docs/SYNTHETIC_CHECKS_CRITICAL_ENDPOINTS_V1.md`** (Week 3 baseline V1 — critical endpoint set, probe methods, PASS/FAIL rules, and SLI/alert linkage explicit); **`docs/SYNTHETIC_CHECKS_EXECUTION_AUTHORIZATION_REVIEW_V1.md`** (first controlled execution authorized); **`docs/SYNTHETIC_CHECKS_FIRST_CONTROLLED_EXECUTION_CLOSEOUT_V1.md`** (first controlled execution PASS on stage host); **`docs/SYNTHETIC_CHECKS_ACTIVATION_DECISION_V1.md`** (manual once is not enough); **`docs/SYNTHETIC_CHECKS_ACTIVATION_PATH_DECISION_V1.md`** (accepted activation path fixed to operator-run cadence, not cron); **`docs/SYNTHETIC_CHECKS_OPERATOR_CADENCE_SPEC_V1.md`** (operator identity, cadence, and evidence location explicit); **`artifacts/synthetic-checks/2026-06-01T08-40-03Z-operator-run-cadence-first-evidence-bundle.md`** (first successful cadence evidence bundle); **`docs/SYNTHETIC_CHECKS_OPERATOR_CADENCE_ACTIVATION_CLOSEOUT_V1.md`** (Week 3 synthetic checks row judged DONE under accepted operator-run cadence)
 
 
 ### Week 4 — Data Safety + Recovery Drill
