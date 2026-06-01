@@ -178,7 +178,7 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Status: `IN_PROGRESS`  
   - Acceptance:
     - Basic probes + dependency checks active
-  - Evidence: **`docs/SYNTHETIC_CHECKS.md`** (draft — fill probe URLs + tool/scheduler + routing wiring)
+  - Evidence: **`docs/SYNTHETIC_CHECKS_CRITICAL_ENDPOINTS_V1.md`** (Week 3 baseline V1 — critical endpoint set, probe methods, PASS/FAIL rules, and SLI/alert linkage now explicit; scheduled automation and alert acknowledgement evidence still pending)
 
 
 ### Week 4 — Data Safety + Recovery Drill
