@@ -1,6 +1,6 @@
 # Rollback drill runbook (draft — Week 2)
 
-**Status:** draft — satisfies **`docs/GO_LIVE_CHECKLIST.md`** §4 Week 2 — **Rollback drill completed** until a real drill runs and timings are recorded.
+**Status:** draft with first controlled decision-only validation recorded — still not complete until a destructive rollback path is actually exercised and timing is recorded.
 
 **Owner:** **baolood** (Operations lead, interim).
 
@@ -64,6 +64,7 @@ If the smoke fails after rollback, the drill is **NOT** considered complete — 
 ## Sign-off
 
 - Draft author: **baolood** / **2026-05-07**
+- First controlled validation (decision-only): **baolood** / **2026-06-01** — see **`docs/ROLLBACK_DRILL_FIRST_CONTROLLED_VALIDATION_CLOSEOUT_V1.md`**
 - First completed drill: `<name>` / `<date>` — attach drill log + smoke output + which rollback path was used (revert merge vs tag redeploy)
 
 When the drill log is filled and smoke is GREEN within the agreed limit, update **`docs/GO_LIVE_CHECKLIST.md`** Week 2 “Rollback drill completed” row to `DONE` and link the commit / ticket holding the evidence bundle. Until then, this runbook itself is the working evidence.
