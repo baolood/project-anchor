@@ -146,7 +146,7 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Acceptance:
     - Roll forward + rollback both tested
     - Recovery under agreed limit
-  - Evidence: **`docs/ROLLBACK_DRILL_RUNBOOK.md`** (draft with first controlled decision-only validation recorded); **`docs/ROLLBACK_DRILL_AUTHORIZATION_REVIEW_V1.md`** (rollback drill authorization approved); **`docs/ROLLBACK_DRILL_FIRST_CONTROLLED_VALIDATION_CLOSEOUT_V1.md`** (decision-only drill PASS on explicit stage host, rollback target identified, postcheck PASS; destructive rollback execution still pending)
+  - Evidence: **`docs/ROLLBACK_DRILL_RUNBOOK.md`** (destructive rollback execution recorded, but agreed recovery target still unfilled); **`docs/ROLLBACK_DRILL_AUTHORIZATION_REVIEW_V1.md`** (rollback drill authorization approved); **`docs/ROLLBACK_DRILL_FIRST_CONTROLLED_VALIDATION_CLOSEOUT_V1.md`** (decision-only drill PASS on explicit stage host, rollback target identified); **`docs/ROLLBACK_DRILL_EXECUTION_AUTHORIZATION_REVIEW_V1.md`** (destructive execution drill authorized); **`docs/ROLLBACK_DRILL_FIRST_DESTRUCTIVE_EXECUTION_CLOSEOUT_V1.md`** (destructive rollback execution PASS to `d76bb0a`, recovery time `26s`, health/ops/baseline/go-live rules PASS; Week 2 remains IN_PROGRESS until agreed recovery limit is explicitly recorded)
 
 - [x] **On-call SOP draft complete**
   - Owner: **baolood** (Release manager / on-call primary, interim)  

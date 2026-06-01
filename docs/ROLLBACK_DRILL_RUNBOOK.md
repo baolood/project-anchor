@@ -1,6 +1,6 @@
 # Rollback drill runbook (draft — Week 2)
 
-**Status:** draft with first controlled decision-only validation recorded — still not complete until a destructive rollback path is actually exercised and timing is recorded.
+**Status:** draft with destructive rollback execution recorded — still not complete until the agreed recovery target is explicitly filled and the observed recovery time is judged against it.
 
 **Owner:** **baolood** (Operations lead, interim).
 
@@ -32,15 +32,15 @@ The drill must cover **both directions** in one session:
 
 Pick **one** path per drill row below; record which path was used.
 
-## Drill log (fill on first real run)
+## Drill log (first destructive execution recorded; recovery target still pending)
 
 | Step | Started (UTC) | Finished (UTC) | Wall seconds | Notes |
 |------|-----------------|----------------|----------------|-------|
-| 1. Roll forward (deploy new SHA) | | | | |
-| 2. Decision: revert vs redeploy | | | | which path + why |
-| 3. Apply rollback | | | | command(s) used |
-| 4. Service back to known-good | | | | smoke output snippet |
-| **Total recovery wall time** | — | — | | must be ≤ agreed target |
+| 1. Roll forward (deploy new SHA) | 2026-05-31T14:48:30+00:00 | 2026-05-31T14:49:17+00:00 | ~47 | Controlled deploy validation to host checkout `deda43e`; see `docs/ONE_COMMAND_DEPLOYMENT_RUNBOOK_FIRST_CONTROLLED_VALIDATION_CLOSEOUT_V1.md`. |
+| 2. Decision: revert vs redeploy | 2026-06-01T01:41:03+00:00 | 2026-06-01T01:41:50+00:00 | ~47 | Decision-only drill selected checkout-based rollback to `d76bb0a`; see `docs/ROLLBACK_DRILL_FIRST_CONTROLLED_VALIDATION_CLOSEOUT_V1.md`. |
+| 3. Apply rollback | 2026-06-01T02:12:03+00:00 | 2026-06-01T02:12:29+00:00 | 26 | Checkout-based destructive rollback from `deda43e` to `d76bb0a`, then bounded deploy path. |
+| 4. Service back to known-good | 2026-06-01T02:12:29+00:00 | 2026-06-01T02:12:48+00:00 | 19 | `/health` OK, `/ops/state` reachable, worker heartbeat fresh, baseline PASS. |
+| **Total recovery wall time** | 2026-06-01T02:12:03+00:00 | 2026-06-01T02:12:29+00:00 | 26 | Captured successfully; final comparison to agreed target still pending because the agreed target row above is not yet filled. |
 
 ## Smoke after rollback (minimum)
 
@@ -65,6 +65,7 @@ If the smoke fails after rollback, the drill is **NOT** considered complete — 
 
 - Draft author: **baolood** / **2026-05-07**
 - First controlled validation (decision-only): **baolood** / **2026-06-01** — see **`docs/ROLLBACK_DRILL_FIRST_CONTROLLED_VALIDATION_CLOSEOUT_V1.md`**
+- First destructive execution drill: **baolood** / **2026-06-01** — see **`docs/ROLLBACK_DRILL_FIRST_DESTRUCTIVE_EXECUTION_CLOSEOUT_V1.md`**
 - First completed drill: `<name>` / `<date>` — attach drill log + smoke output + which rollback path was used (revert merge vs tag redeploy)
 
 When the drill log is filled and smoke is GREEN within the agreed limit, update **`docs/GO_LIVE_CHECKLIST.md`** Week 2 “Rollback drill completed” row to `DONE` and link the commit / ticket holding the evidence bundle. Until then, this runbook itself is the working evidence.
