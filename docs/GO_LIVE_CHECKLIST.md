@@ -158,12 +158,12 @@ Use this if you want immediate execution without waiting for a full planning mee
 
 ### Week 3 — Observability + Alerting + Error Budget
 
-- [ ] **Define service SLI/SLO**  
+- [x] **Define service SLI/SLO**
   - Owner: **baolood** (Engineering lead)  
-  - Status: `IN_PROGRESS`  
+  - Status: `DONE`
   - Acceptance:
     - Availability, latency, error-rate SLOs agreed
-  - Evidence: **`docs/SERVICE_SLI_SLO.md`** (draft — §3 targets are placeholders until review sign-off)
+  - Evidence: **`docs/SERVICE_SLI_SLO.md`** (Week 3 baseline V1 — agreed availability / latency / error-rate targets fixed, worker heartbeat liveness added as explicit supporting SLI, and interim sign-off recorded on 2026-06-01)
 
 - [ ] **Alert rules + routing implemented**  
   - Owner: **baolood** (Operations lead)  
