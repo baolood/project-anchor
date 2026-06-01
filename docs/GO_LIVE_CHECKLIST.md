@@ -146,7 +146,7 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Acceptance:
     - Roll forward + rollback both tested
     - Recovery under agreed limit
-  - Evidence: **`docs/ROLLBACK_DRILL_RUNBOOK.md`** (draft — fill drill log + post-rollback smoke + agreed recovery target)
+  - Evidence: **`docs/ROLLBACK_DRILL_RUNBOOK.md`** (draft with first controlled decision-only validation recorded); **`docs/ROLLBACK_DRILL_AUTHORIZATION_REVIEW_V1.md`** (rollback drill authorization approved); **`docs/ROLLBACK_DRILL_FIRST_CONTROLLED_VALIDATION_CLOSEOUT_V1.md`** (decision-only drill PASS on explicit stage host, rollback target identified, postcheck PASS; destructive rollback execution still pending)
 
 - [x] **On-call SOP draft complete**
   - Owner: **baolood** (Release manager / on-call primary, interim)  
