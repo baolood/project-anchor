@@ -196,7 +196,7 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Acceptance:
     - Successful restore in test environment
     - RPO/RTO measured and within target
-  - Evidence: **`docs/RESTORE_DRILL_RUNBOOK.md`** (draft — fill drill A/B tables + §4 RPO/RTO measurements); **`docs/G3_BACKUP_RESTORE_DRILL_INVENTORY_V1.md`** (inventory prepared only — actual restore drill executed: NO)
+  - Evidence: **`docs/RESTORE_DRILL_RUNBOOK.md`** (draft — fill drill A/B tables + §4 RPO/RTO measurements); **`docs/G3_BACKUP_RESTORE_DRILL_INVENTORY_V1.md`** (inventory prepared only — actual restore drill executed: NO); **`docs/G3_RESTORE_TARGET_DECISION_V1.md`** (bounded non-production restore target chosen — actual restore drill executed: NO)
 
 - [ ] **Data migration rollback path verified**  
   - Owner: **baolood** (Data/DB owner)  
@@ -272,7 +272,7 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - Linked plan: §4 Week 3
 - [ ] **G3 — Backup/restore drill within RPO/RTO**
   - Verifier: Data/DB owner
-  - Evidence: restore drill log + RPO/RTO measurement vs target; **`docs/G3_BACKUP_RESTORE_DRILL_INVENTORY_V1.md`** (inventory prepared only, not a completed drill)
+  - Evidence: restore drill log + RPO/RTO measurement vs target; **`docs/G3_BACKUP_RESTORE_DRILL_INVENTORY_V1.md`** (inventory prepared only, not a completed drill); **`docs/G3_RESTORE_TARGET_DECISION_V1.md`** (restore target bounded, not a completed drill)
   - Linked plan: §4 Week 4
 - [ ] **G4 — Security review complete (secrets + permissions + vuln baseline)**
   - Verifier: Security owner
