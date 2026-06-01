@@ -178,7 +178,7 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Status: `IN_PROGRESS`  
   - Acceptance:
     - Basic probes + dependency checks active
-  - Evidence: **`docs/SYNTHETIC_CHECKS_CRITICAL_ENDPOINTS_V1.md`** (Week 3 baseline V1 — critical endpoint set, probe methods, PASS/FAIL rules, and SLI/alert linkage now explicit; scheduled automation and alert acknowledgement evidence still pending)
+  - Evidence: **`docs/SYNTHETIC_CHECKS_CRITICAL_ENDPOINTS_V1.md`** (Week 3 baseline V1 — critical endpoint set, probe methods, PASS/FAIL rules, and SLI/alert linkage now explicit); **`docs/SYNTHETIC_CHECKS_EXECUTION_AUTHORIZATION_REVIEW_V1.md`** (first controlled execution authorized, but not executed by the review itself); **`docs/SYNTHETIC_CHECKS_FIRST_CONTROLLED_EXECUTION_CLOSEOUT_V1.md`** (first controlled execution PASS on stage host; row still remains `IN_PROGRESS` because scheduled / repeatable activation evidence is still pending)
 
 
 ### Week 4 — Data Safety + Recovery Drill
