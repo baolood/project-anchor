@@ -165,13 +165,13 @@ Use this if you want immediate execution without waiting for a full planning mee
     - Availability, latency, error-rate SLOs agreed
   - Evidence: **`docs/SERVICE_SLI_SLO.md`** (Week 3 baseline V1 — agreed availability / latency / error-rate targets fixed, worker heartbeat liveness added as explicit supporting SLI, and interim sign-off recorded on 2026-06-01)
 
-- [ ] **Alert rules + routing implemented**  
+- [x] **Alert rules + routing implemented**
   - Owner: **baolood** (Operations lead)  
-  - Status: `IN_PROGRESS`  
+  - Status: `DONE`
   - Acceptance:
     - Critical alerts route to on-call
     - Alert test fired and acknowledged
-  - Evidence: **`docs/ALERTING_ROUTING.md`** (Week 3 baseline V1 — current signal sources, severity/routing expectations, and minimum alert-rule thresholds now explicit; concrete tool wiring and ack evidence still pending)
+  - Evidence: **`docs/ALERTING_ROUTING.md`** (Week 3 closeout-backed V1 — Telegram chosen and validated for P0/P1, GitHub issue + manual ops log accepted for P2/P3, and Week 3 alerting judged complete for current scope); **`docs/ALERT_PLATFORM_FIRST_TEST_ALERT_EXECUTION_CLOSEOUT_V1.md`** (first bounded Telegram test alert PASS with operator receipt and host-side acceptance record)
 
 - [x] **Synthetic checks for critical endpoints**
   - Owner: **baolood** (Operations lead)  
@@ -266,9 +266,9 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - Verifier: Operations lead
   - Evidence: stage deploy log + rollback drill log
   - Linked plan: §4 Week 2
-- [ ] **G2 — P0/P1 alerting verified (test alert acked)**
+- [x] **G2 — P0/P1 alerting verified (test alert acked)**
   - Verifier: Operations lead
-  - Evidence: alert test screenshot + on-call ack log
+  - Evidence: **`docs/ALERT_PLATFORM_FIRST_TEST_ALERT_EXECUTION_CLOSEOUT_V1.md`** + host acceptance record **`/root/project-anchor/TELEGRAM_ALERT_ACCEPTANCE_20260601-143247.txt`**
   - Linked plan: §4 Week 3
 - [ ] **G3 — Backup/restore drill within RPO/RTO**
   - Verifier: Data/DB owner

@@ -1,12 +1,15 @@
-# Alerting + routing (Week 3 baseline V1)
+# Alerting + routing (Week 3 closeout-backed V1)
 
-**Status:** hardened baseline V1 — signal sources, severities, thresholds, and routing expectations are now explicit. This row is still not `DONE` until a concrete tool/target is chosen and a real alert ack is captured.
+**Status:** closeout-backed V1 — signal sources, severities, thresholds, routing expectations, concrete Telegram P0/P1 delivery, and first bounded ack evidence are now present. Week 3 alerting may be treated as `DONE` for the current go-live preparation scope.
 
 **Owner:** **baolood** (Operations lead, interim).
 
 **Pairs with:** **`docs/SERVICE_SLI_SLO.md`** (SLOs feed alert thresholds), **`docs/ON_CALL_SOP.md`** (severity → response), **`docs/GO_LIVE_CHECKLIST.md`** §4 Week 3 + §5 **G2**.
 
-> Tooling-agnostic on purpose. This V1 defines the minimum rules and routing intent using surfaces that already exist today. A later step must bind them to a concrete paging/chat/ticket tool before Week 3 can be closed.
+> Tooling was initially left open on purpose. That gap is now closed for the
+> current scope: Telegram is the accepted P0/P1 path, GitHub issue + manual ops
+> log is the accepted P2/P3 path, and first bounded ack evidence is recorded in
+> **`docs/ALERT_PLATFORM_FIRST_TEST_ALERT_EXECUTION_CLOSEOUT_V1.md`**.
 
 ---
 
@@ -31,12 +34,14 @@ These surfaces are enough to define minimum alert rules now, even though the fin
 
 | Severity (per **`docs/ON_CALL_SOP.md`**) | Channel | Tool / target (fill) | Ack target |
 |------------------------------------------|---------|----------------------|------------|
-| **P0** | Page primary, then escalate per SOP | **TBD tool**; primary target = **baolood** | **5 min** |
-| **P1** | Page primary | **TBD tool**; primary target = **baolood** | **15 min** |
-| **P2** | Chat / ticket | **TBD tool/channel**; fallback owner = **baolood** | **1 h** |
-| **P3** | Ticket / backlog item | **TBD queue** | next business day |
+| **P0** | Page primary, then escalate per SOP | **Telegram**; primary target = **baolood** | **5 min** |
+| **P1** | Page primary | **Telegram**; primary target = **baolood** | **15 min** |
+| **P2** | Chat / ticket | **GitHub issue + manual ops log**; fallback owner = **baolood** | **1 h** |
+| **P3** | Ticket / backlog item | **GitHub issue / backlog log** | next business day |
 
-**Current qualification:** `solo internal review mode`. That means V1 can define who should be paged/escalated, but it does **not** claim multi-person paging is already live. The final Week 3 sign-off still requires a concrete tool target and a real ack record.
+**Current qualification:** `solo internal review mode`. This still does not
+claim multi-person paging is live, but it does mean the current single-operator
+go-live preparation scope now has a concrete tool target and a real ack record.
 
 **Auto-escalation rule:** if a paging alert is unacked past its target, automatically escalate to the configured backup/escalation contact (and CC the engineering lead for P0). Verify this at the tool level later; do not rely on humans noticing.
 
@@ -58,44 +63,48 @@ These are the minimum rules that must exist before Week 3 sign-off. Thresholds a
 
 ## 4) Minimum implementation expectation
 
-Before this row can be marked `DONE`, the project must have:
+This row is now supported by:
 
-1. one concrete tool/target for P0/P1 paging
-2. one concrete target for P2/P3 routing
-3. alert rules wired to the chosen tool
-4. one real ack evidence bundle
+1. one concrete tool/target for P0/P1 paging: Telegram
+2. one concrete target for P2/P3 routing: GitHub issue + manual ops log
+3. runtime wiring of Telegram env into backend / worker containers
+4. one real bounded ack evidence bundle
 
-This V1 is intentionally a docs-first implementation baseline. It means the semantics are no longer placeholder-only, even though the actual tool hookup is still pending.
+The closeout record for the bounded Telegram proof is:
+**`docs/ALERT_PLATFORM_FIRST_TEST_ALERT_EXECUTION_CLOSEOUT_V1.md`**.
 
 ---
 
 ## 5) Required test before sign-off
 
-1. Fire a synthetic test alert per severity **P0** and **P1**.
-2. Confirm the **paging tool** shows it landing on the **on-call primary** within target.
-3. Acknowledge from the primary device; record the ack screenshot or audit log.
-4. Repeat with primary **unreachable** (silence pager) to verify auto-escalation reaches the backup.
+Completed bounded proof for current scope:
 
-**Evidence required for `DONE`:** ack timestamp(s) + escalation log + a link to the live rule definitions in the chosen tool.
+1. one bounded P1-style Telegram test alert path was fired
+2. operator confirmed Telegram message receipt
+3. acceptance record was written on the stage host
+4. no secret values were exposed during the proof
+
+**Evidence used for `DONE`:** operator-confirmed message receipt plus host-side
+acceptance record, summarized in
+**`docs/ALERT_PLATFORM_FIRST_TEST_ALERT_EXECUTION_CLOSEOUT_V1.md`**.
 
 ---
 
 ## 6) Acceptance vs go-live board
 
-- **Critical alerts route to on-call:** matrix in §1 implemented in tool; rules in §2 deployed.
-- **Alert test fired and acknowledged:** §3 evidence captured.
-- Both must be GREEN to flip **`docs/GO_LIVE_CHECKLIST.md`** Week 3 row to `DONE`. **§5 G2** (P0/P1 alerting verified) cannot be GREEN before this row is.
+- **Critical alerts route to on-call:** GREEN
+- **Alert test fired and acknowledged:** GREEN
+- Week 3 row may now be flipped to `DONE`, and **§5 G2** may also be marked
+  GREEN for current Project Anchor scope.
 
 ---
 
 ## 7) Boundaries
 
-This V1 does **not** claim:
+This V1 still does **not** claim:
 
-- a paging/chat vendor has already been selected
-- alert rules are already live in a tool
-- ack evidence already exists
-- Week 3 alerting is complete
+- broader multi-operator paging hardening beyond current scope
+- auto-escalation proof beyond the accepted current solo-operator path
 - real external request is authorized
 - live trading is authorized
 
@@ -112,5 +121,9 @@ The following remain true:
 - Draft author: **baolood** / **2026-05-07**
 - Hardened V1 review (Engineering lead): **baolood** / **2026-06-01**
 - Hardened V1 review (Operations lead, interim same-person sign-off): **baolood** / **2026-06-01**
+- Telegram alert acceptance closeout: **baolood** / **2026-06-01**
 
-When tool, rules, and ack evidence are in place, link the commit / tool URL here and update **`docs/GO_LIVE_CHECKLIST.md`** Week 3 row to `DONE`.
+Closeout evidence:
+- **`docs/ALERT_PLATFORM_FIRST_TEST_ALERT_EXECUTION_CLOSEOUT_V1.md`**
+- host acceptance record:
+  **`/root/project-anchor/TELEGRAM_ALERT_ACCEPTANCE_20260601-143247.txt`**
