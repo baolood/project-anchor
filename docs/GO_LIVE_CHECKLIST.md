@@ -171,7 +171,7 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Acceptance:
     - Critical alerts route to on-call
     - Alert test fired and acknowledged
-  - Evidence: **`docs/ALERTING_ROUTING.md`** (draft — vendor + rule deployment + test alert ack pending)
+  - Evidence: **`docs/ALERTING_ROUTING.md`** (Week 3 baseline V1 — current signal sources, severity/routing expectations, and minimum alert-rule thresholds now explicit; concrete tool wiring and ack evidence still pending)
 
 - [ ] **Synthetic checks for critical endpoints**  
   - Owner: **baolood** (Operations lead)  
