@@ -283,6 +283,9 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - Verifier: Security owner
   - Evidence: review report + audit checklist signoff
   - Linked plan: §4 Week 5-6
+  - G4 mainline selection prepared: `YES`
+  - Next selected G4 mainline: `Secret management and key rotation policy`
+  - Selected G4 mainline status: `NOT_DONE`
 - [ ] **G5 — Capacity/stress test at target load pass**
   - Verifier: Engineering lead
   - Evidence: load test report + degradation behavior notes
