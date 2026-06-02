@@ -224,6 +224,7 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Future bounded `SEC-CI` rehearsal may run: `YES`
   - Execution preflight prepared: `YES`
   - Current `SEC-CI` storage target present: `NO`
+  - Storage target provisioning step prepared: `YES`
   - First real `SEC-CI` rehearsal may start now: `NO`
   - Storage target decision prepared: `YES`
 
