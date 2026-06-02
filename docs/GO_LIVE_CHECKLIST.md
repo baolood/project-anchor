@@ -190,13 +190,13 @@ Use this if you want immediate execution without waiting for a full planning mee
     - Backup schedule and retention documented
   - Evidence: **`docs/BACKUP_AND_RECOVERY.md`** (draft — fill §2 schedule/retention + §4 verification evidence)
 
-- [ ] **Restore drill (table-level + full restore)**  
+- [x] **Restore drill (table-level + full restore)**
   - Owner: **baolood** (Data/DB owner)  
-  - Status: `IN_PROGRESS`  
+  - Status: `DONE`
   - Acceptance:
     - Successful restore in test environment
     - RPO/RTO measured and within target
-  - Evidence: **`docs/RESTORE_DRILL_RUNBOOK.md`** (draft — fill drill A/B tables + §4 RPO/RTO measurements); **`docs/G3_BACKUP_RESTORE_DRILL_INVENTORY_V1.md`** (inventory prepared only — actual restore drill executed: NO); **`docs/G3_RESTORE_TARGET_DECISION_V1.md`** (bounded non-production restore target chosen — actual restore drill executed: NO); **`docs/G3_RESTORE_EXECUTION_PLAN_V1.md`** (restore execution plan prepared: YES; actual restore drill executed: NO; RPO/RTO measured: NO); **`docs/G3_FIRST_BOUNDED_RESTORE_DRILL_AUTHORIZATION_REVIEW_V1.md`** (bounded restore drill authorized: YES; actual restore drill executed: NO; RPO/RTO measured: NO)
+  - Evidence: **`docs/G3_FIRST_BOUNDED_RESTORE_DRILL_EXECUTION_CLOSEOUT_V1.md`** (bounded restore drill PASS; scratch target used; RPO/RTO measured PASS); supporting preparation chain remains in **`docs/RESTORE_DRILL_RUNBOOK.md`**, **`docs/G3_BACKUP_RESTORE_DRILL_INVENTORY_V1.md`**, **`docs/G3_RESTORE_TARGET_DECISION_V1.md`**, **`docs/G3_RESTORE_EXECUTION_PLAN_V1.md`**, **`docs/G3_FIRST_BOUNDED_RESTORE_DRILL_AUTHORIZATION_REVIEW_V1.md`**, **`docs/G3_BACKUP_ARTIFACT_AND_SCRATCH_TARGET_DECISION_V1.md`**, and **`docs/G3_BACKUP_ARTIFACT_SCRATCH_TARGET_PREFLIGHT_V1.md`**
 
 - [ ] **Data migration rollback path verified**  
   - Owner: **baolood** (Data/DB owner)  
@@ -270,9 +270,9 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - Verifier: Operations lead
   - Evidence: **`docs/ALERT_PLATFORM_FIRST_TEST_ALERT_EXECUTION_CLOSEOUT_V1.md`** + host acceptance record **`/root/project-anchor/TELEGRAM_ALERT_ACCEPTANCE_20260601-143247.txt`**
   - Linked plan: §4 Week 3
-- [ ] **G3 — Backup/restore drill within RPO/RTO**
+- [x] **G3 — Backup/restore drill within RPO/RTO**
   - Verifier: Data/DB owner
-  - Evidence: restore drill log + RPO/RTO measurement vs target; **`docs/G3_BACKUP_RESTORE_DRILL_INVENTORY_V1.md`** (inventory prepared only, not a completed drill); **`docs/G3_RESTORE_TARGET_DECISION_V1.md`** (restore target bounded, not a completed drill); **`docs/G3_RESTORE_EXECUTION_PLAN_V1.md`** (G3 restore execution plan prepared: YES; actual restore drill executed: NO; G3 ready for DONE: NO); **`docs/G3_FIRST_BOUNDED_RESTORE_DRILL_AUTHORIZATION_REVIEW_V1.md`** (bounded restore drill authorized: YES; actual restore drill executed: NO; G3 ready for DONE: NO); **`docs/G3_BACKUP_ARTIFACT_AND_SCRATCH_TARGET_DECISION_V1.md`** (backup artifact decision prepared: YES; scratch restore target decision prepared: YES; backup artifact presence verified: NO; actual restore drill executed: NO; RPO/RTO measured: NO; G3 ready for DONE: NO); **`docs/G3_BACKUP_ARTIFACT_SCRATCH_TARGET_PREFLIGHT_V1.md`** (backup artifact created/verified: YES; scratch target implemented: YES; actual restore drill executed: NO; RPO/RTO measured: NO; G3 ready for DONE: NO)
+  - Evidence: **`docs/G3_FIRST_BOUNDED_RESTORE_DRILL_EXECUTION_CLOSEOUT_V1.md`** (restore executed in scratch target; production overwrite NO; RPO/RTO measured PASS)
   - Linked plan: §4 Week 4
 - [ ] **G4 — Security review complete (secrets + permissions + vuln baseline)**
   - Verifier: Security owner
