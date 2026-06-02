@@ -220,6 +220,8 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Next task: `G4 Secret Inventory Completion And Rehearsal Packet V1`
   - Rehearsal packet prepared: `YES`
   - First rehearsal candidate: `SEC-CI`
+  - Authorization review prepared: `YES`
+  - Future bounded `SEC-CI` rehearsal may run: `YES`
 
 - [ ] **Permission minimization and audit**  
   - Owner: **baolood** (Security owner)  
