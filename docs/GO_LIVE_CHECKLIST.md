@@ -215,6 +215,9 @@ Use this if you want immediate execution without waiting for a full planning mee
     - No plaintext secrets in repo/config
     - Rotation procedure tested
   - Evidence: **`docs/SECRETS_AND_ROTATION.md`** (draft — fill §1 inventory + §2 scan + §4 rehearsal)
+  - Readiness review prepared: `YES`
+  - Real rotation rehearsal may start now: `NO`
+  - Next task: `G4 Secret Inventory Completion And Rehearsal Packet V1`
 
 - [ ] **Permission minimization and audit**  
   - Owner: **baolood** (Security owner)  
