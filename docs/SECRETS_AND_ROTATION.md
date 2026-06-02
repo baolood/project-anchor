@@ -22,6 +22,9 @@
 
 **Rule:** anything that grants production access **must** appear here before M1 launch.
 
+For the first rehearsal candidate packet, see
+**`docs/G4_SECRET_INVENTORY_COMPLETION_AND_REHEARSAL_PACKET_V1.md`**.
+
 ---
 
 ## 2) "No plaintext in repo / config" verification
@@ -64,6 +67,9 @@ Pick **one** secret ID from §1 (recommend **SEC-CI** because it touches CI with
 - Rotation completion timestamp
 - Post-rotation verification log link
 - Any consumer that needed manual intervention
+
+The docs-only rehearsal packet for this first candidate is recorded in
+**`docs/G4_SECRET_INVENTORY_COMPLETION_AND_REHEARSAL_PACKET_V1.md`**.
 
 ---
 
