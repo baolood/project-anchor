@@ -264,12 +264,12 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
 
 - Remaining hard gates selection prepared: `YES`
 - Next selected gate: `G1 — Deployment and rollback drills pass`
-- Selected gate status: `NOT_DONE`
+- Selected gate status: `DONE`
 - Go-live: `NO-GO`
 
-- [ ] **G1 — Deployment and rollback drills pass**
+- [x] **G1 — Deployment and rollback drills pass**
   - Verifier: Operations lead
-  - Evidence: stage deploy log + rollback drill log
+  - Evidence: **`docs/G1_DEPLOYMENT_ROLLBACK_GATE_RECONCILIATION_REVIEW_V1.md`** (gate-level reconciliation judged deployment evidence PASS and rollback evidence PASS); supporting Week 2 evidence remains in **`docs/ONE_COMMAND_DEPLOYMENT_RUNBOOK_FIRST_CONTROLLED_VALIDATION_CLOSEOUT_V1.md`** and **`docs/ROLLBACK_DRILL_FIRST_DESTRUCTIVE_EXECUTION_CLOSEOUT_V1.md`**
   - Linked plan: §4 Week 2
 - [x] **G2 — P0/P1 alerting verified (test alert acked)**
   - Verifier: Operations lead
