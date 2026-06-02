@@ -262,6 +262,11 @@ Use this if you want immediate execution without waiting for a full planning mee
 
 Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch is **NO-GO** and the §9 decision row records the blocking gate ID(s).
 
+- Remaining hard gates selection prepared: `YES`
+- Next selected gate: `G1 — Deployment and rollback drills pass`
+- Selected gate status: `NOT_DONE`
+- Go-live: `NO-GO`
+
 - [ ] **G1 — Deployment and rollback drills pass**
   - Verifier: Operations lead
   - Evidence: stage deploy log + rollback drill log
