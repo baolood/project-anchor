@@ -225,6 +225,7 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Execution preflight prepared: `YES`
   - Current `SEC-CI` storage target present: `NO`
   - First real `SEC-CI` rehearsal may start now: `NO`
+  - Storage target decision prepared: `YES`
 
 - [ ] **Permission minimization and audit**  
   - Owner: **baolood** (Security owner)  
