@@ -208,40 +208,45 @@ Use this if you want immediate execution without waiting for a full planning mee
 
 ### Week 5-6 — Security + Capacity + Final Hardening
 
-- [ ] **Secret management and key rotation policy**  
+- [x] **Secret management and key rotation policy**
   - Owner: **baolood** (Security owner)  
-  - Status: `IN_PROGRESS`  
+  - Status: `DONE`
   - Acceptance:
     - No plaintext secrets in repo/config
     - Rotation procedure tested
-  - Evidence: **`docs/SECRETS_AND_ROTATION.md`** (draft — fill §1 inventory + §2 scan + §4 rehearsal)
+  - Evidence: **`docs/SECRETS_AND_ROTATION.md`** + **`docs/G4_SEC_CI_FIRST_BOUNDED_REHEARSAL_EXECUTION_CLOSEOUT_V1.md`**
   - Readiness review prepared: `YES`
-  - Real rotation rehearsal may start now: `NO`
-  - Next task: `G4 Secret Inventory Completion And Rehearsal Packet V1`
+  - Real rotation rehearsal may start now: `YES`
   - Rehearsal packet prepared: `YES`
   - First rehearsal candidate: `SEC-CI`
   - Authorization review prepared: `YES`
   - Future bounded `SEC-CI` rehearsal may run: `YES`
   - Execution preflight prepared: `YES`
-  - Current `SEC-CI` storage target present: `NO`
+  - Current `SEC-CI` storage target present: `YES`
   - Storage target provisioning step prepared: `YES`
-  - First real `SEC-CI` rehearsal may start now: `NO`
+  - First real `SEC-CI` rehearsal may start now: `YES`
   - Storage target decision prepared: `YES`
   - `SEC-CI` value source decision prepared: `YES`
-  - `SEC-CI` value source confirmed: `NO`
-  - provisioning result: `BLOCKED`
+  - `SEC-CI` value source confirmed: `YES`
+  - provisioning result: `PASS`
   - `SEC-CI` value source confirmation review prepared: `YES`
-  - operator provisioning may proceed: `NO`
+  - operator provisioning may proceed: `YES`
   - `G4` ready for `DONE`: `NO`
   - `SEC-CI` value source operator handoff prepared: `YES`
   - `SEC-CI` opaque/token generation decision prepared: `YES`
-  - actual token generated: `NO`
-  - operator has private access: `NO`
+  - actual token generated: `YES`
+  - operator has private access: `YES`
   - `SEC-CI` token generated/retrieved: `YES`
   - token type: `OPAQUE_BOUNDED_VALUE`
   - `SEC_CI` storage target present: `YES`
   - secret value exposed: `NO`
-  - rehearsal executed: `NO`
+  - no-plaintext scan result: `PASS`
+  - real secret material found: `NO`
+  - `SEC_CI` present before rehearsal: `YES`
+  - rehearsal action performed: `SEC_CI_OPAQUE_VALUE_REPLACEMENT`
+  - `SEC_CI` present after rehearsal: `YES`
+  - rehearsal executed: `YES`
+  - unrelated secrets modified: `NO`
   - `SEC-CI` rehearsal execution plan/precheck prepared: `YES`
 
 - [ ] **Permission minimization and audit**  
@@ -313,7 +318,8 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - Linked plan: §4 Week 5-6
   - G4 mainline selection prepared: `YES`
   - Next selected G4 mainline: `Secret management and key rotation policy`
-  - Selected G4 mainline status: `NOT_DONE`
+  - Selected G4 mainline status: `DONE`
+  - Remaining blocker inside G4: `Permission minimization and audit`
 - [ ] **G5 — Capacity/stress test at target load pass**
   - Verifier: Engineering lead
   - Evidence: load test report + degradation behavior notes
