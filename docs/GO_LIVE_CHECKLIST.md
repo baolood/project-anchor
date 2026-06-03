@@ -237,6 +237,11 @@ Use this if you want immediate execution without waiting for a full planning mee
   - `SEC-CI` opaque/token generation decision prepared: `YES`
   - actual token generated: `NO`
   - operator has private access: `NO`
+  - `SEC-CI` token generated/retrieved: `YES`
+  - token type: `OPAQUE_BOUNDED_VALUE`
+  - `SEC_CI` storage target present: `YES`
+  - secret value exposed: `NO`
+  - rehearsal executed: `NO`
 
 - [ ] **Permission minimization and audit**  
   - Owner: **baolood** (Security owner)  
