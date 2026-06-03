@@ -574,3 +574,16 @@ Record the choice + reason here:
 - go-live: NO-GO
 - real external request: NOT AUTHORIZED
 - live trading: NO-GO
+
+<!-- G4 Permission Audit Read-Only Inventory V1 -->
+- actual permission audit inventory executed: YES
+- permission findings recorded: YES
+- minimization actions selected: NO
+- permission changes performed: NO
+- branch protection changed: NO
+- actions permissions changed: NO
+- secrets changed: NO
+- G4 ready for DONE: NO
+- go-live: NO-GO
+- real external request: NOT_AUTHORIZED
+- live trading: NO-GO
