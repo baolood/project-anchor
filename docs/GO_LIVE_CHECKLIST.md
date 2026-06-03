@@ -233,6 +233,7 @@ Use this if you want immediate execution without waiting for a full planning mee
   - `SEC-CI` value source confirmation review prepared: `YES`
   - operator provisioning may proceed: `NO`
   - `G4` ready for `DONE`: `NO`
+  - `SEC-CI` value source operator handoff prepared: `YES`
 
 - [ ] **Permission minimization and audit**  
   - Owner: **baolood** (Security owner)  
