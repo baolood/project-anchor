@@ -227,6 +227,9 @@ Use this if you want immediate execution without waiting for a full planning mee
   - Storage target provisioning step prepared: `YES`
   - First real `SEC-CI` rehearsal may start now: `NO`
   - Storage target decision prepared: `YES`
+  - `SEC-CI` value source decision prepared: `YES`
+  - `SEC-CI` value source confirmed: `NO`
+  - provisioning result: `BLOCKED`
 
 - [ ] **Permission minimization and audit**  
   - Owner: **baolood** (Security owner)  
