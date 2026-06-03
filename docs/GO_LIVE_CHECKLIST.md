@@ -234,6 +234,9 @@ Use this if you want immediate execution without waiting for a full planning mee
   - operator provisioning may proceed: `NO`
   - `G4` ready for `DONE`: `NO`
   - `SEC-CI` value source operator handoff prepared: `YES`
+  - `SEC-CI` opaque/token generation decision prepared: `YES`
+  - actual token generated: `NO`
+  - operator has private access: `NO`
 
 - [ ] **Permission minimization and audit**  
   - Owner: **baolood** (Security owner)  
