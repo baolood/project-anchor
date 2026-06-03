@@ -587,3 +587,17 @@ Record the choice + reason here:
 - go-live: NO-GO
 - real external request: NOT_AUTHORIZED
 - live trading: NO-GO
+
+<!-- G4 Permission Minimization Action Selection V1 -->
+- minimization actions selected: YES
+- selected action count: 2
+- selected action 1: Branch review requirement
+- selected action 2: GitHub Actions allowed actions policy
+- actual permission changes performed: NO
+- branch protection changed: NO
+- actions permissions changed: NO
+- secrets changed: NO
+- G4 ready for DONE: NO
+- go-live: NO-GO
+- real external request: NOT_AUTHORIZED
+- live trading: NO-GO
