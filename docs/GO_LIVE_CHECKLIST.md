@@ -242,6 +242,7 @@ Use this if you want immediate execution without waiting for a full planning mee
   - `SEC_CI` storage target present: `YES`
   - secret value exposed: `NO`
   - rehearsal executed: `NO`
+  - `SEC-CI` rehearsal execution plan/precheck prepared: `YES`
 
 - [ ] **Permission minimization and audit**  
   - Owner: **baolood** (Security owner)  
