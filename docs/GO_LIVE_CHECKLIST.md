@@ -565,3 +565,12 @@ Record the choice + reason here:
 - [ ] **T-1:** final go/no-go review and signoff
 - [ ] **T (launch):** canary rollout + watch SLO/alerts for agreed window
 - [ ] **T+1:** post-launch review, open follow-up actions, close launch ticket
+
+<!-- G4 Permission Minimization And Audit Selection Review V1 -->
+- Permission minimization audit selected: YES
+- actual permission audit executed: NO
+- permission changes performed: NO
+- G4 ready for DONE: NO
+- go-live: NO-GO
+- real external request: NOT AUTHORIZED
+- live trading: NO-GO
