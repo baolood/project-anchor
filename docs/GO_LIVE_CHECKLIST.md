@@ -461,6 +461,8 @@ Use this section in the final review meeting.
 - rollback trigger fixed: YES
 - final release freeze packet prepared: YES
 - final go/no-go packet prepared: YES
+- canary execution authorization review prepared: YES
+- first bounded canary execution authorized in a future task: YES
 - release freeze executed: NO
 - production launch executed: NO
 - go-live ready now: NO
