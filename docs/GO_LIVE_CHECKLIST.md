@@ -459,6 +459,8 @@ Use this section in the final review meeting.
 - watch window fixed: YES
 - abort thresholds fixed: YES
 - rollback trigger fixed: YES
+- final release freeze packet prepared: YES
+- final go/no-go packet prepared: YES
 - release freeze executed: NO
 - production launch executed: NO
 - go-live ready now: NO
