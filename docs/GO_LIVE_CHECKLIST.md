@@ -331,6 +331,9 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - G5 mainline selection prepared: `YES`
   - Next selected G5 mainline: `Traffic profile and load-tool decision`
   - Selected G5 mainline status: `NOT_DONE`
+  - Traffic profile decision prepared: `YES`
+  - Load tool selected: `k6`
+  - First bounded execution profile fixed: read-only control-plane mix
   - G5 ready for `DONE`: `NO`
 - [ ] **G6 — On-call roster + incident SOP active**
   - Verifier: Release manager
