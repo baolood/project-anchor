@@ -640,3 +640,19 @@ Record the choice + reason here:
 - go-live: NO-GO
 - real external request: NOT_AUTHORIZED
 - live trading: NO-GO
+
+<!-- G4 Actions Allowed Actions Policy Bounded Mutation Closeout V1 -->
+- permission changes performed: YES
+- actions permissions changed: YES
+- branch protection changed: NO
+- secrets changed: NO
+- Actions policy mutation result: PASS
+- allowed_actions before: all
+- allowed_actions after: selected
+- github_owned_allowed after: YES
+- verified_allowed after: NO
+- post-mutation CI rerun: PASS
+- G4 ready for DONE: NO
+- go-live: NO-GO
+- real external request: NOT_AUTHORIZED
+- live trading: NO-GO
