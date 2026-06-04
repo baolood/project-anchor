@@ -35,17 +35,17 @@
 
 | Endpoint / job | Share of traffic | Method | Realistic payload size | Notes |
 |----------------|-------------------|--------|-------------------------|-------|
-| `<endpoint A>` | `<%>` | `GET` | `<bytes>` | |
-| `<endpoint B>` | `<%>` | `POST` | `<bytes>` | |
-| `<worker job>` | `<jobs/min>` | n/a | `<bytes>` | |
+| `/health` | `50%` | `GET` | ~`16` bytes | tiny JSON availability probe |
+| `/ops/state` | `30%` | `GET` | ~`1-4 KB` | control-plane read with kill switch + worker heartbeat + recent ops state |
+| `/ops/worker` | `20%` | `GET` | ~`0.2-0.6 KB` | worker liveness / telegram-enabled read surface |
 
-**Expected peak RPS:** `<value>` (source: `<analytics / prod log / estimate>`).
+**Expected peak RPS:** `2` total RPS (source: bounded engineering estimate for current operator-mediated stage usage).
 
 ---
 
 ## 4) Tooling
 
-- Load generator: **`<k6 | locust | wrk | hey | vendor>`** (pick one, pin version).
+- Load generator: **`k6`** (pin exact version in the execution packet before the first bounded run).
 - All probes use **`curl --max-time 30`** when verifying steady-state mid-run, matching **`docs/SYNTHETIC_CHECKS.md`** + the curl guardrail in **`scripts/check_checklist_curl_guardrails.sh`**.
 - Result storage: artifacts under **`artifacts/go-live/capacity/<date>/`** (gitignored — keep summaries inside **`docs/CAPACITY_TEST_PLAN.md`** §5).
 
