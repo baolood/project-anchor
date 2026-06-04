@@ -452,6 +452,16 @@ Use this section in the final review meeting.
 - real external request: NOT AUTHORIZED
 - live trading: NO-GO
 
+<!-- Real External Request Window Operator Authorization Denied Closeout V1 -->
+- operator verdict: DENIED
+- window authorization granted: NO
+- real external request authorized now: NO
+- canary execution may start now: NO
+- go-live: NO-GO
+- real external request: NOT AUTHORIZED
+- live trading: NO-GO
+- reason: OPERATOR_WINDOW_AUTHORIZATION_NOT_FILLED
+
 <!-- Real External Request Window Authorization Packet V1 -->
 - authorization packet prepared: YES
 - operator authorization filled: NO
