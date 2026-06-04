@@ -454,6 +454,14 @@ Use this section in the final review meeting.
 - final release mainline selection prepared: YES
 - next selected final release mainline: Canary/gradual rollout plan executed
 - selected final release mainline status: NOT_DONE
+- canary rollout plan prepared: YES
+- canary rollout executed: NO
+- watch window fixed: YES
+- abort thresholds fixed: YES
+- rollback trigger fixed: YES
+- release freeze executed: NO
+- production launch executed: NO
+- go-live ready now: NO
 - Release target window: `<window>`
 - Chair (decision owner): **baolood** (Release manager per §2 — update if delegated)
 - Participants: `<names>`
