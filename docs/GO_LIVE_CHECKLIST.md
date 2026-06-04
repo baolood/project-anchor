@@ -334,6 +334,10 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - Traffic profile decision prepared: `YES`
   - Load tool selected: `k6`
   - First bounded execution profile fixed: read-only control-plane mix
+  - Execution packet prepared: `YES`
+  - Exact `k6` version captured already: `NO`
+  - CT-02 executed: `NO`
+  - CT-03 executed: `NO`
   - G5 ready for `DONE`: `NO`
 - [ ] **G6 — On-call roster + incident SOP active**
   - Verifier: Release manager
