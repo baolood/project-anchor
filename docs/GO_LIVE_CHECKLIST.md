@@ -249,12 +249,12 @@ Use this if you want immediate execution without waiting for a full planning mee
   - unrelated secrets modified: `NO`
   - `SEC-CI` rehearsal execution plan/precheck prepared: `YES`
 
-- [ ] **Permission minimization and audit**  
+- [x] **Permission minimization and audit**
   - Owner: **baolood** (Security owner)  
-  - Status: `IN_PROGRESS`  
+  - Status: `DONE`
   - Acceptance:
     - Service/account permissions reviewed and reduced
-  - Evidence: **`docs/PERMISSION_AUDIT.md`** (draft — fill §1 inventory + §3 reduction rows with before/after)
+  - Evidence: **`docs/PERMISSION_AUDIT.md`** + **`docs/G4_PERMISSION_INVENTORY_SUBJECT_RECONCILIATION_V1.md`**
 
 - [ ] **Capacity and stress test**  
   - Owner: **baolood** (Engineering lead)  
@@ -312,18 +312,18 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - Verifier: Data/DB owner
   - Evidence: **`docs/G3_FIRST_BOUNDED_RESTORE_DRILL_EXECUTION_CLOSEOUT_V1.md`** (restore executed in scratch target; production overwrite NO; RPO/RTO measured PASS)
   - Linked plan: §4 Week 4
-- [ ] **G4 — Security review complete (secrets + permissions + vuln baseline)**
+- [x] **G4 — Security review complete (secrets + permissions + vuln baseline)**
   - Verifier: Security owner
-  - Evidence: review report + audit checklist signoff
+  - Evidence: **`docs/G4_PERMISSION_INVENTORY_SUBJECT_RECONCILIATION_V1.md`** + **`docs/PERMISSION_AUDIT.md`** + completed secrets evidence chain in Week 5-6
   - Linked plan: §4 Week 5-6
   - G4 mainline selection prepared: `YES`
   - Next selected G4 mainline: `Secret management and key rotation policy`
   - Selected G4 mainline status: `DONE`
-  - Remaining blocker inside G4: `Permission minimization and audit`
+  - Remaining blocker inside G4: `NONE`
   - Remaining permission inventory packet prepared: `YES`
-  - Remaining inventory fully reconciled now: `NO`
-  - Permission minimization row ready for `DONE` now: `NO`
-  - G4 ready for `DONE` now: `NO`
+  - Remaining inventory fully reconciled now: `YES`
+  - Permission minimization row ready for `DONE` now: `YES`
+  - G4 ready for `DONE` now: `YES`
 - [ ] **G5 — Capacity/stress test at target load pass**
   - Verifier: Engineering lead
   - Evidence: load test report + degradation behavior notes
