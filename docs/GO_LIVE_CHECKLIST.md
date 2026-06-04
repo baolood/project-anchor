@@ -359,7 +359,7 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - Clean post-run recovery verification rerun closeout prepared: `YES`
   - First bounded capacity rerun verdict: `PASS`
   - G5 ready for `DONE`: `YES`
-- [ ] **G6 — On-call roster + incident SOP active**
+- [x] **G6 — On-call roster + incident SOP active**
   - Verifier: Release manager
   - Evidence: roster doc + SOP signoff
   - Linked plan: §4 Week 2 + §4 Week 3
@@ -440,14 +440,14 @@ Use this section in the final review meeting.
 - alert channel identified: YES
 - acknowledgement expectation identified: YES
 - stop / no-go authority identified: YES
-- active roster confirmed: NO
-- escalation path confirmed: NO
-- backup / escalation contact confirmed as active: NO
+- active roster confirmed: YES
+- escalation path confirmed: YES
+- backup / escalation contact confirmed as active: YES
 - solo-operator exception decision prepared: YES
 - solo-operator exception explicitly accepted: YES
 - on-call coverage window fixed: YES
-- SOP active confirmed: NO
-- G6 ready for DONE: NO
+- SOP active confirmed: YES
+- G6 ready for DONE: YES
 - go-live: NO-GO
 - real external request: NOT AUTHORIZED
 - live trading: NO-GO
