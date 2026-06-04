@@ -656,3 +656,13 @@ Record the choice + reason here:
 - go-live: NO-GO
 - real external request: NOT_AUTHORIZED
 - live trading: NO-GO
+
+<!-- G4 Permission Minimization And Audit Reconciliation Review V1 -->
+- reconciliation review prepared: YES
+- PRINC-CI reduction evidence sufficient: YES
+- permission minimization row ready for DONE: NO
+- remaining inventory gaps documented: YES
+- G4 ready for DONE: NO
+- go-live: NO-GO
+- real external request: NOT_AUTHORIZED
+- live trading: NO-GO
