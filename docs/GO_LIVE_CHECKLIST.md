@@ -336,6 +336,9 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - First bounded execution profile fixed: read-only control-plane mix
   - Execution packet prepared: `YES`
   - Exact `k6` version captured already: `NO`
+  - Capacity execution preflight prepared: `YES`
+  - Capacity execution may start now: `NO`
+  - Current blocker: `K6_NOT_PRESENT_ON_STAGE`
   - CT-02 executed: `NO`
   - CT-03 executed: `NO`
   - G5 ready for `DONE`: `NO`
