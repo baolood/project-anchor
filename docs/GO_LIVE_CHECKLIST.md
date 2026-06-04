@@ -451,6 +451,9 @@ Use this section in the final review meeting.
 - go-live: NO-GO
 - real external request: NOT AUTHORIZED
 - live trading: NO-GO
+- final release mainline selection prepared: YES
+- next selected final release mainline: Canary/gradual rollout plan executed
+- selected final release mainline status: NOT_DONE
 - Release target window: `<window>`
 - Chair (decision owner): **baolood** (Release manager per §2 — update if delegated)
 - Participants: `<names>`
