@@ -435,8 +435,16 @@ Use this section in the final review meeting.
 <!-- G6 On-call Roster Mainline Inventory V1 -->
 - G6 selected as next mainline: YES
 - G6 inventory prepared: YES
+- roster activation packet prepared: YES
+- primary on-call identified: YES
+- alert channel identified: YES
+- acknowledgement expectation identified: YES
+- stop / no-go authority identified: YES
 - active roster confirmed: NO
 - escalation path confirmed: NO
+- backup / escalation contact confirmed as active: NO
+- solo-operator exception explicitly accepted: NO
+- on-call coverage window fixed: NO
 - SOP active confirmed: NO
 - G6 ready for DONE: NO
 - go-live: NO-GO
