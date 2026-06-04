@@ -660,6 +660,15 @@ Record the choice + reason here:
 - real external request: NOT_AUTHORIZED
 - live trading: NO-GO
 
+<!-- Real External Request Authorization Review V1 -->
+- real external request authorization review prepared: YES
+- real external request authorization granted: NO
+- canary execution may start now: NO
+- current blocker: REAL_EXTERNAL_REQUEST_NOT_AUTHORIZED
+- go-live: NO-GO
+- real external request: NOT AUTHORIZED
+- live trading: NO-GO
+
 <!-- G4 Permission Minimization Action Selection V1 -->
 - minimization actions selected: YES
 - selected action count: 2
