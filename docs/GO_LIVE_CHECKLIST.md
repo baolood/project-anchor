@@ -351,7 +351,11 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - Degradation behavior documented: `YES`
   - Post-run recovery cleanly verified: `NO`
   - First bounded capacity execution verdict: `FAIL`
-  - Current blocker: `POST_RUN_RECOVERY_UNSTABLE`
+  - Post-run recovery investigation closeout prepared: `YES`
+  - Persistent runtime failure reproduced now: `NO`
+  - Control-plane endpoints healthy at investigation time: `YES`
+  - Capacity re-run may proceed in a future bounded task: `YES`
+  - Current blocker: `CLEAN_POST_RUN_RECOVERY_EVIDENCE_MISSING`
   - G5 ready for `DONE`: `NO`
 - [ ] **G6 — On-call roster + incident SOP active**
   - Verifier: Release manager
