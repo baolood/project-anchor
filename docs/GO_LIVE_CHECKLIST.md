@@ -320,6 +320,10 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - Next selected G4 mainline: `Secret management and key rotation policy`
   - Selected G4 mainline status: `DONE`
   - Remaining blocker inside G4: `Permission minimization and audit`
+  - Remaining permission inventory packet prepared: `YES`
+  - Remaining inventory fully reconciled now: `NO`
+  - Permission minimization row ready for `DONE` now: `NO`
+  - G4 ready for `DONE` now: `NO`
 - [ ] **G5 — Capacity/stress test at target load pass**
   - Verifier: Engineering lead
   - Evidence: load test report + degradation behavior notes
