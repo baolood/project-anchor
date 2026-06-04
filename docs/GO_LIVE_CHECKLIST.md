@@ -463,6 +463,9 @@ Use this section in the final review meeting.
 - final go/no-go packet prepared: YES
 - canary execution authorization review prepared: YES
 - first bounded canary execution authorized in a future task: YES
+- canary execution preflight prepared: YES
+- canary execution may start now: NO
+- current blocker: REAL_EXTERNAL_REQUEST_NOT_AUTHORIZED
 - release freeze executed: NO
 - production launch executed: NO
 - go-live ready now: NO
