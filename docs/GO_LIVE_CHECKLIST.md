@@ -335,10 +335,8 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - Load tool selected: `k6`
   - First bounded execution profile fixed: read-only control-plane mix
   - Execution packet prepared: `YES`
-  - Exact `k6` version captured already: `NO`
   - Capacity execution preflight prepared: `YES`
-  - Capacity execution may start now: `YES`
-  - Current blocker: `NONE`
+  - Capacity execution may start now: `NO`
   - `k6` provisioning decision review prepared: `YES`
   - `k6` install authorized in a future bounded task: `YES`
   - `k6` provisioning execution closeout prepared: `YES`
@@ -348,8 +346,12 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - CT-02 execution authorized in a future bounded task: `YES`
   - CT-03 execution authorized in a future bounded task: `YES`
   - Combined CT-02 / CT-03 bounded execution may proceed: `YES`
-  - CT-02 executed: `NO`
-  - CT-03 executed: `NO`
+  - CT-02 executed: `YES`
+  - CT-03 executed: `YES`
+  - Degradation behavior documented: `YES`
+  - Post-run recovery cleanly verified: `NO`
+  - First bounded capacity execution verdict: `FAIL`
+  - Current blocker: `POST_RUN_RECOVERY_UNSTABLE`
   - G5 ready for `DONE`: `NO`
 - [ ] **G6 — On-call roster + incident SOP active**
   - Verifier: Release manager
