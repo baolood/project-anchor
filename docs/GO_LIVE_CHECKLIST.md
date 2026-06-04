@@ -256,13 +256,13 @@ Use this if you want immediate execution without waiting for a full planning mee
     - Service/account permissions reviewed and reduced
   - Evidence: **`docs/PERMISSION_AUDIT.md`** + **`docs/G4_PERMISSION_INVENTORY_SUBJECT_RECONCILIATION_V1.md`**
 
-- [ ] **Capacity and stress test**  
+- [x] **Capacity and stress test**
   - Owner: **baolood** (Engineering lead)  
-  - Status: `IN_PROGRESS`  
+  - Status: `DONE`
   - Acceptance:
     - Peak target traffic test completed
     - Degradation behavior documented
-  - Evidence: **`docs/CAPACITY_TEST_PLAN.md`** (draft — fill §3 traffic profile, run §2 CT-02 + CT-03 against stage, log §5)
+  - Evidence: **`docs/CAPACITY_TEST_PLAN.md`** + **`docs/G5_CLEAN_POST_RUN_RECOVERY_VERIFICATION_RERUN_CLOSEOUT_V1.md`** (CT-02 / CT-03 rerun PASS with clean immediate post-run recovery verification)
 
 
 ### Week 7-8 — Controlled Launch
@@ -324,19 +324,19 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - Remaining inventory fully reconciled now: `YES`
   - Permission minimization row ready for `DONE` now: `YES`
   - G4 ready for `DONE` now: `YES`
-- [ ] **G5 — Capacity/stress test at target load pass**
+- [x] **G5 — Capacity/stress test at target load pass**
   - Verifier: Engineering lead
   - Evidence: load test report + degradation behavior notes
   - Linked plan: §4 Week 5-6
   - G5 mainline selection prepared: `YES`
   - Next selected G5 mainline: `Traffic profile and load-tool decision`
-  - Selected G5 mainline status: `NOT_DONE`
+  - Selected G5 mainline status: `DONE`
   - Traffic profile decision prepared: `YES`
   - Load tool selected: `k6`
   - First bounded execution profile fixed: read-only control-plane mix
   - Execution packet prepared: `YES`
   - Capacity execution preflight prepared: `YES`
-  - Capacity execution may start now: `NO`
+  - Capacity execution may start now: `YES`
   - `k6` provisioning decision review prepared: `YES`
   - `k6` install authorized in a future bounded task: `YES`
   - `k6` provisioning execution closeout prepared: `YES`
@@ -349,14 +349,16 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - CT-02 executed: `YES`
   - CT-03 executed: `YES`
   - Degradation behavior documented: `YES`
-  - Post-run recovery cleanly verified: `NO`
+  - Post-run recovery cleanly verified: `YES`
   - First bounded capacity execution verdict: `FAIL`
   - Post-run recovery investigation closeout prepared: `YES`
   - Persistent runtime failure reproduced now: `NO`
   - Control-plane endpoints healthy at investigation time: `YES`
   - Capacity re-run may proceed in a future bounded task: `YES`
-  - Current blocker: `CLEAN_POST_RUN_RECOVERY_EVIDENCE_MISSING`
-  - G5 ready for `DONE`: `NO`
+  - Current blocker: `NONE`
+  - Clean post-run recovery verification rerun closeout prepared: `YES`
+  - First bounded capacity rerun verdict: `PASS`
+  - G5 ready for `DONE`: `YES`
 - [ ] **G6 — On-call roster + incident SOP active**
   - Verifier: Release manager
   - Evidence: roster doc + SOP signoff
