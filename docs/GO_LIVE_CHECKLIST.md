@@ -328,6 +328,10 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - Verifier: Engineering lead
   - Evidence: load test report + degradation behavior notes
   - Linked plan: §4 Week 5-6
+  - G5 mainline selection prepared: `YES`
+  - Next selected G5 mainline: `Traffic profile and load-tool decision`
+  - Selected G5 mainline status: `NOT_DONE`
+  - G5 ready for `DONE`: `NO`
 - [ ] **G6 — On-call roster + incident SOP active**
   - Verifier: Release manager
   - Evidence: roster doc + SOP signoff
