@@ -432,6 +432,16 @@ Use one row per active risk; update daily until closed.
 Use this section in the final review meeting.
 
 - Review date/time: `<YYYY-MM-DD HH:MM>`
+<!-- G6 On-call Roster Mainline Inventory V1 -->
+- G6 selected as next mainline: YES
+- G6 inventory prepared: YES
+- active roster confirmed: NO
+- escalation path confirmed: NO
+- SOP active confirmed: NO
+- G6 ready for DONE: NO
+- go-live: NO-GO
+- real external request: NOT AUTHORIZED
+- live trading: NO-GO
 - Release target window: `<window>`
 - Chair (decision owner): **baolood** (Release manager per §2 — update if delegated)
 - Participants: `<names>`
