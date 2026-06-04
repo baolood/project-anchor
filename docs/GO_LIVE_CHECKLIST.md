@@ -344,6 +344,10 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - `k6` provisioning execution closeout prepared: `YES`
   - Exact `k6` version captured already: `YES`
   - `k6` present on stage now: `YES`
+  - Execution authorization review prepared: `YES`
+  - CT-02 execution authorized in a future bounded task: `YES`
+  - CT-03 execution authorized in a future bounded task: `YES`
+  - Combined CT-02 / CT-03 bounded execution may proceed: `YES`
   - CT-02 executed: `NO`
   - CT-03 executed: `NO`
   - G5 ready for `DONE`: `NO`
