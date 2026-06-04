@@ -443,8 +443,9 @@ Use this section in the final review meeting.
 - active roster confirmed: NO
 - escalation path confirmed: NO
 - backup / escalation contact confirmed as active: NO
-- solo-operator exception explicitly accepted: NO
-- on-call coverage window fixed: NO
+- solo-operator exception decision prepared: YES
+- solo-operator exception explicitly accepted: YES
+- on-call coverage window fixed: YES
 - SOP active confirmed: NO
 - G6 ready for DONE: NO
 - go-live: NO-GO
