@@ -628,3 +628,15 @@ Record the choice + reason here:
 - go-live: NO-GO
 - real external request: NOT_AUTHORIZED
 - live trading: NO-GO
+
+<!-- G4 Actions Allowed Actions Policy Authorization Review V1 -->
+- Actions policy authorization review prepared: YES
+- Actions policy mutation authorized: YES
+- branch review mutation authorized: NO
+- permission changes performed: NO
+- actions permissions changed: NO
+- secrets changed: NO
+- G4 ready for DONE: NO
+- go-live: NO-GO
+- real external request: NOT_AUTHORIZED
+- live trading: NO-GO
