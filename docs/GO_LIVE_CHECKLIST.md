@@ -601,3 +601,17 @@ Record the choice + reason here:
 - go-live: NO-GO
 - real external request: NOT_AUTHORIZED
 - live trading: NO-GO
+
+<!-- G4 Permission Minimization Compatibility Precheck V1 -->
+- compatibility precheck prepared: YES
+- compatibility evidence collected: NO
+- branch review mutation authorized: NO
+- Actions policy mutation authorized: NO
+- permission changes performed: NO
+- branch protection changed: NO
+- actions permissions changed: NO
+- secrets changed: NO
+- G4 ready for DONE: NO
+- go-live: NO-GO
+- real external request: NOT_AUTHORIZED
+- live trading: NO-GO
