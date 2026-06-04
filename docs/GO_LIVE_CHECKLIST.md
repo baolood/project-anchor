@@ -339,6 +339,9 @@ Each gate is a **hard stop**. If any item is not GREEN at the §9 review, launch
   - Capacity execution preflight prepared: `YES`
   - Capacity execution may start now: `NO`
   - Current blocker: `K6_NOT_PRESENT_ON_STAGE`
+  - `k6` provisioning decision review prepared: `YES`
+  - `k6` install authorized in a future bounded task: `YES`
+  - `k6` present on stage now: `NO`
   - CT-02 executed: `NO`
   - CT-03 executed: `NO`
   - G5 ready for `DONE`: `NO`
