@@ -939,3 +939,20 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next required artifact: Real External Request Single Command Exact Invocation Packet
+
+<!-- Real External Request Single Command Exact Invocation Packet V1 -->
+- exact invocation packet prepared: YES
+- exact invocation surface fixed: YES
+- direct backend invocation approved as packet surface: YES
+- console proxy invocation approved as packet surface: NO
+- exact bounded request body fixed: YES
+- exact idempotency rule fixed: YES
+- exact evidence capture command set fixed: YES
+- exact retreat / stop sequence fixed: YES
+- final execution command approved now: NO
+- real external request authorized now: NO
+- real external request sent now: NO
+- canary executed now: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next required artifact: Real External Request Window Authorization Reopen Review
