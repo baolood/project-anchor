@@ -924,6 +924,71 @@ def _build_trade_gate_dry_run_payload(body: dict) -> dict:
     return {k: v for k, v in payload.items() if v is not None}
 
 
+def _validate_trade_gate_testnet_order_request(body: dict) -> tuple[bool, str | None]:
+    forbidden = next(
+        (
+            key
+            for key in body.keys()
+            if isinstance(key, str) and key.lower() in _TRADE_GATE_FORBIDDEN_INPUT_FIELDS
+        ),
+        None,
+    )
+    if forbidden is not None:
+        return (False, f"FORBIDDEN_FIELD:{forbidden}")
+
+    symbol = body.get("symbol")
+    side = body.get("side")
+    order_type = body.get("order_type")
+    created_by = str(body.get("created_by", "")).strip()
+    idempotency_key = str(body.get("idempotency_key", "")).strip()
+    execution_mode = body.get("execution_mode")
+    market = body.get("market")
+    source = body.get("source")
+
+    if symbol != "BTCUSDT":
+        return (False, "TESTNET_SYMBOL_INVALID")
+    if side not in {"BUY", "SELL"}:
+        return (False, "TESTNET_SIDE_INVALID")
+    if _coerce_positive_float(body.get("notional")) is None:
+        return (False, "TESTNET_NOTIONAL_INVALID")
+    if _coerce_positive_float(body.get("stop_price")) is None:
+        return (False, "TESTNET_STOP_PRICE_REQUIRED")
+    if order_type not in {"market", "limit"}:
+        return (False, "TESTNET_ORDER_TYPE_INVALID")
+    if order_type == "limit" and _coerce_positive_float(body.get("limit_price")) is None:
+        return (False, "TESTNET_LIMIT_PRICE_REQUIRED")
+    if not created_by:
+        return (False, "TESTNET_CREATED_BY_REQUIRED")
+    if not idempotency_key:
+        return (False, "TESTNET_IDEMPOTENCY_KEY_REQUIRED")
+    if execution_mode is not None and execution_mode != "testnet":
+        return (False, "TESTNET_EXECUTION_MODE_INVALID")
+    if market is not None and market != "binance_testnet":
+        return (False, "TESTNET_MARKET_INVALID")
+    if source is not None and source != "ops_manual":
+        return (False, "TESTNET_SOURCE_INVALID")
+    return (True, None)
+
+
+def _build_trade_gate_testnet_order_payload(body: dict) -> dict:
+    payload = {
+        "symbol": body.get("symbol"),
+        "side": body.get("side"),
+        "notional": _coerce_positive_float(body.get("notional")),
+        "execution_mode": "testnet",
+        "market": "binance_testnet",
+        "source": "ops_manual",
+        "created_by": str(body.get("created_by", "")).strip(),
+        "stop_price": _coerce_positive_float(body.get("stop_price")),
+        "order_type": body.get("order_type"),
+        "idempotency_key": str(body.get("idempotency_key", "")).strip(),
+    }
+    limit_price = _coerce_positive_float(body.get("limit_price"))
+    if limit_price is not None:
+        payload["limit_price"] = limit_price
+    return payload
+
+
 async def _create_domain_command(cmd_id_prefix: str, cmd_type: str, payload: dict | None = None, cmd_id: str | None = None) -> dict:
     pool = await _get_domain_pg_pool()
     if cmd_id is None:
@@ -1076,6 +1141,24 @@ async def create_trade_gate_dry_run_intent(body: dict = Body(default_factory=dic
         }
 
     payload = _build_trade_gate_dry_run_payload(request_body)
+    command = await _create_domain_command("order", "ORDER", payload)
+    return {
+        "status": "ok",
+        "command_id": command["id"],
+    }
+
+
+@app.post("/trade-gate/testnet-order-intents")
+async def create_trade_gate_testnet_order_intent(body: dict = Body(default_factory=dict)):
+    request_body = dict(body) if body else {}
+    is_valid, reject_reason = _validate_trade_gate_testnet_order_request(request_body)
+    if not is_valid:
+        return {
+            "status": "error",
+            "error": reject_reason,
+        }
+
+    payload = _build_trade_gate_testnet_order_payload(request_body)
     command = await _create_domain_command("order", "ORDER", payload)
     return {
         "status": "ok",
