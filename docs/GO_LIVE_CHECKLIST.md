@@ -834,3 +834,15 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next required artifact: single command candidate selection or implementation packet
+
+<!-- Real External Request Single Command Candidate Selection V1 -->
+- single command candidate selection prepared: YES
+- selected candidate family fixed: YES
+- selected candidate family: canonical ORDER + execution_mode=testnet runtime-owned path
+- final execution command approved now: NO
+- real external request authorized now: NO
+- real external request sent now: NO
+- canary executed now: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next required artifact: Real External Request Single Command Implementation Packet
