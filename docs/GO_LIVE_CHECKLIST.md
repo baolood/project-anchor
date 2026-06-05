@@ -781,3 +781,15 @@ Record the choice + reason here:
 - go-live: NO-GO
 - real external request: NOT_AUTHORIZED
 - live trading: NO-GO
+
+<!-- Project Final NO-GO State And Reopen Runbook V1 -->
+- final NO-GO state recorded: YES
+- reopen runbook prepared: YES
+- engineering readiness complete: YES
+- operator authorization granted: NO
+- window authorization granted: NO
+- real external request authorized now: NO
+- canary execution may start now: NO
+- go-live: NO-GO
+- real external request: NOT AUTHORIZED
+- live trading: NO-GO
