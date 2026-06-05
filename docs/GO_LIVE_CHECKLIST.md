@@ -1010,3 +1010,17 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next required artifact: hardened one-shot execution script validation closeout
+
+<!-- Real External Request Window Authorization Reopen Review V1 -->
+- window authorization reopen review prepared: YES
+- canonical ORDER:testnet operator endpoint implemented: YES
+- exact invocation packet prepared: YES
+- hardened one-shot execution script merged: YES
+- reopen review result: READY_FOR_OPERATOR_REOPEN_DECISION
+- operator authorization filled now: NO
+- window authorization granted now: NO
+- real external request authorized now: NO
+- canary execution authorized now: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next required artifact: Real External Request Window Operator Authorization Result
