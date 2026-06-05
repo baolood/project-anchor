@@ -870,3 +870,16 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next required artifact: Canonical ORDER:testnet Operator Endpoint Alignment Decision
+
+<!-- Canonical ORDER:testnet Operator Endpoint Decision And Implementation Plan V1 -->
+- operator endpoint decision prepared: YES
+- canonical operator endpoint selected: YES
+- selected operator endpoint: POST /trade-gate/testnet-order-intents
+- canonical operator endpoint implemented now: NO
+- final execution command approved now: NO
+- real external request authorized now: NO
+- real external request sent now: NO
+- canary executed now: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next required artifact: Canonical ORDER:testnet Operator Endpoint Implementation Slice
