@@ -803,3 +803,13 @@ Record the choice + reason here:
 - go-live: NO-GO
 - real external request: NOT AUTHORIZED
 - live trading: NO-GO
+
+<!-- Host Alignment Remediation Runbook V1 -->
+- host alignment remediation runbook prepared: YES
+- host main aligned to final seal state now: NO
+- host worktree clean now: NO
+- compose working directory requirement fixed: YES
+- real external request remains blocked: YES
+- go-live: NO-GO
+- real external request: NOT AUTHORIZED
+- live trading: NO-GO
