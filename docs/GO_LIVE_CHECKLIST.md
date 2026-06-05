@@ -883,3 +883,15 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next required artifact: Canonical ORDER:testnet Operator Endpoint Implementation Slice
+
+<!-- Canonical ORDER:testnet Operator Endpoint Implementation Slice V1 -->
+- implementation slice prepared: YES
+- minimum write scope fixed: YES
+- canonical operator endpoint implemented now: NO
+- final execution command approved now: NO
+- real external request authorized now: NO
+- real external request sent now: NO
+- canary executed now: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next required artifact: Canonical ORDER:testnet Operator Endpoint Implementation
