@@ -997,3 +997,16 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next required artifact: hardened one-shot execution script with strict time guard enforcement
+
+<!-- Hardened ORDER:testnet One-Shot Execution Script V1 -->
+- hardened one-shot execution script prepared: YES
+- target script path: scripts/one_shot_order_testnet_invocation.sh
+- WINDOW_NOT_OPEN_YET exits 1: YES
+- WINDOW_EXPIRED exits 1: YES
+- WINDOW_TIME_CHECK=PASS required before guarded POST branch: YES
+- blocked fixture produces POST: NO
+- real external request sent: NO
+- canary executed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next required artifact: hardened one-shot execution script validation closeout
