@@ -984,3 +984,16 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next required artifact: hardened one-shot execution script with strict time guard enforcement
+
+<!-- Worker Restore After Early Invocation Closeout V1 -->
+- worker restore after early invocation closeout recorded: YES
+- worker restored: YES
+- unintended reprocessing observed: NO
+- command remained FAILED: YES
+- command attempt remained 1: YES
+- no retry: YES
+- no second request: YES
+- canary executed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next required artifact: hardened one-shot execution script with strict time guard enforcement
