@@ -966,3 +966,21 @@ Record the choice + reason here:
 - current blocker: OPERATOR_WINDOW_REOPEN_AUTHORIZATION_NOT_FILLED
 - go-live: NO-GO
 - live trading: NO-GO
+
+<!-- Real External Request Early Invocation Protocol Violation Closeout V1 -->
+- early invocation closeout recorded: YES
+- execution result: PROTOCOL_VIOLATION
+- blocker: POST_SENT_BEFORE_WINDOW_OPEN
+- valid window execution: NO
+- real external request sent to backend endpoint: YES
+- external exchange request started: false
+- external order id present: false
+- command final status: FAILED
+- failure family: TESTNET_CREDENTIALS_MISSING
+- worker stopped for reconciliation: YES
+- no retry: YES
+- no second request: YES
+- canary executed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next required artifact: hardened one-shot execution script with strict time guard enforcement
