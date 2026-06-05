@@ -956,3 +956,13 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next required artifact: Real External Request Window Authorization Reopen Review
+
+<!-- Real External Request Window Reopen Authorization V1 -->
+- reopen authorization packet prepared: YES
+- operator authorization filled: NO
+- window authorization granted: NO
+- real external request authorized now: NO
+- canary execution may start now: NO
+- current blocker: OPERATOR_WINDOW_REOPEN_AUTHORIZATION_NOT_FILLED
+- go-live: NO-GO
+- live trading: NO-GO
