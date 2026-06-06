@@ -1098,6 +1098,20 @@ Record the choice + reason here:
 - ready for canary: NO
 - ready for go-live: NO
 
+### Bounded GRANTED Testnet Window Candidate Review V1
+
+- readiness review merged: YES
+- fresh timing loop remains stopped: YES
+- denied closeout loop remains stopped: YES
+- execution intent required before fresh timing: YES
+- real external request authorized now: NO
+- precheck authorized now: NO
+- POST authorized now: NO
+- canary: NOT AUTHORIZED
+- go-live: NO-GO
+- live trading: NO-GO
+- proceed to one bounded GRANTED testnet window preparation: YES
+
 <!-- Real External Request Window Operator Authorization Denied Closeout V3 -->
 - operator authorization filled now: YES
 - final operator verdict: DENIED
