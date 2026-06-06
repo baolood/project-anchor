@@ -1035,6 +1035,16 @@ Record the choice + reason here:
 - live trading: NO-GO
 - next required artifact: Fresh Operator Authorization Timing Fields
 
+### Real External Request Window Operator Authorization Denied Closeout V5
+
+- final operator verdict: DENIED
+- window authorization granted now: NO
+- real external request: NOT AUTHORIZED
+- canary execution: NOT AUTHORIZED
+- go-live: NO-GO
+- live trading: NO-GO
+- next required artifact: Fresh Operator Authorization Timing Fields
+
 <!-- Real External Request Window Operator Authorization Denied Closeout V3 -->
 - operator authorization filled now: YES
 - final operator verdict: DENIED
