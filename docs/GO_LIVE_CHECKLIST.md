@@ -1125,6 +1125,24 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 
+### Local Alerting Runtime Check Script V1
+
+- script added: YES
+- env file exists check: YES
+- TELEGRAM_NOTIFY_ENABLED=1 check: YES
+- TELEGRAM_BOT_TOKEN presence-only check: YES
+- TELEGRAM_CHAT_ID presence-only check: YES
+- docker backend/worker bring-up check: YES
+- /health check: YES
+- /ops/state check: YES
+- /ops/worker check: YES
+- script prints PASS / BLOCKED markers: YES
+- POST executed: NO
+- real external request sent: NO
+- canary: NOT AUTHORIZED
+- go-live: NO-GO
+- live trading: NO-GO
+
 <!-- Real External Request Window Operator Authorization Denied Closeout V3 -->
 - operator authorization filled now: YES
 - final operator verdict: DENIED
