@@ -1149,6 +1149,7 @@ Record the choice + reason here:
 - canonical TESTNET_EXCHANGE_BASE_URL presence-only check: YES
 - canonical TESTNET_EXCHANGE_API_KEY presence-only check: YES
 - canonical TESTNET_EXCHANGE_API_SECRET presence-only check: YES
+- canonical TESTNET_EXCHANGE_KEY_ID presence-only check: YES
 - TESTNET_EXECUTOR_MODE=real check: YES
 - TESTNET_EXECUTOR_REAL_ENABLE=1 check: YES
 - docker backend/worker bring-up check: YES
