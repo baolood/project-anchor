@@ -1143,6 +1143,28 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 
+### Local Testnet Runtime Check Script V1
+
+- script added: YES
+- canonical TESTNET_EXCHANGE_BASE_URL presence-only check: YES
+- canonical TESTNET_EXCHANGE_API_KEY presence-only check: YES
+- canonical TESTNET_EXCHANGE_API_SECRET presence-only check: YES
+- TESTNET_EXECUTOR_MODE=real check: YES
+- TESTNET_EXECUTOR_REAL_ENABLE=1 check: YES
+- docker backend/worker bring-up check: YES
+- /health check: YES
+- /ops/state check: YES
+- /ops/worker check: YES
+- kill switch false check: YES
+- worker heartbeat alive check: YES
+- telegram_enabled=true check: YES
+- script prints PASS / BLOCKED markers: YES
+- POST executed: NO
+- real external request sent: NO
+- canary: NOT AUTHORIZED
+- go-live: NO-GO
+- live trading: NO-GO
+
 <!-- Real External Request Window Operator Authorization Denied Closeout V3 -->
 - operator authorization filled now: YES
 - final operator verdict: DENIED
