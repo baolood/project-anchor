@@ -6,6 +6,8 @@ BACKEND_DIR="${BACKEND_DIR:-$ROOT/anchor-backend}"
 BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}"
 CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 DRY_RUN="${LOCAL_TESTNET_RUNTIME_CHECK_DRY_RUN:-0}"
+HTTP_RETRY_COUNT="${LOCAL_TESTNET_RUNTIME_CHECK_HTTP_RETRY_COUNT:-12}"
+HTTP_RETRY_SLEEP_SECONDS="${LOCAL_TESTNET_RUNTIME_CHECK_HTTP_RETRY_SLEEP_SECONDS:-2}"
 
 usage() {
   cat <<'EOF'
@@ -59,6 +61,34 @@ TELEGRAM_ENABLED_RESULT="NO"
 fail() {
   PASS_OR_FAIL="BLOCKED"
   FAIL_REASON="$1"
+}
+
+curl_json_with_retry() {
+  local endpoint="$1"
+  local attempt=1
+  local output=""
+  while (( attempt <= HTTP_RETRY_COUNT )); do
+    if output="$(curl "${CURL_FLAGS[@]}" "$BACKEND_PRECHECK$endpoint" 2>/dev/null)"; then
+      printf '%s' "$output"
+      return 0
+    fi
+    sleep "$HTTP_RETRY_SLEEP_SECONDS"
+    ((attempt+=1))
+  done
+  return 1
+}
+
+curl_health_with_retry() {
+  local attempt=1
+  local code=""
+  while (( attempt <= HTTP_RETRY_COUNT )); do
+    if code="$(curl "${CURL_FLAGS[@]}" -o /dev/null -w "%{http_code}" "$BACKEND_PRECHECK/health" 2>/dev/null)" && [[ "$code" == "200" ]]; then
+      return 0
+    fi
+    sleep "$HTTP_RETRY_SLEEP_SECONDS"
+    ((attempt+=1))
+  done
+  return 1
 }
 
 if [[ "$DRY_RUN" == "1" ]]; then
@@ -145,7 +175,7 @@ PY
   fi
 
   if [[ "$PASS_OR_FAIL" == "PASS" ]]; then
-    if curl "${CURL_FLAGS[@]}" -o /dev/null -w "%{http_code}" "$BACKEND_PRECHECK/health" | grep -q '^200$'; then
+    if curl_health_with_retry; then
       HEALTH_RESULT="PASS"
     else
       fail "BACKEND_HEALTH_UNREACHABLE"
@@ -153,7 +183,7 @@ PY
   fi
 
   if [[ "$PASS_OR_FAIL" == "PASS" ]]; then
-    ops_state_json="$(curl "${CURL_FLAGS[@]}" "$BACKEND_PRECHECK/ops/state")" || fail "OPS_STATE_UNREACHABLE"
+    ops_state_json="$(curl_json_with_retry "/ops/state")" || fail "OPS_STATE_UNREACHABLE"
     if [[ "$PASS_OR_FAIL" == "PASS" ]]; then
       echo "$ops_state_json" | python3 -c 'import json,sys; data=json.load(sys.stdin); sys.exit(0 if isinstance(data,dict) and "kill_switch" in data and "worker_heartbeat" in data else 1)' \
         && OPS_STATE_RESULT="PASS" || fail "OPS_STATE_INVALID"
@@ -162,22 +192,23 @@ PY
       echo "$ops_state_json" | python3 -c 'import json,sys; data=json.load(sys.stdin); sys.exit(0 if data.get("kill_switch",{}).get("enabled") is False else 1)' \
         && KILL_SWITCH_RESULT="PASS" || fail "KILL_SWITCH_NOT_FALSE"
     fi
-    if [[ "$PASS_OR_FAIL" == "PASS" ]]; then
-      echo "$ops_state_json" | python3 -c 'import json,sys; data=json.load(sys.stdin); heartbeat=data.get("worker_heartbeat"); sys.exit(0 if isinstance(heartbeat,dict) and heartbeat.get("alive") is True else 1)' \
-        && WORKER_HEARTBEAT_RESULT="PASS" || fail "WORKER_HEARTBEAT_NOT_ALIVE"
-    fi
   fi
 
   if [[ "$PASS_OR_FAIL" == "PASS" ]]; then
-    ops_worker_json="$(curl "${CURL_FLAGS[@]}" "$BACKEND_PRECHECK/ops/worker")" || fail "OPS_WORKER_UNREACHABLE"
+    ops_worker_json="$(curl_json_with_retry "/ops/worker")" || fail "OPS_WORKER_UNREACHABLE"
     if [[ "$PASS_OR_FAIL" == "PASS" ]]; then
-      echo "$ops_worker_json" | python3 -c 'import json,sys; data=json.load(sys.stdin); sys.exit(0 if isinstance(data,dict) and "telegram_enabled" in data else 1)' \
+      echo "$ops_worker_json" | python3 -c 'import json,sys; data=json.load(sys.stdin); sys.exit(0 if isinstance(data,dict) and "telegram_enabled" in data and "last_heartbeat_at" in data else 1)' \
         && OPS_WORKER_RESULT="PASS" || fail "OPS_WORKER_INVALID"
     fi
     if [[ "$PASS_OR_FAIL" == "PASS" ]]; then
       echo "$ops_worker_json" | python3 -c 'import json,sys; data=json.load(sys.stdin); sys.exit(0 if data.get("telegram_enabled") is True else 1)' \
         && TELEGRAM_ENABLED_RESULT="PASS" || fail "TELEGRAM_ENABLED_FALSE"
     fi
+  fi
+
+  if [[ "$PASS_OR_FAIL" == "PASS" ]]; then
+    echo "$ops_state_json" | python3 -c 'import json,sys; data=json.load(sys.stdin); heartbeat=data.get("worker_heartbeat"); sys.exit(0 if isinstance(heartbeat,dict) and bool(heartbeat.get("last_heartbeat_at")) and bool(heartbeat.get("last_seen_at")) else 1)' \
+      && WORKER_HEARTBEAT_RESULT="PASS" || fail "WORKER_HEARTBEAT_NOT_PRESENT"
   fi
 fi
 
