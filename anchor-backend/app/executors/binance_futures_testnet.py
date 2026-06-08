@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 import urllib.request
 import urllib.error
 
-DEFAULT_BASE = "https://testnet.binancefuture.com"
+DEFAULT_BASE = "https://demo-fapi.binance.com"
 
 
 class BinanceFuturesTestnetExecutor:
@@ -18,12 +18,12 @@ class BinanceFuturesTestnetExecutor:
     """
 
     def __init__(self) -> None:
-        self.base = os.getenv("BINANCE_FUTURES_BASE", DEFAULT_BASE).rstrip("/")
-        self.api_key = os.getenv("BINANCE_API_KEY", "")
-        self.api_secret = os.getenv("BINANCE_API_SECRET", "")
+        self.base = os.getenv("TESTNET_EXCHANGE_BASE_URL", DEFAULT_BASE).rstrip("/")
+        self.api_key = os.getenv("TESTNET_EXCHANGE_API_KEY", "")
+        self.api_secret = os.getenv("TESTNET_EXCHANGE_API_SECRET", "")
         if not self.api_key or not self.api_secret:
-            raise RuntimeError("BINANCE_API_KEY/BINANCE_API_SECRET missing")
-        self.recv_window = int(os.getenv("BINANCE_RECV_WINDOW", "5000"))
+            raise RuntimeError("TESTNET_EXCHANGE_API_KEY/TESTNET_EXCHANGE_API_SECRET missing")
+        self.recv_window = int(os.getenv("TESTNET_EXCHANGE_RECV_WINDOW", "5000"))
 
     def _sign(self, query: str) -> str:
         return hmac.new(
