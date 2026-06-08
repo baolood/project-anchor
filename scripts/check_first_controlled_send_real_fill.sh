@@ -10,7 +10,7 @@ Usage: ./scripts/check_first_controlled_send_real_fill.sh [artifact-path]
 Without an argument:
 - scans docs/reviews/real_testnet/ for FIRST_CONTROLLED_SEND_*.md
 - fails BLOCKED when no actual artifact exists yet
-- requires exactly one candidate unless an explicit path is supplied
+- prefers the newest candidate unless an explicit path is supplied
 
 With an argument:
 - validates the given candidate filled artifact
@@ -70,10 +70,10 @@ else
   if ((${#matches[@]} == 0)); then
     block "no FIRST_CONTROLLED_SEND_*.md artifact exists yet under docs/reviews/real_testnet/"
   fi
-  if ((${#matches[@]} > 1)); then
-    fail "multiple FIRST_CONTROLLED_SEND artifacts found; pass one explicit path"
-  fi
-  ARTIFACT="${matches[0]}"
+  # Multiple bounded artifacts may exist over time. Default to the newest
+  # candidate so CI can validate the current reviewed posture without forcing
+  # historical artifacts out of the repository.
+  ARTIFACT="${matches[$((${#matches[@]} - 1))]}"
 fi
 
 [[ -f "$ARTIFACT" ]] || fail "missing file: $ARTIFACT"

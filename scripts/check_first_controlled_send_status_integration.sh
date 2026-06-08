@@ -13,6 +13,7 @@ for the current repository state.
 Supported bounded postures:
 - synthetic_only
 - ready_for_real_review
+- reviewed_pass
 
 This script does not authorize a real controlled send or live trading.
 EOF
@@ -122,6 +123,16 @@ case "$state" in
 
     domain_gate_output="$("$STATUS_SCRIPT" --check-domain-gate 2>&1)" || fail "domain gate unexpectedly blocked for ready_for_real_review"
     grep -q 'FIRST_CONTROLLED_SEND_DOMAIN_GATE PASS: DOMAIN_WORTH_BUYING=yes' <<<"$domain_gate_output" || fail "domain gate did not pass with the expected message for ready_for_real_review"
+    ;;
+  reviewed_pass)
+    [[ "$domain_worth_buying" == "yes" ]] || fail "domain worth buying should be yes for reviewed_pass"
+    [[ "$external_showcase_ready" == "yes" ]] || fail "external showcase should be yes for reviewed_pass"
+
+    state_gate_output="$("$STATUS_SCRIPT" --require-state reviewed_pass)"
+    grep -q 'FIRST_CONTROLLED_SEND_STATE_GATE PASS: STATE=reviewed_pass' <<<"$state_gate_output" || fail "state gate did not pass for reviewed_pass"
+
+    domain_gate_output="$("$STATUS_SCRIPT" --check-domain-gate 2>&1)" || fail "domain gate unexpectedly blocked for reviewed_pass"
+    grep -q 'FIRST_CONTROLLED_SEND_DOMAIN_GATE PASS: DOMAIN_WORTH_BUYING=yes' <<<"$domain_gate_output" || fail "domain gate did not pass with the expected message for reviewed_pass"
     ;;
   *)
     fail "unsupported state from status report: ${state}"

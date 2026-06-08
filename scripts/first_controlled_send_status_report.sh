@@ -50,7 +50,7 @@ Options:
   --require-state <value>  Exit non-zero unless STATE matches the given value.
 
 Fields:
-  STATE                  synthetic_only / actual_missing / review_pack_missing / ready_for_real_review
+  STATE                  synthetic_only / actual_missing / review_pack_missing / ready_for_real_review / reviewed_pass
   LEGACY_EXAMPLES        count of FIRST_REAL_REQUEST synthetic examples
   ACTUAL_ARTIFACTS       count of FIRST_CONTROLLED_SEND actual artifacts
   DOMAIN_WORTH_BUYING    yes/no
@@ -99,7 +99,9 @@ if ! summary_output="$("$SUMMARY_SCRIPT" 2>&1)"; then
 fi
 
 state="unknown"
-if grep -q 'ready_for_real_review' <<<"$summary_output"; then
+if grep -q 'reviewed_pass' <<<"$summary_output"; then
+  state="reviewed_pass"
+elif grep -q 'ready_for_real_review' <<<"$summary_output"; then
   state="ready_for_real_review"
 elif grep -q 'actual_present real_fill_present review_pack_missing' <<<"$summary_output"; then
   state="review_pack_missing"
@@ -124,7 +126,7 @@ done < <(find "$ARTIFACT_DIR" -maxdepth 1 -type f \( -name 'FIRST_REAL_REQUEST_*
 
 domain_worth_buying="no"
 external_showcase_ready="no"
-if [[ "$state" == "ready_for_real_review" ]]; then
+if [[ "$state" == "ready_for_real_review" || "$state" == "reviewed_pass" ]]; then
   domain_worth_buying="yes"
   external_showcase_ready="yes"
 fi
