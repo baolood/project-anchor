@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="${ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 BACKEND_DIR="${BACKEND_DIR:-$ROOT/anchor-backend}"
 BACKEND_PRECHECK="${BACKEND_PRECHECK:-http://127.0.0.1:8000}"
+TESTNET_ENV_FILE="${TESTNET_ENV_FILE:-/etc/project-anchor/testnet.env}"
 CURL_FLAGS=( -sS --connect-timeout 5 --max-time 20 --noproxy '*' )
 DRY_RUN="${LOCAL_TESTNET_RUNTIME_CHECK_DRY_RUN:-0}"
 HTTP_RETRY_COUNT="${LOCAL_TESTNET_RUNTIME_CHECK_HTTP_RETRY_COUNT:-12}"
@@ -110,7 +111,7 @@ if [[ "$DRY_RUN" == "1" ]]; then
 else
   (
     cd "$BACKEND_DIR"
-    docker compose up -d --build backend worker >/dev/null
+    docker compose --env-file "$TESTNET_ENV_FILE" up -d --build backend worker >/dev/null
   ) || fail "DOCKER_COMPOSE_UP_FAILED"
 
   if [[ "$PASS_OR_FAIL" == "PASS" ]]; then

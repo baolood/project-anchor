@@ -20,7 +20,10 @@ from app.policies.protocol import Policy
 
 _TESTNET_VENUE_PROFILES: Dict[str, Dict[str, Any]] = {
     "binance_testnet": {
-        "origins": {"https://testnet.binancefuture.com"},
+        "origins": {
+            "https://testnet.binancefuture.com",
+            "https://demo-fapi.binance.com",
+        },
         "host_label": "binance_futures_testnet",
     },
 }

@@ -3,6 +3,8 @@
 # For Binance testnet: export EXECUTION_MODE=BINANCE_TESTNET BINANCE_API_KEY=... BINANCE_API_SECRET=...
 services:
   backend:
+    env_file:
+      - /etc/project-anchor/testnet.env
     environment:
       EXECUTION_MODE: ${EXECUTION_MODE:-}
       BINANCE_FUTURES_BASE: ${BINANCE_FUTURES_BASE:-https://testnet.binancefuture.com}
@@ -15,6 +17,8 @@ services:
       TESTNET_EXECUTOR_MODE: ${TESTNET_EXECUTOR_MODE:-real}
       TESTNET_EXECUTOR_REAL_ENABLE: ${TESTNET_EXECUTOR_REAL_ENABLE:-1}
   worker:
+    env_file:
+      - /etc/project-anchor/testnet.env
     environment:
       CAPITAL_USD: "1000"
       MAX_SINGLE_TRADE_RISK_PCT: "0.5"
