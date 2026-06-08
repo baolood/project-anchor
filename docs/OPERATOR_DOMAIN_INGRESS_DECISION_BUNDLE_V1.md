@@ -45,6 +45,7 @@ Review the operator-domain stack in this order:
 5. [OPERATOR_DOMAIN_DNS_DEFERRAL_RULE_V1.md](/Users/baolood/Projects/project-anchor/docs/OPERATOR_DOMAIN_DNS_DEFERRAL_RULE_V1.md)
 6. [OPERATOR_DOMAIN_INGRESS_PREREQ_CHECKLIST_V1.md](/Users/baolood/Projects/project-anchor/docs/OPERATOR_DOMAIN_INGRESS_PREREQ_CHECKLIST_V1.md)
 7. [OPERATOR_DOMAIN_INGRESS_TASK_OPENING_RULE_V1.md](/Users/baolood/Projects/project-anchor/docs/OPERATOR_DOMAIN_INGRESS_TASK_OPENING_RULE_V1.md)
+8. [OPERATOR_DOMAIN_INGRESS_IMPLEMENTATION_PACKET_V1.md](/Users/baolood/Projects/project-anchor/docs/OPERATOR_DOMAIN_INGRESS_IMPLEMENTATION_PACKET_V1.md)
 
 ## 4. What This Bundle Confirms
 
@@ -56,6 +57,7 @@ Taken together, the bundle confirms:
 - the entry must remain non-public by default
 - DNS remains deferred until a separate implementation task
 - opening that future task still requires clean prerequisites
+- once that later task is justified, the implementation packet defines the narrow expected shape
 
 ## 5. What This Bundle Does Not Approve
 
