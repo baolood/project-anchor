@@ -11,8 +11,7 @@ Scans docs/reviews/real_testnet/ for FIRST_CONTROLLED_SEND_*.md.
 
 Outcomes:
 - BLOCKED when no actual first-controlled-send review pack exists yet
-- FAIL when multiple actual review packs exist
-- PASS when exactly one actual review pack exists and passes the bundle check
+- PASS when the newest actual review pack exists and passes the bundle check
 
 This script does not authorize a real controlled send or live trading.
 EOF
@@ -58,11 +57,9 @@ if ((${#matches[@]} == 0)); then
   block "no actual FIRST_CONTROLLED_SEND review pack exists yet"
 fi
 
-if ((${#matches[@]} > 1)); then
-  fail "multiple FIRST_CONTROLLED_SEND review packs found; keep one bounded event per pack"
-fi
-
-artifact="${matches[0]}"
+# Multiple bounded review packs may accumulate historically. Validate the
+# newest one as the current project-facing reviewed pack.
+artifact="${matches[$((${#matches[@]} - 1))]}"
 "$BUNDLE_CHECK" "$artifact" >/dev/null
 
 echo "FIRST_CONTROLLED_SEND_REVIEW_PACK_CHECK PASS: $(basename "$artifact")"

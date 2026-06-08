@@ -11,6 +11,7 @@ Runs the first-controlled-send validation stack and prints one bounded status:
 - actual_missing
 - review_pack_missing
 - ready_for_real_review
+- reviewed_pass
 
 This script does not authorize a real controlled send or live trading.
 EOF
@@ -59,11 +60,9 @@ if ((${#matches[@]} == 0)); then
   exit 1
 fi
 
-if ((${#matches[@]} > 1)); then
-  fail "multiple FIRST_CONTROLLED_SEND artifacts found"
-fi
-
-artifact="${matches[0]}"
+# Multiple bounded artifacts may exist over time. Use the newest artifact as
+# the current event under review.
+artifact="${matches[$((${#matches[@]} - 1))]}"
 
 if ! "$ACTUAL_CHECK" "$artifact" >/dev/null 2>&1; then
   fail "actual-artifact check failed for $(basename "$artifact")"
@@ -77,6 +76,12 @@ fi
 if ! "$REVIEW_PACK_CHECK" >/dev/null 2>&1; then
   echo "FIRST_CONTROLLED_SEND_GATE_SUMMARY BLOCKED: actual_present real_fill_present review_pack_missing"
   exit 1
+fi
+
+if grep -Eq '^final_result_label:[[:space:]]*PASS$' "$artifact" \
+  && grep -Eq '^final_command_state:[[:space:]]*DONE$' "$artifact"; then
+  echo "FIRST_CONTROLLED_SEND_GATE_SUMMARY PASS: reviewed_pass $(basename "$artifact")"
+  exit 0
 fi
 
 echo "FIRST_CONTROLLED_SEND_GATE_SUMMARY PASS: ready_for_real_review $(basename "$artifact")"

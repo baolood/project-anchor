@@ -73,7 +73,7 @@ class TestnetBoundaryPreflightV1Test(unittest.IsolatedAsyncioTestCase):
             _testnet_payload(),
             {
                 "ANCHOR_KILL_SWITCH": "1",
-                "TESTNET_EXCHANGE_BASE_URL": "https://testnet.binancefuture.com",
+                "TESTNET_EXCHANGE_BASE_URL": "https://demo-fapi.binance.com",
                 "TESTNET_EXCHANGE_API_KEY": "k",
                 "TESTNET_EXCHANGE_API_SECRET": "s",
                 "TESTNET_EXCHANGE_KEY_ID": "kid-1",
@@ -126,7 +126,7 @@ class TestnetBoundaryPreflightV1Test(unittest.IsolatedAsyncioTestCase):
         result, events, mark_done, mark_failed = await self._run_runner(
             _testnet_payload(),
             {
-                "TESTNET_EXCHANGE_BASE_URL": "https://testnet.binancefuture.com",
+                "TESTNET_EXCHANGE_BASE_URL": "https://demo-fapi.binance.com",
             },
         )
 
@@ -145,6 +145,30 @@ class TestnetBoundaryPreflightV1Test(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("TESTNET_EXECUTOR_STUB", event_types)
         self.assertNotIn("ACTION_OK", event_types)
         self.assertNotIn("MARK_DONE", event_types)
+
+    async def test_runner_accepts_demo_fapi_origin_in_testnet_host_safety_profile(self) -> None:
+        result, events, mark_done, mark_failed = await self._run_runner(
+            _testnet_payload(),
+            {
+                "TESTNET_EXCHANGE_BASE_URL": "https://demo-fapi.binance.com",
+                "TESTNET_EXCHANGE_API_KEY": "k",
+                "TESTNET_EXCHANGE_API_SECRET": "s",
+                "TESTNET_EXCHANGE_KEY_ID": "kid-1",
+                "TESTNET_EXECUTOR_MODE": "mystery",
+            },
+        )
+
+        self.assertEqual(
+            result,
+            {"id": "order-preflight-1", "type": "ORDER", "final_status": "FAILED"},
+        )
+        mark_done.assert_not_awaited()
+        mark_failed.assert_awaited_once()
+        event_types = [event["event_type"] for event in events]
+        self.assertEqual(event_types, ["PICKED", "KILL_SWITCH_CHECKED", "ACTION_FAIL", "MARK_FAILED"])
+        self.assertEqual(events[2]["payload"]["error"]["code"], "TESTNET_EXECUTOR_MODE_INVALID")
+        self.assertEqual(events[2]["payload"]["error"]["failure_family"], "TESTNET_EXECUTOR_MODE_INVALID")
+        self.assertEqual(events[2]["payload"]["error"]["gate"], "executor_boundary")
 
 
 if __name__ == "__main__":

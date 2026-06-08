@@ -63,6 +63,9 @@ class TestnetRealWireV1Test(unittest.TestCase):
         seen = {}
 
         def _fake_urlopen(request, timeout=0):
+            if request.full_url.endswith("/fapi/v1/time"):
+                seen["time_url"] = request.full_url
+                return _FakeResponse({"serverTime": 999999})
             seen["url"] = request.full_url
             seen["timeout"] = timeout
             seen["api_key"] = request.get_header("X-mbx-apikey")
@@ -89,8 +92,10 @@ class TestnetRealWireV1Test(unittest.TestCase):
         self.assertEqual(requested["external_request_started"], True)
         self.assertEqual(terminal_type, "TESTNET_EXECUTOR_ACCEPTED")
         self.assertEqual(terminal_payload["external_order_id"], "12345")
+        self.assertTrue(seen["time_url"].endswith("/fapi/v1/time"))
         self.assertIn("/fapi/v1/order?", seen["url"])
         self.assertIn("signature=", seen["url"])
+        self.assertIn("timestamp=999999", seen["url"])
         self.assertEqual(seen["timeout"], 10)
         self.assertEqual(seen["api_key"], "real-key")
 
@@ -104,6 +109,11 @@ class TestnetRealWireV1Test(unittest.TestCase):
         )
         http_error.read = lambda: b'{"code":-1102,"msg":"bad input"}'
 
+        def _fake_urlopen(request, timeout=0):
+            if request.full_url.endswith("/fapi/v1/time"):
+                return _FakeResponse({"serverTime": 999999})
+            raise http_error
+
         with patch.dict(
             os.environ,
             {
@@ -112,7 +122,7 @@ class TestnetRealWireV1Test(unittest.TestCase):
                 "TESTNET_EXCHANGE_API_SECRET": "real-secret",
             },
             clear=False,
-        ), patch("app.executors.testnet_order_executor.urllib.request.urlopen", side_effect=http_error):
+        ), patch("app.executors.testnet_order_executor.urllib.request.urlopen", side_effect=_fake_urlopen):
             out, requested, terminal_type, terminal_payload = run_real_testnet_order_request(
                 _transport_input(),
                 456,
@@ -120,11 +130,21 @@ class TestnetRealWireV1Test(unittest.TestCase):
 
         self.assertFalse(out["ok"])
         self.assertEqual(out["error"]["failure_family"], "TESTNET_EXECUTOR_VALIDATION_FAILED")
+        self.assertEqual(out["error"]["exchange_error_code"], -1102)
+        self.assertEqual(out["error"]["exchange_error_msg"], "bad input")
+        self.assertIn("bad input", out["error"]["http_body_excerpt"])
         self.assertEqual(terminal_type, "TESTNET_EXECUTOR_REJECTED")
         self.assertEqual(terminal_payload["failure_family"], "TESTNET_EXECUTOR_VALIDATION_FAILED")
+        self.assertEqual(terminal_payload["exchange_error_code"], -1102)
+        self.assertEqual(terminal_payload["exchange_error_msg"], "bad input")
         self.assertTrue(requested["external_request_started"])
 
     def test_helper_maps_timeout_to_timeout_family(self):
+        def _fake_urlopen(request, timeout=0):
+            if request.full_url.endswith("/fapi/v1/time"):
+                return _FakeResponse({"serverTime": 999999})
+            raise socket.timeout("timed out")
+
         with patch.dict(
             os.environ,
             {
@@ -135,7 +155,7 @@ class TestnetRealWireV1Test(unittest.TestCase):
             clear=False,
         ), patch(
             "app.executors.testnet_order_executor.urllib.request.urlopen",
-            side_effect=socket.timeout("timed out"),
+            side_effect=_fake_urlopen,
         ):
             out, requested, terminal_type, terminal_payload = run_real_testnet_order_request(
                 _transport_input(),
@@ -149,6 +169,11 @@ class TestnetRealWireV1Test(unittest.TestCase):
         self.assertTrue(requested["external_request_started"])
 
     def test_helper_maps_url_error_to_network_family(self):
+        def _fake_urlopen(request, timeout=0):
+            if request.full_url.endswith("/fapi/v1/time"):
+                return _FakeResponse({"serverTime": 999999})
+            raise urllib.error.URLError("network down")
+
         with patch.dict(
             os.environ,
             {
@@ -159,7 +184,7 @@ class TestnetRealWireV1Test(unittest.TestCase):
             clear=False,
         ), patch(
             "app.executors.testnet_order_executor.urllib.request.urlopen",
-            side_effect=urllib.error.URLError("network down"),
+            side_effect=_fake_urlopen,
         ):
             out, requested, terminal_type, terminal_payload = run_real_testnet_order_request(
                 _transport_input(),

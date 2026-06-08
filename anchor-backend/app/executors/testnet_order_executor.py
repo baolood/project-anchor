@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional, Tuple
 
 DEFAULT_RECV_WINDOW_MS = 5000
 DEFAULT_TESTNET_ORDER_PATH = "/fapi/v1/order"
+DEFAULT_TESTNET_TIME_PATH = "/fapi/v1/time"
 SUPPORTED_MARKET = "binance_testnet"
 
 
@@ -73,6 +74,45 @@ def _normalize_http_error(code: int, body: str) -> Tuple[str, str]:
     if 500 <= code <= 599:
         return ("TESTNET_EXECUTOR_NETWORK_ERROR", f"http_{code}")
     return ("TESTNET_EXECUTOR_UNEXPECTED", f"http_{code}:{body[:120]}")
+
+
+def _extract_exchange_error_details(body: str) -> Dict[str, Any]:
+    try:
+        payload = json.loads(body) if body else {}
+    except Exception:
+        payload = {}
+
+    details: Dict[str, Any] = {}
+    if isinstance(payload, dict):
+        if "code" in payload:
+            details["exchange_error_code"] = payload.get("code")
+        if "msg" in payload:
+            details["exchange_error_msg"] = str(payload.get("msg") or "")
+
+    excerpt = body[:240]
+    if excerpt:
+        details["http_body_excerpt"] = excerpt
+    return details
+
+
+def _fetch_exchange_server_time_ms(configured_origin: str) -> Optional[int]:
+    time_path = str(os.getenv("TESTNET_EXCHANGE_TIME_PATH") or DEFAULT_TESTNET_TIME_PATH).strip()
+    url = f"{configured_origin.rstrip('/')}{time_path}"
+    request = urllib.request.Request(url=url, method="GET")
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            raw = response.read().decode("utf-8")
+            payload = json.loads(raw) if raw else {}
+    except Exception:
+        return None
+
+    if not isinstance(payload, dict):
+        return None
+    server_time = payload.get("serverTime")
+    try:
+        return int(server_time)
+    except (TypeError, ValueError):
+        return None
 
 
 def run_real_testnet_order_request(
@@ -150,6 +190,7 @@ def run_real_testnet_order_request(
         )
 
     recv_window = int(os.getenv("TESTNET_EXCHANGE_RECV_WINDOW") or DEFAULT_RECV_WINDOW_MS)
+    timestamp_ms = _fetch_exchange_server_time_ms(configured_origin) or int(now_ts)
     order_path = str(os.getenv("TESTNET_EXCHANGE_ORDER_PATH") or DEFAULT_TESTNET_ORDER_PATH).strip()
     params = {
         "symbol": str(transport_input.get("symbol") or ""),
@@ -157,7 +198,7 @@ def run_real_testnet_order_request(
         "type": "MARKET",
         "quantity": _format_quantity(quantity),
         "newOrderRespType": "RESULT",
-        "timestamp": now_ts,
+        "timestamp": timestamp_ms,
         "recvWindow": recv_window,
     }
     query = urllib.parse.urlencode(params, doseq=True)
@@ -183,6 +224,7 @@ def run_real_testnet_order_request(
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
         failure_family, failure_reason = _normalize_http_error(exc.code, body)
+        exchange_details = _extract_exchange_error_details(body)
         return (
             {
                 "ok": False,
@@ -202,6 +244,7 @@ def run_real_testnet_order_request(
                     "timeout_policy_label": "single_attempt_v1",
                     "http_status": exc.code,
                     "ts": now_ts,
+                    **exchange_details,
                 },
             },
             requested_payload,
@@ -212,6 +255,7 @@ def run_real_testnet_order_request(
                 "failure_reason": failure_reason,
                 "external_request_started": True,
                 "http_status": exc.code,
+                **exchange_details,
             },
         )
     except (TimeoutError, socket.timeout):

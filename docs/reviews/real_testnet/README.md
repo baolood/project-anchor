@@ -79,7 +79,7 @@ Use when:
 - expected retreat posture failed
 - the result cannot be explained safely
 
-## 4. Current synthetic examples
+## 4. Current examples and actual artifact state
 
 This directory currently contains three synthetic examples:
 
@@ -88,6 +88,12 @@ This directory currently contains three synthetic examples:
 - [FIRST_REAL_REQUEST_2026-05-24_order-example-fail.md](/Users/baolood/Projects/project-anchor/docs/reviews/real_testnet/FIRST_REAL_REQUEST_2026-05-24_order-example-fail.md)
 
 They exist only to demonstrate format and result labeling.
+
+This directory now also contains one non-synthetic first-controlled-send review artifact:
+
+- [FIRST_CONTROLLED_SEND_2026-06-08_order-06b6257f-4003-467c-9e10-ff9085acddd4.md](/Users/baolood/Projects/project-anchor/docs/reviews/real_testnet/FIRST_CONTROLLED_SEND_2026-06-08_order-06b6257f-4003-467c-9e10-ff9085acddd4.md)
+
+That file is a real bounded testnet review artifact, not a style example.
 
 ## 5. Secret rule
 
