@@ -34,7 +34,15 @@ They demonstrate:
 - accepted and internally consistent
 - attempted but not safely explainable
 
-## 3. How to choose the right example
+## 3. Actual reviewed artifact
+
+The directory now also contains one non-synthetic first-controlled-send review artifact:
+
+- [FIRST_CONTROLLED_SEND_2026-06-08_order-06b6257f-4003-467c-9e10-ff9085acddd4.md](/Users/baolood/Projects/project-anchor/docs/reviews/real_testnet/FIRST_CONTROLLED_SEND_2026-06-08_order-06b6257f-4003-467c-9e10-ff9085acddd4.md)
+
+Use it as the actual bounded-event record for the first successful controlled testnet send, not as a reusable template.
+
+## 4. How to choose the right example
 
 Use:
 
@@ -42,7 +50,7 @@ Use:
 - `PASS` when the bounded request is reviewable and internally consistent
 - `FAIL` when the request crossed the boundary but evidence or behavior became contradictory
 
-## 4. Related upstream docs
+## 5. Related upstream docs
 
 For the broader first-real-request stack, also see:
 
@@ -51,7 +59,7 @@ For the broader first-real-request stack, also see:
 - [docs/REAL_TESTNET_FIRST_REAL_REQUEST_OPERATOR_SIGNOFF_RECORD_V1.md](/Users/baolood/Projects/project-anchor/docs/REAL_TESTNET_FIRST_REAL_REQUEST_OPERATOR_SIGNOFF_RECORD_V1.md)
 - [docs/REAL_TESTNET_FIRST_REAL_REQUEST_STORAGE_LOCATION_DECISION_V1.md](/Users/baolood/Projects/project-anchor/docs/REAL_TESTNET_FIRST_REAL_REQUEST_STORAGE_LOCATION_DECISION_V1.md)
 
-## 5. Minimal next bounded round
+## 6. Minimal next bounded round
 
 After this index, the next natural bounded round is:
 
