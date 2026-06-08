@@ -1147,6 +1147,8 @@ Record the choice + reason here:
 
 - script added: YES
 - compose bring-up uses persistent /etc/project-anchor/testnet.env via --env-file: YES
+- cloud host final alignment closeout recorded: YES
+  - Evidence: [docs/CLOUD_HOST_FINAL_ALIGNMENT_CLOSEOUT_V1.md](/Users/baolood/Projects/project-anchor/docs/CLOUD_HOST_FINAL_ALIGNMENT_CLOSEOUT_V1.md)
 - canonical TESTNET_EXCHANGE_BASE_URL presence-only check: YES
 - canonical TESTNET_EXCHANGE_API_KEY presence-only check: YES
 - canonical TESTNET_EXCHANGE_API_SECRET presence-only check: YES
