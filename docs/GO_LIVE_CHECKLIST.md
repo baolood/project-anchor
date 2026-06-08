@@ -1146,6 +1146,7 @@ Record the choice + reason here:
 ### Local Testnet Runtime Check Script V1
 
 - script added: YES
+- compose bring-up uses persistent /etc/project-anchor/testnet.env via --env-file: YES
 - canonical TESTNET_EXCHANGE_BASE_URL presence-only check: YES
 - canonical TESTNET_EXCHANGE_API_KEY presence-only check: YES
 - canonical TESTNET_EXCHANGE_API_SECRET presence-only check: YES
@@ -1165,6 +1166,21 @@ Record the choice + reason here:
 - canary: NOT AUTHORIZED
 - go-live: NO-GO
 - live trading: NO-GO
+
+### Real Testnet First Controlled Send Successful Execution Closeout V1
+
+- first bounded controlled real external testnet send executed: YES
+- hardened precheck passed inside valid window before send: YES
+- POST executed: YES, exactly once
+- real external request sent: YES
+- command id: `order-06b6257f-4003-467c-9e10-ff9085acddd4`
+- final command state: `DONE`
+- external status: `FILLED`
+- external order id present: YES
+- canary: NOT AUTHORIZED
+- go-live: NO-GO
+- live trading: NO-GO
+- Evidence: **`docs/REAL_TESTNET_FIRST_CONTROLLED_SEND_SUCCESSFUL_EXECUTION_CLOSEOUT_V1.md`** (first non-synthetic bounded testnet execution PASS; one canonical request executed, one external FILLED result captured, and no canary/go-live/live-trading authorization granted)
 
 <!-- Real External Request Window Operator Authorization Denied Closeout V3 -->
 - operator authorization filled now: YES
