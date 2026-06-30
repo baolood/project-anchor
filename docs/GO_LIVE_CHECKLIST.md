@@ -1253,3 +1253,23 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next required artifact: Fresh Operator Authorization Timing Fields
+
+### Exactly-One Bounded Local Testnet Send Closeout V1
+
+- closeout recorded: YES
+- sent inside authorized window: YES
+- local intent endpoint POST: SENT
+- exactly one local request: YES
+- command id: `order-18b5759a-d207-4f44-a8b1-f977c426d5d0`
+- idempotency key: `testnet:ops_manual:BTCUSDT:BUY:4:first-bounded-request:v1`
+- command result: FAILED
+- failure gate: credential_presence
+- failure reason: TESTNET_CREDENTIALS_MISSING
+- upstream external exchange request: NOT STARTED
+- external order id present: false
+- event chain: PICKED -> POLICY_ALLOW -> KILL_SWITCH_CHECKED -> ACTION_FAIL -> MARK_FAILED
+- current blocker: TESTNET_CREDENTIALS_MISSING_AFTER_BOUNDED_LOCAL_SEND
+- canary: NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- Evidence: **`docs/EXACTLY_ONE_BOUNDED_LOCAL_TESTNET_SEND_CLOSEOUT_V1.md`** (authorized exactly-one local testnet intent send occurred inside the bounded window; upstream external exchange request did not start because credential presence failed)
