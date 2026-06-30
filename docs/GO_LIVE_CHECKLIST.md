@@ -1009,7 +1009,21 @@ Record the choice + reason here:
 - canary executed: NO
 - go-live: NO-GO
 - live trading: NO-GO
-- next required artifact: hardened one-shot execution script validation closeout
+- next required artifact: hardened one-shot execution script validation closeout — DONE
+
+<!-- Hardened ORDER:testnet One-Shot Execution Script Validation Closeout V1 -->
+- validation closeout prepared: YES
+- validation script path: scripts/check_hardened_order_testnet_one_shot_invocation.sh
+- baseline integration: YES
+- before-window fixture blocks before POST: YES
+- expired-window fixture blocks before POST: YES
+- missing-env fixture blocks before POST: YES
+- valid-window fixture remains dry-run by default: YES
+- real external request sent: NO
+- canary executed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next required artifact: Real External Request Window Operator Authorization Result
 
 <!-- Real External Request Window Authorization Reopen Review V1 -->
 - window authorization reopen review prepared: YES
@@ -1024,6 +1038,19 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next required artifact: Real External Request Window Operator Authorization Result
+
+<!-- Real External Request Window Operator Authorization Result V1 -->
+- authorization result record prepared: YES
+- operator result: NOT FILLED
+- operator authorization filled now: NO
+- window authorization granted now: NO
+- authorization record is execution: NO
+- real external request sent: NO
+- canary executed: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- current blocker: OPERATOR_WINDOW_REOPEN_AUTHORIZATION_NOT_FILLED
+- next allowed step: stop until explicit operator authorization is provided
 
 <!-- Real External Request Window Operator Authorization Denied Closeout V2 -->
 - operator authorization filled now: YES
