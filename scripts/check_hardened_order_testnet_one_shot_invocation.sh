@@ -40,6 +40,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || {
 }
 
 TARGET="${ROOT}/scripts/one_shot_order_testnet_invocation.sh"
+TMPDIR_CREATED="$(mktemp -d)"
+trap 'rm -rf "${TMPDIR_CREATED}"' EXIT
 
 fail() {
   echo "HARDENED_ORDER_TESTNET_ONE_SHOT_INVOCATION_CHECK FAIL: $1" >&2
@@ -48,13 +50,37 @@ fail() {
 
 [[ -f "${TARGET}" ]] || fail "missing target script ${TARGET}"
 
+cat >"${TMPDIR_CREATED}/date" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "$#" -eq 6 && "$1" == "-u" && "$2" == "-j" && "$3" == "-f" && "$4" == "%Y-%m-%dT%H:%M:%SZ" && "$6" == "+%s" ]]; then
+  python3 - "$5" <<'PY'
+import datetime
+import sys
+
+value = sys.argv[1]
+dt = datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
+print(int(dt.timestamp()))
+PY
+  exit 0
+fi
+
+exec /bin/date "$@"
+EOF
+chmod +x "${TMPDIR_CREATED}/date"
+
+run_target() {
+  PATH="${TMPDIR_CREATED}:${PATH}" bash "${TARGET}" "$@"
+}
+
 run_expect_blocked() {
   local fixture="$1"
   local expected_reason="$2"
   local output
   local status=0
 
-  output="$(bash "${TARGET}" --fixture "${fixture}" 2>&1)" || status=$?
+  output="$(run_target --fixture "${fixture}" 2>&1)" || status=$?
 
   [[ "${status}" -ne 0 ]] || fail "${fixture} unexpectedly exited zero"
   grep -Fq "${expected_reason}" <<<"${output}" || fail "${fixture} did not print ${expected_reason}"
@@ -67,7 +93,7 @@ run_expect_dry_pass() {
   local fixture="$1"
   local output
 
-  output="$(bash "${TARGET}" --fixture "${fixture}" 2>&1)" || fail "${fixture} exited non-zero"
+  output="$(run_target --fixture "${fixture}" 2>&1)" || fail "${fixture} exited non-zero"
 
   grep -Fq "WINDOW_TIME_CHECK=PASS" <<<"${output}" || fail "${fixture} did not pass time check"
   grep -Fq "GUARDED_POST_BRANCH=DRY_RUN" <<<"${output}" || fail "${fixture} did not stay dry-run"
