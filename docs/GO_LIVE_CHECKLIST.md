@@ -1041,16 +1041,27 @@ Record the choice + reason here:
 
 <!-- Real External Request Window Operator Authorization Result V1 -->
 - authorization result record prepared: YES
-- operator result: NOT FILLED
-- operator authorization filled now: NO
-- window authorization granted now: NO
+- operator result: GRANTED
+- operator authorization filled now: YES
+- authorization timestamp: 2026-06-30T00:46:53-07:00
+- window start: 2026-06-30T00:56:53-07:00
+- window end: 2026-06-30T01:11:53-07:00
+- bounded window: YES
+- scope exactly one request: YES
+- market: binance_testnet
+- symbol: BTCUSDT
+- side: BUY
+- notional: 4.0
+- execution mode: testnet
+- window authorization granted now: YES
 - authorization record is execution: NO
-- real external request sent: NO
+- POST sent by this task: NO
+- one-shot live/send mode run by this task: NO
+- real external request sent by this task: NO
 - canary executed: NO
 - live trading: NO-GO
 - go-live: NO-GO
-- current blocker: OPERATOR_WINDOW_REOPEN_AUTHORIZATION_NOT_FILLED
-- next allowed step: stop until explicit operator authorization is provided
+- next allowed step: separate bounded execution-window preparation task
 
 <!-- Real External Request Window Operator Authorization Denied Closeout V2 -->
 - operator authorization filled now: YES

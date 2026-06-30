@@ -9,16 +9,55 @@ Authorization result record is not execution.
 
 ## 2. Operator Result
 
-- operator result: NOT FILLED
-- operator authorization filled: NO
-- window authorization granted: NO
-- real external request authorized now: NO
+- operator result: GRANTED
+- operator authorization filled: YES
+- authorization timestamp: 2026-06-30T00:46:53-07:00
+- window start: 2026-06-30T00:56:53-07:00
+- window end: 2026-06-30T01:11:53-07:00
+- window authorization granted: YES
+- real external request authorized for this record only: YES
 - canary execution authorized now: NO
+- live trading authorized: NO
+- go-live authorized: NO
 
-Current state is `NOT FILLED` because no explicit operator authorization text
-has been provided for this window.
+The operator provided explicit authorization text for one bounded real external
+testnet request window. This record captures that authorization result only.
 
-## 3. Execution Boundary
+## 3. Authorized Scope
+
+- authorization subject: real external testnet request window reopen
+- maximum request count: 1
+- market: binance_testnet
+- symbol: BTCUSDT
+- side: BUY
+- notional: 4.0
+- execution mode: testnet
+- live trading: NO
+- canary: NO
+- production go-live: NO
+- fixed idempotency key: project-defined first bounded request key
+
+## 4. Required Boundaries
+
+The authorized future request may only proceed if all of these remain true in a
+separate bounded execution-window task:
+
+- execute at most once
+- use the fixed idempotency key already defined by the project
+- do not execute outside the authorized window
+- do not execute before the authorized window start
+- do not execute after the authorized window end
+- do not execute if runtime/env/secrets checks fail
+- do not execute if worker health checks fail
+- do not execute if kill switch is enabled
+- do not execute if preflight checks fail
+- do not continue to canary
+- do not mark go-live as GO
+- do not authorize live trading
+- do not modify runtime/env/secrets/backend/worker/risk/deploy as part of this
+  authorization record
+
+## 5. Execution Boundary
 
 This record does not execute any external request.
 
@@ -39,31 +78,25 @@ This record does not:
 - authorize live trading
 - mark go-live as `GO`
 
-## 4. Separation Rule
+## 6. Separation Rule
 
 Authorization record and actual request sending are separate steps.
 
-This document may only record the operator result. If a later operator result is
-`GRANTED`, the actual request still requires a separate bounded execution-window
-task with its own validation, evidence capture, stop conditions, and closeout.
+This document records `GRANTED` operator authorization only. The actual request
+still requires a separate bounded execution-window task with its own validation,
+evidence capture, stop conditions, and closeout before any request may be sent.
 
-## 5. Current Launch State
+## 7. Current Launch State
 
-- real external request: NOT SENT
+- real external request sent by this task: NO
+- one-shot live/send mode run by this task: NO
 - canary: NOT EXECUTED
 - live trading: NO-GO
 - go-live: NO-GO
-- current blocker: OPERATOR_WINDOW_REOPEN_AUTHORIZATION_NOT_FILLED
+- current blocker cleared by this record: OPERATOR_WINDOW_REOPEN_AUTHORIZATION_NOT_FILLED
+- next required step: separate bounded execution-window preparation task
 
-## 6. Next Allowed Step
-
-If authorization is still `NOT FILLED`, stop.
-
-If authorization is `GRANTED`, only then prepare a separate bounded
-execution-window task. That future task must remain separate from this
-authorization-result record and must not be implied by this document.
-
-## 7. Closeout
+## 8. Closeout
 
 - files changed by this task:
   - `docs/REAL_EXTERNAL_REQUEST_WINDOW_OPERATOR_AUTHORIZATION_RESULT_V1.md`
@@ -73,7 +106,7 @@ authorization-result record and must not be implied by this document.
   - `bash scripts/check_go_live_rules.sh`
   - `bash scripts/check_local_box_baseline.sh`
 - final state:
-  - real external request: NOT SENT
+  - real external request sent by this task: NO
   - canary: NOT EXECUTED
   - live trading: NO-GO
   - go-live: NO-GO
