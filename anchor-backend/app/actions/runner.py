@@ -12,6 +12,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 from app.actions.context import ActionContext
 from app.actions.pipeline import run_action_with_pipeline
 from app.actions.steps import default_pipeline_steps
+from app.executors import simulator_order_executor
 from app.executors import testnet_order_executor as real_testnet_executor
 from app.ops.kill_switch import get_kill_switch_state
 from app.policies.runner import run_policies
@@ -167,102 +168,10 @@ def _run_mocked_testnet_external_executor(
     transport_input: Dict[str, Any],
     now_ts: int,
 ) -> Tuple[Dict[str, Any], Dict[str, Any], str, Dict[str, Any]]:
-    outcome = str(os.getenv("TESTNET_EXECUTOR_MOCK_OUTCOME") or "success").strip().lower()
-    host_label = str(transport_input.get("host_label") or "")
-    configured_origin = str(transport_input.get("configured_origin") or "")
-    canonical_path = str(transport_input.get("canonical_path") or "ORDER:testnet")
-    common = {
-        "type": "ORDER",
-        "attempt": int(transport_input.get("attempt") or 0),
-        "execution_mode": "testnet",
-        "host_label": host_label,
-        "configured_origin": configured_origin,
-        "canonical_path": canonical_path,
-        "executor_mode_label": "mock",
-        "timeout_policy_label": "single_attempt_v1",
-    }
-    requested_payload = {
-        **common,
-        "external_request_started": True,
-    }
-
-    failure_map = {
-        "auth_failed": ("TESTNET_EXECUTOR_AUTH_FAILED", "mock_auth_failed"),
-        "validation_failed": ("TESTNET_EXECUTOR_VALIDATION_FAILED", "mock_validation_failed"),
-        "rejected": ("TESTNET_EXECUTOR_REJECTED", "mock_rejected"),
-        "timeout": ("TESTNET_EXECUTOR_TIMEOUT", "mock_timeout"),
-        "network_error": ("TESTNET_EXECUTOR_NETWORK_ERROR", "mock_network_error"),
-    }
-    if outcome == "success":
-        external_order_id = f"mock-testnet-order-{transport_input.get('command_id')}"
-        return (
-            {
-                "ok": True,
-                "result": {
-                    "ok": True,
-                    "type": "order",
-                    "execution_mode": "testnet",
-                    "market": transport_input.get("market"),
-                    "symbol": transport_input.get("symbol"),
-                    "side": transport_input.get("side"),
-                    "notional": float(transport_input.get("notional") or 0),
-                    "order_type": transport_input.get("order_type"),
-                    "source": transport_input.get("source"),
-                    "created_by": transport_input.get("created_by"),
-                    "stop_price": float(transport_input.get("stop_price") or 0),
-                    "idempotency_key": transport_input.get("idempotency_key"),
-                    "host_label": host_label,
-                    "executor_mode_label": "mock",
-                    "timeout_policy_label": "single_attempt_v1",
-                    "external_order_id": external_order_id,
-                    "external_status": "MOCK_ACCEPTED",
-                    "mocked_external_request": True,
-                    "ts": now_ts,
-                },
-                "error": None,
-            },
-            requested_payload,
-            "TESTNET_EXECUTOR_ACCEPTED",
-            {
-                **common,
-                "external_request_started": True,
-                "external_order_id": external_order_id,
-                "external_status": "MOCK_ACCEPTED",
-            },
-        )
-
-    failure_family, failure_reason = failure_map.get(
-        outcome,
-        ("TESTNET_EXECUTOR_UNEXPECTED", f"mock_{outcome or 'unexpected'}"),
-    )
-    return (
-        {
-            "ok": False,
-            "result": None,
-            "error": {
-                "code": failure_family,
-                "failure_family": failure_family,
-                "failure_reason": failure_reason,
-                "gate": "external_executor",
-                "external_request_started": True,
-                "external_order_id_present": False,
-                "execution_mode": "testnet",
-                "host_label": host_label,
-                "configured_origin": configured_origin,
-                "canonical_path": canonical_path,
-                "executor_mode_label": "mock",
-                "timeout_policy_label": "single_attempt_v1",
-            },
-        },
-        requested_payload,
-        "TESTNET_EXECUTOR_REJECTED",
-        {
-            **common,
-            "failure_family": failure_family,
-            "failure_reason": failure_reason,
-            "external_request_started": True,
-        },
-    )
+    # Static guardrail surface for delegated simulator semantics:
+    # TESTNET_EXECUTOR_MOCK_OUTCOME -> TESTNET_EXECUTOR_ACCEPTED / TESTNET_EXECUTOR_REJECTED
+    # "timeout_policy_label": "single_attempt_v1"
+    return simulator_order_executor.run_simulator_order_request(transport_input, now_ts)
 
 
 class DomainCommandRunner:
