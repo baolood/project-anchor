@@ -93,12 +93,17 @@ Closeout must happen before credentials repair, retry, canary, or any new execut
 
 ## 7. Current Known State
 
-- main currently at 1558e51 or later
+- main currently at 9866c93c78d0ec179ed6dfc54ec76c48c7fb2a08 or later
 - previous local intent endpoint POST was SENT
 - previous local request was exactly one request
 - upstream external exchange request was NOT STARTED
-- prior blocker TESTNET_CREDENTIALS_MISSING was resolved by runtime credential env injection
-- current readiness target is READINESS_GREEN before the next fresh window
+- historical blocker: TESTNET_CREDENTIALS_MISSING_AFTER_BOUNDED_LOCAL_SEND
+- runtime repair result: TESTNET_CREDENTIALS_RUNTIME_READY
+- no retry occurred after credential runtime repair
+- no upstream external exchange request started after credential runtime repair
+- current execution status: READY_FOR_READINESS_GREEN_VERIFICATION
+- next step is READINESS_GREEN verification before the next fresh authorization window
+- reconciliation evidence: `docs/TESTNET_CREDENTIALS_RUNTIME_RECONCILIATION_V1.md`
 - canary: NOT EXECUTED
 - live trading: NO-GO
 - go-live: NO-GO
