@@ -1373,6 +1373,28 @@ Record the choice + reason here:
 - next safe status: `MINIMAL_SIMULATOR_IMPLEMENTATION_PLANNED` / `READY_FOR_MINIMAL_SIMULATOR_IMPLEMENTATION`
 - Evidence: **`docs/MINIMAL_SIMULATOR_IMPLEMENTATION_PLAN_V1.md`**
 
+### Minimal Simulator Implementation Closeout V1
+
+- purpose: record minimal mock/exchange-simulator implementation merged into main and confirm fixture matrix coverage
+- PR #156 merged: YES
+- main HEAD: `f704edb44b8fa84606a0ff09deab6225ed5a5ee4`
+- simulator implemented in main: YES
+- simulator send executed: NO
+- files included: `anchor-backend/app/actions/runner.py` / `anchor-backend/app/executors/simulator_order_executor.py` / `anchor-backend/tests/test_simulator_order_executor_v1.py`
+- fixture matrix confirmed: ACCEPTED / REJECTED / FAILED / duplicate idempotency / invalid input
+- simulator tests: PASS, 5 tests
+- hardened one-shot guardrail: PASS
+- go-live rules: PASS
+- local box baseline: PASS
+- POST sent: NO
+- real external exchange request sent: NO
+- runtime/env/secrets changed: NO
+- canary: NOT AUTHORIZED / NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_EXACTLY_ONE_SIMULATOR_SEND_PREP`
+- Evidence: **`docs/MINIMAL_SIMULATOR_IMPLEMENTATION_CLOSEOUT_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
