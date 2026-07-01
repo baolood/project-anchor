@@ -1283,6 +1283,27 @@ Record the choice + reason here:
 - next safe status: `CURRENT_LOCAL_BINANCE_TESTNET_UNAVAILABLE` / `READY_FOR_ALTERNATIVE_COMPLIANT_TESTNET_UPSTREAM_REVIEW`
 - Evidence: **`docs/TESTNET_UPSTREAM_ACCESS_DECISION_V1.md`**
 
+### Alternative Compliant Testnet Upstream Review V1
+
+- purpose: identify next compliant testnet upstream path after local Binance testnet HTTP 451
+- no execution in this review: YES
+- current local Binance testnet upstream: UNAVAILABLE
+- retry from same environment: NO
+- VPN/geofence bypass recommendation: NO
+- candidate path: alternative compliant exchange testnet upstream
+- candidate path: mock/exchange-simulator upstream with production-like contract
+- candidate path: separately authorized compliant allowed-region execution environment
+- allowed-region execution environment authorized here: NO
+- decision criteria documented: compliance / availability / API compatibility / external id or equivalent / accepted-rejected-failed outcomes / credential isolation / no live trading path / minimal code changes / rollback and auditability
+- recommended next path: alternative compliant testnet upstream selection before implementation
+- new exchange adapter implemented: NO
+- runtime/env/secrets changed: NO
+- canary: NOT AUTHORIZED / NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `ALTERNATIVE_COMPLIANT_TESTNET_UPSTREAM_REVIEWED` / `WAITING_FOR_UPSTREAM_SELECTION`
+- Evidence: **`docs/ALTERNATIVE_COMPLIANT_TESTNET_UPSTREAM_REVIEW_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
