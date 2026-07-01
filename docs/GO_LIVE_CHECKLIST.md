@@ -1304,6 +1304,29 @@ Record the choice + reason here:
 - next safe status: `ALTERNATIVE_COMPLIANT_TESTNET_UPSTREAM_REVIEWED` / `WAITING_FOR_UPSTREAM_SELECTION`
 - Evidence: **`docs/ALTERNATIVE_COMPLIANT_TESTNET_UPSTREAM_REVIEW_V1.md`**
 
+### Testnet Upstream Selection Decision V1
+
+- selected path: mock/exchange-simulator upstream
+- decision type: upstream selection decision, not implementation
+- reason: lowest-risk compliant path to validate upstream contract semantics
+- selected external exchange testnet now: NO
+- selected allowed-region remote executor now: NO
+- Binance retry selected: NO
+- VPN/geofence bypass selected: NO
+- validates REQUESTED / ACCEPTED / REJECTED / FAILED outcomes: YES
+- supports external_order_id equivalent: YES
+- avoids new exchange credentials: YES
+- avoids region/network dependency: YES
+- rollback and auditability covered: YES
+- required future simulator contract: exactly-one request handling / fixed idempotency key / deterministic external_order_id equivalent / accepted-rejected-failed outcomes / no live trading path / no real exchange credentials / event evidence / closeout after first simulator run
+- simulator implemented: NO
+- runtime/env/secrets changed: NO
+- canary: NOT AUTHORIZED / NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `SELECTED_MOCK_EXCHANGE_SIMULATOR` / `READY_FOR_SIMULATOR_CONTRACT_PLAN`
+- Evidence: **`docs/TESTNET_UPSTREAM_SELECTION_DECISION_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
