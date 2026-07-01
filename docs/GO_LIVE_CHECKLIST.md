@@ -1273,3 +1273,17 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - Evidence: **`docs/EXACTLY_ONE_BOUNDED_LOCAL_TESTNET_SEND_CLOSEOUT_V1.md`** (authorized exactly-one local testnet intent send occurred inside the bounded window; upstream external exchange request did not start because credential presence failed)
+
+### Controlled Testnet Send Runbook V1
+
+- controlled testnet send runbook added: YES
+- fixed flow: READINESS_GREEN -> FRESH_AUTH_WINDOW -> EXACTLY_ONE_SEND -> CLOSEOUT_PR -> MERGE
+- readiness before window required: YES
+- 45-60 minute fresh bounded window recommended: YES
+- exactly-one send rule fixed: YES
+- no automatic retry: YES
+- closeout required for DONE / FAILED / UNKNOWN: YES
+- canary: NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- Evidence: **`docs/CONTROLLED_TESTNET_SEND_RUNBOOK_V1.md`** (fixed controlled testnet send flow to reduce waiting and rework without relaxing execution safety)
