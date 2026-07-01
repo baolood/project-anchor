@@ -1395,6 +1395,27 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_EXACTLY_ONE_SIMULATOR_SEND_PREP`
 - Evidence: **`docs/MINIMAL_SIMULATOR_IMPLEMENTATION_CLOSEOUT_V1.md`**
 
+### Exactly-One Simulator Send Prep V1
+
+- purpose: prepare the first controlled exactly-one simulator send without executing it
+- prep only: YES
+- simulator send executed: NO
+- first scenario selected: ACCEPTED
+- required outcome: simulator_order_id or external_order_id equivalent present
+- required lifecycle: REQUESTED -> ACCEPTED -> MARK_DONE or equivalent existing lifecycle
+- required input: `BTCUSDT` / `BUY` / `4.0` / `simulator:ops_manual:BTCUSDT:BUY:4:first-accepted:v1`
+- scope: simulator only
+- real external exchange request: NOT AUTHORIZED / NOT SENT
+- Binance retry: NOT AUTHORIZED / NOT EXECUTED
+- runtime/env/secrets changed: NO
+- canary: NOT AUTHORIZED / NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- stop conditions listed: git dirty / validation fail / runtime unavailable if used / kill switch enabled / accepted path without order id equivalent / more than one request
+- closeout requirements listed: command_id / idempotency key / scenario / result / order id equivalent / event chain / duplicate not sent / canary-live-go-live boundary
+- next safe status: `READY_FOR_EXACTLY_ONE_SIMULATOR_ACCEPTED_SEND`
+- Evidence: **`docs/EXACTLY_ONE_SIMULATOR_SEND_PREP_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
