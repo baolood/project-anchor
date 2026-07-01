@@ -1443,6 +1443,32 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_SIMULATOR_REJECTED_FAILED_MATRIX_PREP`
 - Evidence: **`docs/EXACTLY_ONE_SIMULATOR_ACCEPTED_SEND_CLOSEOUT_V1.md`**
 
+### Simulator Rejected Failed Matrix Prep V1
+
+- purpose: prepare REJECTED and FAILED simulator matrix scenarios without executing them
+- prep only: YES
+- REJECTED scenario executed: NO
+- FAILED scenario executed: NO
+- additional simulator request executed: NO
+- REJECTED expected terminal event: `TESTNET_EXECUTOR_REJECTED`
+- REJECTED expected final state: `FAILED`
+- REJECTED expected failure_family: `TESTNET_EXECUTOR_REJECTED`
+- FAILED expected terminal event: `TESTNET_EXECUTOR_FAILED`
+- FAILED expected final state: `FAILED`
+- FAILED expected failure_family: `TESTNET_EXECUTOR_SIMULATOR_FAILED`
+- simulator_order_id / external_order_id equivalent on REJECTED or FAILED: must be absent
+- required idempotency keys: `simulator:ops_manual:BTCUSDT:BUY:4:first-rejected:v1` / `simulator:ops_manual:BTCUSDT:BUY:4:first-failed:v1`
+- scope: simulator only
+- real external exchange request: NOT AUTHORIZED / NOT SENT
+- runtime/env/secrets changed: NO
+- canary: NOT AUTHORIZED / NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- stop conditions listed: wrong workspace / git dirty / validation fail / runtime unavailable if used / kill switch enabled / scenario mismatch / order id unexpectedly present / terminal event mismatch / more than one request / real exchange request
+- closeout requirements listed: command_id / idempotency key / scenario / result / terminal event / failure_family / external_request_started / absent order id equivalent / event chain / exactly one simulator request / duplicate not sent / canary-live-go-live boundary
+- next safe status: `READY_FOR_EXACTLY_ONE_SIMULATOR_REJECTED_SEND_PREP` / `READY_FOR_EXACTLY_ONE_SIMULATOR_FAILED_SEND_PREP`
+- Evidence: **`docs/SIMULATOR_REJECTED_FAILED_MATRIX_PREP_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
