@@ -1264,6 +1264,25 @@ Record the choice + reason here:
 - live trading: NO-GO
 - Evidence: **`docs/TESTNET_UPSTREAM_RESTRICTED_LOCATION_REVIEW_V1.md`**
 
+### Testnet Upstream Access Decision V1
+
+- current local Binance testnet upstream: UNAVAILABLE
+- reason: HTTP 451 restricted location
+- decision type: upstream access decision, not code failure
+- exactly-one bounded real testnet send occurred: YES
+- upstream external exchange request started: YES
+- external order id present: NO
+- retry occurred: NO
+- retry from same restricted environment: NO
+- VPN/geofence bypass recommendation: NO
+- canary: NOT AUTHORIZED / NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- next allowed direction: alternative compliant testnet upstream evaluation
+- separately authorized compliant allowed-region environment review: possible but NOT authorized here
+- next safe status: `CURRENT_LOCAL_BINANCE_TESTNET_UNAVAILABLE` / `READY_FOR_ALTERNATIVE_COMPLIANT_TESTNET_UPSTREAM_REVIEW`
+- Evidence: **`docs/TESTNET_UPSTREAM_ACCESS_DECISION_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
