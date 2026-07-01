@@ -1224,6 +1224,25 @@ Record the choice + reason here:
 
 ### Real Testnet First Controlled Send Final Review PASS Closeout V1
 
+### Exactly-One Bounded Real Testnet Send HTTP 451 Closeout V1
+
+- bounded authorization window: 2026-07-01T18:03:35+08:00 -> 2026-07-01T18:53:35+08:00
+- exactly-one send executed inside window: YES
+- local intent endpoint POST: SENT
+- upstream external exchange request started: YES
+- command id: `order-cdf35b49-bc0a-4999-af9b-4e54fb333a61`
+- final command state: `FAILED`
+- failure gate: `external_executor`
+- failure family: `TESTNET_EXECUTOR_UNEXPECTED`
+- failure reason: `http_451_restricted_location`
+- external order id present: NO
+- automatic retry: NO
+- canary: NOT AUTHORIZED / NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- current blocker: `TESTNET_UPSTREAM_RESTRICTED_LOCATION_AFTER_BOUNDED_REAL_SEND`
+- Evidence: **`docs/EXACTLY_ONE_BOUNDED_REAL_TESTNET_SEND_HTTP_451_CLOSEOUT_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
