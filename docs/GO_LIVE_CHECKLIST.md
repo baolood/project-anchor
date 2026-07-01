@@ -1243,6 +1243,27 @@ Record the choice + reason here:
 - current blocker: `TESTNET_UPSTREAM_RESTRICTED_LOCATION_AFTER_BOUNDED_REAL_SEND`
 - Evidence: **`docs/EXACTLY_ONE_BOUNDED_REAL_TESTNET_SEND_HTTP_451_CLOSEOUT_V1.md`**
 
+### Testnet Upstream Restricted Location Review V1
+
+- blocker reviewed: YES
+- historical execution fact: exactly-one bounded real testnet send occurred
+- upstream external exchange request started: YES
+- upstream response: HTTP 451 restricted location
+- external order id present: NO
+- classification: upstream/location-access blocker
+- guardrail failure: NO
+- credentials failure: NO
+- kill-switch failure: NO
+- worker failure: NO
+- retry from same restricted environment: NO
+- VPN/geofence bypass recommendation: NO
+- allowed next options: compliant allowed-region testnet execution environment / alternative compliant testnet upstream / mark Binance testnet unavailable from current local environment
+- next safe status: `WAITING_FOR_UPSTREAM_ACCESS_DECISION`
+- canary: NOT AUTHORIZED / NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- Evidence: **`docs/TESTNET_UPSTREAM_RESTRICTED_LOCATION_REVIEW_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
