@@ -1327,6 +1327,28 @@ Record the choice + reason here:
 - next safe status: `SELECTED_MOCK_EXCHANGE_SIMULATOR` / `READY_FOR_SIMULATOR_CONTRACT_PLAN`
 - Evidence: **`docs/TESTNET_UPSTREAM_SELECTION_DECISION_V1.md`**
 
+### Simulator Contract Plan V1
+
+- purpose: define mock/exchange-simulator upstream contract before implementation
+- simulator contract planned: YES
+- simulator implemented: NO
+- adapter implemented: NO
+- request contract defined: market / symbol / side / notional / idempotency_key / source / created_by / execution_mode / optional scenario selector
+- response contract defined: ACCEPTED / REJECTED / FAILED
+- accepted path: DONE or ACCEPTED upstream outcome, simulator_order_id or external_order_id equivalent present, upstream_request_started true, MARK_DONE
+- rejected path: FAILED with rejected outcome, simulator_order_id or external_order_id equivalent absent, upstream_request_started true, rejection reason present, MARK_FAILED
+- failed path: FAILED, simulator_order_id or external_order_id equivalent absent, upstream_request_started true or false depending on failure phase, failure_family present, MARK_FAILED
+- required event chain: REQUESTED before terminal outcome, ACCEPTED / REJECTED / FAILED outcome events, MARK_DONE or MARK_FAILED
+- idempotency behavior: fixed key honored, duplicate does not create second simulator_order_id, duplicate behavior auditable
+- fixture matrix: accepted / rejected / failed / duplicate idempotency / missing-invalid field / no live-trading
+- closeout evidence required after first simulator run: YES
+- runtime/env/secrets changed: NO
+- canary: NOT AUTHORIZED / NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `SIMULATOR_CONTRACT_PLANNED` / `READY_FOR_MINIMAL_SIMULATOR_IMPLEMENTATION_PLAN`
+- Evidence: **`docs/SIMULATOR_CONTRACT_PLAN_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
