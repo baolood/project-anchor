@@ -1287,3 +1287,25 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - Evidence: **`docs/CONTROLLED_TESTNET_SEND_RUNBOOK_V1.md`** (fixed controlled testnet send flow to reduce waiting and rework without relaxing execution safety)
+
+### Testnet Credentials Runtime Reconciliation V1
+
+- historical blocker: TESTNET_CREDENTIALS_MISSING_AFTER_BOUNDED_LOCAL_SEND
+- historical bounded local intent endpoint POST: SENT exactly once
+- command id: `order-18b5759a-d207-4f44-a8b1-f977c426d5d0`
+- idempotency key: `testnet:ops_manual:BTCUSDT:BUY:4:first-bounded-request:v1`
+- historical command result: FAILED
+- historical failure reason: TESTNET_CREDENTIALS_MISSING
+- historical upstream external exchange request: NOT STARTED
+- historical external order id present: false
+- runtime repair result: TESTNET_CREDENTIALS_RUNTIME_READY
+- backend/worker required testnet credential variables: PRESENT_NONEMPTY by status only
+- secret values printed: NO
+- retry after runtime repair: NO
+- upstream external exchange request after runtime repair: NOT STARTED
+- current execution status: READY_FOR_READINESS_GREEN_VERIFICATION
+- next allowed step: READINESS_GREEN verification before any fresh authorization window
+- canary: NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- Evidence: **`docs/TESTNET_CREDENTIALS_RUNTIME_RECONCILIATION_V1.md`** (distinguishes the historical failed local send from later runtime credential readiness; does not authorize retry, canary, live trading, or go-live)
