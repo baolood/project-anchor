@@ -1349,6 +1349,30 @@ Record the choice + reason here:
 - next safe status: `SIMULATOR_CONTRACT_PLANNED` / `READY_FOR_MINIMAL_SIMULATOR_IMPLEMENTATION_PLAN`
 - Evidence: **`docs/SIMULATOR_CONTRACT_PLAN_V1.md`**
 
+### Minimal Simulator Implementation Plan V1
+
+- purpose: plan smallest safe implementation for mock/exchange-simulator contract
+- minimal simulator implementation planned: YES
+- simulator implemented: NO
+- adapter implemented: NO
+- allowed future scope: one simulator module/helper, one integration point into existing testnet executor path, fixture/test coverage, closeout after first simulator run
+- candidate files listed: YES
+- forbidden files listed: frontend / runtime-env-secrets / deploy / risk policy / migrations unless justified / production-live config / broad exchange adapter abstraction / unrelated refactors
+- ACCEPTED behavior: simulator_order_id or external_order_id equivalent present, upstream_request_started true, accepted evidence, MARK_DONE
+- REJECTED behavior: no simulator_order_id or external_order_id equivalent, upstream_request_started true, rejection reason, MARK_FAILED
+- FAILED behavior: no simulator_order_id or external_order_id equivalent, failure_family present, MARK_FAILED
+- duplicate idempotency behavior: duplicate fixed key does not create a second simulator_order_id and remains auditable
+- invalid input behavior: fails before accepted outcome and creates no external_order_id equivalent
+- event evidence: REQUESTED before terminal outcome, ACCEPTED / REJECTED / FAILED, MARK_DONE or MARK_FAILED, deterministic negative evidence
+- fixture matrix: accepted / rejected / failed / duplicate idempotency / invalid input / no live-trading
+- rollback plan: revert implementation PR, simulator disabled by default if toggled, no runtime credential impact, no live/canary impact
+- runtime/env/secrets changed: NO
+- canary: NOT AUTHORIZED / NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `MINIMAL_SIMULATOR_IMPLEMENTATION_PLANNED` / `READY_FOR_MINIMAL_SIMULATOR_IMPLEMENTATION`
+- Evidence: **`docs/MINIMAL_SIMULATOR_IMPLEMENTATION_PLAN_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
