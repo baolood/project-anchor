@@ -1546,6 +1546,32 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_SIMULATOR_MATRIX_CLOSEOUT_REVIEW`
 - Evidence: **`docs/EXACTLY_ONE_SIMULATOR_FAILED_SEND_CLOSEOUT_V1.md`**
 
+### Post Failed Send Mainline Review V1
+
+- purpose: review completed simulator ACCEPTED / REJECTED / FAILED evidence before any canary prep
+- review only: YES
+- canary executed: NO
+- additional simulator request executed: NO
+- real external exchange request sent: NO
+- main HEAD reviewed: `89218e9d60331341332bbe652b55aa4170859cf6`
+- accepted closeout reviewed: YES
+- rejected closeout reviewed: YES
+- failed closeout reviewed: YES
+- ACCEPTED evidence: DONE with simulator_order_id / external_order_id equivalent present
+- REJECTED evidence: FAILED with `TESTNET_EXECUTOR_REJECTED`, `mock_rejected`, and no order id equivalent
+- FAILED evidence: FAILED with `TESTNET_EXECUTOR_SIMULATOR_FAILED`, `simulator_failed`, and no order id equivalent
+- duplicate simulator request found: NO
+- second FAILED request found: NO
+- real external exchange request found: NO
+- evidence gap found: NO
+- review result: READY
+- recommendation: `READY_FOR_CANARY_PREP_DOC`
+- canary authorization in this task: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_POST_FAILED_SEND_MAINLINE_REVIEW_PR_MERGE`
+- Evidence: **`docs/POST_FAILED_SEND_MAINLINE_REVIEW_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
