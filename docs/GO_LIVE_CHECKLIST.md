@@ -1829,6 +1829,34 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_APPROVED_ALTERNATIVE_TESTNET_CANARY_PREP_PR_MERGE`
 - Evidence: **`docs/APPROVED_ALTERNATIVE_TESTNET_CANARY_PREP_V1.md`**
 
+### Approved Alternative Testnet Implementation Plan V1
+
+- purpose: prepare a minimal future implementation plan for one approved official alternative testnet/sandbox venue
+- plan only: YES
+- approved alternative canary prep referenced: YES
+- Binance FAILED/http_451 preserved: YES
+- implementation boundary documented: YES
+- credential boundary documented: YES
+- future canary boundary documented: YES
+- candidate executor adapter boundary documented: YES
+- config/env variable names documented by name only: YES
+- secret values documented: NO
+- expected future validation documented: YES
+- alternative venue executor implemented in this task: NO
+- backend / worker / risk / deploy changed in this task: NO
+- runtime behavior changed in this task: NO
+- credentials added/changed in this task: NO
+- canary authorized by this plan: NO
+- external request authorized by this plan: NO
+- canary retried in this task: NO
+- external request sent in this task: NO
+- DB mutation performed in this task: NO
+- executor / network / location / proxy / VPN changed in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_APPROVED_ALTERNATIVE_TESTNET_IMPLEMENTATION_PLAN_PR_MERGE`
+- Evidence: **`docs/APPROVED_ALTERNATIVE_TESTNET_IMPLEMENTATION_PLAN_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
