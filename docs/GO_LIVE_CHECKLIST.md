@@ -1668,6 +1668,30 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_STALE_RUNNING_COMMANDS_CLEANUP_PLAN_PR_MERGE`
 - Evidence: **`docs/STALE_RUNNING_COMMANDS_CLEANUP_PLAN_V1.md`**
 
+### Stale Running Commands Cleanup Closeout V1
+
+- purpose: record completed minimal cleanup for the two stale `RUNNING` commands that blocked canary preflight
+- closeout only: YES
+- DB mutation already completed before this doc task: YES
+- DB mutation performed in this doc task: NO
+- target command count: 2
+- target command IDs: `order-fec6a82f-b8fe-4f4c-ae45-972aaf26e91e` / `order-e66c32df-4c14-4dd0-b23e-dce6a8835740`
+- both target commands marked FAILED: YES
+- failure reason: `stale_running_pre_canary_cleanup`
+- MARK_FAILED added: YES
+- external request event present: NO
+- external_order_id present: NO
+- rows deleted: NO
+- original orders retried: NO
+- canary retried: NO
+- real external exchange request sent: NO
+- cleanup blocker cleared: YES
+- canary remains blocked until closeout PR is merged and baseline passes: YES
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_STALE_RUNNING_CLEANUP_CLOSEOUT_PR_MERGE`
+- Evidence: **`docs/STALE_RUNNING_COMMANDS_CLEANUP_CLOSEOUT_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
