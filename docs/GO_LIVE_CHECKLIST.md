@@ -1721,6 +1721,33 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_CANARY_EXECUTION_RETRY_CLOSEOUT_PR_MERGE`
 - Evidence: **`docs/CANARY_EXECUTION_RETRY_CLOSEOUT_V1.md`**
 
+### Restricted Location Access Review V1
+
+- purpose: review canary `FAILED/http_451` restricted-location result and document safe next decision boundary
+- review only: YES
+- canary closeout reviewed: YES
+- canary result recorded as FAILED/http_451: YES
+- command_id: `order-71d6d1c2-cf43-4c34-bf79-13c57189f544`
+- idempotency key: `canary:ops_manual:BTCUSDT:BUY:4:first-canary-retry:v1`
+- external_order_id present: NO
+- retry executed: NO
+- restricted-location/access blocker recorded: YES
+- interpretation: current Binance testnet access path unavailable from current restricted location
+- recommendation: `READY_FOR_ACCESS_PATH_DECISION_ONLY`
+- not ready for go-live: YES
+- not ready for live trading: YES
+- not ready for canary retry: YES
+- future decision paths documented: keep current location and stop canary progression / approved access-path review / different testnet venue review / no-external-request simulator-only continuation
+- path chosen in this task: NO
+- canary retried in this task: NO
+- external request sent in this task: NO
+- executor / network / location / proxy / VPN changed: NO
+- DB mutation performed in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_RESTRICTED_LOCATION_ACCESS_REVIEW_PR_MERGE`
+- Evidence: **`docs/RESTRICTED_LOCATION_ACCESS_REVIEW_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
