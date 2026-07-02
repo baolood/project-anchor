@@ -1804,6 +1804,31 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_ALTERNATIVE_TESTNET_VENUE_REVIEW_PR_MERGE`
 - Evidence: **`docs/ALTERNATIVE_TESTNET_VENUE_REVIEW_V1.md`**
 
+### Approved Alternative Testnet Canary Prep V1
+
+- purpose: prepare a future canary path using an approved alternative official testnet/sandbox venue after Binance testnet returned `FAILED/http_451`
+- prep only: YES
+- alternative venue review referenced: YES
+- Binance FAILED/http_451 preserved: YES
+- Binance same-path retry rejected: YES
+- ad hoc VPN/proxy workaround rejected: YES
+- future venue requirements documented: YES
+- future implementation boundary documented: YES
+- future evidence requirements documented: YES
+- credentials added/changed in this prep: NO
+- runtime behavior changed in this prep: NO
+- API integration changed in this prep: NO
+- executor / network / location / proxy / VPN changed in this prep: NO
+- canary authorized by this prep: NO
+- external request authorized by this prep: NO
+- canary retried in this task: NO
+- external request sent in this task: NO
+- DB mutation performed in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_APPROVED_ALTERNATIVE_TESTNET_CANARY_PREP_PR_MERGE`
+- Evidence: **`docs/APPROVED_ALTERNATIVE_TESTNET_CANARY_PREP_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
