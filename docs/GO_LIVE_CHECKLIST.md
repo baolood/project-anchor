@@ -1692,6 +1692,35 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_STALE_RUNNING_CLEANUP_CLOSEOUT_PR_MERGE`
 - Evidence: **`docs/STALE_RUNNING_COMMANDS_CLEANUP_CLOSEOUT_V1.md`**
 
+### Canary Execution Retry Closeout V1
+
+- purpose: record exactly-one canary execution retry result after stale RUNNING cleanup closeout merged and preflight passed
+- closeout only: YES
+- canary request sent before this doc task: YES
+- exactly one canary request sent: YES
+- command_id: `order-71d6d1c2-cf43-4c34-bf79-13c57189f544`
+- idempotency key: `canary:ops_manual:BTCUSDT:BUY:4:first-canary-retry:v1`
+- request timestamp: `2026-07-02 10:12:01.895451+00`
+- execution mode: `testnet`
+- final status: FAILED
+- external request sent: YES
+- external_order_id present: NO
+- failure_family: `TESTNET_EXECUTOR_UNEXPECTED`
+- failure_reason: `http_451`
+- restricted location recorded: YES
+- event chain: `PICKED -> POLICY_ALLOW -> KILL_SWITCH_CHECKED -> TESTNET_EXECUTOR_REQUESTED -> TESTNET_EXECUTOR_REJECTED -> ACTION_FAIL -> MARK_FAILED`
+- duplicate request sent: NO
+- retry sent: NO
+- second canary request sent: NO
+- manual DB mutation during execution: NO
+- canary retried in this doc task: NO
+- external request sent in this doc task: NO
+- location / proxy / VPN changed: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_CANARY_EXECUTION_RETRY_CLOSEOUT_PR_MERGE`
+- Evidence: **`docs/CANARY_EXECUTION_RETRY_CLOSEOUT_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
