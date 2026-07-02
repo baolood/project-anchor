@@ -1778,6 +1778,32 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_ACCESS_PATH_DECISION_PR_MERGE`
 - Evidence: **`docs/ACCESS_PATH_DECISION_V1.md`**
 
+### Alternative Testnet Venue Review V1
+
+- purpose: review alternative testnet/sandbox access paths after Binance testnet canary `FAILED/http_451`
+- review only: YES
+- access path decision referenced: YES
+- Binance same-path retry rejected: YES
+- ad hoc VPN/proxy workaround rejected: YES
+- alternative official testnet/sandbox reviewed: YES
+- reviewed example access path: Kraken Derivatives REST / official paper-trading path review
+- simulator-only fallback reviewed: YES
+- recommended next path: `READY_FOR_APPROVED_ALTERNATIVE_TESTNET_CANARY_PREP`
+- fallback if future prep cannot verify no-real-money exposure and evidence preservation: `READY_FOR_SIMULATOR_ONLY_CONTINUATION`
+- canary authorized by this review: NO
+- external request authorized by this review: NO
+- credential change authorized by this review: NO
+- runtime behavior change authorized by this review: NO
+- executor / network / location / proxy / VPN change authorized by this review: NO
+- canary retried in this task: NO
+- external request sent in this task: NO
+- DB mutation performed in this task: NO
+- credentials changed in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_ALTERNATIVE_TESTNET_VENUE_REVIEW_PR_MERGE`
+- Evidence: **`docs/ALTERNATIVE_TESTNET_VENUE_REVIEW_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
