@@ -1617,6 +1617,31 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_EXPLICIT_CANARY_EXECUTION_AUTHORIZATION`
 - Evidence: **`docs/CANARY_EXECUTION_AUTHORIZATION_REQUEST_PREP_V1.md`**
 
+### Stale Running Commands Readonly Review V1
+
+- purpose: review stale `RUNNING` commands that blocked canary preflight
+- review only: YES
+- canary preflight blocked: YES
+- canary request sent: NO
+- external request sent: NO
+- blocker: 2 stale `RUNNING` commands in `commands_domain`
+- target command IDs: `order-fec6a82f-b8fe-4f4c-ae45-972aaf26e91e` / `order-e66c32df-4c14-4dd0-b23e-dce6a8835740`
+- command event chains reviewed: YES
+- both commands event chain: PICKED -> POLICY_ALLOW
+- MARK_DONE present: NO
+- MARK_FAILED present: NO
+- external request event present: NO
+- external_order_id / simulator_order_id field present: NO
+- recommendation: `SAFE_TO_MARK_FAILED_WITH_STALE_RUNNING_REASON`
+- DB mutation performed: NO
+- cleanup executed: NO
+- canary executed: NO
+- real external exchange request sent: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_STALE_RUNNING_COMMANDS_CLEANUP_PLAN`
+- Evidence: **`docs/STALE_RUNNING_COMMANDS_READONLY_REVIEW_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
