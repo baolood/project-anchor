@@ -1882,6 +1882,34 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_IMPLEMENTATION_SLICE_AUTHORIZATION_PREP_PR_MERGE`
 - Evidence: **`docs/APPROVED_ALTERNATIVE_TESTNET_IMPLEMENTATION_SLICE_AUTHORIZATION_PREP_V1.md`**
 
+### Minimal Alternative Testnet Adapter Skeleton V1
+
+- purpose: add the first minimal code skeleton for an approved alternative testnet executor adapter
+- implementation slice authorized: YES, adapter skeleton only
+- implementation plan referenced: YES
+- deterministic stub only: YES
+- accepted stub covered: YES
+- rejected stub covered: YES
+- failed stub covered: YES
+- evidence fields preserved: execution_mode, venue, status, failure_family, failure_reason, external_order_id presence/absence
+- HTTP / network client added: NO
+- credentials loaded: NO
+- environment variables loaded: NO
+- runtime registration enabled: NO
+- runner modified: NO
+- worker modified: NO
+- risk modified: NO
+- deploy / env / docker / compose / migrations modified: NO
+- canary retried in this task: NO
+- external request sent in this task: NO
+- credentials changed in this task: NO
+- runtime behavior changed in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_MINIMAL_ALTERNATIVE_ADAPTER_SKELETON_PR_MERGE`
+- Evidence: **`anchor-backend/app/actions/alternative_testnet_executor.py`**, **`tests/test_alternative_testnet_executor.py`**
+
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
