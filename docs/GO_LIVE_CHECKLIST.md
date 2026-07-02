@@ -1642,6 +1642,32 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_STALE_RUNNING_COMMANDS_CLEANUP_PLAN`
 - Evidence: **`docs/STALE_RUNNING_COMMANDS_READONLY_REVIEW_V1.md`**
 
+### Stale Running Commands Cleanup Plan V1
+
+- purpose: prepare minimal cleanup plan for the two stale `RUNNING` commands that blocked canary preflight
+- plan only: YES
+- cleanup executed: NO
+- DB mutation performed: NO
+- canary retried: NO
+- real external exchange request sent: NO
+- source review: `docs/STALE_RUNNING_COMMANDS_READONLY_REVIEW_V1.md`
+- target command count: 2
+- target command IDs: `order-fec6a82f-b8fe-4f4c-ae45-972aaf26e91e` / `order-e66c32df-4c14-4dd0-b23e-dce6a8835740`
+- proposed cleanup: mark only these two command IDs as FAILED
+- failure reason: `stale_running_pre_canary_cleanup`
+- cleanup reason: canary preflight blocker, stale locked RUNNING commands, no external request evidence
+- delete rows: NO
+- unlock without failure: NO
+- retry original orders: NO
+- external request allowed: NO
+- canary allowed in this task: NO
+- required pre-cleanup guard documented: workspace clean / main synced / current HEAD confirmed / target rows still RUNNING / exact target IDs / no external request event / no external_order_id / worker heartbeat / kill switch
+- expected post-cleanup evidence documented: target commands FAILED / failure reason recorded / no external request event / no external_order_id / canary NO / live trading NO-GO / go-live NO-GO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_STALE_RUNNING_COMMANDS_CLEANUP_PLAN_PR_MERGE`
+- Evidence: **`docs/STALE_RUNNING_COMMANDS_CLEANUP_PLAN_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
