@@ -1572,6 +1572,31 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_POST_FAILED_SEND_MAINLINE_REVIEW_PR_MERGE`
 - Evidence: **`docs/POST_FAILED_SEND_MAINLINE_REVIEW_V1.md`**
 
+### Canary Prep V1
+
+- purpose: prepare the future canary step after simulator ACCEPTED / REJECTED / FAILED evidence review
+- prep only: YES
+- canary authorization granted: NO
+- canary executed: NO
+- simulator request executed: NO
+- real external exchange request sent: NO
+- main HEAD reviewed: `079205f8f1250c1c3d21b879a19c22106951c362`
+- simulator ACCEPTED evidence referenced: YES
+- simulator REJECTED evidence referenced: YES
+- simulator FAILED evidence referenced: YES
+- duplicate simulator request found: NO
+- second FAILED request found: NO
+- real external exchange request found: NO
+- future canary preflight documented: workspace guard / main synced / git clean / simulator tests / hardened one-shot guardrail / go-live rules / local box baseline / kill switch / worker heartbeat / alerting if required / no pending unexpected commands
+- future canary execution boundary documented: exactly one request / bounded notional / explicit operator authorization / no retry if evidence incomplete / no second request without new authorization
+- future canary evidence requirements documented: command_id / idempotency key / timestamp / execution mode / event chain / final status / external request status if applicable / duplicate not sent / kill switch / worker / alerting if required
+- runtime/env/secrets changed: NO
+- backend/worker/risk/deploy changed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_CANARY_PREP_DOC_PR_MERGE`
+- Evidence: **`docs/CANARY_PREP_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
