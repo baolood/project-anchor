@@ -1495,6 +1495,31 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_EXACTLY_ONE_SIMULATOR_FAILED_SEND_PREP`
 - Evidence: **`docs/EXACTLY_ONE_SIMULATOR_REJECTED_SEND_CLOSEOUT_V1.md`**
 
+### Exactly-One Simulator Failed Send Prep V1
+
+- purpose: prepare the future exactly-one simulator FAILED send without executing it
+- prep only: YES
+- REJECTED closeout merged: YES
+- REJECTED closeout merge commit: `06f5c9e89d711cae894b23fcc8983fd3f9a748ce`
+- current safe status: `READY_FOR_EXACTLY_ONE_SIMULATOR_FAILED_SEND_PREP`
+- FAILED scenario executed: NO
+- simulator request executed after REJECTED closeout: NO
+- required future scenario: FAILED
+- required future idempotency key: `simulator:ops_manual:BTCUSDT:BUY:4:first-failed:v1`
+- expected terminal event: `TESTNET_EXECUTOR_FAILED`
+- expected failure_family: `TESTNET_EXECUTOR_SIMULATOR_FAILED`
+- simulator_order_id / external_order_id equivalent on FAILED: must be absent
+- preflight requirements listed: workspace guard / main synced / git clean / simulator tests / hardened one-shot guardrail / go-live rules / local box baseline / runtime checks if used
+- expected evidence listed: exactly one simulator request / FAILED path / terminal event / failure_family / no duplicate / no order id equivalent / no real exchange request
+- real external exchange request: NOT AUTHORIZED / NOT SENT
+- runtime/env/secrets changed: NO
+- backend/worker/risk/deploy changed: NO
+- canary: NOT AUTHORIZED / NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_EXACTLY_ONE_SIMULATOR_FAILED_SEND_AUTHORIZATION`
+- Evidence: **`docs/EXACTLY_ONE_SIMULATOR_FAILED_SEND_PREP_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
