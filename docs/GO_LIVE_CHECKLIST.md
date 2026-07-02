@@ -1469,6 +1469,32 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_EXACTLY_ONE_SIMULATOR_REJECTED_SEND_PREP` / `READY_FOR_EXACTLY_ONE_SIMULATOR_FAILED_SEND_PREP`
 - Evidence: **`docs/SIMULATOR_REJECTED_FAILED_MATRIX_PREP_V1.md`**
 
+### Exactly-One Simulator Rejected Send Closeout V1
+
+- purpose: record the first controlled exactly-one simulator REJECTED send result
+- simulator request sent: YES
+- exactly one simulator request sent: YES
+- `TESTNET_EXECUTOR_REQUESTED` count: 1
+- command_id: `sim-rejected-1`
+- idempotency key: `simulator:ops_manual:BTCUSDT:BUY:4:first-rejected:v1`
+- scenario: REJECTED
+- result: FAILED
+- rejection reason: `mock_rejected`
+- failure_family: `TESTNET_EXECUTOR_REJECTED`
+- simulator_order_id / external_order_id equivalent present: NO
+- event chain: PICKED -> KILL_SWITCH_CHECKED -> TESTNET_EXECUTOR_REQUESTED -> TESTNET_EXECUTOR_REJECTED -> ACTION_FAIL -> MARK_FAILED
+- duplicate request sent: NO
+- FAILED scenario executed: NO
+- ACCEPTED scenario executed in this task: NO
+- real external exchange request sent: NO
+- runtime/env/secrets changed: NO
+- canary: NOT AUTHORIZED / NOT EXECUTED
+- go-live: NO-GO
+- live trading: NO-GO
+- current status: `SIMULATOR_REJECTED_SEND_DONE`
+- next safe status: `READY_FOR_EXACTLY_ONE_SIMULATOR_FAILED_SEND_PREP`
+- Evidence: **`docs/EXACTLY_ONE_SIMULATOR_REJECTED_SEND_CLOSEOUT_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
