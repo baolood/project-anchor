@@ -1857,6 +1857,31 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_APPROVED_ALTERNATIVE_TESTNET_IMPLEMENTATION_PLAN_PR_MERGE`
 - Evidence: **`docs/APPROVED_ALTERNATIVE_TESTNET_IMPLEMENTATION_PLAN_V1.md`**
 
+### Approved Alternative Testnet Implementation Slice Authorization Prep V1
+
+- purpose: prepare first minimal implementation slice boundary for the approved alternative testnet path
+- authorization prep only: YES
+- implementation plan referenced: YES
+- PR #175 merged and baseline PASS: YES
+- first implementation slice boundary documented: YES
+- allowed future slice: adapter skeleton only or contract/interface doc only
+- network call allowed by this prep: NO
+- credentials allowed by this prep: NO
+- runtime route enablement allowed by this prep: NO
+- production endpoint allowed by this prep: NO
+- implementation code authorized by this prep: NO
+- credentials authorized by this prep: NO
+- external request authorized by this prep: NO
+- canary authorized by this prep: NO
+- canary retried in this task: NO
+- external request sent in this task: NO
+- credentials changed in this task: NO
+- runtime behavior changed in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_IMPLEMENTATION_SLICE_AUTHORIZATION_PREP_PR_MERGE`
+- Evidence: **`docs/APPROVED_ALTERNATIVE_TESTNET_IMPLEMENTATION_SLICE_AUTHORIZATION_PREP_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
