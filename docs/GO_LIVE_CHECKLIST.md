@@ -1597,6 +1597,26 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_CANARY_PREP_DOC_PR_MERGE`
 - Evidence: **`docs/CANARY_PREP_V1.md`**
 
+### Canary Execution Authorization Request Prep V1
+
+- purpose: prepare exactly-one canary execution authorization request without granting or executing canary
+- authorization request prepared: YES
+- canary authorization granted in this task: NO
+- canary executed: NO
+- real external exchange request sent: NO
+- main HEAD: `4f25e6e15a96235c9294de03b1550d29ce184afa`
+- canary prep doc merged: YES
+- baseline after merge: PASS
+- required preflight documented: workspace clean / main synced / simulator tests / hardened one-shot guardrail / go-live rules / local box baseline / kill switch / worker heartbeat / alerting if required / no unexpected pending commands
+- future execution boundary documented: exactly one canary request / bounded request / no retry without new authorization / no second canary request without new authorization / no simulator replay
+- live trading remains NO-GO: YES
+- go-live remains NO-GO: YES
+- future canary evidence requirements documented: command_id / idempotency key / timestamp / execution mode / final status / event chain / external request status / external_order_id presence / duplicate not sent / retry not sent / second request not sent
+- runtime/env/secrets changed: NO
+- backend/worker/risk/deploy changed: NO
+- next safe status: `READY_FOR_EXPLICIT_CANARY_EXECUTION_AUTHORIZATION`
+- Evidence: **`docs/CANARY_EXECUTION_AUTHORIZATION_REQUEST_PREP_V1.md`**
+
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
 - review artifact command id matches successful execution record: YES
