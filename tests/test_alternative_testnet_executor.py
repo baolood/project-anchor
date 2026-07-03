@@ -8,6 +8,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "anchor-backend"))
 
 from app.actions.alternative_testnet_executor import (  # noqa: E402
     AlternativeTestnetOrderRequest,
+    AlternativeTestnetVenueResponse,
+    map_alternative_testnet_response,
     run_alternative_testnet_order_stub,
 )
 
@@ -186,6 +188,112 @@ class AlternativeTestnetExecutorSkeletonTest(unittest.TestCase):
 
     def test_result_shape_does_not_imply_network_request_was_sent(self):
         result = _result_dict(scenario="ACCEPTED")
+
+        self.assertNotIn("network_request_sent", result)
+        self.assertNotIn("http_status", result)
+        self.assertNotIn("request_url", result)
+        self.assertNotIn("external_request_sent", result)
+        self.assertNotIn("external_request_started", result)
+
+    def test_accepted_response_mapping_with_external_order_id(self):
+        result = map_alternative_testnet_response(
+            _request(command_id="mapped-accepted"),
+            AlternativeTestnetVenueResponse(
+                status="ACCEPTED",
+                external_order_id="venue-order-123",
+            ),
+        )
+
+        self.assertEqual(result.command_id, "mapped-accepted")
+        self.assertEqual(result.idempotency_key, "alternative:ops_manual:BTCUSDT:BUY:4:first-skeleton:v1")
+        self.assertEqual(result.execution_mode, "testnet")
+        self.assertEqual(result.venue, "approved_alternative_testnet")
+        self.assertEqual(result.status, "ACCEPTED")
+        self.assertIsNone(result.failure_family)
+        self.assertIsNone(result.failure_reason)
+        self.assertEqual(result.external_order_id, "venue-order-123")
+        self.assertTrue(result.external_order_id_present)
+
+    def test_accepted_response_mapping_without_external_order_id(self):
+        result = map_alternative_testnet_response(
+            _request(),
+            AlternativeTestnetVenueResponse(status="ACCEPTED"),
+        )
+
+        self.assertEqual(result.status, "ACCEPTED")
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+
+    def test_rejected_response_mapping_never_invents_external_order_id(self):
+        result = map_alternative_testnet_response(
+            _request(),
+            AlternativeTestnetVenueResponse(
+                status="REJECTED",
+                external_order_id="ignored-venue-order",
+                failure_family="ALTERNATIVE_TESTNET_VENUE_REJECTED",
+                failure_reason="venue_rejected",
+            ),
+        )
+
+        self.assertEqual(result.status, "REJECTED")
+        self.assertEqual(result.failure_family, "ALTERNATIVE_TESTNET_VENUE_REJECTED")
+        self.assertEqual(result.failure_reason, "venue_rejected")
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+
+    def test_failed_response_mapping_never_invents_external_order_id(self):
+        result = map_alternative_testnet_response(
+            _request(),
+            AlternativeTestnetVenueResponse(
+                status="FAILED",
+                external_order_id="ignored-venue-order",
+                failure_family="ALTERNATIVE_TESTNET_VENUE_FAILED",
+                failure_reason="venue_failed",
+            ),
+        )
+
+        self.assertEqual(result.status, "FAILED")
+        self.assertEqual(result.failure_family, "ALTERNATIVE_TESTNET_VENUE_FAILED")
+        self.assertEqual(result.failure_reason, "venue_failed")
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+
+    def test_unknown_response_maps_to_explicit_failure(self):
+        result = map_alternative_testnet_response(
+            _request(),
+            AlternativeTestnetVenueResponse(status="PARTIAL"),
+        )
+
+        self.assertEqual(result.status, "FAILED")
+        self.assertEqual(result.failure_family, "ALTERNATIVE_TESTNET_RESPONSE_UNKNOWN")
+        self.assertEqual(result.failure_reason, "alternative_testnet_response_unknown")
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+
+    def test_response_mapping_does_not_include_credentials_or_secret_values(self):
+        result = dataclasses.asdict(
+            map_alternative_testnet_response(
+                _request(),
+                AlternativeTestnetVenueResponse(
+                    status="FAILED",
+                    failure_family="ALTERNATIVE_TESTNET_VENUE_FAILED",
+                    failure_reason="venue_failed",
+                ),
+            )
+        )
+
+        forbidden_fragments = ("credential", "secret", "api_key", "api_secret", "password", "token")
+        for key, value in result.items():
+            self.assertFalse(any(fragment in key.lower() for fragment in forbidden_fragments), key)
+            self.assertFalse(any(fragment in str(value).lower() for fragment in forbidden_fragments), value)
+
+    def test_response_mapping_does_not_imply_network_request_was_sent(self):
+        result = dataclasses.asdict(
+            map_alternative_testnet_response(
+                _request(),
+                AlternativeTestnetVenueResponse(status="ACCEPTED", external_order_id="venue-order-123"),
+            )
+        )
 
         self.assertNotIn("network_request_sent", result)
         self.assertNotIn("http_status", result)
