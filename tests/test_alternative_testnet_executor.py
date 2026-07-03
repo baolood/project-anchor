@@ -123,9 +123,58 @@ class AlternativeTestnetExecutorSkeletonTest(unittest.TestCase):
         self.assertEqual(first.execution_mode, "testnet")
         self.assertEqual(first.venue, "approved_alternative_testnet")
 
+    def _assert_validation_failure(self, **overrides):
+        result = run_alternative_testnet_order_stub(_request(**overrides))
+
+        self.assertEqual(result.status, "FAILED")
+        self.assertEqual(result.failure_family, "ALTERNATIVE_TESTNET_REQUEST_INVALID")
+        self.assertIsNotNone(result.failure_reason)
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+        return dataclasses.asdict(result)
+
     def test_unknown_scenario_does_not_silently_become_accepted(self):
-        with self.assertRaises(ValueError):
-            run_alternative_testnet_order_stub(_request(scenario="UNKNOWN"))
+        result = self._assert_validation_failure(scenario="UNKNOWN")
+
+        self.assertEqual(result["failure_reason"], "scenario_invalid")
+
+    def test_missing_idempotency_key_fails_local_validation(self):
+        result = self._assert_validation_failure(idempotency_key="")
+
+        self.assertEqual(result["failure_reason"], "idempotency_key_missing")
+
+    def test_invalid_side_fails_local_validation(self):
+        result = self._assert_validation_failure(side="HOLD")
+
+        self.assertEqual(result["failure_reason"], "side_invalid")
+
+    def test_zero_and_negative_notional_fail_local_validation(self):
+        zero = self._assert_validation_failure(notional=0)
+        negative = self._assert_validation_failure(notional=-4)
+
+        self.assertEqual(zero["failure_reason"], "notional_invalid")
+        self.assertEqual(negative["failure_reason"], "notional_invalid")
+
+    def test_missing_required_fields_fail_local_validation(self):
+        self.assertEqual(self._assert_validation_failure(venue="")["failure_reason"], "venue_missing")
+        self.assertEqual(
+            self._assert_validation_failure(execution_mode="")["failure_reason"],
+            "execution_mode_missing",
+        )
+        self.assertEqual(
+            self._assert_validation_failure(execution_mode="live")["failure_reason"],
+            "execution_mode_not_testnet",
+        )
+        self.assertEqual(self._assert_validation_failure(symbol="")["failure_reason"], "symbol_missing")
+
+    def test_validation_failures_do_not_imply_network_request(self):
+        result = self._assert_validation_failure(side="INVALID")
+
+        self.assertNotIn("network_request_sent", result)
+        self.assertNotIn("http_status", result)
+        self.assertNotIn("request_url", result)
+        self.assertNotIn("external_request_sent", result)
+        self.assertNotIn("external_request_started", result)
 
     def test_result_shape_does_not_include_credentials_or_secret_values(self):
         result = _result_dict(scenario="ACCEPTED")

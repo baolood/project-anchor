@@ -1998,6 +1998,35 @@ Record the choice + reason here:
 
 
 
+### Adapter Request Validation Slice V1
+
+- purpose: add local-only request validation to the alternative testnet adapter skeleton
+- local request validation added: YES
+- venue validation: YES
+- execution_mode validation: YES
+- scenario validation: YES
+- idempotency_key validation: YES
+- symbol validation: YES
+- side validation: YES
+- positive notional validation: YES
+- validation failures return FAILED-style result: YES
+- validation failures external_order_id absent: YES
+- validation failures imply network request: NO
+- existing accepted / rejected / failed deterministic behavior preserved: YES
+- HTTP / network client added in this task: NO
+- credentials changed in this task: NO
+- env/config read added in this task: NO
+- runner / worker / risk modified in this task: NO
+- runtime path enabled in this task: NO
+- canary retried in this task: NO
+- external request sent in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_ADAPTER_REQUEST_VALIDATION_SLICE_PR_MERGE`
+- Evidence: **`anchor-backend/app/actions/alternative_testnet_executor.py`**, **`tests/test_alternative_testnet_executor.py`**
+
+
+
 
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
