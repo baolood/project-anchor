@@ -1937,6 +1937,34 @@ Record the choice + reason here:
 - Evidence: **`docs/ALTERNATIVE_ADAPTER_CONTRACT_REVIEW_V1.md`**
 
 
+### Adapter Contract Test Expansion V1
+
+- purpose: expand tests for the merged alternative testnet adapter contract before any further implementation slice
+- test expansion only: YES
+- adapter implementation modified in this task: NO
+- accepted contract tests expanded: YES
+- rejected contract tests expanded: YES
+- failed contract tests expanded: YES
+- external_order_id absence on rejected / failed tested: YES
+- failure_family / failure_reason tested: YES
+- deterministic evidence shape tested: YES
+- credentials leakage guarded by tests: YES
+- network request implication avoided by tests: YES
+- HTTP / network client added in this task: NO
+- credentials changed in this task: NO
+- runtime behavior changed in this task: NO
+- runner modified in this task: NO
+- worker modified in this task: NO
+- risk modified in this task: NO
+- canary retried in this task: NO
+- external request sent in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_ADAPTER_CONTRACT_TEST_EXPANSION_PR_MERGE`
+- Evidence: **`tests/test_alternative_testnet_executor.py`**
+
+
+
 
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
