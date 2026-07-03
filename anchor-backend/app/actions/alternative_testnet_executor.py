@@ -40,6 +40,14 @@ class AlternativeTestnetOrderResult:
     external_order_id_present: bool
 
 
+@dataclass(frozen=True)
+class AlternativeTestnetVenueResponse:
+    status: str
+    external_order_id: Optional[str] = None
+    failure_family: Optional[str] = None
+    failure_reason: Optional[str] = None
+
+
 def _deterministic_external_order_id(request: AlternativeTestnetOrderRequest) -> str:
     seed = f"{request.venue}:{request.idempotency_key}"
     digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:16]
@@ -135,6 +143,66 @@ def run_alternative_testnet_order_stub(
         status="FAILED",
         failure_family="ALTERNATIVE_TESTNET_EXECUTOR_FAILED",
         failure_reason="alternative_testnet_failed",
+        external_order_id=None,
+        external_order_id_present=False,
+    )
+
+
+def map_alternative_testnet_response(
+    request: AlternativeTestnetOrderRequest,
+    response: AlternativeTestnetVenueResponse,
+) -> AlternativeTestnetOrderResult:
+    """Map a local venue response fixture into the adapter result contract."""
+
+    invalid_reason = _validation_reason(request)
+    if invalid_reason:
+        return _validation_failure(request, invalid_reason)
+
+    response_status = str(response.status or "").strip().upper()
+    if response_status == "ACCEPTED":
+        return AlternativeTestnetOrderResult(
+            command_id=request.command_id,
+            idempotency_key=request.idempotency_key,
+            execution_mode=request.execution_mode,
+            venue=request.venue,
+            status="ACCEPTED",
+            failure_family=None,
+            failure_reason=None,
+            external_order_id=response.external_order_id,
+            external_order_id_present=bool(response.external_order_id),
+        )
+    if response_status == "REJECTED":
+        return AlternativeTestnetOrderResult(
+            command_id=request.command_id,
+            idempotency_key=request.idempotency_key,
+            execution_mode=request.execution_mode,
+            venue=request.venue,
+            status="REJECTED",
+            failure_family=response.failure_family or "ALTERNATIVE_TESTNET_EXECUTOR_REJECTED",
+            failure_reason=response.failure_reason or "alternative_testnet_rejected",
+            external_order_id=None,
+            external_order_id_present=False,
+        )
+    if response_status == "FAILED":
+        return AlternativeTestnetOrderResult(
+            command_id=request.command_id,
+            idempotency_key=request.idempotency_key,
+            execution_mode=request.execution_mode,
+            venue=request.venue,
+            status="FAILED",
+            failure_family=response.failure_family or "ALTERNATIVE_TESTNET_EXECUTOR_FAILED",
+            failure_reason=response.failure_reason or "alternative_testnet_failed",
+            external_order_id=None,
+            external_order_id_present=False,
+        )
+    return AlternativeTestnetOrderResult(
+        command_id=request.command_id,
+        idempotency_key=request.idempotency_key,
+        execution_mode=request.execution_mode,
+        venue=request.venue,
+        status="FAILED",
+        failure_family="ALTERNATIVE_TESTNET_RESPONSE_UNKNOWN",
+        failure_reason="alternative_testnet_response_unknown",
         external_order_id=None,
         external_order_id_present=False,
     )

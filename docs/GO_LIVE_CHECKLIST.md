@@ -2063,6 +2063,33 @@ Record the choice + reason here:
 
 
 
+### Adapter Response Mapping Slice V1
+
+- purpose: add local-only response/result mapping helpers to the alternative testnet adapter
+- local response/result mapping added: YES
+- accepted response mapping covered: YES
+- accepted response with external_order_id covered: YES
+- accepted response without external_order_id covered: YES
+- rejected response mapping covered: YES
+- failed response mapping covered: YES
+- unknown response maps to explicit failure: YES
+- external_order_id rules preserved: YES
+- failure_family / failure_reason preserved: YES
+- existing request validation behavior preserved: YES
+- HTTP / network client added in this task: NO
+- credentials changed in this task: NO
+- env/config read added in this task: NO
+- runner / worker / risk modified in this task: NO
+- runtime path enabled in this task: NO
+- canary retried in this task: NO
+- external request sent in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_ADAPTER_RESPONSE_MAPPING_SLICE_PR_MERGE`
+- Evidence: **`anchor-backend/app/actions/alternative_testnet_executor.py`**, **`tests/test_alternative_testnet_executor.py`**
+
+
+
 
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
