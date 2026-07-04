@@ -12,6 +12,8 @@ sys.path.insert(0, str(PROJECT_ROOT / "anchor-backend"))
 from app.actions.alternative_testnet_http_client import (  # noqa: E402
     AlternativeTestnetHttpBuiltRequest,
     AlternativeTestnetHttpClientRequest,
+    AlternativeTestnetHttpTransportInput,
+    AlternativeTestnetHttpTransportResult,
     NoNetworkAlternativeTestnetHttpClient,
 )
 
@@ -236,13 +238,127 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
             "signed_payload",
             "headers",
             "timeout",
-            "transport",
-            "network_sent",
             "send(",
             "execute(",
         )
         for snippet in forbidden_snippets:
             self.assertNotIn(snippet, source)
+
+    def test_builds_deterministic_transport_input_shape(self):
+        built = self.client.build_order_request(_request())
+        first = self.client.build_transport_input(built)
+        second = self.client.build_transport_input(built)
+
+        self.assertIsInstance(first, AlternativeTestnetHttpTransportInput)
+        self.assertEqual(dataclasses.asdict(first), dataclasses.asdict(second))
+        self.assertEqual(first.method, built.method)
+        self.assertEqual(first.path, built.path)
+        self.assertEqual(first.idempotency_key, built.idempotency_key)
+        self.assertEqual(first.client_order_ref, built.client_order_ref)
+        self.assertEqual(first.body, built.body)
+
+    def test_transport_input_preserves_builder_boundary_without_response_evidence(self):
+        transport_input = self.client.build_transport_input(self.client.build_order_request(_request()))
+        payload = dataclasses.asdict(transport_input)
+        forbidden_fields = {
+            "external_order_id",
+            "external_order_id_present",
+            "network_sent",
+            "http_status",
+            "request_url",
+        }
+
+        self.assertEqual(transport_input.idempotency_key, _request().idempotency_key)
+        self.assertTrue(forbidden_fields.isdisjoint(payload))
+        self.assertTrue(forbidden_fields.isdisjoint(payload["body"]))
+
+    def test_transport_accepted_result_shape_requires_upstream_order_id(self):
+        transport_input = self.client.build_transport_input(self.client.build_order_request(_request()))
+        result = self.client.accepted_transport_result(
+            transport_input,
+            upstream_external_order_id="upstream-order-123",
+        )
+
+        self.assertIsInstance(result, AlternativeTestnetHttpTransportResult)
+        self.assertEqual(result.status, "ACCEPTED")
+        self.assertEqual(result.external_order_id, "upstream-order-123")
+        self.assertTrue(result.external_order_id_present)
+        self.assertFalse(result.network_sent)
+        self.assertIsNone(result.failure_family)
+        self.assertIsNone(result.failure_reason)
+
+    def test_transport_rejected_result_shape_has_no_external_order_id(self):
+        transport_input = self.client.build_transport_input(self.client.build_order_request(_request()))
+        result = self.client.rejected_transport_result(transport_input)
+
+        self.assertEqual(result.status, "REJECTED")
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+        self.assertFalse(result.network_sent)
+        self.assertEqual(result.failure_family, "ALTERNATIVE_TESTNET_HTTP_TRANSPORT_REJECTED")
+        self.assertEqual(result.failure_reason, "alternative_testnet_http_transport_rejected")
+
+    def test_transport_not_executed_result_shape_has_no_external_order_id(self):
+        transport_input = self.client.build_transport_input(self.client.build_order_request(_request()))
+        result = self.client.transport_not_executed_result(transport_input)
+
+        self.assertEqual(result.status, "NOT_EXECUTED")
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+        self.assertFalse(result.network_sent)
+        self.assertEqual(result.failure_family, "ALTERNATIVE_TESTNET_HTTP_TRANSPORT_NOT_EXECUTED")
+        self.assertEqual(result.failure_reason, "alternative_testnet_http_transport_not_executed")
+
+    def test_transport_result_preserves_idempotency_and_context(self):
+        transport_input = self.client.build_transport_input(
+            self.client.build_order_request(
+                _request(
+                    idempotency_key="alternative:http:transport-context:v1",
+                    venue="approved_alternative_testnet_custom",
+                )
+            )
+        )
+        results = [
+            self.client.accepted_transport_result(transport_input, "upstream-order-123"),
+            self.client.rejected_transport_result(transport_input),
+            self.client.transport_not_executed_result(transport_input),
+        ]
+
+        for result in results:
+            self.assertEqual(result.idempotency_key, "alternative:http:transport-context:v1")
+            self.assertEqual(result.venue, "approved_alternative_testnet_custom")
+            self.assertEqual(result.execution_mode, "testnet")
+
+    def test_transport_shapes_do_not_include_credentials_or_signing_fields(self):
+        transport_input = self.client.build_transport_input(self.client.build_order_request(_request()))
+        shapes = [
+            dataclasses.asdict(transport_input),
+            dataclasses.asdict(self.client.accepted_transport_result(transport_input, "upstream-order-123")),
+            dataclasses.asdict(self.client.rejected_transport_result(transport_input)),
+            dataclasses.asdict(self.client.transport_not_executed_result(transport_input)),
+        ]
+        forbidden_fragments = (
+            "authorization",
+            "signature",
+            "signed",
+            "credential",
+            "secret",
+            "api_key",
+            "api_secret",
+            "password",
+            "token",
+        )
+
+        def assert_no_forbidden(value):
+            if isinstance(value, dict):
+                for key, nested_value in value.items():
+                    self.assertFalse(any(fragment in key.lower() for fragment in forbidden_fragments), key)
+                    assert_no_forbidden(nested_value)
+                return
+            self.assertFalse(any(fragment in str(value).lower() for fragment in forbidden_fragments), value)
+
+        for shape in shapes:
+            assert_no_forbidden(shape)
 
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [

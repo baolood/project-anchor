@@ -13,6 +13,7 @@ from typing import Any, Literal, Optional
 
 AlternativeTestnetHttpStatus = Literal["ACCEPTED", "REJECTED", "FAILED"]
 AlternativeTestnetHttpSide = Literal["BUY", "SELL"]
+AlternativeTestnetHttpTransportStatus = Literal["ACCEPTED", "REJECTED", "NOT_EXECUTED"]
 
 
 @dataclass(frozen=True)
@@ -37,6 +38,30 @@ class AlternativeTestnetHttpBuiltRequest:
     notional: str
     client_order_ref: str
     body: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class AlternativeTestnetHttpTransportInput:
+    method: str
+    path: str
+    venue: str
+    execution_mode: str
+    idempotency_key: str
+    client_order_ref: str
+    body: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class AlternativeTestnetHttpTransportResult:
+    idempotency_key: str
+    venue: str
+    execution_mode: str
+    status: AlternativeTestnetHttpTransportStatus
+    network_sent: bool
+    external_order_id: Optional[str]
+    external_order_id_present: bool
+    failure_family: Optional[str]
+    failure_reason: Optional[str]
 
 
 @dataclass(frozen=True)
@@ -94,6 +119,69 @@ class NoNetworkAlternativeTestnetHttpClient:
             notional=request.notional,
             client_order_ref=client_order_ref,
             body=body,
+        )
+
+    def build_transport_input(
+        self,
+        request: AlternativeTestnetHttpBuiltRequest,
+    ) -> AlternativeTestnetHttpTransportInput:
+        return AlternativeTestnetHttpTransportInput(
+            method=request.method,
+            path=request.path,
+            venue=request.venue,
+            execution_mode=request.execution_mode,
+            idempotency_key=request.idempotency_key,
+            client_order_ref=request.client_order_ref,
+            body=dict(request.body),
+        )
+
+    def accepted_transport_result(
+        self,
+        transport_input: AlternativeTestnetHttpTransportInput,
+        upstream_external_order_id: str,
+    ) -> AlternativeTestnetHttpTransportResult:
+        return AlternativeTestnetHttpTransportResult(
+            idempotency_key=transport_input.idempotency_key,
+            venue=transport_input.venue,
+            execution_mode=transport_input.execution_mode,
+            status="ACCEPTED",
+            network_sent=False,
+            external_order_id=upstream_external_order_id,
+            external_order_id_present=True,
+            failure_family=None,
+            failure_reason=None,
+        )
+
+    def rejected_transport_result(
+        self,
+        transport_input: AlternativeTestnetHttpTransportInput,
+    ) -> AlternativeTestnetHttpTransportResult:
+        return AlternativeTestnetHttpTransportResult(
+            idempotency_key=transport_input.idempotency_key,
+            venue=transport_input.venue,
+            execution_mode=transport_input.execution_mode,
+            status="REJECTED",
+            network_sent=False,
+            external_order_id=None,
+            external_order_id_present=False,
+            failure_family="ALTERNATIVE_TESTNET_HTTP_TRANSPORT_REJECTED",
+            failure_reason="alternative_testnet_http_transport_rejected",
+        )
+
+    def transport_not_executed_result(
+        self,
+        transport_input: AlternativeTestnetHttpTransportInput,
+    ) -> AlternativeTestnetHttpTransportResult:
+        return AlternativeTestnetHttpTransportResult(
+            idempotency_key=transport_input.idempotency_key,
+            venue=transport_input.venue,
+            execution_mode=transport_input.execution_mode,
+            status="NOT_EXECUTED",
+            network_sent=False,
+            external_order_id=None,
+            external_order_id_present=False,
+            failure_family="ALTERNATIVE_TESTNET_HTTP_TRANSPORT_NOT_EXECUTED",
+            failure_reason="alternative_testnet_http_transport_not_executed",
         )
 
     def accepted_fixture_response(
