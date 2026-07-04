@@ -2322,6 +2322,33 @@ Record the choice + reason here:
 - Evidence: **`anchor-backend/app/actions/alternative_testnet_http_client.py`**, **`tests/test_alternative_testnet_http_client.py`**
 
 
+### HTTP Client Signing and Transport Gap Review V1
+
+- purpose: review signing and transport gaps after the local-only request builder contract
+- review only: YES
+- current builder contract reviewed: YES
+- missing signing requirements documented: YES
+- missing transport requirements documented: YES
+- idempotency preservation requirement documented: YES
+- no external_order_id-before-response rule preserved: YES
+- network_sent=false until transport execution rule preserved: YES
+- signing implementation added in this task: NO
+- Authorization / signature implementation added in this task: NO
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- runner / worker / risk modified in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- recommended next path: `READY_FOR_HTTP_TRANSPORT_INTERFACE_CONTRACT_SLICE`
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_SIGNING_TRANSPORT_GAP_REVIEW_PR_MERGE`
+- Evidence: **`docs/HTTP_CLIENT_SIGNING_TRANSPORT_GAP_REVIEW_V1.md`**, **`tests/test_alternative_testnet_http_client.py`**
+
+
 
 
 - final reviewed PASS closeout recorded: YES
