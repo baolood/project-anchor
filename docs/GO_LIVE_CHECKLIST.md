@@ -2349,6 +2349,34 @@ Record the choice + reason here:
 - Evidence: **`docs/HTTP_CLIENT_SIGNING_TRANSPORT_GAP_REVIEW_V1.md`**, **`tests/test_alternative_testnet_http_client.py`**
 
 
+### HTTP Transport Interface Contract V1
+
+- purpose: define a local-only transport interface input/output contract
+- transport interface contract added: YES
+- deterministic transport input shape covered: YES
+- deterministic transport output shape covered: YES
+- accepted response shape covered: YES
+- rejected response shape covered: YES
+- transport-not-executed shape covered: YES
+- idempotency_key preserved across builder -> transport: YES
+- venue / execution_mode preserved across builder -> transport: YES
+- external_order_id created before upstream response: NO
+- network_sent=true before real transport execution: NO
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- Authorization/signature implementation added in this task: NO
+- runner / worker / risk modified in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_TRANSPORT_INTERFACE_CONTRACT_PR_MERGE`
+- Evidence: **`anchor-backend/app/actions/alternative_testnet_http_client.py`**, **`tests/test_alternative_testnet_http_client.py`**, **`docs/HTTP_TRANSPORT_INTERFACE_CONTRACT_V1.md`**
+
+
 
 
 - final reviewed PASS closeout recorded: YES
