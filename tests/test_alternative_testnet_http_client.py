@@ -212,6 +212,38 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         self.assertTrue(forbidden_fields.isdisjoint(built))
         self.assertTrue(forbidden_fields.isdisjoint(built["body"]))
 
+    def test_built_request_preserves_pre_signing_transport_gap(self):
+        built = dataclasses.asdict(self.client.build_order_request(_request()))
+        forbidden_fields = {
+            "authorization",
+            "headers",
+            "signature",
+            "signed_payload",
+            "timeout",
+            "transport",
+            "url",
+        }
+
+        self.assertTrue(forbidden_fields.isdisjoint(built))
+        self.assertTrue(forbidden_fields.isdisjoint(built["body"]))
+
+    def test_module_does_not_implement_signing_or_transport_execution(self):
+        source = self._module_source()
+
+        forbidden_snippets = (
+            "Authorization",
+            "signature",
+            "signed_payload",
+            "headers",
+            "timeout",
+            "transport",
+            "network_sent",
+            "send(",
+            "execute(",
+        )
+        for snippet in forbidden_snippets:
+            self.assertNotIn(snippet, source)
+
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [
             self.client.accepted_fixture_response(_request()),
