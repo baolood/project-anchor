@@ -2161,6 +2161,36 @@ Record the choice + reason here:
 
 
 
+### HTTP Client Skeleton No-Network V1
+
+- purpose: add a no-network HTTP client skeleton for the approved alternative testnet adapter
+- no-network HTTP client skeleton added: YES
+- typed request/response shapes added: YES
+- accepted fixture response covered: YES
+- rejected fixture response covered: YES
+- failed/unexpected fixture response covered: YES
+- evidence fields preserved: YES
+- venue preserved: YES
+- execution_mode preserved: YES
+- idempotency_key preserved: YES
+- status preserved: YES
+- failure_family / failure_reason preserved: YES
+- external_order_id presence/absence preserved: YES
+- real HTTP client library imported: NO
+- socket/network call possible: NO
+- env/config read added in this task: NO
+- credentials changed in this task: NO
+- runtime integration added in this task: NO
+- runner / worker / risk modified in this task: NO
+- canary retried in this task: NO
+- external request sent in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_SKELETON_PR_MERGE`
+- Evidence: **`anchor-backend/app/actions/alternative_testnet_http_client.py`**, **`tests/test_alternative_testnet_http_client.py`**
+
+
+
 
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
