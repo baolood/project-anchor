@@ -10,6 +10,7 @@ MODULE_PATH = PROJECT_ROOT / "anchor-backend" / "app" / "actions" / "alternative
 sys.path.insert(0, str(PROJECT_ROOT / "anchor-backend"))
 
 from app.actions.alternative_testnet_http_client import (  # noqa: E402
+    AlternativeTestnetHttpBuiltRequest,
     AlternativeTestnetHttpClientRequest,
     NoNetworkAlternativeTestnetHttpClient,
 )
@@ -20,6 +21,9 @@ def _request(**overrides):
         "idempotency_key": "alternative:http:BTCUSDT:BUY:4:first-skeleton:v1",
         "venue": "approved_alternative_testnet",
         "execution_mode": "testnet",
+        "symbol": "BTCUSDT",
+        "side": "BUY",
+        "notional": "4",
     }
     payload.update(overrides)
     return AlternativeTestnetHttpClientRequest(**payload)
@@ -107,6 +111,107 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         self.assertEqual(result.venue, "approved_alternative_testnet_custom")
         self.assertEqual(result.execution_mode, "testnet")
 
+    def test_builds_deterministic_buy_request_object(self):
+        first = self.client.build_order_request(_request())
+        second = self.client.build_order_request(_request())
+
+        self.assertIsInstance(first, AlternativeTestnetHttpBuiltRequest)
+        self.assertEqual(dataclasses.asdict(first), dataclasses.asdict(second))
+        self.assertEqual(first.method, "POST")
+        self.assertEqual(first.path, "/testnet/orders")
+        self.assertEqual(first.symbol, "BTCUSDT")
+        self.assertEqual(first.side, "BUY")
+        self.assertEqual(first.notional, "4")
+        self.assertTrue(first.client_order_ref.startswith("alt-testnet-local-"))
+
+    def test_builds_deterministic_sell_request_object(self):
+        first = self.client.build_order_request(
+            _request(
+                idempotency_key="alternative:http:BTCUSDT:SELL:4:first-builder:v1",
+                side="SELL",
+            )
+        )
+        second = self.client.build_order_request(
+            _request(
+                idempotency_key="alternative:http:BTCUSDT:SELL:4:first-builder:v1",
+                side="SELL",
+            )
+        )
+
+        self.assertEqual(dataclasses.asdict(first), dataclasses.asdict(second))
+        self.assertEqual(first.side, "SELL")
+        self.assertEqual(first.body["side"], "SELL")
+
+    def test_built_request_preserves_idempotency_and_evidence_fields(self):
+        result = self.client.build_order_request(
+            _request(
+                idempotency_key="alternative:http:custom-builder:v1",
+                venue="approved_alternative_testnet_custom",
+                execution_mode="testnet",
+            )
+        )
+
+        self.assertEqual(result.idempotency_key, "alternative:http:custom-builder:v1")
+        self.assertEqual(result.body["idempotency_key"], "alternative:http:custom-builder:v1")
+        self.assertEqual(result.venue, "approved_alternative_testnet_custom")
+        self.assertEqual(result.execution_mode, "testnet")
+        self.assertEqual(result.body["venue"], "approved_alternative_testnet_custom")
+        self.assertEqual(result.body["execution_mode"], "testnet")
+
+    def test_built_request_excludes_credentials_and_secret_fields(self):
+        built = dataclasses.asdict(self.client.build_order_request(_request()))
+        forbidden_fragments = ("credential", "secret", "api_key", "api_secret", "password", "token")
+
+        def assert_no_forbidden(value):
+            if isinstance(value, dict):
+                for key, nested_value in value.items():
+                    self.assertFalse(any(fragment in key.lower() for fragment in forbidden_fragments), key)
+                    assert_no_forbidden(nested_value)
+                return
+            self.assertFalse(any(fragment in str(value).lower() for fragment in forbidden_fragments), value)
+
+        assert_no_forbidden(built)
+
+    def test_built_request_excludes_authorization_and_signature_fields(self):
+        built = dataclasses.asdict(self.client.build_order_request(_request()))
+        forbidden_fragments = ("authorization", "signature", "signed", "bearer")
+
+        def assert_no_forbidden(value):
+            if isinstance(value, dict):
+                for key, nested_value in value.items():
+                    self.assertFalse(any(fragment in key.lower() for fragment in forbidden_fragments), key)
+                    assert_no_forbidden(nested_value)
+                return
+            self.assertFalse(any(fragment in str(value).lower() for fragment in forbidden_fragments), value)
+
+        assert_no_forbidden(built)
+
+    def test_built_request_does_not_include_full_or_live_url(self):
+        built = dataclasses.asdict(self.client.build_order_request(_request()))
+        flattened = " ".join(str(value) for value in built.values())
+        flattened = f"{flattened} {' '.join(str(value) for value in built['body'].values())}"
+
+        self.assertNotIn("http://", flattened)
+        self.assertNotIn("https://", flattened)
+        self.assertNotIn("api.", flattened)
+        self.assertNotIn("live", flattened.lower())
+        self.assertTrue(built["path"].startswith("/"))
+
+    def test_built_request_does_not_imply_network_request_was_sent(self):
+        built = dataclasses.asdict(self.client.build_order_request(_request()))
+        forbidden_fields = {
+            "external_order_id",
+            "external_order_id_present",
+            "external_request_sent",
+            "external_request_started",
+            "network_request_sent",
+            "network_sent",
+            "request_url",
+        }
+
+        self.assertTrue(forbidden_fields.isdisjoint(built))
+        self.assertTrue(forbidden_fields.isdisjoint(built["body"]))
+
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [
             self.client.accepted_fixture_response(_request()),
@@ -123,6 +228,7 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
 
     def test_request_and_response_shapes_do_not_include_credential_fields(self):
         request_fields = {field.name for field in dataclasses.fields(AlternativeTestnetHttpClientRequest)}
+        built_request_fields = {field.name for field in dataclasses.fields(AlternativeTestnetHttpBuiltRequest)}
         response_fields = {
             field.name
             for field in dataclasses.fields(
@@ -131,7 +237,7 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         }
 
         forbidden_fragments = ("credential", "secret", "api_key", "api_secret", "password", "token")
-        for field_name in request_fields | response_fields:
+        for field_name in request_fields | built_request_fields | response_fields:
             self.assertFalse(
                 any(fragment in field_name.lower() for fragment in forbidden_fragments),
                 field_name,

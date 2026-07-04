@@ -2287,6 +2287,41 @@ Record the choice + reason here:
 - Evidence: **`docs/HTTP_CLIENT_IMPLEMENTATION_GAP_REVIEW_V1.md`**
 
 
+### HTTP Request Builder Contract Slice V1
+
+- purpose: add a local-only HTTP request builder contract before any real HTTP implementation
+- local request builder contract added: YES
+- deterministic request object built: YES
+- method field present: YES
+- path field present: YES
+- venue preserved: YES
+- execution_mode preserved: YES
+- idempotency_key preserved: YES
+- symbol / side / notional preserved: YES
+- client_order_ref generated as local deterministic reference: YES
+- body payload built as deterministic local dict: YES
+- BUY request covered: YES
+- SELL request covered: YES
+- API key / API secret / token excluded: YES
+- Authorization / signature excluded: YES
+- full production URL excluded: YES
+- live endpoint excluded: YES
+- external_order_id created by builder: NO
+- network_sent implied by builder: NO
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- external request sent in this task: NO
+- credentials changed in this task: NO
+- env/config read added in this task: NO
+- runtime integration added in this task: NO
+- runner / worker / risk modified in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_REQUEST_BUILDER_CONTRACT_SLICE_PR_MERGE`
+- Evidence: **`anchor-backend/app/actions/alternative_testnet_http_client.py`**, **`tests/test_alternative_testnet_http_client.py`**
+
+
 
 
 - final reviewed PASS closeout recorded: YES
