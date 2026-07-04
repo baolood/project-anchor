@@ -2221,6 +2221,39 @@ Record the choice + reason here:
 
 
 
+### HTTP Client No-Network Contract Expansion V1
+
+- purpose: expand no-network HTTP client skeleton contract tests
+- no-network contract expansion added: YES
+- no real HTTP library import tested / guarded: YES
+- no socket / network behavior tested / guarded: YES
+- accepted fixture determinism tested: YES
+- rejected fixture determinism tested: YES
+- failed / unexpected fixture determinism tested: YES
+- credential leakage guarded: YES
+- request / response credential fields absent: YES
+- env/config lookup absent: YES
+- evidence semantics tested: YES
+- idempotency_key preserved: YES
+- venue preserved: YES
+- execution_mode preserved: YES
+- external_order_id only appears in deterministic accepted fixture: YES
+- rejected / failed fixtures do not invent external_order_id: YES
+- failure_family / failure_reason explicit: YES
+- HTTP client implementation modified in this task: NO
+- real HTTP behavior added in this task: NO
+- credentials changed in this task: NO
+- env/config read added in this task: NO
+- runtime integration added in this task: NO
+- canary retried in this task: NO
+- external request sent in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_NO_NETWORK_CONTRACT_EXPANSION_PR_MERGE`
+- Evidence: **`tests/test_alternative_testnet_http_client.py`**
+
+
+
 
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
