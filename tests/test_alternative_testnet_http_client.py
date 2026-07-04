@@ -12,6 +12,9 @@ sys.path.insert(0, str(PROJECT_ROOT / "anchor-backend"))
 from app.actions.alternative_testnet_http_client import (  # noqa: E402
     AlternativeTestnetHttpBuiltRequest,
     AlternativeTestnetHttpClientRequest,
+    AlternativeTestnetHttpSigningInput,
+    AlternativeTestnetHttpSigningMaterial,
+    AlternativeTestnetHttpSigningResult,
     AlternativeTestnetHttpTransportInput,
     AlternativeTestnetHttpTransportResult,
     NoNetworkAlternativeTestnetHttpClient,
@@ -29,6 +32,16 @@ def _request(**overrides):
     }
     payload.update(overrides)
     return AlternativeTestnetHttpClientRequest(**payload)
+
+
+def _signing_material(**overrides):
+    payload = {
+        "material_id": "mock-signing-material-v1",
+        "authorization_header_value": "MockAuth explicit-material",
+        "signature_value": "mock-signature-value",
+    }
+    payload.update(overrides)
+    return AlternativeTestnetHttpSigningMaterial(**payload)
 
 
 class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
@@ -233,13 +246,12 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         source = self._module_source()
 
         forbidden_snippets = (
-            "Authorization",
-            "signature",
-            "signed_payload",
             "headers",
             "timeout",
             "send(",
             "execute(",
+            "hmac",
+            "private_key",
         )
         for snippet in forbidden_snippets:
             self.assertNotIn(snippet, source)
@@ -348,6 +360,101 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
             "password",
             "token",
         )
+
+        def assert_no_forbidden(value):
+            if isinstance(value, dict):
+                for key, nested_value in value.items():
+                    self.assertFalse(any(fragment in key.lower() for fragment in forbidden_fragments), key)
+                    assert_no_forbidden(nested_value)
+                return
+            self.assertFalse(any(fragment in str(value).lower() for fragment in forbidden_fragments), value)
+
+        for shape in shapes:
+            assert_no_forbidden(shape)
+
+    def test_builds_deterministic_signing_input_shape(self):
+        transport_input = self.client.build_transport_input(self.client.build_order_request(_request()))
+        material = _signing_material()
+        first = self.client.build_signing_input(transport_input, material)
+        second = self.client.build_signing_input(transport_input, material)
+
+        self.assertIsInstance(first, AlternativeTestnetHttpSigningInput)
+        self.assertEqual(dataclasses.asdict(first), dataclasses.asdict(second))
+        self.assertEqual(first.idempotency_key, transport_input.idempotency_key)
+        self.assertEqual(first.method, transport_input.method)
+        self.assertEqual(first.path, transport_input.path)
+        self.assertEqual(first.body, transport_input.body)
+        self.assertEqual(first.material_id, material.material_id)
+
+    def test_signed_request_shape_uses_explicit_material_only(self):
+        transport_input = self.client.build_transport_input(self.client.build_order_request(_request()))
+        material = _signing_material()
+        signing_input = self.client.build_signing_input(transport_input, material)
+        result = self.client.signed_request_result(signing_input, material)
+
+        self.assertIsInstance(result, AlternativeTestnetHttpSigningResult)
+        self.assertEqual(result.status, "SIGNED")
+        self.assertEqual(result.material_id, "mock-signing-material-v1")
+        self.assertEqual(result.authorization_header_value, "MockAuth explicit-material")
+        self.assertEqual(result.signature_value, "mock-signature-value")
+        self.assertEqual(result.body, transport_input.body)
+
+    def test_signing_not_executed_shape_has_no_authorization_or_signature(self):
+        transport_input = self.client.build_transport_input(self.client.build_order_request(_request()))
+        result = self.client.signing_not_executed_result(transport_input)
+
+        self.assertEqual(result.status, "NOT_EXECUTED")
+        self.assertIsNone(result.material_id)
+        self.assertIsNone(result.authorization_header_value)
+        self.assertIsNone(result.signature_value)
+        self.assertEqual(result.failure_family, "ALTERNATIVE_TESTNET_HTTP_SIGNING_NOT_EXECUTED")
+        self.assertEqual(result.failure_reason, "alternative_testnet_http_signing_not_executed")
+
+    def test_signing_preserves_idempotency_body_and_context(self):
+        transport_input = self.client.build_transport_input(
+            self.client.build_order_request(
+                _request(
+                    idempotency_key="alternative:http:signing-context:v1",
+                    venue="approved_alternative_testnet_custom",
+                )
+            )
+        )
+        material = _signing_material(material_id="mock-material-custom")
+        signing_input = self.client.build_signing_input(transport_input, material)
+        signed = self.client.signed_request_result(signing_input, material)
+        not_executed = self.client.signing_not_executed_result(transport_input)
+
+        for result in (signed, not_executed):
+            self.assertEqual(result.idempotency_key, "alternative:http:signing-context:v1")
+            self.assertEqual(result.venue, "approved_alternative_testnet_custom")
+            self.assertEqual(result.execution_mode, "testnet")
+            self.assertEqual(result.body, transport_input.body)
+
+    def test_signing_shapes_do_not_create_external_order_or_network_sent(self):
+        transport_input = self.client.build_transport_input(self.client.build_order_request(_request()))
+        material = _signing_material()
+        signing_input = self.client.build_signing_input(transport_input, material)
+        results = [
+            self.client.signed_request_result(signing_input, material),
+            self.client.signing_not_executed_result(transport_input),
+        ]
+
+        for result in results:
+            self.assertFalse(result.network_sent)
+            self.assertIsNone(result.external_order_id)
+            self.assertFalse(result.external_order_id_present)
+
+    def test_signing_shapes_do_not_include_real_credential_fields(self):
+        transport_input = self.client.build_transport_input(self.client.build_order_request(_request()))
+        material = _signing_material()
+        signing_input = self.client.build_signing_input(transport_input, material)
+        shapes = [
+            dataclasses.asdict(material),
+            dataclasses.asdict(signing_input),
+            dataclasses.asdict(self.client.signed_request_result(signing_input, material)),
+            dataclasses.asdict(self.client.signing_not_executed_result(transport_input)),
+        ]
+        forbidden_fragments = ("credential", "secret", "api_key", "api_secret", "password", "token")
 
         def assert_no_forbidden(value):
             if isinstance(value, dict):
