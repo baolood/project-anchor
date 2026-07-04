@@ -2125,6 +2125,42 @@ Record the choice + reason here:
 
 
 
+### HTTP Client Boundary Prep V1
+
+- purpose: prepare the boundary for a future local-only HTTP client skeleton
+- prep only: YES
+- local adapter baseline referenced: YES
+- minimal alternative adapter skeleton merged: YES
+- request validation merged: YES
+- response/result mapping merged: YES
+- mapping closeout review merged: YES
+- adapter tests: PASS, 23 tests
+- simulator tests: PASS, 5 tests
+- HTTP client boundary documented: YES
+- no-network rule documented: YES
+- credential boundary documented: YES
+- runtime integration boundary documented: YES
+- future validation documented: YES
+- unsafe shortcuts rejected: YES
+- future client accepts already-validated local request object: YES
+- future client returns local response fixture/result object: YES
+- future client preserves idempotency_key / venue / execution_mode: YES
+- future client maps through existing response mapping: YES
+- future client never invents external_order_id: YES
+- HTTP / network client added in this task: NO
+- credentials changed in this task: NO
+- env/config read added in this task: NO
+- runner / worker / risk modified in this task: NO
+- runtime path enabled in this task: NO
+- canary retried in this task: NO
+- external request sent in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_SKELETON_AUTHORIZATION`
+- Evidence: **`docs/HTTP_CLIENT_BOUNDARY_PREP_V1.md`**
+
+
+
 
 - final reviewed PASS closeout recorded: YES
 - non-synthetic review artifact recorded: YES
