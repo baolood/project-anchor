@@ -909,6 +909,51 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         self.assertEqual(result.disabled_stage, "runtime_wiring")
         self.assertEqual(result.failure_family, "ALTERNATIVE_TESTNET_HTTP_RUNTIME_DISABLED")
 
+    def test_disabled_runtime_guardrail_requires_audit_fields(self):
+        field_names = {field.name for field in dataclasses.fields(AlternativeTestnetHttpRuntimeWiringResult)}
+        required_fields = {
+            "disabled_reason",
+            "disabled_stage",
+            "network_sent",
+            "external_order_id_present",
+            "composed_pipeline_executed",
+            "signing_executed",
+            "transport_executed",
+        }
+
+        self.assertTrue(required_fields.issubset(field_names))
+
+    def test_disabled_runtime_guardrail_blocks_execution_regressions(self):
+        results = [
+            self.client.runtime_disabled_result(_request()),
+            self.client.runtime_not_enabled_result(_request()),
+            self.client.runtime_not_wired_result(_request()),
+        ]
+
+        for result in results:
+            self.assertFalse(result.composed_pipeline_executed)
+            self.assertFalse(result.signing_executed)
+            self.assertFalse(result.transport_executed)
+            self.assertFalse(result.runtime_path_enabled)
+            self.assertFalse(result.network_sent)
+
+    def test_disabled_runtime_guardrail_blocks_external_order_and_network_regressions(self):
+        results = [
+            dataclasses.asdict(self.client.runtime_disabled_result(_request())),
+            dataclasses.asdict(self.client.runtime_not_enabled_result(_request())),
+            dataclasses.asdict(self.client.runtime_not_wired_result(_request())),
+        ]
+
+        for result in results:
+            self.assertEqual(result["disabled_stage"], "runtime_wiring")
+            self.assertTrue(result["disabled_reason"])
+            self.assertIsNone(result["external_order_id"])
+            self.assertFalse(result["external_order_id_present"])
+            self.assertFalse(result["network_sent"])
+            self.assertNotIn("network_request_sent", result)
+            self.assertNotIn("external_request_sent", result)
+            self.assertNotIn("external_request_started", result)
+
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [
             self.client.accepted_fixture_response(_request()),
