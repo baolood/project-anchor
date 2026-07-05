@@ -13,6 +13,7 @@ from app.actions.alternative_testnet_http_client import (  # noqa: E402
     AlternativeTestnetHttpBuiltRequest,
     AlternativeTestnetHttpClientRequest,
     AlternativeTestnetHttpPipelineResult,
+    AlternativeTestnetHttpRuntimeWiringResult,
     AlternativeTestnetHttpSigningInput,
     AlternativeTestnetHttpSigningMaterial,
     AlternativeTestnetHttpSigningResult,
@@ -656,7 +657,8 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
             "commands_domain",
             "domain_command_worker",
             "register_executor",
-            "runtime_path",
+            "runtime_path_enabled=True",
+            "enable_runtime_path",
             "runner.execute",
             "worker.enqueue",
             "risk.check",
@@ -668,8 +670,8 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
     def test_runtime_wiring_gap_review_keeps_http_client_module_disabled(self):
         source = self._module_source()
         forbidden_snippets = (
-            "Runtime",
             "runtime_enabled",
+            "runtime_path_enabled=True",
             "enable_runtime_path",
             "register_runtime",
             "CommandWorker",
@@ -776,6 +778,86 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
 
         self.assertTrue(forbidden_fields.isdisjoint(result))
         self.assertTrue(forbidden_fields.isdisjoint(result["body"]))
+
+    def test_minimal_runtime_wiring_disabled_result_shape_is_default_disabled(self):
+        result = self.client.runtime_disabled_result(
+            _request(idempotency_key="alternative:http:runtime-disabled:v1")
+        )
+        field_names = {field.name for field in dataclasses.fields(AlternativeTestnetHttpRuntimeWiringResult)}
+
+        self.assertIn("runtime_path_enabled", field_names)
+        self.assertEqual(result.status, "DISABLED")
+        self.assertEqual(result.idempotency_key, "alternative:http:runtime-disabled:v1")
+        self.assertEqual(result.venue, "approved_alternative_testnet")
+        self.assertEqual(result.execution_mode, "testnet")
+        self.assertFalse(result.runtime_path_enabled)
+        self.assertFalse(result.composed_pipeline_executed)
+        self.assertFalse(result.signing_executed)
+        self.assertFalse(result.transport_executed)
+        self.assertFalse(result.network_sent)
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+        self.assertEqual(result.failure_family, "ALTERNATIVE_TESTNET_HTTP_RUNTIME_DISABLED")
+        self.assertEqual(result.failure_reason, "alternative_testnet_http_runtime_disabled")
+
+    def test_minimal_runtime_wiring_not_enabled_and_not_wired_shapes_are_terminal_disabled(self):
+        not_enabled = self.client.runtime_not_enabled_result(_request())
+        not_wired = self.client.runtime_not_wired_result(_request())
+
+        self.assertEqual(not_enabled.status, "NOT_ENABLED")
+        self.assertEqual(not_enabled.failure_family, "ALTERNATIVE_TESTNET_HTTP_RUNTIME_NOT_ENABLED")
+        self.assertEqual(not_enabled.failure_reason, "alternative_testnet_http_runtime_not_enabled")
+
+        self.assertEqual(not_wired.status, "NOT_WIRED")
+        self.assertEqual(not_wired.failure_family, "ALTERNATIVE_TESTNET_HTTP_RUNTIME_NOT_WIRED")
+        self.assertEqual(not_wired.failure_reason, "alternative_testnet_http_runtime_not_wired")
+
+        for result in (not_enabled, not_wired):
+            self.assertFalse(result.runtime_path_enabled)
+            self.assertFalse(result.composed_pipeline_executed)
+            self.assertFalse(result.signing_executed)
+            self.assertFalse(result.transport_executed)
+            self.assertFalse(result.network_sent)
+            self.assertIsNone(result.external_order_id)
+            self.assertFalse(result.external_order_id_present)
+
+    def test_minimal_runtime_wiring_disabled_shapes_do_not_execute_pipeline_signing_or_transport(self):
+        results = [
+            self.client.runtime_disabled_result(_request()),
+            self.client.runtime_not_enabled_result(_request()),
+            self.client.runtime_not_wired_result(_request()),
+        ]
+
+        for result in results:
+            self.assertFalse(result.runtime_path_enabled)
+            self.assertFalse(result.composed_pipeline_executed)
+            self.assertFalse(result.signing_executed)
+            self.assertFalse(result.transport_executed)
+            self.assertFalse(result.network_sent)
+
+    def test_minimal_runtime_wiring_disabled_shapes_do_not_include_credentials_or_enabled_runtime(self):
+        shapes = [
+            dataclasses.asdict(self.client.runtime_disabled_result(_request())),
+            dataclasses.asdict(self.client.runtime_not_enabled_result(_request())),
+            dataclasses.asdict(self.client.runtime_not_wired_result(_request())),
+        ]
+        forbidden_fields = {
+            "credential_loaded",
+            "env_loaded",
+            "real_signing_enabled",
+            "network_behavior_enabled",
+            "external_request_sent",
+            "canary_retried",
+            "runner_id",
+            "worker_id",
+            "risk_id",
+        }
+
+        for shape in shapes:
+            self.assertTrue(forbidden_fields.isdisjoint(shape))
+            self.assertFalse(shape["runtime_path_enabled"])
+            self.assertFalse(shape["network_sent"])
+            self.assertIsNone(shape["external_order_id"])
 
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [
