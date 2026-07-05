@@ -954,6 +954,38 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
             self.assertNotIn("external_request_sent", result)
             self.assertNotIn("external_request_started", result)
 
+    def test_disabled_runtime_status_surface_marks_skeleton_present_and_runtime_disabled(self):
+        result = self.client.runtime_disabled_result(_request())
+        status_surface = {
+            "skeleton_present": isinstance(self.client, NoNetworkAlternativeTestnetHttpClient),
+            "runtime_disabled": not result.runtime_path_enabled,
+            "status": result.status,
+            "disabled_reason": result.disabled_reason,
+            "disabled_stage": result.disabled_stage,
+        }
+
+        self.assertTrue(status_surface["skeleton_present"])
+        self.assertTrue(status_surface["runtime_disabled"])
+        self.assertEqual(status_surface["status"], "DISABLED")
+        self.assertEqual(status_surface["disabled_reason"], "alternative_testnet_http_runtime_disabled")
+        self.assertEqual(status_surface["disabled_stage"], "runtime_wiring")
+
+    def test_disabled_runtime_status_surface_preserves_non_execution_status(self):
+        result = self.client.runtime_disabled_result(_request())
+        status_surface = {
+            "network_sent": result.network_sent,
+            "external_order_id_present": result.external_order_id_present,
+            "composed_pipeline_executed": result.composed_pipeline_executed,
+            "signing_executed": result.signing_executed,
+            "transport_executed": result.transport_executed,
+        }
+
+        self.assertFalse(status_surface["network_sent"])
+        self.assertFalse(status_surface["external_order_id_present"])
+        self.assertFalse(status_surface["composed_pipeline_executed"])
+        self.assertFalse(status_surface["signing_executed"])
+        self.assertFalse(status_surface["transport_executed"])
+
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [
             self.client.accepted_fixture_response(_request()),

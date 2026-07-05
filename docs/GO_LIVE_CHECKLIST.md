@@ -2628,6 +2628,34 @@ Record the choice + reason here:
 - Evidence: **`tests/test_alternative_testnet_http_client.py`**, **`docs/HTTP_CLIENT_DISABLED_RUNTIME_GUARDRAIL_REGRESSION_V1.md`**
 
 
+### HTTP Client Disabled Runtime Status Surface V1
+
+- purpose: document and test the current HTTP client subline status surface
+- disabled runtime status surface added: YES
+- skeleton present / runtime disabled status documented: YES
+- disabled reason field preserved: YES
+- disabled stage field preserved: YES
+- network_sent=false status preserved: YES
+- external_order_id_present=false status preserved: YES
+- composed pipeline not executed status preserved: YES
+- signing not executed status preserved: YES
+- transport not executed status preserved: YES
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- real Authorization/signature algorithm added in this task: NO
+- worker / risk modified in this task: NO
+- runner modified in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_DISABLED_RUNTIME_STATUS_SURFACE_PR_MERGE`
+- Evidence: **`tests/test_alternative_testnet_http_client.py`**, **`docs/HTTP_CLIENT_DISABLED_RUNTIME_STATUS_SURFACE_V1.md`**
+
+
 
 
 - final reviewed PASS closeout recorded: YES
