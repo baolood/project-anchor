@@ -665,6 +665,55 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         for snippet in forbidden_snippets:
             self.assertNotIn(snippet, source)
 
+    def test_runtime_wiring_gap_review_keeps_http_client_module_disabled(self):
+        source = self._module_source()
+        forbidden_snippets = (
+            "Runtime",
+            "runtime_enabled",
+            "enable_runtime_path",
+            "register_runtime",
+            "CommandWorker",
+            "DomainCommand",
+            "enqueue_command",
+            "dispatch_command",
+            "start_worker",
+        )
+
+        for snippet in forbidden_snippets:
+            self.assertNotIn(snippet, source)
+
+    def test_runtime_wiring_gap_review_requires_disabled_state_evidence(self):
+        request = _request(idempotency_key="alternative:http:runtime-gap:v1")
+        material = _signing_material(material_id="mock-material-runtime-gap")
+        evidence = [
+            self.client.signed_not_sent_pipeline_result(request, material),
+            self.client.transport_not_executed_pipeline_result(request, material),
+            self.client.rejected_pipeline_result(request, material),
+        ]
+
+        for result in evidence:
+            self.assertEqual(result.idempotency_key, "alternative:http:runtime-gap:v1")
+            self.assertFalse(result.network_sent)
+            self.assertFalse(result.external_order_id_present)
+            self.assertIsNone(result.external_order_id)
+
+    def test_runtime_wiring_gap_review_keeps_canary_and_external_request_fields_absent(self):
+        result = dataclasses.asdict(
+            self.client.transport_not_executed_pipeline_result(_request(), _signing_material())
+        )
+        forbidden_fields = {
+            "canary_enabled",
+            "canary_executed",
+            "external_request_sent",
+            "external_request_started",
+            "runtime_path_enabled",
+            "runner_id",
+            "worker_id",
+        }
+
+        self.assertTrue(forbidden_fields.isdisjoint(result))
+        self.assertTrue(forbidden_fields.isdisjoint(result["body"]))
+
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [
             self.client.accepted_fixture_response(_request()),
