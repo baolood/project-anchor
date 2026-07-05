@@ -2406,6 +2406,36 @@ Record the choice + reason here:
 - Evidence: **`anchor-backend/app/actions/alternative_testnet_http_client.py`**, **`tests/test_alternative_testnet_http_client.py`**, **`docs/HTTP_SIGNING_INTERFACE_CONTRACT_V1.md`**
 
 
+### HTTP Client Composed Pipeline Contract V1
+
+- purpose: compose builder -> signing -> transport local contracts without enabling execution
+- composed pipeline contract added: YES
+- builder -> signing -> transport shape covered: YES
+- build-only shape covered: YES
+- signed-not-sent shape covered: YES
+- transport-not-executed shape covered: YES
+- accepted response shape covered: YES
+- rejected response shape covered: YES
+- idempotency_key preserved end-to-end: YES
+- request body/query preserved end-to-end: YES
+- external_order_id created before upstream-like response: NO
+- network_sent=true before real transport execution: NO
+- accepted/rejected results require mock/upstream-like response object: YES
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- real Authorization/signature algorithm added in this task: NO
+- runner / worker / risk modified in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_COMPOSED_PIPELINE_CONTRACT_PR_MERGE`
+- Evidence: **`anchor-backend/app/actions/alternative_testnet_http_client.py`**, **`tests/test_alternative_testnet_http_client.py`**, **`docs/HTTP_CLIENT_COMPOSED_PIPELINE_CONTRACT_V1.md`**
+
+
 
 
 - final reviewed PASS closeout recorded: YES
