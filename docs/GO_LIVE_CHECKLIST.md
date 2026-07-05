@@ -2571,6 +2571,34 @@ Record the choice + reason here:
 - Evidence: **`anchor-backend/app/actions/alternative_testnet_http_client.py`**, **`tests/test_alternative_testnet_http_client.py`**, **`docs/HTTP_CLIENT_RUNTIME_WIRING_MINIMAL_IMPLEMENTATION_GUARDRAILED_V1.md`**
 
 
+### HTTP Client Disabled Runtime Observability V1
+
+- purpose: add audit-friendly disabled runtime wiring evidence while keeping execution disabled
+- disabled runtime observability added: YES
+- disabled reason field covered: YES
+- disabled stage field covered: YES
+- network_sent=false evidence covered: YES
+- external_order_id_present=false evidence covered: YES
+- composed pipeline not executed evidence covered: YES
+- signing not executed evidence covered: YES
+- transport not executed evidence covered: YES
+- audit-friendly disabled result shape covered: YES
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- real Authorization/signature algorithm added in this task: NO
+- worker / risk modified in this task: NO
+- runner modified in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_DISABLED_RUNTIME_OBSERVABILITY_PR_MERGE`
+- Evidence: **`anchor-backend/app/actions/alternative_testnet_http_client.py`**, **`tests/test_alternative_testnet_http_client.py`**, **`docs/HTTP_CLIENT_DISABLED_RUNTIME_OBSERVABILITY_V1.md`**
+
+
 
 
 - final reviewed PASS closeout recorded: YES
