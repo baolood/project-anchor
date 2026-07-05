@@ -13,6 +13,7 @@ from typing import Any, Literal, Optional
 
 AlternativeTestnetHttpStatus = Literal["ACCEPTED", "REJECTED", "FAILED"]
 AlternativeTestnetHttpSide = Literal["BUY", "SELL"]
+AlternativeTestnetHttpSigningStatus = Literal["SIGNED", "NOT_EXECUTED"]
 AlternativeTestnetHttpTransportStatus = Literal["ACCEPTED", "REJECTED", "NOT_EXECUTED"]
 
 
@@ -57,6 +58,45 @@ class AlternativeTestnetHttpTransportResult:
     venue: str
     execution_mode: str
     status: AlternativeTestnetHttpTransportStatus
+    network_sent: bool
+    external_order_id: Optional[str]
+    external_order_id_present: bool
+    failure_family: Optional[str]
+    failure_reason: Optional[str]
+
+
+@dataclass(frozen=True)
+class AlternativeTestnetHttpSigningMaterial:
+    material_id: str
+    authorization_header_value: str
+    signature_value: str
+
+
+@dataclass(frozen=True)
+class AlternativeTestnetHttpSigningInput:
+    method: str
+    path: str
+    venue: str
+    execution_mode: str
+    idempotency_key: str
+    client_order_ref: str
+    body: dict[str, Any]
+    material_id: str
+
+
+@dataclass(frozen=True)
+class AlternativeTestnetHttpSigningResult:
+    idempotency_key: str
+    venue: str
+    execution_mode: str
+    status: AlternativeTestnetHttpSigningStatus
+    method: str
+    path: str
+    client_order_ref: str
+    body: dict[str, Any]
+    material_id: Optional[str]
+    authorization_header_value: Optional[str]
+    signature_value: Optional[str]
     network_sent: bool
     external_order_id: Optional[str]
     external_order_id_present: bool
@@ -133,6 +173,69 @@ class NoNetworkAlternativeTestnetHttpClient:
             idempotency_key=request.idempotency_key,
             client_order_ref=request.client_order_ref,
             body=dict(request.body),
+        )
+
+    def build_signing_input(
+        self,
+        transport_input: AlternativeTestnetHttpTransportInput,
+        material: AlternativeTestnetHttpSigningMaterial,
+    ) -> AlternativeTestnetHttpSigningInput:
+        return AlternativeTestnetHttpSigningInput(
+            method=transport_input.method,
+            path=transport_input.path,
+            venue=transport_input.venue,
+            execution_mode=transport_input.execution_mode,
+            idempotency_key=transport_input.idempotency_key,
+            client_order_ref=transport_input.client_order_ref,
+            body=dict(transport_input.body),
+            material_id=material.material_id,
+        )
+
+    def signed_request_result(
+        self,
+        signing_input: AlternativeTestnetHttpSigningInput,
+        material: AlternativeTestnetHttpSigningMaterial,
+    ) -> AlternativeTestnetHttpSigningResult:
+        return AlternativeTestnetHttpSigningResult(
+            idempotency_key=signing_input.idempotency_key,
+            venue=signing_input.venue,
+            execution_mode=signing_input.execution_mode,
+            status="SIGNED",
+            method=signing_input.method,
+            path=signing_input.path,
+            client_order_ref=signing_input.client_order_ref,
+            body=dict(signing_input.body),
+            material_id=material.material_id,
+            authorization_header_value=material.authorization_header_value,
+            signature_value=material.signature_value,
+            network_sent=False,
+            external_order_id=None,
+            external_order_id_present=False,
+            failure_family=None,
+            failure_reason=None,
+        )
+
+    def signing_not_executed_result(
+        self,
+        transport_input: AlternativeTestnetHttpTransportInput,
+    ) -> AlternativeTestnetHttpSigningResult:
+        return AlternativeTestnetHttpSigningResult(
+            idempotency_key=transport_input.idempotency_key,
+            venue=transport_input.venue,
+            execution_mode=transport_input.execution_mode,
+            status="NOT_EXECUTED",
+            method=transport_input.method,
+            path=transport_input.path,
+            client_order_ref=transport_input.client_order_ref,
+            body=dict(transport_input.body),
+            material_id=None,
+            authorization_header_value=None,
+            signature_value=None,
+            network_sent=False,
+            external_order_id=None,
+            external_order_id_present=False,
+            failure_family="ALTERNATIVE_TESTNET_HTTP_SIGNING_NOT_EXECUTED",
+            failure_reason="alternative_testnet_http_signing_not_executed",
         )
 
     def accepted_transport_result(
