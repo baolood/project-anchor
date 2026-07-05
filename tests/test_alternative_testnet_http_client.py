@@ -714,6 +714,69 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         self.assertTrue(forbidden_fields.isdisjoint(result))
         self.assertTrue(forbidden_fields.isdisjoint(result["body"]))
 
+    def test_runtime_wiring_preimplementation_guardrail_blocks_early_wiring_tokens(self):
+        source = self._module_source()
+        forbidden_snippets = (
+            "runner.execute",
+            "worker.enqueue",
+            "risk.check",
+            "enable_runtime_path",
+            "runtime_path_enabled=True",
+            "external_request_sent=True",
+            "canary_executed=True",
+            "requests.",
+            "httpx.",
+            "aiohttp.",
+            "urllib.request",
+            "socket.socket",
+            "os.environ",
+            "getenv(",
+            "hmac.",
+            "private_key",
+        )
+
+        for snippet in forbidden_snippets:
+            self.assertNotIn(snippet, source)
+
+    def test_runtime_wiring_preimplementation_guardrail_preserves_disabled_state(self):
+        request = _request(idempotency_key="alternative:http:preimplementation-guardrail:v1")
+        material = _signing_material(material_id="mock-material-preimplementation-guardrail")
+        evidence = {
+            "signed_not_sent": self.client.signed_not_sent_pipeline_result(request, material),
+            "transport_not_executed": self.client.transport_not_executed_pipeline_result(request, material),
+            "rejected": self.client.rejected_pipeline_result(request, material),
+        }
+
+        for result in evidence.values():
+            self.assertEqual(result.idempotency_key, "alternative:http:preimplementation-guardrail:v1")
+            self.assertFalse(result.network_sent)
+            self.assertFalse(result.external_order_id_present)
+            self.assertIsNone(result.external_order_id)
+
+        self.assertEqual(evidence["transport_not_executed"].status, "NOT_EXECUTED")
+        self.assertEqual(evidence["rejected"].status, "REJECTED")
+
+    def test_runtime_wiring_preimplementation_guardrail_keeps_runtime_fields_absent(self):
+        result = dataclasses.asdict(
+            self.client.signed_not_sent_pipeline_result(_request(), _signing_material())
+        )
+        forbidden_fields = {
+            "runtime_enabled",
+            "runtime_path_enabled",
+            "runner_modified",
+            "worker_modified",
+            "risk_modified",
+            "credential_loaded",
+            "env_loaded",
+            "real_signing_enabled",
+            "network_behavior_enabled",
+            "external_request_sent",
+            "canary_retried",
+        }
+
+        self.assertTrue(forbidden_fields.isdisjoint(result))
+        self.assertTrue(forbidden_fields.isdisjoint(result["body"]))
+
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [
             self.client.accepted_fixture_response(_request()),

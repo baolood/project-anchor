@@ -2489,6 +2489,33 @@ Record the choice + reason here:
 - Evidence: **`tests/test_alternative_testnet_http_client.py`**, **`docs/HTTP_CLIENT_RUNTIME_WIRING_GAP_REVIEW_V1.md`**
 
 
+### HTTP Client Runtime Wiring Preimplementation Guardrail V1
+
+- purpose: add a preimplementation guardrail before any future runtime wiring slice
+- preimplementation guardrail added: YES
+- runner/worker/risk modification blocked: YES
+- runtime path enablement blocked: YES
+- env/credentials read blocked: YES
+- real HTTP library import blocked: YES
+- socket/network behavior blocked: YES
+- real signing algorithm blocked: YES
+- external request/canary blocked: YES
+- disabled-state evidence preserved: YES
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- real Authorization/signature algorithm added in this task: NO
+- runner / worker / risk modified in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_WIRING_PREIMPLEMENTATION_GUARDRAIL_PR_MERGE`
+- Evidence: **`tests/test_alternative_testnet_http_client.py`**, **`docs/HTTP_CLIENT_RUNTIME_WIRING_PREIMPLEMENTATION_GUARDRAIL_V1.md`**
+
+
 
 
 - final reviewed PASS closeout recorded: YES
