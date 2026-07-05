@@ -13,6 +13,7 @@ from typing import Any, Literal, Optional
 
 AlternativeTestnetHttpStatus = Literal["ACCEPTED", "REJECTED", "FAILED"]
 AlternativeTestnetHttpSide = Literal["BUY", "SELL"]
+AlternativeTestnetHttpPipelineStatus = Literal["BUILT", "SIGNED", "NOT_EXECUTED", "ACCEPTED", "REJECTED"]
 AlternativeTestnetHttpSigningStatus = Literal["SIGNED", "NOT_EXECUTED"]
 AlternativeTestnetHttpTransportStatus = Literal["ACCEPTED", "REJECTED", "NOT_EXECUTED"]
 
@@ -114,6 +115,26 @@ class AlternativeTestnetHttpClientResponse:
     failure_reason: Optional[str]
     external_order_id: Optional[str]
     external_order_id_present: bool
+
+
+@dataclass(frozen=True)
+class AlternativeTestnetHttpPipelineResult:
+    idempotency_key: str
+    venue: str
+    execution_mode: str
+    status: AlternativeTestnetHttpPipelineStatus
+    method: str
+    path: str
+    client_order_ref: str
+    body: dict[str, Any]
+    material_id: Optional[str]
+    authorization_header_value: Optional[str]
+    signature_value: Optional[str]
+    network_sent: bool
+    external_order_id: Optional[str]
+    external_order_id_present: bool
+    failure_family: Optional[str]
+    failure_reason: Optional[str]
 
 
 def _fixture_external_order_id(request: AlternativeTestnetHttpClientRequest) -> str:
@@ -285,6 +306,146 @@ class NoNetworkAlternativeTestnetHttpClient:
             external_order_id_present=False,
             failure_family="ALTERNATIVE_TESTNET_HTTP_TRANSPORT_NOT_EXECUTED",
             failure_reason="alternative_testnet_http_transport_not_executed",
+        )
+
+    def build_only_pipeline_result(
+        self,
+        request: AlternativeTestnetHttpClientRequest,
+    ) -> AlternativeTestnetHttpPipelineResult:
+        built = self.build_order_request(request)
+        return AlternativeTestnetHttpPipelineResult(
+            idempotency_key=built.idempotency_key,
+            venue=built.venue,
+            execution_mode=built.execution_mode,
+            status="BUILT",
+            method=built.method,
+            path=built.path,
+            client_order_ref=built.client_order_ref,
+            body=dict(built.body),
+            material_id=None,
+            authorization_header_value=None,
+            signature_value=None,
+            network_sent=False,
+            external_order_id=None,
+            external_order_id_present=False,
+            failure_family=None,
+            failure_reason=None,
+        )
+
+    def signed_not_sent_pipeline_result(
+        self,
+        request: AlternativeTestnetHttpClientRequest,
+        material: AlternativeTestnetHttpSigningMaterial,
+    ) -> AlternativeTestnetHttpPipelineResult:
+        built = self.build_order_request(request)
+        transport_input = self.build_transport_input(built)
+        signing_input = self.build_signing_input(transport_input, material)
+        signed = self.signed_request_result(signing_input, material)
+        return AlternativeTestnetHttpPipelineResult(
+            idempotency_key=signed.idempotency_key,
+            venue=signed.venue,
+            execution_mode=signed.execution_mode,
+            status="SIGNED",
+            method=signed.method,
+            path=signed.path,
+            client_order_ref=signed.client_order_ref,
+            body=dict(signed.body),
+            material_id=signed.material_id,
+            authorization_header_value=signed.authorization_header_value,
+            signature_value=signed.signature_value,
+            network_sent=False,
+            external_order_id=None,
+            external_order_id_present=False,
+            failure_family=None,
+            failure_reason=None,
+        )
+
+    def transport_not_executed_pipeline_result(
+        self,
+        request: AlternativeTestnetHttpClientRequest,
+        material: AlternativeTestnetHttpSigningMaterial,
+    ) -> AlternativeTestnetHttpPipelineResult:
+        built = self.build_order_request(request)
+        transport_input = self.build_transport_input(built)
+        signing_input = self.build_signing_input(transport_input, material)
+        signed = self.signed_request_result(signing_input, material)
+        transport = self.transport_not_executed_result(transport_input)
+        return AlternativeTestnetHttpPipelineResult(
+            idempotency_key=transport.idempotency_key,
+            venue=transport.venue,
+            execution_mode=transport.execution_mode,
+            status="NOT_EXECUTED",
+            method=signed.method,
+            path=signed.path,
+            client_order_ref=signed.client_order_ref,
+            body=dict(signed.body),
+            material_id=signed.material_id,
+            authorization_header_value=signed.authorization_header_value,
+            signature_value=signed.signature_value,
+            network_sent=False,
+            external_order_id=None,
+            external_order_id_present=False,
+            failure_family=transport.failure_family,
+            failure_reason=transport.failure_reason,
+        )
+
+    def accepted_pipeline_result(
+        self,
+        request: AlternativeTestnetHttpClientRequest,
+        material: AlternativeTestnetHttpSigningMaterial,
+        upstream_external_order_id: str,
+    ) -> AlternativeTestnetHttpPipelineResult:
+        built = self.build_order_request(request)
+        transport_input = self.build_transport_input(built)
+        signing_input = self.build_signing_input(transport_input, material)
+        signed = self.signed_request_result(signing_input, material)
+        transport = self.accepted_transport_result(transport_input, upstream_external_order_id)
+        return AlternativeTestnetHttpPipelineResult(
+            idempotency_key=transport.idempotency_key,
+            venue=transport.venue,
+            execution_mode=transport.execution_mode,
+            status="ACCEPTED",
+            method=signed.method,
+            path=signed.path,
+            client_order_ref=signed.client_order_ref,
+            body=dict(signed.body),
+            material_id=signed.material_id,
+            authorization_header_value=signed.authorization_header_value,
+            signature_value=signed.signature_value,
+            network_sent=False,
+            external_order_id=transport.external_order_id,
+            external_order_id_present=transport.external_order_id_present,
+            failure_family=None,
+            failure_reason=None,
+        )
+
+    def rejected_pipeline_result(
+        self,
+        request: AlternativeTestnetHttpClientRequest,
+        material: AlternativeTestnetHttpSigningMaterial,
+    ) -> AlternativeTestnetHttpPipelineResult:
+        built = self.build_order_request(request)
+        transport_input = self.build_transport_input(built)
+        signing_input = self.build_signing_input(transport_input, material)
+        signed = self.signed_request_result(signing_input, material)
+        transport = self.rejected_transport_result(transport_input)
+        return AlternativeTestnetHttpPipelineResult(
+            idempotency_key=transport.idempotency_key,
+            venue=transport.venue,
+            execution_mode=transport.execution_mode,
+            status="REJECTED",
+            method=signed.method,
+            path=signed.path,
+            client_order_ref=signed.client_order_ref,
+            body=dict(signed.body),
+            material_id=signed.material_id,
+            authorization_header_value=signed.authorization_header_value,
+            signature_value=signed.signature_value,
+            network_sent=False,
+            external_order_id=None,
+            external_order_id_present=False,
+            failure_family=transport.failure_family,
+            failure_reason=transport.failure_reason,
         )
 
     def accepted_fixture_response(

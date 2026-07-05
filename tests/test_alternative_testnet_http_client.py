@@ -12,6 +12,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "anchor-backend"))
 from app.actions.alternative_testnet_http_client import (  # noqa: E402
     AlternativeTestnetHttpBuiltRequest,
     AlternativeTestnetHttpClientRequest,
+    AlternativeTestnetHttpPipelineResult,
     AlternativeTestnetHttpSigningInput,
     AlternativeTestnetHttpSigningMaterial,
     AlternativeTestnetHttpSigningResult,
@@ -453,6 +454,141 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
             dataclasses.asdict(signing_input),
             dataclasses.asdict(self.client.signed_request_result(signing_input, material)),
             dataclasses.asdict(self.client.signing_not_executed_result(transport_input)),
+        ]
+        forbidden_fragments = ("credential", "secret", "api_key", "api_secret", "password", "token")
+
+        def assert_no_forbidden(value):
+            if isinstance(value, dict):
+                for key, nested_value in value.items():
+                    self.assertFalse(any(fragment in key.lower() for fragment in forbidden_fragments), key)
+                    assert_no_forbidden(nested_value)
+                return
+            self.assertFalse(any(fragment in str(value).lower() for fragment in forbidden_fragments), value)
+
+        for shape in shapes:
+            assert_no_forbidden(shape)
+
+    def test_composed_pipeline_build_only_shape(self):
+        result = self.client.build_only_pipeline_result(_request())
+
+        self.assertIsInstance(result, AlternativeTestnetHttpPipelineResult)
+        self.assertEqual(result.status, "BUILT")
+        self.assertEqual(result.idempotency_key, _request().idempotency_key)
+        self.assertEqual(result.method, "POST")
+        self.assertEqual(result.path, "/testnet/orders")
+        self.assertEqual(result.body["idempotency_key"], _request().idempotency_key)
+        self.assertIsNone(result.material_id)
+        self.assertIsNone(result.authorization_header_value)
+        self.assertIsNone(result.signature_value)
+        self.assertFalse(result.network_sent)
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+
+    def test_composed_pipeline_signed_not_sent_shape(self):
+        material = _signing_material()
+        result = self.client.signed_not_sent_pipeline_result(_request(), material)
+
+        self.assertEqual(result.status, "SIGNED")
+        self.assertEqual(result.material_id, material.material_id)
+        self.assertEqual(result.authorization_header_value, material.authorization_header_value)
+        self.assertEqual(result.signature_value, material.signature_value)
+        self.assertEqual(result.idempotency_key, _request().idempotency_key)
+        self.assertEqual(result.body["idempotency_key"], _request().idempotency_key)
+        self.assertFalse(result.network_sent)
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+
+    def test_composed_pipeline_transport_not_executed_shape(self):
+        result = self.client.transport_not_executed_pipeline_result(_request(), _signing_material())
+
+        self.assertEqual(result.status, "NOT_EXECUTED")
+        self.assertEqual(result.failure_family, "ALTERNATIVE_TESTNET_HTTP_TRANSPORT_NOT_EXECUTED")
+        self.assertEqual(result.failure_reason, "alternative_testnet_http_transport_not_executed")
+        self.assertFalse(result.network_sent)
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+
+    def test_composed_pipeline_accepted_shape_uses_upstream_like_response_only(self):
+        result = self.client.accepted_pipeline_result(
+            _request(),
+            _signing_material(),
+            upstream_external_order_id="upstream-order-accepted-1",
+        )
+
+        self.assertEqual(result.status, "ACCEPTED")
+        self.assertEqual(result.external_order_id, "upstream-order-accepted-1")
+        self.assertTrue(result.external_order_id_present)
+        self.assertFalse(result.network_sent)
+        self.assertIsNone(result.failure_family)
+        self.assertIsNone(result.failure_reason)
+
+    def test_composed_pipeline_rejected_shape_has_no_external_order_id(self):
+        result = self.client.rejected_pipeline_result(_request(), _signing_material())
+
+        self.assertEqual(result.status, "REJECTED")
+        self.assertEqual(result.failure_family, "ALTERNATIVE_TESTNET_HTTP_TRANSPORT_REJECTED")
+        self.assertEqual(result.failure_reason, "alternative_testnet_http_transport_rejected")
+        self.assertFalse(result.network_sent)
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+
+    def test_composed_pipeline_preserves_idempotency_end_to_end(self):
+        request = _request(
+            idempotency_key="alternative:http:pipeline-context:v1",
+            venue="approved_alternative_testnet_custom",
+        )
+        material = _signing_material(material_id="mock-material-pipeline")
+        results = [
+            self.client.build_only_pipeline_result(request),
+            self.client.signed_not_sent_pipeline_result(request, material),
+            self.client.transport_not_executed_pipeline_result(request, material),
+            self.client.accepted_pipeline_result(request, material, "upstream-order-pipeline-1"),
+            self.client.rejected_pipeline_result(request, material),
+        ]
+
+        for result in results:
+            self.assertEqual(result.idempotency_key, "alternative:http:pipeline-context:v1")
+            self.assertEqual(result.venue, "approved_alternative_testnet_custom")
+            self.assertEqual(result.execution_mode, "testnet")
+            self.assertEqual(result.body["idempotency_key"], "alternative:http:pipeline-context:v1")
+
+    def test_composed_pipeline_does_not_create_external_order_before_upstream_like_response(self):
+        request = _request()
+        material = _signing_material()
+        pre_response_results = [
+            self.client.build_only_pipeline_result(request),
+            self.client.signed_not_sent_pipeline_result(request, material),
+            self.client.transport_not_executed_pipeline_result(request, material),
+            self.client.rejected_pipeline_result(request, material),
+        ]
+
+        for result in pre_response_results:
+            self.assertIsNone(result.external_order_id)
+            self.assertFalse(result.external_order_id_present)
+
+    def test_composed_pipeline_never_marks_network_sent(self):
+        request = _request()
+        material = _signing_material()
+        results = [
+            self.client.build_only_pipeline_result(request),
+            self.client.signed_not_sent_pipeline_result(request, material),
+            self.client.transport_not_executed_pipeline_result(request, material),
+            self.client.accepted_pipeline_result(request, material, "upstream-order-accepted-1"),
+            self.client.rejected_pipeline_result(request, material),
+        ]
+
+        for result in results:
+            self.assertFalse(result.network_sent)
+
+    def test_composed_pipeline_shapes_do_not_include_real_credentials(self):
+        request = _request()
+        material = _signing_material()
+        shapes = [
+            dataclasses.asdict(self.client.build_only_pipeline_result(request)),
+            dataclasses.asdict(self.client.signed_not_sent_pipeline_result(request, material)),
+            dataclasses.asdict(self.client.transport_not_executed_pipeline_result(request, material)),
+            dataclasses.asdict(self.client.accepted_pipeline_result(request, material, "upstream-order-accepted-1")),
+            dataclasses.asdict(self.client.rejected_pipeline_result(request, material)),
         ]
         forbidden_fragments = ("credential", "secret", "api_key", "api_secret", "password", "token")
 
