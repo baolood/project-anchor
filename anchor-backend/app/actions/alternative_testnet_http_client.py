@@ -14,6 +14,7 @@ from typing import Any, Literal, Optional
 AlternativeTestnetHttpStatus = Literal["ACCEPTED", "REJECTED", "FAILED"]
 AlternativeTestnetHttpSide = Literal["BUY", "SELL"]
 AlternativeTestnetHttpPipelineStatus = Literal["BUILT", "SIGNED", "NOT_EXECUTED", "ACCEPTED", "REJECTED"]
+AlternativeTestnetHttpRuntimeWiringStatus = Literal["DISABLED", "NOT_ENABLED", "NOT_WIRED"]
 AlternativeTestnetHttpSigningStatus = Literal["SIGNED", "NOT_EXECUTED"]
 AlternativeTestnetHttpTransportStatus = Literal["ACCEPTED", "REJECTED", "NOT_EXECUTED"]
 
@@ -137,6 +138,23 @@ class AlternativeTestnetHttpPipelineResult:
     failure_reason: Optional[str]
 
 
+@dataclass(frozen=True)
+class AlternativeTestnetHttpRuntimeWiringResult:
+    idempotency_key: str
+    venue: str
+    execution_mode: str
+    status: AlternativeTestnetHttpRuntimeWiringStatus
+    runtime_path_enabled: bool
+    composed_pipeline_executed: bool
+    signing_executed: bool
+    transport_executed: bool
+    network_sent: bool
+    external_order_id: Optional[str]
+    external_order_id_present: bool
+    failure_family: str
+    failure_reason: str
+
+
 def _fixture_external_order_id(request: AlternativeTestnetHttpClientRequest) -> str:
     seed = f"{request.venue}:{request.execution_mode}:{request.idempotency_key}"
     digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:16]
@@ -154,6 +172,62 @@ def _client_order_ref(request: AlternativeTestnetHttpClientRequest) -> str:
 
 class NoNetworkAlternativeTestnetHttpClient:
     """Return deterministic local fixture responses without opening a socket."""
+
+    def runtime_disabled_result(
+        self,
+        request: AlternativeTestnetHttpClientRequest,
+    ) -> AlternativeTestnetHttpRuntimeWiringResult:
+        return self._runtime_wiring_disabled_shape(
+            request=request,
+            status="DISABLED",
+            failure_family="ALTERNATIVE_TESTNET_HTTP_RUNTIME_DISABLED",
+            failure_reason="alternative_testnet_http_runtime_disabled",
+        )
+
+    def runtime_not_enabled_result(
+        self,
+        request: AlternativeTestnetHttpClientRequest,
+    ) -> AlternativeTestnetHttpRuntimeWiringResult:
+        return self._runtime_wiring_disabled_shape(
+            request=request,
+            status="NOT_ENABLED",
+            failure_family="ALTERNATIVE_TESTNET_HTTP_RUNTIME_NOT_ENABLED",
+            failure_reason="alternative_testnet_http_runtime_not_enabled",
+        )
+
+    def runtime_not_wired_result(
+        self,
+        request: AlternativeTestnetHttpClientRequest,
+    ) -> AlternativeTestnetHttpRuntimeWiringResult:
+        return self._runtime_wiring_disabled_shape(
+            request=request,
+            status="NOT_WIRED",
+            failure_family="ALTERNATIVE_TESTNET_HTTP_RUNTIME_NOT_WIRED",
+            failure_reason="alternative_testnet_http_runtime_not_wired",
+        )
+
+    def _runtime_wiring_disabled_shape(
+        self,
+        request: AlternativeTestnetHttpClientRequest,
+        status: AlternativeTestnetHttpRuntimeWiringStatus,
+        failure_family: str,
+        failure_reason: str,
+    ) -> AlternativeTestnetHttpRuntimeWiringResult:
+        return AlternativeTestnetHttpRuntimeWiringResult(
+            idempotency_key=request.idempotency_key,
+            venue=request.venue,
+            execution_mode=request.execution_mode,
+            status=status,
+            runtime_path_enabled=False,
+            composed_pipeline_executed=False,
+            signing_executed=False,
+            transport_executed=False,
+            network_sent=False,
+            external_order_id=None,
+            external_order_id_present=False,
+            failure_family=failure_family,
+            failure_reason=failure_reason,
+        )
 
     def build_order_request(
         self,
