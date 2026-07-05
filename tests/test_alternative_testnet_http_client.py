@@ -603,6 +603,68 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         for shape in shapes:
             assert_no_forbidden(shape)
 
+    def test_future_execution_adapter_contract_input_shape_is_local_pipeline_result(self):
+        result = self.client.signed_not_sent_pipeline_result(_request(), _signing_material())
+        field_names = {field.name for field in dataclasses.fields(AlternativeTestnetHttpPipelineResult)}
+
+        self.assertIn("idempotency_key", field_names)
+        self.assertIn("venue", field_names)
+        self.assertIn("execution_mode", field_names)
+        self.assertIn("status", field_names)
+        self.assertIn("body", field_names)
+        self.assertEqual(result.status, "SIGNED")
+        self.assertEqual(result.idempotency_key, _request().idempotency_key)
+        self.assertEqual(result.venue, _request().venue)
+        self.assertEqual(result.execution_mode, _request().execution_mode)
+
+    def test_future_execution_adapter_contract_output_shape_preserves_pipeline_evidence(self):
+        accepted = self.client.accepted_pipeline_result(
+            _request(),
+            _signing_material(),
+            upstream_external_order_id="upstream-order-adapter-contract-1",
+        )
+        rejected = self.client.rejected_pipeline_result(_request(), _signing_material())
+
+        self.assertEqual(accepted.status, "ACCEPTED")
+        self.assertEqual(accepted.external_order_id, "upstream-order-adapter-contract-1")
+        self.assertTrue(accepted.external_order_id_present)
+        self.assertFalse(accepted.network_sent)
+
+        self.assertEqual(rejected.status, "REJECTED")
+        self.assertIsNone(rejected.external_order_id)
+        self.assertFalse(rejected.external_order_id_present)
+        self.assertFalse(rejected.network_sent)
+        self.assertEqual(rejected.failure_family, "ALTERNATIVE_TESTNET_HTTP_TRANSPORT_REJECTED")
+
+    def test_future_execution_adapter_boundary_keeps_no_external_order_before_upstream_response(self):
+        request = _request()
+        material = _signing_material()
+        pre_upstream_shapes = [
+            self.client.build_only_pipeline_result(request),
+            self.client.signed_not_sent_pipeline_result(request, material),
+            self.client.transport_not_executed_pipeline_result(request, material),
+        ]
+
+        for result in pre_upstream_shapes:
+            self.assertIsNone(result.external_order_id)
+            self.assertFalse(result.external_order_id_present)
+            self.assertFalse(result.network_sent)
+
+    def test_future_execution_adapter_boundary_has_no_runtime_integration_code(self):
+        source = self._module_source()
+        forbidden_snippets = (
+            "commands_domain",
+            "domain_command_worker",
+            "register_executor",
+            "runtime_path",
+            "runner.execute",
+            "worker.enqueue",
+            "risk.check",
+        )
+
+        for snippet in forbidden_snippets:
+            self.assertNotIn(snippet, source)
+
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [
             self.client.accepted_fixture_response(_request()),
