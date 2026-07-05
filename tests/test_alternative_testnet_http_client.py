@@ -790,6 +790,8 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         self.assertEqual(result.idempotency_key, "alternative:http:runtime-disabled:v1")
         self.assertEqual(result.venue, "approved_alternative_testnet")
         self.assertEqual(result.execution_mode, "testnet")
+        self.assertEqual(result.disabled_reason, "alternative_testnet_http_runtime_disabled")
+        self.assertEqual(result.disabled_stage, "runtime_wiring")
         self.assertFalse(result.runtime_path_enabled)
         self.assertFalse(result.composed_pipeline_executed)
         self.assertFalse(result.signing_executed)
@@ -805,10 +807,14 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         not_wired = self.client.runtime_not_wired_result(_request())
 
         self.assertEqual(not_enabled.status, "NOT_ENABLED")
+        self.assertEqual(not_enabled.disabled_reason, "alternative_testnet_http_runtime_not_enabled")
+        self.assertEqual(not_enabled.disabled_stage, "runtime_wiring")
         self.assertEqual(not_enabled.failure_family, "ALTERNATIVE_TESTNET_HTTP_RUNTIME_NOT_ENABLED")
         self.assertEqual(not_enabled.failure_reason, "alternative_testnet_http_runtime_not_enabled")
 
         self.assertEqual(not_wired.status, "NOT_WIRED")
+        self.assertEqual(not_wired.disabled_reason, "alternative_testnet_http_runtime_not_wired")
+        self.assertEqual(not_wired.disabled_stage, "runtime_wiring")
         self.assertEqual(not_wired.failure_family, "ALTERNATIVE_TESTNET_HTTP_RUNTIME_NOT_WIRED")
         self.assertEqual(not_wired.failure_reason, "alternative_testnet_http_runtime_not_wired")
 
@@ -858,6 +864,50 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
             self.assertFalse(shape["runtime_path_enabled"])
             self.assertFalse(shape["network_sent"])
             self.assertIsNone(shape["external_order_id"])
+
+    def test_disabled_runtime_observability_shape_is_audit_friendly(self):
+        result = dataclasses.asdict(
+            self.client.runtime_disabled_result(
+                _request(idempotency_key="alternative:http:disabled-observability:v1")
+            )
+        )
+
+        self.assertEqual(result["idempotency_key"], "alternative:http:disabled-observability:v1")
+        self.assertEqual(result["status"], "DISABLED")
+        self.assertEqual(result["disabled_reason"], "alternative_testnet_http_runtime_disabled")
+        self.assertEqual(result["disabled_stage"], "runtime_wiring")
+        self.assertFalse(result["runtime_path_enabled"])
+        self.assertFalse(result["network_sent"])
+        self.assertFalse(result["external_order_id_present"])
+        self.assertIsNone(result["external_order_id"])
+        self.assertFalse(result["composed_pipeline_executed"])
+        self.assertFalse(result["signing_executed"])
+        self.assertFalse(result["transport_executed"])
+
+    def test_disabled_runtime_observability_covers_all_disabled_status_reasons(self):
+        cases = {
+            "DISABLED": self.client.runtime_disabled_result(_request()),
+            "NOT_ENABLED": self.client.runtime_not_enabled_result(_request()),
+            "NOT_WIRED": self.client.runtime_not_wired_result(_request()),
+        }
+
+        for status, result in cases.items():
+            self.assertEqual(result.status, status)
+            self.assertEqual(result.disabled_stage, "runtime_wiring")
+            self.assertTrue(result.disabled_reason.startswith("alternative_testnet_http_runtime_"))
+            self.assertEqual(result.disabled_reason, result.failure_reason)
+            self.assertFalse(result.runtime_path_enabled)
+            self.assertFalse(result.network_sent)
+            self.assertFalse(result.external_order_id_present)
+
+    def test_disabled_runtime_observability_does_not_mask_execution_evidence(self):
+        result = self.client.runtime_disabled_result(_request())
+
+        self.assertFalse(result.composed_pipeline_executed)
+        self.assertFalse(result.signing_executed)
+        self.assertFalse(result.transport_executed)
+        self.assertEqual(result.disabled_stage, "runtime_wiring")
+        self.assertEqual(result.failure_family, "ALTERNATIVE_TESTNET_HTTP_RUNTIME_DISABLED")
 
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [

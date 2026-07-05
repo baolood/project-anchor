@@ -144,6 +144,8 @@ class AlternativeTestnetHttpRuntimeWiringResult:
     venue: str
     execution_mode: str
     status: AlternativeTestnetHttpRuntimeWiringStatus
+    disabled_reason: str
+    disabled_stage: str
     runtime_path_enabled: bool
     composed_pipeline_executed: bool
     signing_executed: bool
@@ -218,6 +220,8 @@ class NoNetworkAlternativeTestnetHttpClient:
             venue=request.venue,
             execution_mode=request.execution_mode,
             status=status,
+            disabled_reason=failure_reason,
+            disabled_stage="runtime_wiring",
             runtime_path_enabled=False,
             composed_pipeline_executed=False,
             signing_executed=False,
