@@ -2970,6 +2970,36 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_BLOCKER_8_CLOSEOUT_PR_MERGE`
 - Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_BLOCKER_8_CLOSEOUT_V1.md`**
 
+### HTTP Client Runtime Enablement Blocker 9 Closeout V1
+
+- purpose: close blocker 9 from the runtime enablement blocker closeout plan
+- blocker id/name: 9 / Canary-before-runtime requirements
+- blocker previous status: OPEN
+- blocker new status: CLOSED
+- closeout type: document + test-required
+- required evidence provided: YES
+- evidence location: `tests/test_alternative_testnet_http_client.py::AlternativeTestnetHttpClientSkeletonTest::test_blocker_9_canary_before_runtime_requirements_remain_blocked`
+- blocker matrix / checklist updated: YES
+- runtime enablement still forbidden after blocker closeout: YES
+- remaining OPEN blockers: 0
+- remaining OPEN blockers list: none
+- local validation evidence current for closeout: YES
+- canary-before-runtime guardrail added: YES
+- canary authorization granted by this task: NO
+- runner / worker / risk modified in this task: NO
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- real Authorization/signature algorithm added in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_BLOCKER_9_CLOSEOUT_PR_MERGE`
+- Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_BLOCKER_9_CLOSEOUT_V1.md`**, **`tests/test_alternative_testnet_http_client.py`**
+
 
 
 
