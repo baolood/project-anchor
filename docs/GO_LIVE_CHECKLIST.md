@@ -2706,6 +2706,32 @@ Record the choice + reason here:
 - Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_BLOCKER_MATRIX_V1.md`**
 
 
+### HTTP Client Runtime Enablement Blocker Closeout Plan V1
+
+- purpose: plan how to close OPEN runtime enablement blockers without closing them in this task
+- blocker closeout plan added: YES
+- OPEN blockers listed: YES
+- blocker closeout order documented: YES
+- evidence required per blocker documented: YES
+- document-only closeout blockers identified: YES
+- test-required closeout blockers identified: YES
+- runtime enablement still forbidden after closeout planning: YES
+- no runtime enablement implemented: YES
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- real Authorization/signature algorithm added in this task: NO
+- runner / worker / risk modified in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_BLOCKER_CLOSEOUT_PLAN_PR_MERGE`
+- Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_BLOCKER_CLOSEOUT_PLAN_V1.md`**
+
+
 
 
 - final reviewed PASS closeout recorded: YES
