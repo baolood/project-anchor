@@ -986,6 +986,38 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         self.assertFalse(status_surface["signing_executed"])
         self.assertFalse(status_surface["transport_executed"])
 
+    def test_blocker_3_runner_worker_risk_boundary_remains_unwired(self):
+        source = self._module_source()
+        imported = self._module_import_names()
+        forbidden_imports = {
+            "app.actions.runner",
+            "runner",
+            "worker",
+            "risk",
+            "domain_command_worker",
+            "commands_domain",
+        }
+        forbidden_snippets = (
+            "from app.actions.runner",
+            "import runner",
+            "runner.execute",
+            "worker.enqueue",
+            "risk.check",
+            "runner_modified",
+            "worker_modified",
+            "risk_modified",
+            "register_executor",
+            "register_runtime",
+            "domain_command_worker",
+            "commands_domain",
+        )
+        disabled_shape = dataclasses.asdict(self.client.runtime_disabled_result(_request()))
+
+        self.assertTrue(forbidden_imports.isdisjoint(imported))
+        for snippet in forbidden_snippets:
+            self.assertNotIn(snippet, source)
+            self.assertNotIn(snippet, disabled_shape)
+
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [
             self.client.accepted_fixture_response(_request()),
