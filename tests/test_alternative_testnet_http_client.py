@@ -1133,6 +1133,48 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         self.assertIsNone(not_executed.signature_value)
         self.assertFalse(not_executed.network_sent)
 
+    def test_blocker_7_real_http_transport_boundary_remains_no_network(self):
+        source = self._module_source()
+        imported = self._module_import_names()
+        transport_input = self.client.build_transport_input(self.client.build_order_request(_request()))
+        transport_results = [
+            self.client.accepted_transport_result(transport_input, "upstream-order-transport-boundary"),
+            self.client.rejected_transport_result(transport_input),
+            self.client.transport_not_executed_result(transport_input),
+        ]
+        forbidden_imports = {"aiohttp", "http.client", "httpx", "requests", "socket", "urllib.request"}
+        forbidden_snippets = (
+            "aiohttp.",
+            "http.client",
+            "httpx.",
+            "requests.",
+            "import socket",
+            "socket.socket",
+            "urllib.request",
+            "urlopen(",
+            ".send(",
+            ".request(",
+            "network_behavior_enabled",
+            "external_request_sent=True",
+            "network_sent=True",
+        )
+        forbidden_fields = {
+            "external_request_sent",
+            "external_request_started",
+            "http_status",
+            "network_request_sent",
+            "request_url",
+        }
+
+        self.assertTrue(forbidden_imports.isdisjoint(imported))
+        for snippet in forbidden_snippets:
+            self.assertNotIn(snippet, source)
+
+        for result in transport_results:
+            payload = dataclasses.asdict(result)
+            self.assertFalse(result.network_sent)
+            self.assertTrue(forbidden_fields.isdisjoint(payload))
+
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [
             self.client.accepted_fixture_response(_request()),
