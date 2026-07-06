@@ -2681,6 +2681,31 @@ Record the choice + reason here:
 - Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_READINESS_REVIEW_V1.md`**
 
 
+### HTTP Client Runtime Enablement Blocker Matrix V1
+
+- purpose: list runtime enablement blockers before any future implementation
+- runtime enablement blocker matrix added: YES
+- blockers listed with OPEN / CLOSED status: YES
+- evidence required per blocker documented: YES
+- runtime wiring implementation prerequisites documented: YES
+- canary-before-runtime requirements documented: YES
+- disabled runtime status preserved: YES
+- no runtime enablement implemented: YES
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- real Authorization/signature algorithm added in this task: NO
+- runner / worker / risk modified in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_BLOCKER_MATRIX_PR_MERGE`
+- Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_BLOCKER_MATRIX_V1.md`**
+
+
 
 
 - final reviewed PASS closeout recorded: YES
