@@ -1272,6 +1272,69 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
             self.assertIsNone(result.external_order_id)
             self.assertFalse(result.external_order_id_present)
 
+    def test_blocker_9_canary_before_runtime_requirements_remain_blocked(self):
+        source = self._module_source()
+        request = _request()
+        built_request = self.client.build_order_request(request)
+        material = _signing_material()
+        transport_input = self.client.build_transport_input(built_request)
+        signing_input = self.client.build_signing_input(transport_input, material)
+        signing_result = self.client.signed_request_result(signing_input, material)
+        runtime_disabled = self.client.runtime_disabled_result(request)
+        pipeline_results = [
+            self.client.build_only_pipeline_result(request),
+            self.client.signed_not_sent_pipeline_result(request, material),
+            self.client.transport_not_executed_pipeline_result(request, material),
+            self.client.rejected_pipeline_result(request, material),
+        ]
+        accepted_pipeline_result = self.client.accepted_pipeline_result(
+            request,
+            material,
+            "upstream-order-canary-guard",
+        )
+
+        forbidden_snippets = (
+            "canary_enabled",
+            "canary_executed",
+            "canary_retry",
+            "canary_retried",
+            "execute_canary",
+            "runtime_enablement=True",
+            "runtime_path_enabled=True",
+            "external_request_sent=True",
+            "network_sent=True",
+        )
+        forbidden_fields = {
+            "canary_enabled",
+            "canary_executed",
+            "canary_retried",
+            "canary_retry_authorized",
+            "external_request_sent",
+            "runtime_enablement",
+        }
+
+        for snippet in forbidden_snippets:
+            self.assertNotIn(snippet, source)
+
+        self.assertFalse(runtime_disabled.network_sent)
+        self.assertFalse(runtime_disabled.runtime_path_enabled)
+        self.assertFalse(runtime_disabled.external_order_id_present)
+        self.assertEqual(runtime_disabled.disabled_stage, "runtime_wiring")
+        self.assertEqual(runtime_disabled.disabled_reason, "alternative_testnet_http_runtime_disabled")
+        self.assertTrue(forbidden_fields.isdisjoint(dataclasses.asdict(runtime_disabled)))
+
+        self.assertEqual(signing_result.material_id, "mock-signing-material-v1")
+        self.assertFalse(signing_result.network_sent)
+        self.assertTrue(forbidden_fields.isdisjoint(dataclasses.asdict(transport_input)))
+        for result in pipeline_results:
+            payload = dataclasses.asdict(result)
+            self.assertFalse(result.network_sent)
+            self.assertFalse(result.external_order_id_present)
+            self.assertTrue(forbidden_fields.isdisjoint(payload))
+
+        self.assertFalse(accepted_pipeline_result.network_sent)
+        self.assertTrue(forbidden_fields.isdisjoint(dataclasses.asdict(accepted_pipeline_result)))
+
 
 if __name__ == "__main__":
     unittest.main()
