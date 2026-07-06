@@ -1089,6 +1089,50 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         for shape in shapes:
             assert_no_forbidden(shape)
 
+    def test_blocker_6_real_signing_boundary_remains_mock_only(self):
+        source = self._module_source()
+        imported = self._module_import_names()
+        transport_input = self.client.build_transport_input(self.client.build_order_request(_request()))
+        material = _signing_material()
+        signing_input = self.client.build_signing_input(transport_input, material)
+        signed = self.client.signed_request_result(signing_input, material)
+        not_executed = self.client.signing_not_executed_result(transport_input)
+        forbidden_imports = {
+            "base64",
+            "cryptography",
+            "hmac",
+            "jwt",
+            "rsa",
+        }
+        forbidden_snippets = (
+            "hmac.",
+            "private_key",
+            "public_key",
+            "rsa.",
+            "cryptography",
+            "jwt.",
+            "sign(",
+            "signature_algorithm",
+            "real_signing_enabled",
+        )
+
+        self.assertTrue(forbidden_imports.isdisjoint(imported))
+        for snippet in forbidden_snippets:
+            self.assertNotIn(snippet, source)
+
+        self.assertEqual(signed.status, "SIGNED")
+        self.assertEqual(signed.material_id, "mock-signing-material-v1")
+        self.assertEqual(signed.authorization_header_value, "MockAuth explicit-material")
+        self.assertEqual(signed.signature_value, "mock-signature-value")
+        self.assertFalse(signed.network_sent)
+        self.assertIsNone(signed.external_order_id)
+        self.assertFalse(signed.external_order_id_present)
+
+        self.assertEqual(not_executed.status, "NOT_EXECUTED")
+        self.assertIsNone(not_executed.authorization_header_value)
+        self.assertIsNone(not_executed.signature_value)
+        self.assertFalse(not_executed.network_sent)
+
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [
             self.client.accepted_fixture_response(_request()),
