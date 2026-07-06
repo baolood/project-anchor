@@ -2879,6 +2879,37 @@ Record the choice + reason here:
 - Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_BLOCKER_5_CLOSEOUT_V1.md`**
 
 
+### HTTP Client Runtime Enablement Blocker 6 Closeout V1
+
+- purpose: close blocker 6 from the runtime enablement blocker closeout plan
+- blocker id/name: 6 / Real signing boundary
+- blocker previous status: OPEN
+- blocker new status: CLOSED
+- closeout type: document + test-required
+- required evidence provided: YES
+- evidence location: `tests/test_alternative_testnet_http_client.py::AlternativeTestnetHttpClientSkeletonTest::test_blocker_6_real_signing_boundary_remains_mock_only`
+- blocker matrix / checklist updated: YES
+- runtime enablement still forbidden after blocker closeout: YES
+- remaining OPEN blockers: 3
+- remaining OPEN blockers list: Real HTTP transport boundary; External request authorization; Canary-before-runtime requirements
+- real signing boundary documented: YES
+- real signing library/algorithm guardrail added: YES
+- mock signing remains local contract only: YES
+- runner / worker / risk modified in this task: NO
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- real Authorization/signature algorithm added in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_BLOCKER_6_CLOSEOUT_PR_MERGE`
+- Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_BLOCKER_6_CLOSEOUT_V1.md`**
+
+
 
 
 - final reviewed PASS closeout recorded: YES
