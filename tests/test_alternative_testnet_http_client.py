@@ -1018,6 +1018,33 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
             self.assertNotIn(snippet, source)
             self.assertNotIn(snippet, disabled_shape)
 
+    def test_blocker_4_runtime_path_enablement_guard_remains_disabled(self):
+        source = self._module_source()
+        disabled_results = [
+            self.client.runtime_disabled_result(_request()),
+            self.client.runtime_not_enabled_result(_request()),
+            self.client.runtime_not_wired_result(_request()),
+        ]
+        forbidden_snippets = (
+            "runtime_path_enabled=True",
+            "runtime_path_enabled = True",
+            "enable_runtime_path",
+            "runtime_enabled = True",
+            "runtime_enabled=True",
+        )
+
+        for result in disabled_results:
+            self.assertFalse(result.runtime_path_enabled)
+            self.assertFalse(result.composed_pipeline_executed)
+            self.assertFalse(result.signing_executed)
+            self.assertFalse(result.transport_executed)
+            self.assertFalse(result.network_sent)
+            self.assertIsNone(result.external_order_id)
+            self.assertFalse(result.external_order_id_present)
+
+        for snippet in forbidden_snippets:
+            self.assertNotIn(snippet, source)
+
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [
             self.client.accepted_fixture_response(_request()),
