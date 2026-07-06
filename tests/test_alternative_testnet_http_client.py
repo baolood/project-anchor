@@ -1045,6 +1045,50 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         for snippet in forbidden_snippets:
             self.assertNotIn(snippet, source)
 
+    def test_blocker_5_credential_loading_boundary_remains_closed(self):
+        source = self._module_source()
+        imported = self._module_import_names()
+        shapes = [
+            dataclasses.asdict(self.client.build_order_request(_request())),
+            dataclasses.asdict(self.client.build_only_pipeline_result(_request())),
+            dataclasses.asdict(self.client.runtime_disabled_result(_request())),
+            dataclasses.asdict(self.client.runtime_not_enabled_result(_request())),
+            dataclasses.asdict(self.client.runtime_not_wired_result(_request())),
+        ]
+        forbidden_imports = {
+            "configparser",
+            "dotenv",
+            "os",
+            "pydantic",
+        }
+        forbidden_snippets = (
+            "os.environ",
+            "getenv(",
+            "dotenv",
+            "configparser",
+            "open(",
+            "Path.home",
+            "read_text(",
+            "credential_loaded",
+            "env_loaded",
+        )
+        forbidden_fragments = ("credential", "secret", "api_key", "api_secret", "password", "token")
+
+        self.assertTrue(forbidden_imports.isdisjoint(imported))
+        for snippet in forbidden_snippets:
+            self.assertNotIn(snippet, source)
+
+        def assert_no_forbidden(value):
+            if isinstance(value, dict):
+                for key, nested_value in value.items():
+                    self.assertFalse(any(fragment in key.lower() for fragment in forbidden_fragments), key)
+                    assert_no_forbidden(nested_value)
+                return
+            self.assertFalse(any(fragment in str(value).lower() for fragment in forbidden_fragments), value)
+
+        for shape in shapes:
+            assert_no_forbidden(shape)
+
     def test_responses_do_not_include_credentials_or_secret_values(self):
         results = [
             self.client.accepted_fixture_response(_request()),
