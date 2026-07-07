@@ -181,6 +181,12 @@ class NoNetworkAlternativeTestnetHttpClient:
     ) -> AlternativeTestnetHttpRuntimeWiringResult:
         return self.runtime_not_enabled_result(request)
 
+    def runtime_enablement_integration_disabled_result(
+        self,
+        request: AlternativeTestnetHttpClientRequest,
+    ) -> AlternativeTestnetHttpRuntimeWiringResult:
+        return self.runtime_not_wired_result(request)
+
     def runtime_disabled_result(
         self,
         request: AlternativeTestnetHttpClientRequest,
