@@ -1203,6 +1203,73 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         for snippet in forbidden_snippets:
             self.assertNotIn(snippet, source)
 
+    def test_runtime_enablement_integration_guardrails_remain_closed(self):
+        source = self._module_source()
+        imported = self._module_import_names()
+        result = self.client.runtime_enablement_integration_disabled_result(
+            _request(idempotency_key="alternative:http:integration-guardrail:v1")
+        )
+        guardrail_expectations = {
+            "runtime_path_enabled": result.runtime_path_enabled,
+            "composed_pipeline_executed": result.composed_pipeline_executed,
+            "signing_executed": result.signing_executed,
+            "transport_executed": result.transport_executed,
+            "network_sent": result.network_sent,
+            "external_order_id_present": result.external_order_id_present,
+        }
+        forbidden_imports = {
+            "app.actions.runner",
+            "runner",
+            "worker",
+            "risk",
+            "commands_domain",
+            "domain_command_worker",
+            "requests",
+            "httpx",
+            "aiohttp",
+            "socket",
+            "urllib.request",
+            "os",
+            "configparser",
+            "dotenv",
+            "hmac",
+            "jwt",
+            "cryptography",
+        }
+        forbidden_snippets = (
+            "runner.execute",
+            "worker.enqueue",
+            "risk.check",
+            "runtime_path_enabled=True",
+            "runtime_path_enabled = True",
+            "external_request_sent=True",
+            "external_request_sent = True",
+            "network_sent=True",
+            "network_sent = True",
+            "canary_executed=True",
+            "canary_executed = True",
+            "os.environ",
+            "getenv(",
+            "requests.",
+            "httpx.",
+            "aiohttp.",
+            "socket.socket",
+            "urllib.request",
+            "hmac.",
+            "real_signing_enabled",
+            "network_behavior_enabled",
+        )
+
+        self.assertEqual(result.status, "NOT_WIRED")
+        self.assertEqual(result.disabled_stage, "runtime_wiring")
+        self.assertEqual(result.disabled_reason, "alternative_testnet_http_runtime_not_wired")
+        self.assertIsNone(result.external_order_id)
+        self.assertTrue(forbidden_imports.isdisjoint(imported))
+        for field_name, value in guardrail_expectations.items():
+            self.assertFalse(value, field_name)
+        for snippet in forbidden_snippets:
+            self.assertNotIn(snippet, source)
+
     def test_blocker_3_runner_worker_risk_boundary_remains_unwired(self):
         source = self._module_source()
         imported = self._module_import_names()
