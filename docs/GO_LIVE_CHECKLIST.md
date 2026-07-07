@@ -3205,6 +3205,36 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_DISABLED_INTEGRATION_REVIEW_PR_MERGE`
 - Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_DISABLED_INTEGRATION_REVIEW_V1.md`**
 
+### HTTP Client Runtime Enablement Integration Implementation Scope Review V1
+
+- purpose: define exact future disabled-first integration implementation scope without implementing integration
+- integration implementation scope reviewed: YES
+- allowed implementation file list documented: YES
+- forbidden implementation file list documented: YES
+- allowed files: `anchor-backend/app/actions/alternative_testnet_http_client.py`; `tests/test_alternative_testnet_http_client.py`; `docs/GO_LIVE_CHECKLIST.md`
+- disabled-first requirement preserved: YES
+- runner / worker / risk boundary preserved: YES
+- credential/env/config boundary preserved: YES
+- real signing boundary preserved: YES
+- real HTTP transport boundary preserved: YES
+- external request/canary boundary preserved: YES
+- implementation authorized by this review: NO
+- runtime wiring implemented in this task: NO
+- runtime enablement implemented in this task: NO
+- runner / worker / risk modified in this task: NO
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- real Authorization/signature algorithm added in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_INTEGRATION_IMPLEMENTATION_AUTHORIZATION_SLICE`
+- Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_INTEGRATION_IMPLEMENTATION_SCOPE_REVIEW_V1.md`**
+
 
 
 
