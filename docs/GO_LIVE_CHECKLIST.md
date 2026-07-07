@@ -3119,6 +3119,34 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_MINIMAL_IMPLEMENTATION_SLICE`
 - Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_MINIMAL_IMPLEMENTATION_AUTHORIZATION_V1.md`**
 
+### HTTP Client Runtime Enablement Minimal Implementation V1
+
+- purpose: add the first disabled-first/local-only runtime enablement skeleton entry
+- minimal runtime enablement skeleton added: YES
+- runtime path default disabled: YES
+- disabled result shape covered: YES
+- not-enabled / not-wired result covered: YES
+- composed pipeline not executed when disabled: YES
+- signing not executed when disabled: YES
+- transport not executed when disabled: YES
+- external_order_id created while disabled: NO
+- network_sent=true while disabled: NO
+- runtime wiring implemented in this task: NO
+- runtime enablement implemented in this task: NO
+- runner / worker / risk modified in this task: NO
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- real Authorization/signature algorithm added in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_MINIMAL_IMPLEMENTATION_PR_MERGE`
+- Evidence: **`anchor-backend/app/actions/alternative_testnet_http_client.py`**, **`tests/test_alternative_testnet_http_client.py`**
+
 
 
 

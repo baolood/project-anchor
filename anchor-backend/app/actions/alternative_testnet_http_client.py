@@ -175,6 +175,12 @@ def _client_order_ref(request: AlternativeTestnetHttpClientRequest) -> str:
 class NoNetworkAlternativeTestnetHttpClient:
     """Return deterministic local fixture responses without opening a socket."""
 
+    def runtime_enablement_minimal_result(
+        self,
+        request: AlternativeTestnetHttpClientRequest,
+    ) -> AlternativeTestnetHttpRuntimeWiringResult:
+        return self.runtime_not_enabled_result(request)
+
     def runtime_disabled_result(
         self,
         request: AlternativeTestnetHttpClientRequest,
