@@ -3273,6 +3273,41 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_INTEGRATION_IMPLEMENTATION_AUTHORIZATION_SLICE`
 - Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_COMPREHENSIVE_REVIEW_V1.md`**
 
+### HTTP Client Runtime Enablement Integration Implementation Authorization V1
+
+- purpose: authorize the next minimal disabled-first/local-only integration implementation slice
+- comprehensive review merged: YES
+- integration implementation scope review merged: YES
+- blockers 1 through 9 closed: YES
+- remaining OPEN blockers: 0
+- minimal runtime enablement skeleton merged: YES
+- runtime path default disabled: YES
+- runner / worker / risk currently not wired: YES
+- next disabled-first/local-only implementation slice authorized: YES
+- allowed files: `anchor-backend/app/actions/alternative_testnet_http_client.py`; `tests/test_alternative_testnet_http_client.py`; `docs/GO_LIVE_CHECKLIST.md`
+- runtime path enablement authorized: NO
+- runner / worker / risk wiring authorized: NO
+- credential loading authorized: NO
+- real signing authorized: NO
+- real HTTP transport authorized: NO
+- external request authorized: NO
+- canary authorized: NO
+- runtime wiring implemented in this task: NO
+- runtime enablement implemented in this task: NO
+- runner / worker / risk modified in this task: NO
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- real Authorization/signature algorithm added in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_INTEGRATION_MINIMAL_IMPLEMENTATION_SLICE`
+- Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_INTEGRATION_IMPLEMENTATION_AUTHORIZATION_V1.md`**
+
 
 
 
