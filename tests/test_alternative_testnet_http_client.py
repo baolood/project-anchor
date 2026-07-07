@@ -986,6 +986,82 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         self.assertFalse(status_surface["signing_executed"])
         self.assertFalse(status_surface["transport_executed"])
 
+    def test_runtime_enablement_minimal_result_defaults_to_not_enabled(self):
+        result = self.client.runtime_enablement_minimal_result(
+            _request(idempotency_key="alternative:http:minimal-enable-disabled:v1")
+        )
+
+        self.assertIsInstance(result, AlternativeTestnetHttpRuntimeWiringResult)
+        self.assertEqual(result.status, "NOT_ENABLED")
+        self.assertEqual(result.idempotency_key, "alternative:http:minimal-enable-disabled:v1")
+        self.assertEqual(result.disabled_reason, "alternative_testnet_http_runtime_not_enabled")
+        self.assertEqual(result.disabled_stage, "runtime_wiring")
+        self.assertFalse(result.runtime_path_enabled)
+        self.assertFalse(result.composed_pipeline_executed)
+        self.assertFalse(result.signing_executed)
+        self.assertFalse(result.transport_executed)
+        self.assertFalse(result.network_sent)
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+
+    def test_runtime_enablement_minimal_result_is_deterministic_disabled_shape(self):
+        first = self.client.runtime_enablement_minimal_result(_request())
+        second = self.client.runtime_enablement_minimal_result(_request())
+        not_wired = self.client.runtime_not_wired_result(_request())
+
+        self.assertEqual(dataclasses.asdict(first), dataclasses.asdict(second))
+        self.assertEqual(not_wired.status, "NOT_WIRED")
+        for result in (first, not_wired):
+            self.assertFalse(result.runtime_path_enabled)
+            self.assertFalse(result.composed_pipeline_executed)
+            self.assertFalse(result.signing_executed)
+            self.assertFalse(result.transport_executed)
+            self.assertFalse(result.network_sent)
+            self.assertIsNone(result.external_order_id)
+            self.assertFalse(result.external_order_id_present)
+
+    def test_runtime_enablement_minimal_result_does_not_execute_pipeline_signing_or_transport(self):
+        class SpyClient(NoNetworkAlternativeTestnetHttpClient):
+            def __init__(self):
+                self.calls = []
+
+            def build_only_pipeline_result(self, request):
+                self.calls.append("build_only_pipeline_result")
+                return super().build_only_pipeline_result(request)
+
+            def signed_not_sent_pipeline_result(self, request, material):
+                self.calls.append("signed_not_sent_pipeline_result")
+                return super().signed_not_sent_pipeline_result(request, material)
+
+            def transport_not_executed_pipeline_result(self, request, material):
+                self.calls.append("transport_not_executed_pipeline_result")
+                return super().transport_not_executed_pipeline_result(request, material)
+
+            def build_signing_input(self, transport_input, material):
+                self.calls.append("build_signing_input")
+                return super().build_signing_input(transport_input, material)
+
+            def signed_request_result(self, signing_input, material):
+                self.calls.append("signed_request_result")
+                return super().signed_request_result(signing_input, material)
+
+            def transport_not_executed_result(self, transport_input):
+                self.calls.append("transport_not_executed_result")
+                return super().transport_not_executed_result(transport_input)
+
+        spy = SpyClient()
+        result = spy.runtime_enablement_minimal_result(_request())
+
+        self.assertEqual(spy.calls, [])
+        self.assertEqual(result.status, "NOT_ENABLED")
+        self.assertFalse(result.runtime_path_enabled)
+        self.assertFalse(result.composed_pipeline_executed)
+        self.assertFalse(result.signing_executed)
+        self.assertFalse(result.transport_executed)
+        self.assertFalse(result.network_sent)
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+
     def test_blocker_3_runner_worker_risk_boundary_remains_unwired(self):
         source = self._module_source()
         imported = self._module_import_names()
