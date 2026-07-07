@@ -1133,6 +1133,76 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         self.assertIsNone(result.external_order_id)
         self.assertFalse(result.external_order_id_present)
 
+    def test_runtime_enablement_integration_observability_fields_are_audit_ready(self):
+        source = self._module_source()
+        imported = self._module_import_names()
+        result = dataclasses.asdict(
+            self.client.runtime_enablement_integration_disabled_result(
+                _request(idempotency_key="alternative:http:integration-observability:v1")
+            )
+        )
+        required_fields = {
+            "disabled_reason",
+            "disabled_stage",
+            "runtime_path_enabled",
+            "composed_pipeline_executed",
+            "signing_executed",
+            "transport_executed",
+            "network_sent",
+            "external_order_id",
+            "external_order_id_present",
+            "failure_family",
+            "failure_reason",
+        }
+        forbidden_imports = {
+            "app.actions.runner",
+            "runner",
+            "worker",
+            "risk",
+            "commands_domain",
+            "domain_command_worker",
+            "requests",
+            "httpx",
+            "aiohttp",
+            "socket",
+            "urllib.request",
+            "os",
+            "configparser",
+            "dotenv",
+            "hmac",
+        }
+        forbidden_snippets = (
+            "runner.execute",
+            "worker.enqueue",
+            "risk.check",
+            "runtime_path_enabled=True",
+            "external_request_sent=True",
+            "network_sent=True",
+            "canary_executed=True",
+            "os.environ",
+            "getenv(",
+            "requests.",
+            "httpx.",
+            "aiohttp.",
+            "socket.socket",
+            "hmac.",
+        )
+
+        self.assertTrue(required_fields.issubset(result))
+        self.assertEqual(result["status"], "NOT_WIRED")
+        self.assertEqual(result["disabled_reason"], "alternative_testnet_http_runtime_not_wired")
+        self.assertEqual(result["disabled_stage"], "runtime_wiring")
+        self.assertFalse(result["runtime_path_enabled"])
+        self.assertFalse(result["composed_pipeline_executed"])
+        self.assertFalse(result["signing_executed"])
+        self.assertFalse(result["transport_executed"])
+        self.assertFalse(result["network_sent"])
+        self.assertIsNone(result["external_order_id"])
+        self.assertFalse(result["external_order_id_present"])
+        self.assertTrue(forbidden_imports.isdisjoint(imported))
+        for snippet in forbidden_snippets:
+            self.assertNotIn(snippet, source)
+
     def test_blocker_3_runner_worker_risk_boundary_remains_unwired(self):
         source = self._module_source()
         imported = self._module_import_names()
