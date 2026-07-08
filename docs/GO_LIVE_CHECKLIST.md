@@ -4106,6 +4106,46 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_DOMAIN_USAGE_DECISION_PR_MERGE`
 - Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_DOMAIN_USAGE_DECISION_V1.md`**
 
+### HTTP Client Runtime Enablement Domain DNS Auth Ingress Prep V1
+
+- purpose: prepare DNS/auth/TLS/ingress evidence for the already-purchased domain while runtime enablement remains disabled
+- domain DNS/auth/ingress prep added: YES
+- domain usage decision merged: YES
+- exact domain name recorded in this prep: NO
+- exact domain name required before DNS work: YES
+- DNS provider/control evidence required before DNS change: YES
+- TLS plan required before domain binding: YES
+- operator/reviewer auth boundary required before public review surface: YES
+- ingress surface decision required before host binding: YES
+- fresh cloud-host verification required before binding: YES
+- historical host alignment treated as current-main proof: NO
+- DNS changed in this task: NO
+- nameserver changed in this task: NO
+- TLS certificate requested in this task: NO
+- auth implemented in this task: NO
+- ingress opened in this task: NO
+- cloud host bound to domain in this task: NO
+- cloud host changed in this task: NO
+- raw backend public API: FORBIDDEN
+- trading / execution endpoint: FORBIDDEN
+- runner / worker / risk exposure: FORBIDDEN
+- credential or env/config surface: FORBIDDEN
+- runtime wiring implemented in this task: NO
+- runtime enablement implemented in this task: NO
+- runner / worker / risk modified in this task: NO
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- real Authorization/signature algorithm added in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_DOMAIN_DNS_AUTH_INGRESS_PREP_PR_MERGE`
+- Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_DOMAIN_DNS_AUTH_INGRESS_PREP_V1.md`**
+
 
 
 
