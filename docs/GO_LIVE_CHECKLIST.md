@@ -4146,6 +4146,48 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_DOMAIN_DNS_AUTH_INGRESS_PREP_PR_MERGE`
 - Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_DOMAIN_DNS_AUTH_INGRESS_PREP_V1.md`**
 
+### HTTP Client Runtime Enablement Domain Exact Name Record Template V1
+
+- purpose: define the operator-filled exact domain record template before any DNS/auth/TLS/ingress work
+- exact domain record template added: YES
+- domain purchased: YES
+- exact domain value provided in this task: NO
+- exact domain recorded by this artifact: NO
+- exact domain must be operator-filled before DNS work: YES
+- registrar/provider names must be recorded without secrets: YES
+- DNS zone control must be confirmed without mutation: YES
+- intended first hostname must remain operator/reviewer bounded: YES
+- bare domain behavior must be explicit before use: YES
+- TLS plan must be documented before binding: YES
+- auth boundary must remain non-public by default: YES
+- ingress rollback plan must be documented before implementation: YES
+- DNS changed in this task: NO
+- nameserver changed in this task: NO
+- TLS certificate requested in this task: NO
+- auth implemented in this task: NO
+- ingress opened in this task: NO
+- cloud host bound to domain in this task: NO
+- cloud host changed in this task: NO
+- raw backend public API: FORBIDDEN
+- trading / execution endpoint: FORBIDDEN
+- runner / worker / risk exposure: FORBIDDEN
+- credential or env/config surface: FORBIDDEN
+- runtime wiring implemented in this task: NO
+- runtime enablement implemented in this task: NO
+- runner / worker / risk modified in this task: NO
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- real Authorization/signature algorithm added in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_DOMAIN_EXACT_NAME_RECORD_TEMPLATE_PR_MERGE`
+- Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_DOMAIN_EXACT_NAME_RECORD_TEMPLATE_V1.md`**
+
 
 
 
