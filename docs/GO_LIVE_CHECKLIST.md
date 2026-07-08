@@ -4387,6 +4387,61 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_HTTP_CLIENT_RUNTIME_ENABLEMENT_DOMAIN_DNS_RECORD_PLAN_REVIEW_PR_MERGE`
 - Evidence: **`docs/HTTP_CLIENT_RUNTIME_ENABLEMENT_DOMAIN_DNS_RECORD_PLAN_REVIEW_V1.md`**
 
+### Project Anchor Workflow Tiering V1
+
+- purpose: reduce low-risk process overhead while preserving hard authorization gates for high-risk boundaries
+- workflow tiering added: YES
+- low-risk workflow defined: YES
+- medium-risk workflow defined: YES
+- high-risk workflow defined: YES
+- docs-only simplified path defined: YES
+- high-risk authorization still required: YES
+- low-risk applies to docs-only / checklist-only / closeout review / status summary / read-only evidence: YES
+- medium-risk applies to tests / guardrails / disabled skeleton / integration surface / domain-DNS planning / Cloudflare read-only evidence: YES
+- high-risk applies to DNS / nameserver / TLS / ingress / runtime / credentials / real signing / real HTTP / external request / canary / go-live / live trading: YES
+- simplified low-risk git status clean required: YES
+- simplified low-risk allowed files only required: YES
+- simplified low-risk forbidden files touched NO required: YES
+- simplified low-risk git diff --check required: YES
+- simplified low-risk PR checks PASS required: YES
+- simplified low-risk rollback method required: YES
+- DNS changes require authorization: YES
+- nameserver changes require authorization: YES
+- TLS request requires authorization: YES
+- ingress opening requires authorization: YES
+- cloud host binding requires authorization: YES
+- runtime enablement requires authorization: YES
+- runner / worker / risk wiring requires authorization: YES
+- credentials/env/config read requires authorization: YES
+- real signing requires authorization: YES
+- real HTTP/network requires authorization: YES
+- external request/canary requires authorization: YES
+- go-live/live trading remain NO-GO: YES
+- DNS changed in this task: NO
+- nameserver changed in this task: NO
+- A/CNAME record created in this task: NO
+- Cloudflare proxy enabled in this task: NO
+- TLS certificate requested in this task: NO
+- SSL/TLS mode changed in this task: NO
+- auth implemented in this task: NO
+- ingress opened in this task: NO
+- cloud host bound to domain in this task: NO
+- cloud host changed in this task: NO
+- runtime wiring implemented in this task: NO
+- runtime enablement implemented in this task: NO
+- runner / worker / risk modified in this task: NO
+- real HTTP library imported in this task: NO
+- socket/network behavior added in this task: NO
+- credentials read in this task: NO
+- env/config read added in this task: NO
+- real Authorization/signature algorithm added in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- live trading: NO-GO
+- go-live: NO-GO
+- next safe status: `READY_FOR_PROJECT_ANCHOR_WORKFLOW_TIERING_PR_MERGE`
+- Evidence: **`docs/PROJECT_ANCHOR_WORKFLOW_TIERING_V1.md`**
+
 
 
 
