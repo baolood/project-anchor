@@ -4642,6 +4642,46 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_PROJECT_ANCHOR_POST_FREEZE_LOW_MEDIUM_RISK_WORKFLOW_CONTINUATION`
 - Evidence: **`docs/PROJECT_ANCHOR_CURRENT_STATE_FREEZE_V1.md`**
 
+### Project Anchor Post-Freeze Low/Medium-Risk Workflow Continuation V1
+
+- purpose: define low/medium-risk work that may continue after current-state freeze while high-risk boundaries remain gated
+- workflow tier: low-risk docs-only
+- post-freeze continuation plan added: YES
+- current state freeze acknowledged: YES
+- low-risk continuation tasks listed: YES
+- medium-risk continuation tasks listed: YES
+- high-risk tasks still require separate authorization: YES
+- DNS line remains paused: YES
+- runtime line remains disabled: YES
+- canary remains not executed: YES
+- go-live/live trading remain NO-GO: YES
+- low-risk continuation includes docs/checklist/closeout/status/read-only evidence: YES
+- medium-risk continuation includes guardrail tests / disabled-state tests / canary prerequisite reviews / runtime decision reviews: YES
+- DNS changes remain separately gated: YES
+- runtime enablement remains separately gated: YES
+- canary remains separately gated: YES
+- DNS changed in this task: NO
+- nameserver changed in this task: NO
+- A/CNAME created in this task: NO
+- `45.76.190.109` bound in this task: NO
+- Cloudflare proxy enabled in this task: NO
+- TLS requested in this task: NO
+- SSL/TLS mode changed in this task: NO
+- ingress opened in this task: NO
+- cloud host bound in this task: NO
+- cloud host changed in this task: NO
+- credentials/env/config read in this task: NO
+- runner / worker / risk modified in this task: NO
+- runtime path enabled in this task: NO
+- real signing enabled in this task: NO
+- real HTTP/network enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- canary executed in this task: NO
+- final state: `PROJECT_ANCHOR_POST_FREEZE_LOW_MEDIUM_RISK_WORKFLOW_CONTINUATION_MERGED_RUNTIME_DISABLED`
+- next safe status: `READY_FOR_PROJECT_ANCHOR_POST_FREEZE_CANARY_PREREQUISITE_REVIEW_OR_RUNTIME_DECISION_REVIEW`
+- Evidence: **`docs/PROJECT_ANCHOR_POST_FREEZE_LOW_MEDIUM_RISK_WORKFLOW_CONTINUATION_V1.md`**
+
 
 
 
