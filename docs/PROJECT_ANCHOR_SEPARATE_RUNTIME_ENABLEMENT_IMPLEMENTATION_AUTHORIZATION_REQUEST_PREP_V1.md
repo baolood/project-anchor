@@ -24,11 +24,32 @@ This document is preparation only. It does not request runtime enablement implem
 - implementation authorization granted in this task: NO
 - runtime enablement implemented in this task: NO
 - runtime path enabled in this task: NO
-- next safe state is waiting for operator fill: YES
+- operator fill recorded in this task: YES
+- implementation-prep-only operator verdict recorded: YES
+- runtime enablement execution authorization still required: YES
+- next safe state is minimal implementation prep documentation review: YES
 
-## Required Future Operator Fill
+## Operator Fill Decision
 
-A future operator fill must be explicit and separate from this prep document. It must state at minimum:
+- IMPLEMENTATION_AUTHORIZATION_REQUEST_FILLED: yes
+- AUTHORIZED_ACTION: prepare_runtime_enablement_implementation_only
+- AUTHORIZED_SCOPE: minimal_runtime_enablement_implementation_prep
+- AUTHORIZED_RUNTIME_PATH_ENABLEMENT: NO
+- AUTHORIZED_CREDENTIALS_ENV_CONFIG_READ: NO
+- AUTHORIZED_REAL_SIGNING: NO
+- AUTHORIZED_REAL_HTTP_NETWORK: NO
+- AUTHORIZED_EXTERNAL_REQUEST: NO
+- AUTHORIZED_CANARY: NO
+- AUTHORIZED_GO_LIVE: NO
+- AUTHORIZED_LIVE_TRADING: NO
+- FINAL_OPERATOR_VERDICT: APPROVED_FOR_IMPLEMENTATION_PREP_ONLY
+- SEPARATE_RUNTIME_ENABLEMENT_EXECUTION_AUTHORIZATION_REQUIRED: YES
+
+This operator fill approves implementation preparation only. It does not authorize runtime path enablement, credentials/env/config reads, real signing, real HTTP/network behavior, external requests, canary execution, go-live, or live trading. Separate runtime enablement execution authorization remains required before any implementation or execution boundary can change.
+
+## Required Future Execution Authorization Fill
+
+A future execution authorization fill must be explicit and separate from this implementation-prep-only operator fill. It must state at minimum:
 
 - whether runtime enablement implementation authorization is requested
 - exact implementation scope
@@ -45,7 +66,7 @@ A future operator fill must be explicit and separate from this prep document. It
 - PR checks requirement
 - final operator verdict
 
-If any field is missing, ambiguous, or implied from casual continuation language, implementation remains unauthorized.
+If any field is missing, ambiguous, or implied from casual continuation language, runtime enablement execution remains unauthorized.
 
 ## Locked Boundary
 
@@ -80,11 +101,11 @@ If any field is missing, ambiguous, or implied from casual continuation language
 
 ## Final State
 
-PROJECT_ANCHOR_SEPARATE_RUNTIME_ENABLEMENT_IMPLEMENTATION_AUTHORIZATION_REQUEST_PREP_MERGED_RUNTIME_DISABLED
+PROJECT_ANCHOR_SEPARATE_RUNTIME_ENABLEMENT_IMPLEMENTATION_AUTHORIZATION_REQUEST_OPERATOR_FILL_MERGED_RUNTIME_DISABLED
 
 ## Next Safe State
 
-WAITING_FOR_OPERATOR_FILL_ON_SEPARATE_RUNTIME_ENABLEMENT_IMPLEMENTATION_AUTHORIZATION_REQUEST
+READY_FOR_MINIMAL_RUNTIME_ENABLEMENT_IMPLEMENTATION_PREP_DOCUMENTATION_REVIEW
 
 Runtime remains disabled: YES
 
