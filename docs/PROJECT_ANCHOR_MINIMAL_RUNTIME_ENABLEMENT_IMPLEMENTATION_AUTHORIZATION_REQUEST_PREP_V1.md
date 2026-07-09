@@ -4,9 +4,9 @@
 
 Prepare a documentation-only authorization request for a future minimal runtime enablement implementation PR, after PR #268 approved moving from plan review to separate implementation authorization request prep.
 
-This is only an implementation authorization request prep document.
+This document now records the operator fill for a future disabled-by-default minimal runtime enablement implementation PR.
 
-This document does not grant implementation authorization.
+This document grants authorization only to prepare a separate disabled-by-default implementation PR.
 
 This document does not enable runtime.
 
@@ -22,13 +22,15 @@ This document does not authorize go-live or live trading.
 
 ## Baseline
 
-- current locked state: PROJECT_ANCHOR_MINIMAL_RUNTIME_ENABLEMENT_IMPLEMENTATION_PLAN_REVIEW_MERGED_RUNTIME_DISABLED
-- latest main HEAD: `1077c8c Merge pull request #268 from baolood/codex/project-anchor-minimal-runtime-enablement-implementation-plan-review`
+- current locked state: PROJECT_ANCHOR_MINIMAL_RUNTIME_ENABLEMENT_IMPLEMENTATION_AUTHORIZATION_REQUEST_PREP_MERGED_RUNTIME_DISABLED
+- latest main HEAD: `7f7b28a Merge pull request #269 from baolood/codex/project-anchor-minimal-runtime-enablement-implementation-authorization-request-prep`
 - plan draft reference: `docs/PROJECT_ANCHOR_MINIMAL_RUNTIME_ENABLEMENT_IMPLEMENTATION_PLAN_DRAFT_V1.md`
 - plan review reference: `docs/PROJECT_ANCHOR_MINIMAL_RUNTIME_ENABLEMENT_IMPLEMENTATION_PLAN_REVIEW_V1.md`
+- authorization request prep baseline: PR #269 merged
 - plan review result: APPROVED_FOR_SEPARATE_IMPLEMENTATION_AUTHORIZATION_REQUEST_PREP
 - request prep scope: documentation-only
-- operator fill performed in this task: NO
+- operator fill performed in this task: YES
+- operator fill verdict: APPROVED_FOR_DISABLED_BY_DEFAULT_IMPLEMENTATION_PR_ONLY
 - runtime remains disabled: YES
 - external request sent: NO
 - canary executed: NO
@@ -36,7 +38,7 @@ This document does not authorize go-live or live trading.
 ## Locked Boundary
 
 - runtime enablement authorization granted: NO
-- runtime implementation authorization granted: PREP ONLY
+- runtime implementation authorization granted: DISABLED-BY-DEFAULT IMPLEMENTATION PR ONLY
 - runtime path enabled: NO
 - credentials/env/config read: NO
 - real signing enabled: NO
@@ -79,9 +81,29 @@ FINAL_OPERATOR_VERDICT=NOT_APPROVED
 
 Option B keeps implementation authorization unfilled and leaves the system at runtime disabled.
 
-## Forbidden Until Future Operator Fill
+## Recorded Operator Fill Decision
 
-- implementation authorization granted: NO
+```text
+MINIMAL_RUNTIME_ENABLEMENT_IMPLEMENTATION_AUTHORIZATION_REQUEST_FILLED=yes
+AUTHORIZED_ACTION=prepare_minimal_runtime_enablement_implementation_pr_only
+AUTHORIZED_SCOPE=disabled_by_default_minimal_runtime_enablement_wiring
+AUTHORIZED_RUNTIME_PATH_ENABLEMENT=NO
+AUTHORIZED_CREDENTIALS_ENV_CONFIG_READ=NO
+AUTHORIZED_REAL_SIGNING=NO
+AUTHORIZED_REAL_HTTP_NETWORK=NO
+AUTHORIZED_EXTERNAL_REQUEST=NO
+AUTHORIZED_CANARY=NO
+AUTHORIZED_GO_LIVE=NO
+AUTHORIZED_LIVE_TRADING=NO
+FINAL_OPERATOR_VERDICT=APPROVED_FOR_DISABLED_BY_DEFAULT_IMPLEMENTATION_PR_ONLY
+SEPARATE_RUNTIME_ENABLEMENT_EXECUTION_AUTHORIZATION_REQUIRED=YES
+SEPARATE_CANARY_AUTHORIZATION_REQUIRED=YES
+```
+
+This recorded operator fill allows only a future separate implementation PR for disabled-by-default minimal runtime enablement wiring. It does not allow runtime path enablement, credentials/env/config reads, real signing, real HTTP/network, external request, canary, go-live, or live trading.
+
+## Forbidden Despite Operator Fill
+
 - runtime path enablement: forbidden
 - credentials/env/config read: forbidden
 - real signing: forbidden
@@ -93,20 +115,19 @@ Option B keeps implementation authorization unfilled and leaves the system at ru
 
 ## Required Future Handling
 
-- a future operator fill must be explicit
-- the selected option must be complete
 - implementation authorization cannot be inferred from "continue", "go ahead", "next", or similar language
 - any future implementation PR must remain disabled by default
+- any future implementation PR must be separate from this operator fill task
 - runtime execution still requires separate execution authorization
 - canary still requires separate canary authorization
 
 ## Final State
 
-PROJECT_ANCHOR_MINIMAL_RUNTIME_ENABLEMENT_IMPLEMENTATION_AUTHORIZATION_REQUEST_PREP_MERGED_RUNTIME_DISABLED
+PROJECT_ANCHOR_MINIMAL_RUNTIME_ENABLEMENT_IMPLEMENTATION_AUTHORIZATION_REQUEST_OPERATOR_FILL_MERGED_RUNTIME_DISABLED
 
 ## Next Safe State
 
-NEXT_SAFE_STATE=WAITING_FOR_OPERATOR_FILL_ON_MINIMAL_RUNTIME_ENABLEMENT_IMPLEMENTATION_AUTHORIZATION_REQUEST
+NEXT_SAFE_STATE=READY_FOR_DISABLED_BY_DEFAULT_MINIMAL_RUNTIME_ENABLEMENT_IMPLEMENTATION_PR_PREP
 
 RUNTIME_REMAINS_DISABLED=YES
 
