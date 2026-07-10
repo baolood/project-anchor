@@ -5419,6 +5419,44 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_DISABLED_ONLY_RUNNER_INTEGRATION_AUTHORIZATION_PACKET_OPERATOR_FILL`
 - Evidence: **`docs/PROJECT_ANCHOR_DISABLED_ONLY_RUNNER_INTEGRATION_AUTHORIZATION_PACKET_FILL_DECISION_REVIEW_V1.md`**
 
+### Project Anchor Disabled-Only Runner Integration Authorization Packet Operator Fill V1
+
+- purpose: record operator-filled authorization packet for future disabled-only runner integration implementation
+- workflow tier: high-risk authorization documentation only
+- previous locked state acknowledged: `PROJECT_ANCHOR_DISABLED_ONLY_RUNNER_INTEGRATION_AUTHORIZATION_PACKET_FILL_DECISION_REVIEW_MERGED_RUNTIME_DISABLED`
+- authorization packet filled: YES
+- AUTHORIZED_ACTION: `implement_disabled_only_runner_integration_status_surface`
+- AUTHORIZED_SCOPE: `disabled_status_surface_only`
+- AUTHORIZED_ALLOWED_FILES: `anchor-backend/app/actions/runner.py;tests/test_alternative_testnet_http_client.py;docs/GO_LIVE_CHECKLIST.md`
+- AUTHORIZED_FORBIDDEN_FILES: `anchor-backend/app/workers/*;anchor-backend/app/risk/*;anchor-backend/app/system/risk_gate.py;anchor-backend/app/system/risk_state.py;deploy;docker;migrations;env;credentials;DNS;TLS;ingress`
+- AUTHORIZED_RUNNER_CHANGES: `YES_DISABLED_STATUS_ONLY`
+- AUTHORIZED_WORKER_CHANGES: `NO`
+- AUTHORIZED_RISK_CHANGES: `NO`
+- AUTHORIZED_RUNTIME_PATH_ENABLEMENT: `NO`
+- AUTHORIZED_CREDENTIALS_ENV_CONFIG_READ: `NO`
+- AUTHORIZED_REAL_SIGNING: `NO`
+- AUTHORIZED_REAL_HTTP_NETWORK: `NO`
+- AUTHORIZED_EXTERNAL_REQUEST: `NO`
+- AUTHORIZED_CANARY: `NO`
+- AUTHORIZED_GO_LIVE: `NO`
+- AUTHORIZED_LIVE_TRADING: `NO`
+- FINAL_OPERATOR_VERDICT: `APPROVED_FOR_DISABLED_ONLY_IMPLEMENTATION`
+- implementation authorization granted for disabled-only runner status surface: YES
+- implementation performed in this task: NO
+- runner / worker / risk modified in this task: NO
+- runtime path enabled in this task: NO
+- credentials/env/config read in this task: NO
+- real signing enabled in this task: NO
+- real HTTP/network enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- canary executed in this task: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- final state: `PROJECT_ANCHOR_DISABLED_ONLY_RUNNER_INTEGRATION_AUTHORIZATION_PACKET_OPERATOR_FILL_MERGED_RUNTIME_DISABLED`
+- next safe status: `READY_FOR_DISABLED_ONLY_RUNNER_INTEGRATION_IMPLEMENTATION_PREP_REVIEW`
+- Evidence: **`docs/PROJECT_ANCHOR_DISABLED_ONLY_RUNNER_INTEGRATION_AUTHORIZATION_PACKET_OPERATOR_FILL_V1.md`**
+
 
 
 
