@@ -5121,6 +5121,48 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_POST_MINIMAL_RUNTIME_ENABLEMENT_NEXT_AUTHORIZATION_DECISION_REVIEW`
 - Evidence: **`docs/PROJECT_ANCHOR_DISABLED_BY_DEFAULT_MINIMAL_RUNTIME_ENABLEMENT_CLOSEOUT_REVIEW_V1.md`**
 
+### Project Anchor Post-Minimal Runtime Enablement Next Authorization Decision Review V1
+
+- purpose: decide the next authorization surface after disabled-by-default minimal runtime enablement closeout without requesting or granting execution authorization
+- workflow tier: medium-risk review
+- PR #271 implementation merged: YES
+- PR #272 observability review merged: YES
+- PR #273 guardrail regression review merged: YES
+- PR #274 closeout review merged: YES
+- disabled-by-default minimal runtime enablement phase closed: YES
+- next authorization surface reviewed: YES
+- recommended next authorization surface: `RUNNER_WORKER_RISK_BOUNDARY_REVIEW_PREP`
+- runner / worker / risk wiring authorized by this decision: NO
+- runtime path enablement authorized by this decision: NO
+- credentials/env/config read authorized by this decision: NO
+- real signing authorized by this decision: NO
+- real HTTP/network authorized by this decision: NO
+- external request authorized by this decision: NO
+- canary authorized by this decision: NO
+- go-live/live trading authorized by this decision: NO
+- direct jump to runtime enablement rejected: YES
+- direct jump to canary rejected: YES
+- future authorization packet required fields documented: YES
+- ambiguous authorization fields must be rejected: YES
+- DNS changed in this task: NO
+- A/CNAME created in this task: NO
+- `45.76.190.109` bound in this task: NO
+- TLS requested in this task: NO
+- ingress opened in this task: NO
+- runner / worker / risk modified in this task: NO
+- credentials/env/config read in this task: NO
+- real signing enabled in this task: NO
+- real HTTP/network enabled in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- canary executed in this task: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- final state: `PROJECT_ANCHOR_POST_MINIMAL_RUNTIME_ENABLEMENT_NEXT_AUTHORIZATION_DECISION_REVIEW_MERGED_RUNTIME_DISABLED`
+- next safe status: `READY_FOR_RUNNER_WORKER_RISK_BOUNDARY_REVIEW_PREP`
+- Evidence: **`docs/PROJECT_ANCHOR_POST_MINIMAL_RUNTIME_ENABLEMENT_NEXT_AUTHORIZATION_DECISION_REVIEW_V1.md`**
+
 
 
 
