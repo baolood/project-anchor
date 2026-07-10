@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Mapping, Optional
 
 
 AlternativeTestnetHttpStatus = Literal["ACCEPTED", "REJECTED", "FAILED"]
@@ -187,6 +187,28 @@ class NoNetworkAlternativeTestnetHttpClient:
     ) -> AlternativeTestnetHttpRuntimeWiringResult:
         return self.runtime_not_wired_result(request)
 
+    def disabled_by_default_runtime_enablement_result(
+        self,
+        request: AlternativeTestnetHttpClientRequest,
+        enablement_input: Optional[Mapping[str, Any]] = None,
+    ) -> AlternativeTestnetHttpRuntimeWiringResult:
+        if enablement_input is None:
+            return self.runtime_not_enabled_result(request)
+        if not isinstance(enablement_input, Mapping):
+            return self.runtime_enablement_malformed_result(request)
+
+        requested_state = enablement_input.get("state", "disabled")
+        requested_action = enablement_input.get("action", "disabled")
+        if requested_state in ("disabled", "not_enabled", "not_wired"):
+            if requested_state == "not_wired":
+                return self.runtime_not_wired_result(request)
+            if requested_state == "not_enabled":
+                return self.runtime_not_enabled_result(request)
+            return self.runtime_disabled_result(request)
+        if requested_action in ("disabled", "none", "observe_only"):
+            return self.runtime_disabled_result(request)
+        return self.runtime_enablement_unsupported_result(request)
+
     def runtime_disabled_result(
         self,
         request: AlternativeTestnetHttpClientRequest,
@@ -218,6 +240,28 @@ class NoNetworkAlternativeTestnetHttpClient:
             status="NOT_WIRED",
             failure_family="ALTERNATIVE_TESTNET_HTTP_RUNTIME_NOT_WIRED",
             failure_reason="alternative_testnet_http_runtime_not_wired",
+        )
+
+    def runtime_enablement_malformed_result(
+        self,
+        request: AlternativeTestnetHttpClientRequest,
+    ) -> AlternativeTestnetHttpRuntimeWiringResult:
+        return self._runtime_wiring_disabled_shape(
+            request=request,
+            status="DISABLED",
+            failure_family="ALTERNATIVE_TESTNET_HTTP_RUNTIME_ENABLEMENT_MALFORMED",
+            failure_reason="alternative_testnet_http_runtime_enablement_malformed",
+        )
+
+    def runtime_enablement_unsupported_result(
+        self,
+        request: AlternativeTestnetHttpClientRequest,
+    ) -> AlternativeTestnetHttpRuntimeWiringResult:
+        return self._runtime_wiring_disabled_shape(
+            request=request,
+            status="DISABLED",
+            failure_family="ALTERNATIVE_TESTNET_HTTP_RUNTIME_ENABLEMENT_UNSUPPORTED",
+            failure_reason="alternative_testnet_http_runtime_enablement_unsupported",
         )
 
     def _runtime_wiring_disabled_shape(

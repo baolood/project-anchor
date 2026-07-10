@@ -1062,6 +1062,139 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
         self.assertIsNone(result.external_order_id)
         self.assertFalse(result.external_order_id_present)
 
+    def test_disabled_by_default_runtime_enablement_gate_defaults_to_not_enabled(self):
+        result = self.client.disabled_by_default_runtime_enablement_result(
+            _request(idempotency_key="alternative:http:disabled-by-default-gate:v1")
+        )
+
+        self.assertEqual(result.status, "NOT_ENABLED")
+        self.assertEqual(result.disabled_reason, "alternative_testnet_http_runtime_not_enabled")
+        self.assertEqual(result.disabled_stage, "runtime_wiring")
+        self.assertFalse(result.runtime_path_enabled)
+        self.assertFalse(result.composed_pipeline_executed)
+        self.assertFalse(result.signing_executed)
+        self.assertFalse(result.transport_executed)
+        self.assertFalse(result.network_sent)
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+
+    def test_disabled_by_default_runtime_enablement_gate_accepts_only_disabled_local_states(self):
+        cases = [
+            ({"state": "disabled"}, "DISABLED", "alternative_testnet_http_runtime_disabled"),
+            ({"state": "not_enabled"}, "NOT_ENABLED", "alternative_testnet_http_runtime_not_enabled"),
+            ({"state": "not_wired"}, "NOT_WIRED", "alternative_testnet_http_runtime_not_wired"),
+            ({"action": "observe_only"}, "DISABLED", "alternative_testnet_http_runtime_disabled"),
+        ]
+
+        for enablement_input, expected_status, expected_reason in cases:
+            with self.subTest(enablement_input=enablement_input):
+                result = self.client.disabled_by_default_runtime_enablement_result(
+                    _request(),
+                    enablement_input=enablement_input,
+                )
+
+                self.assertEqual(result.status, expected_status)
+                self.assertEqual(result.disabled_reason, expected_reason)
+                self.assertFalse(result.runtime_path_enabled)
+                self.assertFalse(result.signing_executed)
+                self.assertFalse(result.transport_executed)
+                self.assertFalse(result.network_sent)
+                self.assertIsNone(result.external_order_id)
+                self.assertFalse(result.external_order_id_present)
+
+    def test_disabled_by_default_runtime_enablement_gate_fails_closed_for_malformed_input(self):
+        result = self.client.disabled_by_default_runtime_enablement_result(
+            _request(idempotency_key="alternative:http:malformed-enable-gate:v1"),
+            enablement_input="malformed",
+        )
+
+        self.assertEqual(result.status, "DISABLED")
+        self.assertEqual(
+            result.failure_family,
+            "ALTERNATIVE_TESTNET_HTTP_RUNTIME_ENABLEMENT_MALFORMED",
+        )
+        self.assertEqual(
+            result.failure_reason,
+            "alternative_testnet_http_runtime_enablement_malformed",
+        )
+        self.assertFalse(result.runtime_path_enabled)
+        self.assertFalse(result.composed_pipeline_executed)
+        self.assertFalse(result.signing_executed)
+        self.assertFalse(result.transport_executed)
+        self.assertFalse(result.network_sent)
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+
+    def test_disabled_by_default_runtime_enablement_gate_fails_closed_for_unsupported_input(self):
+        result = self.client.disabled_by_default_runtime_enablement_result(
+            _request(idempotency_key="alternative:http:unsupported-enable-gate:v1"),
+            enablement_input={"state": "requested", "action": "start"},
+        )
+
+        self.assertEqual(result.status, "DISABLED")
+        self.assertEqual(
+            result.failure_family,
+            "ALTERNATIVE_TESTNET_HTTP_RUNTIME_ENABLEMENT_UNSUPPORTED",
+        )
+        self.assertEqual(
+            result.failure_reason,
+            "alternative_testnet_http_runtime_enablement_unsupported",
+        )
+        self.assertFalse(result.runtime_path_enabled)
+        self.assertFalse(result.composed_pipeline_executed)
+        self.assertFalse(result.signing_executed)
+        self.assertFalse(result.transport_executed)
+        self.assertFalse(result.network_sent)
+        self.assertIsNone(result.external_order_id)
+        self.assertFalse(result.external_order_id_present)
+
+    def test_disabled_by_default_runtime_enablement_gate_does_not_execute_pipeline_signing_or_transport(self):
+        class SpyClient(NoNetworkAlternativeTestnetHttpClient):
+            def __init__(self):
+                self.calls = []
+
+            def build_only_pipeline_result(self, request):
+                self.calls.append("build_only_pipeline_result")
+                return super().build_only_pipeline_result(request)
+
+            def signed_not_sent_pipeline_result(self, request, material):
+                self.calls.append("signed_not_sent_pipeline_result")
+                return super().signed_not_sent_pipeline_result(request, material)
+
+            def transport_not_executed_pipeline_result(self, request, material):
+                self.calls.append("transport_not_executed_pipeline_result")
+                return super().transport_not_executed_pipeline_result(request, material)
+
+            def build_signing_input(self, transport_input, material):
+                self.calls.append("build_signing_input")
+                return super().build_signing_input(transport_input, material)
+
+            def signed_request_result(self, signing_input, material):
+                self.calls.append("signed_request_result")
+                return super().signed_request_result(signing_input, material)
+
+            def transport_not_executed_result(self, transport_input):
+                self.calls.append("transport_not_executed_result")
+                return super().transport_not_executed_result(transport_input)
+
+        spy = SpyClient()
+        results = [
+            spy.disabled_by_default_runtime_enablement_result(_request()),
+            spy.disabled_by_default_runtime_enablement_result(_request(), {"state": "disabled"}),
+            spy.disabled_by_default_runtime_enablement_result(_request(), {"state": "requested"}),
+            spy.disabled_by_default_runtime_enablement_result(_request(), "malformed"),
+        ]
+
+        self.assertEqual(spy.calls, [])
+        for result in results:
+            self.assertFalse(result.runtime_path_enabled)
+            self.assertFalse(result.composed_pipeline_executed)
+            self.assertFalse(result.signing_executed)
+            self.assertFalse(result.transport_executed)
+            self.assertFalse(result.network_sent)
+            self.assertIsNone(result.external_order_id)
+            self.assertFalse(result.external_order_id_present)
+
     def test_runtime_enablement_integration_disabled_result_defaults_to_not_wired(self):
         result = self.client.runtime_enablement_integration_disabled_result(
             _request(idempotency_key="alternative:http:integration-disabled:v1")
