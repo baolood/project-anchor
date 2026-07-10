@@ -174,6 +174,31 @@ def _run_mocked_testnet_external_executor(
     return simulator_order_executor.run_simulator_order_request(transport_input, now_ts)
 
 
+def disabled_only_runner_integration_status_surface() -> Dict[str, Any]:
+    return {
+        "surface": "alternative_testnet_http_client_runner_integration",
+        "status": "DISABLED",
+        "mode": "disabled_status_surface_only",
+        "stage": "runner_integration_disabled_status_surface",
+        "reason": "runtime_enablement_not_authorized",
+        "runtime_path_enabled": False,
+        "runner_pipeline_invoked": False,
+        "worker_invoked": False,
+        "risk_modified": False,
+        "credentials_read": False,
+        "env_config_read": False,
+        "real_signing_enabled": False,
+        "real_http_network_enabled": False,
+        "network_sent": False,
+        "external_request_sent": False,
+        "external_order_id": None,
+        "external_order_id_present": False,
+        "canary_executed": False,
+        "go_live": "NO-GO",
+        "live_trading": "NO-GO",
+    }
+
+
 class DomainCommandRunner:
     """
     Encapsulates: pick one domain command, resolve action, run it, persist outcome.

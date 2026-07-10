@@ -5574,3 +5574,26 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - Evidence: **`docs/TESTNET_CREDENTIALS_RUNTIME_RECONCILIATION_V1.md`** (distinguishes the historical failed local send from later runtime credential readiness; does not authorize retry, canary, live trading, or go-live)
+
+### Project Anchor Disabled-Only Runner Integration Implementation Slice V1
+
+- implementation added: YES
+- workflow tier: high-risk implementation constrained to disabled status surface only
+- allowed files touched: `anchor-backend/app/actions/runner.py`, `tests/test_alternative_testnet_http_client.py`, `docs/GO_LIVE_CHECKLIST.md`
+- forbidden files touched: NO
+- runner-facing disabled status surface added: YES
+- disabled status surface function: `disabled_only_runner_integration_status_surface`
+- runtime path enabled: NO
+- runner pipeline invoked by status surface: NO
+- worker invoked by status surface: NO
+- risk modified: NO
+- credentials/env/config read: NO
+- real signing enabled: NO
+- real HTTP/network enabled: NO
+- network_sent: false
+- external_request_sent: false
+- external_order_id_present: false
+- canary executed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_DISABLED_ONLY_RUNNER_INTEGRATION_IMPLEMENTATION_OBSERVABILITY_REVIEW`
