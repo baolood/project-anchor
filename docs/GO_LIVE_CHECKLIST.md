@@ -5163,6 +5163,46 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_RUNNER_WORKER_RISK_BOUNDARY_REVIEW_PREP`
 - Evidence: **`docs/PROJECT_ANCHOR_POST_MINIMAL_RUNTIME_ENABLEMENT_NEXT_AUTHORIZATION_DECISION_REVIEW_V1.md`**
 
+### Project Anchor Runner Worker Risk Boundary Review Prep V1
+
+- purpose: prepare the runner / worker / risk boundary review surface without authorizing wiring or execution
+- workflow tier: medium-risk review prep
+- previous locked state acknowledged: `PROJECT_ANCHOR_POST_MINIMAL_RUNTIME_ENABLEMENT_NEXT_AUTHORIZATION_DECISION_REVIEW_MERGED_RUNTIME_DISABLED`
+- previous recommendation acknowledged: `RUNNER_WORKER_RISK_BOUNDARY_REVIEW_PREP`
+- runner / worker / risk boundary review prep added: YES
+- future runner boundary evidence required: YES
+- future worker boundary evidence required: YES
+- future risk boundary evidence required: YES
+- future command lifecycle boundary evidence required: YES
+- future disabled HTTP client boundary evidence required: YES
+- future authorization boundary evidence required: YES
+- runner / worker / risk wiring authorized by this prep: NO
+- runner / worker / risk modified in this task: NO
+- runtime path enablement authorized by this prep: NO
+- credentials/env/config read authorized by this prep: NO
+- real signing authorized by this prep: NO
+- real HTTP/network authorized by this prep: NO
+- external request authorized by this prep: NO
+- canary authorized by this prep: NO
+- go-live/live trading authorized by this prep: NO
+- DNS changed in this task: NO
+- A/CNAME created in this task: NO
+- `45.76.190.109` bound in this task: NO
+- TLS requested in this task: NO
+- ingress opened in this task: NO
+- credentials/env/config read in this task: NO
+- real signing enabled in this task: NO
+- real HTTP/network enabled in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- canary executed in this task: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- final state: `PROJECT_ANCHOR_RUNNER_WORKER_RISK_BOUNDARY_REVIEW_PREP_MERGED_RUNTIME_DISABLED`
+- next safe status: `READY_FOR_RUNNER_WORKER_RISK_BOUNDARY_REVIEW`
+- Evidence: **`docs/PROJECT_ANCHOR_RUNNER_WORKER_RISK_BOUNDARY_REVIEW_PREP_V1.md`**
+
 
 
 
