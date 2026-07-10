@@ -5247,6 +5247,49 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_DISABLED_ONLY_RUNNER_INTEGRATION_PLAN_PREP`
 - Evidence: **`docs/PROJECT_ANCHOR_RUNNER_WORKER_RISK_BOUNDARY_REVIEW_V1.md`**
 
+### Project Anchor Disabled-Only Runner Integration Plan Prep V1
+
+- purpose: prepare a future disabled-only runner integration plan without authorizing implementation or execution
+- workflow tier: medium-risk plan prep
+- previous locked state acknowledged: `PROJECT_ANCHOR_RUNNER_WORKER_RISK_BOUNDARY_REVIEW_MERGED_RUNTIME_DISABLED`
+- runner / worker / risk boundary review acknowledged: YES
+- runner / worker / risk remain unwired: YES
+- disabled-only runner integration plan prep added: YES
+- future exact allowed files section required: YES
+- future exact forbidden files section required: YES
+- future runner-facing disabled result shape required: YES
+- future signing/transport non-execution proof required: YES
+- future worker/risk unchanged proof required: YES
+- future rollback plan required: YES
+- future explicit operator authorization required before implementation: YES
+- runner wiring implemented in this task: NO
+- worker wiring implemented in this task: NO
+- risk wiring implemented in this task: NO
+- runner / worker / risk modified in this task: NO
+- runtime path enablement authorized by this prep: NO
+- credentials/env/config read authorized by this prep: NO
+- real signing authorized by this prep: NO
+- real HTTP/network authorized by this prep: NO
+- external request authorized by this prep: NO
+- canary authorized by this prep: NO
+- DNS changed in this task: NO
+- A/CNAME created in this task: NO
+- `45.76.190.109` bound in this task: NO
+- TLS requested in this task: NO
+- ingress opened in this task: NO
+- credentials/env/config read in this task: NO
+- real signing enabled in this task: NO
+- real HTTP/network enabled in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- canary executed in this task: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- final state: `PROJECT_ANCHOR_DISABLED_ONLY_RUNNER_INTEGRATION_PLAN_PREP_MERGED_RUNTIME_DISABLED`
+- next safe status: `READY_FOR_DISABLED_ONLY_RUNNER_INTEGRATION_PLAN`
+- Evidence: **`docs/PROJECT_ANCHOR_DISABLED_ONLY_RUNNER_INTEGRATION_PLAN_PREP_V1.md`**
+
 
 
 
