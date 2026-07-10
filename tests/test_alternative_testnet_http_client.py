@@ -1,5 +1,6 @@
 import dataclasses
 import ast
+import inspect
 import sys
 from pathlib import Path
 import unittest
@@ -21,6 +22,7 @@ from app.actions.alternative_testnet_http_client import (  # noqa: E402
     AlternativeTestnetHttpTransportResult,
     NoNetworkAlternativeTestnetHttpClient,
 )
+from app.actions import runner as domain_runner  # noqa: E402
 
 
 def _request(**overrides):
@@ -1751,6 +1753,53 @@ class AlternativeTestnetHttpClientSkeletonTest(unittest.TestCase):
 
         self.assertFalse(accepted_pipeline_result.network_sent)
         self.assertTrue(forbidden_fields.isdisjoint(dataclasses.asdict(accepted_pipeline_result)))
+
+    def test_disabled_only_runner_integration_status_surface_remains_disabled(self):
+        first = domain_runner.disabled_only_runner_integration_status_surface()
+        second = domain_runner.disabled_only_runner_integration_status_surface()
+        function_source = inspect.getsource(domain_runner.disabled_only_runner_integration_status_surface)
+        forbidden_snippets = (
+            "os.getenv",
+            "os.environ",
+            "run_action_with_pipeline",
+            "default_pipeline_steps",
+            "domain_command_worker",
+            "risk_gate",
+            "risk_state",
+            "requests.",
+            "httpx.",
+            "aiohttp.",
+            "socket.",
+            "urllib.request",
+            "external_request_sent=True",
+            "network_sent=True",
+            "canary_executed=True",
+            "runtime_path_enabled=True",
+        )
+
+        self.assertEqual(first, second)
+        self.assertEqual(first["surface"], "alternative_testnet_http_client_runner_integration")
+        self.assertEqual(first["status"], "DISABLED")
+        self.assertEqual(first["mode"], "disabled_status_surface_only")
+        self.assertEqual(first["stage"], "runner_integration_disabled_status_surface")
+        self.assertEqual(first["reason"], "runtime_enablement_not_authorized")
+        self.assertFalse(first["runtime_path_enabled"])
+        self.assertFalse(first["runner_pipeline_invoked"])
+        self.assertFalse(first["worker_invoked"])
+        self.assertFalse(first["risk_modified"])
+        self.assertFalse(first["credentials_read"])
+        self.assertFalse(first["env_config_read"])
+        self.assertFalse(first["real_signing_enabled"])
+        self.assertFalse(first["real_http_network_enabled"])
+        self.assertFalse(first["network_sent"])
+        self.assertFalse(first["external_request_sent"])
+        self.assertIsNone(first["external_order_id"])
+        self.assertFalse(first["external_order_id_present"])
+        self.assertFalse(first["canary_executed"])
+        self.assertEqual(first["go_live"], "NO-GO")
+        self.assertEqual(first["live_trading"], "NO-GO")
+        for snippet in forbidden_snippets:
+            self.assertNotIn(snippet, function_source)
 
 
 if __name__ == "__main__":
