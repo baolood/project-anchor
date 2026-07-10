@@ -5020,6 +5020,60 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_DISABLED_BY_DEFAULT_MINIMAL_RUNTIME_ENABLEMENT_GUARDRAIL_REGRESSION_REVIEW`
 - Evidence: **`docs/PROJECT_ANCHOR_DISABLED_BY_DEFAULT_MINIMAL_RUNTIME_ENABLEMENT_OBSERVABILITY_REVIEW_V1.md`**
 
+### Project Anchor Disabled-by-Default Minimal Runtime Enablement Guardrail Regression Review V1
+
+- purpose: review regression guardrails after PR #271 and PR #272 so the disabled-by-default runtime gate cannot silently become executable
+- workflow tier: medium-risk review
+- PR #271 disabled-by-default implementation merged: YES
+- PR #272 observability review merged: YES
+- absent enablement input remains `NOT_ENABLED`: YES
+- disabled local state remains `DISABLED`: YES
+- not-enabled local state remains `NOT_ENABLED`: YES
+- not-wired local state remains `NOT_WIRED`: YES
+- malformed input remains fail-closed: YES
+- unsupported input remains fail-closed: YES
+- required disabled result fields preserved by regression expectation: YES
+- composed pipeline execution remains forbidden by disabled gate: YES
+- signing execution remains forbidden by disabled gate: YES
+- transport execution remains forbidden by disabled gate: YES
+- `network_sent=true` remains forbidden by disabled gate: YES
+- external order ID creation remains forbidden by disabled gate: YES
+- real HTTP client import/call remains forbidden: YES
+- socket/network behavior remains forbidden: YES
+- credentials/env/config read remains forbidden: YES
+- real Authorization/signature logic remains forbidden: YES
+- runner / worker / risk wiring remains forbidden: YES
+- external request remains forbidden: YES
+- canary remains forbidden: YES
+- go-live/live trading remain NO-GO: YES
+- regression evidence tests recorded: YES
+- runtime enablement execution authorized in this task: NO
+- credentials/env/config read authorized in this task: NO
+- real signing authorized in this task: NO
+- real HTTP/network authorized in this task: NO
+- external request authorized in this task: NO
+- canary authorized in this task: NO
+- go-live authorized in this task: NO
+- live trading authorized in this task: NO
+- DNS changed in this task: NO
+- A/CNAME created in this task: NO
+- `45.76.190.109` bound in this task: NO
+- TLS requested in this task: NO
+- ingress opened in this task: NO
+- runner / worker / risk modified in this task: NO
+- credentials/env/config read in this task: NO
+- real signing enabled in this task: NO
+- real HTTP/network enabled in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- canary executed in this task: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- final state: `PROJECT_ANCHOR_DISABLED_BY_DEFAULT_MINIMAL_RUNTIME_ENABLEMENT_GUARDRAIL_REGRESSION_REVIEW_MERGED_RUNTIME_DISABLED`
+- next safe status: `READY_FOR_DISABLED_BY_DEFAULT_MINIMAL_RUNTIME_ENABLEMENT_CLOSEOUT_REVIEW`
+- Evidence: **`docs/PROJECT_ANCHOR_DISABLED_BY_DEFAULT_MINIMAL_RUNTIME_ENABLEMENT_GUARDRAIL_REGRESSION_REVIEW_V1.md`**
+
 
 
 
