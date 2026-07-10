@@ -4972,6 +4972,54 @@ Record the choice + reason here:
 - next safe status: `READY_FOR_PROJECT_ANCHOR_POST_FREEZE_RUNTIME_ENABLEMENT_AUTHORIZATION_PACKET_VALIDATION_REVIEW`
 - Evidence: **`docs/PROJECT_ANCHOR_POST_FREEZE_RUNTIME_ENABLEMENT_AUTHORIZATION_PACKET_OPERATOR_FILL_V1.md`**
 
+### Project Anchor Disabled-by-Default Minimal Runtime Enablement Observability Review V1
+
+- purpose: review PR #271 disabled-by-default minimal runtime enablement implementation observability while preserving runtime-disabled behavior
+- workflow tier: medium-risk review
+- PR #271 merged: YES
+- implementation commit before merge: `c305821 add disabled by default runtime enablement gate`
+- latest main HEAD at review baseline: `d500509 Merge pull request #271 from baolood/codex/project-anchor-disabled-by-default-minimal-runtime-enablement-implementation`
+- disabled-by-default gate observable: YES
+- absent enablement input result: `NOT_ENABLED`
+- disabled local state result: `DISABLED`
+- not-enabled local state result: `NOT_ENABLED`
+- not-wired local state result: `NOT_WIRED`
+- malformed input fails closed: YES
+- unsupported input fails closed: YES
+- runtime path remains disabled: YES
+- composed pipeline executed by gate: NO
+- signing executed by gate: NO
+- transport executed by gate: NO
+- network sent by gate: NO
+- external order ID created by gate: NO
+- evidence tests recorded: YES
+- runtime enablement execution authorized in this task: NO
+- credentials/env/config read authorized in this task: NO
+- real signing authorized in this task: NO
+- real HTTP/network authorized in this task: NO
+- external request authorized in this task: NO
+- canary authorized in this task: NO
+- go-live authorized in this task: NO
+- live trading authorized in this task: NO
+- DNS changed in this task: NO
+- A/CNAME created in this task: NO
+- `45.76.190.109` bound in this task: NO
+- TLS requested in this task: NO
+- ingress opened in this task: NO
+- runner / worker / risk modified in this task: NO
+- credentials/env/config read in this task: NO
+- real signing enabled in this task: NO
+- real HTTP/network enabled in this task: NO
+- runtime path enabled in this task: NO
+- external request sent in this task: NO
+- canary retried in this task: NO
+- canary executed in this task: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- final state: `PROJECT_ANCHOR_DISABLED_BY_DEFAULT_MINIMAL_RUNTIME_ENABLEMENT_OBSERVABILITY_REVIEW_MERGED_RUNTIME_DISABLED`
+- next safe status: `READY_FOR_DISABLED_BY_DEFAULT_MINIMAL_RUNTIME_ENABLEMENT_GUARDRAIL_REGRESSION_REVIEW`
+- Evidence: **`docs/PROJECT_ANCHOR_DISABLED_BY_DEFAULT_MINIMAL_RUNTIME_ENABLEMENT_OBSERVABILITY_REVIEW_V1.md`**
+
 
 
 
