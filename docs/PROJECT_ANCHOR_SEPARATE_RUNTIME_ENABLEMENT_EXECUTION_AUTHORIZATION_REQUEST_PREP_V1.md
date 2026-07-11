@@ -86,3 +86,38 @@ The next safe state is waiting for an explicit operator fill on this request. Ru
 
 NEXT_SAFE_STATE=WAITING_FOR_OPERATOR_FILL_ON_RUNTIME_ENABLEMENT_EXECUTION_AUTHORIZATION_REQUEST
 RUNTIME_REMAINS_DISABLED_UNTIL_SEPARATE_OPERATOR_FILL=YES
+
+## Recorded Operator Fill
+
+The operator selected Option A. This fill is documentation-only and preflight-only. It does not perform runtime execution and does not authorize signing, HTTP/network, external request, canary, go-live, or live trading.
+
+```text
+RUNTIME_ENABLEMENT_EXECUTION_AUTHORIZATION_REQUEST_FILLED=yes
+AUTHORIZED_ACTION=prepare_runtime_enablement_execution_only
+AUTHORIZED_SCOPE=enable_disabled_by_default_runtime_path_after_preflight_only
+AUTHORIZED_CREDENTIALS_ENV_CONFIG_READ=YES_FOR_PREFLIGHT_ONLY
+AUTHORIZED_REAL_SIGNING=NO
+AUTHORIZED_REAL_HTTP_NETWORK=NO
+AUTHORIZED_EXTERNAL_REQUEST=NO
+AUTHORIZED_CANARY=NO
+AUTHORIZED_GO_LIVE=NO
+AUTHORIZED_LIVE_TRADING=NO
+FINAL_OPERATOR_VERDICT=APPROVED_FOR_RUNTIME_ENABLEMENT_EXECUTION_PREFLIGHT_ONLY
+SEPARATE_CANARY_AUTHORIZATION_REQUIRED=YES
+SEPARATE_EXTERNAL_REQUEST_AUTHORIZATION_REQUIRED=YES
+```
+
+## Post-Fill Boundary
+
+- runtime path enabled by this fill: NO
+- runtime execution performed by this fill: NO
+- credentials/env/config read by this fill: NO
+- real signing enabled: NO
+- real HTTP/network enabled: NO
+- external request sent: NO
+- canary executed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+
+NEXT_SAFE_STATE_AFTER_OPERATOR_FILL=READY_FOR_RUNTIME_ENABLEMENT_EXECUTION_PREFLIGHT_PLAN
+RUNTIME_REMAINS_DISABLED_UNTIL_SEPARATE_EXECUTION_STEP=YES
