@@ -139,3 +139,54 @@ A future separately authorized provisioning step must satisfy all of the followi
 
 NEXT_SAFE_STATE=WAITING_FOR_OPERATOR_FILL_ON_CANONICAL_TESTNET_ENV_PROVISIONING_AUTHORIZATION_REQUEST
 RUNTIME_REMAINS_DISABLED=YES
+
+## Recorded Operator Fill
+
+The operator selected Option A for canonical testnet env provisioning only. This fill is documentation-only in this PR. It does not execute provisioning, does not create or modify `/etc/project-anchor/testnet.env`, does not read or disclose actual secret values, does not execute a second preflight, and does not enable runtime.
+
+```text
+CANONICAL_TESTNET_ENV_PROVISIONING_AUTHORIZATION_REQUEST_FILLED=yes
+AUTHORIZED_ACTION=provision_canonical_testnet_env_file_only
+AUTHORIZED_SCOPE=create_or_update_etc_project_anchor_testnet_env_with_operator_supplied_values
+AUTHORIZED_CANONICAL_PATH=/etc/project-anchor/testnet.env
+AUTHORIZED_SECRET_VALUE_ENTRY=YES_BY_OPERATOR_ONLY
+AUTHORIZED_SECRET_VALUE_DISCLOSURE=NO
+AUTHORIZED_GIT_WRITE_OF_SECRETS=NO
+AUTHORIZED_SHELL_OUTPUT_OF_SECRETS=NO
+AUTHORIZED_LOGGING_OF_SECRETS=NO
+AUTHORIZED_ENV_FILE_PERMISSION_HARDENING=YES
+AUTHORIZED_PRESENCE_SHAPE_VALIDATION=YES
+AUTHORIZED_RUNTIME_PATH_ENABLEMENT=NO
+AUTHORIZED_REAL_SIGNING=NO
+AUTHORIZED_REAL_HTTP_NETWORK=NO
+AUTHORIZED_EXTERNAL_REQUEST=NO
+AUTHORIZED_SECOND_PREFLIGHT=NO
+AUTHORIZED_CANARY=NO
+AUTHORIZED_GO_LIVE=NO
+AUTHORIZED_LIVE_TRADING=NO
+STOP_ON_ANY_SECRET_DISCLOSURE_RISK=YES
+STOP_ON_ANY_PATH_MISMATCH=YES
+STOP_ON_ANY_SCOPE_DRIFT=YES
+FINAL_OPERATOR_VERDICT=APPROVED_FOR_CANONICAL_TESTNET_ENV_PROVISIONING_ONLY
+SEPARATE_SECOND_PREFLIGHT_AUTHORIZATION_REQUIRED=YES
+SEPARATE_RUNTIME_PATH_ENABLEMENT_AUTHORIZATION_REQUIRED=YES
+SEPARATE_CANARY_AUTHORIZATION_REQUIRED=YES
+SEPARATE_EXTERNAL_REQUEST_AUTHORIZATION_REQUIRED=YES
+```
+
+## Post-Fill Boundary
+
+- canonical env file modified by this fill PR: NO
+- credentials/env/config provisioned by this fill PR: NO
+- actual secret values read: NO
+- secret values disclosed: NO
+- second preflight executed: NO
+- runtime path enabled: NO
+- real signing enabled: NO
+- real HTTP/network enabled: NO
+- external request sent: NO
+- canary executed: NO
+- go-live/live trading: NO-GO
+
+NEXT_SAFE_STATE_AFTER_OPERATOR_FILL=READY_FOR_BOUNDED_CANONICAL_TESTNET_ENV_PROVISIONING
+RUNTIME_REMAINS_DISABLED=YES
