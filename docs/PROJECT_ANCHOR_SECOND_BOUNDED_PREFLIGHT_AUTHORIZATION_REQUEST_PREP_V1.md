@@ -137,3 +137,42 @@ A future separately authorized second bounded preflight must produce only non-se
 
 NEXT_SAFE_STATE=WAITING_FOR_OPERATOR_FILL_ON_SECOND_BOUNDED_PREFLIGHT_AUTHORIZATION_REQUEST
 RUNTIME_REMAINS_DISABLED=YES
+
+## Recorded Operator Fill: Execution Prep Only
+
+The operator selected a narrower documentation-only fill that allows preparation for a future second bounded preflight execution authorization step. This fill is not Option A preflight execution authorization, does not authorize reading `/etc/project-anchor/testnet.env`, and does not authorize preflight execution.
+
+```text
+SECOND_BOUNDED_PREFLIGHT_AUTHORIZATION_REQUEST_FILLED=yes
+AUTHORIZED_ACTION=prepare_second_bounded_preflight_execution_only
+AUTHORIZED_SCOPE=second_bounded_preflight_preparation_only
+AUTHORIZED_PREFLIGHT_EXECUTION=NO
+AUTHORIZED_CREDENTIALS_ENV_CONFIG_READ=NO
+AUTHORIZED_SECRET_VALUE_READ_OR_DISCLOSURE=NO
+AUTHORIZED_RUNTIME_PATH_ENABLEMENT=NO
+AUTHORIZED_REAL_SIGNING=NO
+AUTHORIZED_REAL_HTTP_NETWORK=NO
+AUTHORIZED_EXTERNAL_REQUEST=NO
+AUTHORIZED_CANARY=NO
+AUTHORIZED_GO_LIVE=NO
+AUTHORIZED_LIVE_TRADING=NO
+FINAL_OPERATOR_VERDICT=APPROVED_FOR_SECOND_BOUNDED_PREFLIGHT_EXECUTION_PREP_ONLY
+SEPARATE_PREFLIGHT_EXECUTION_AUTHORIZATION_REQUIRED=YES
+```
+
+## Post-Fill Boundary
+
+- second bounded preflight executed by this fill: NO
+- `/etc/project-anchor/testnet.env` read by this fill: NO
+- credentials/env/config read by this fill: NO
+- actual secret values read or disclosed: NO
+- runtime path enabled: NO
+- real signing executed: NO
+- real HTTP/network attempted: NO
+- external request sent: NO
+- canary executed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+
+NEXT_SAFE_STATE_AFTER_OPERATOR_FILL=WAITING_FOR_REMOTE_PR_AUTHORIZATION_FOR_SECOND_BOUNDED_PREFLIGHT_OPERATOR_FILL
+RUNTIME_REMAINS_DISABLED=YES

@@ -5618,3 +5618,22 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next safe status: `WAITING_FOR_OPERATOR_FILL_ON_SECOND_BOUNDED_PREFLIGHT_AUTHORIZATION_REQUEST`
+
+### Project Anchor Second Bounded Preflight Authorization Request Operator Fill V1
+
+- operator fill recorded: YES
+- fill verdict: `APPROVED_FOR_SECOND_BOUNDED_PREFLIGHT_EXECUTION_PREP_ONLY`
+- Evidence: **`docs/PROJECT_ANCHOR_SECOND_BOUNDED_PREFLIGHT_AUTHORIZATION_REQUEST_PREP_V1.md`**
+- second bounded preflight execution authorized by this fill: NO
+- separate preflight execution authorization required: YES
+- `/etc/project-anchor/testnet.env` read by this fill: NO
+- credentials/env/config read by this fill: NO
+- actual secret values read or disclosed: NO
+- runtime path enabled: NO
+- real signing executed: NO
+- real HTTP/network attempted: NO
+- external request sent: NO
+- canary executed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `WAITING_FOR_REMOTE_PR_AUTHORIZATION_FOR_SECOND_BOUNDED_PREFLIGHT_OPERATOR_FILL`
