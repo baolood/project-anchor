@@ -5699,3 +5699,22 @@ Record the choice + reason here:
 - canary authorized by this review: NO
 - go-live/live trading: NO-GO
 - next safe status: `READY_FOR_EXPLICIT_NEXT_RUNTIME_OR_CONTROLLED_SEND_AUTHORIZATION_DECISION`
+
+### Project Anchor One-Shot Testnet Dry-Run Evidence V1
+
+- one-shot ORDER:testnet dry-run executed: YES
+- Evidence: **`docs/PROJECT_ANCHOR_ONE_SHOT_TESTNET_DRY_RUN_EVIDENCE_V1.md`**
+- fixture: `valid-window-dry`
+- window time check: PASS
+- guarded post branch: DRY_RUN
+- POST attempted: NO
+- POST executed: NO
+- external request sent: NO
+- canary executed: NO
+- runtime path enabled: NO
+- real signing executed: NO
+- real HTTP/network attempted: NO
+- secret values read/disclosed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_EXPLICIT_CONTROLLED_TESTNET_SEND_AUTHORIZATION_DECISION`
