@@ -4,7 +4,7 @@
 services:
   backend:
     env_file:
-      - /etc/project-anchor/testnet.env
+      - ${TESTNET_ENV_FILE:-/etc/project-anchor/testnet.env}
     environment:
       EXECUTION_MODE: ${EXECUTION_MODE:-}
       TESTNET_EXCHANGE_BASE_URL: ${TESTNET_EXCHANGE_BASE_URL:-https://demo-fapi.binance.com}
@@ -15,7 +15,7 @@ services:
       TESTNET_EXECUTOR_REAL_ENABLE: ${TESTNET_EXECUTOR_REAL_ENABLE:-1}
   worker:
     env_file:
-      - /etc/project-anchor/testnet.env
+      - ${TESTNET_ENV_FILE:-/etc/project-anchor/testnet.env}
     environment:
       CAPITAL_USD: "1000"
       MAX_SINGLE_TRADE_RISK_PCT: "0.5"
