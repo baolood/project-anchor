@@ -5637,3 +5637,23 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next safe status: `WAITING_FOR_REMOTE_PR_AUTHORIZATION_FOR_SECOND_BOUNDED_PREFLIGHT_OPERATOR_FILL`
+
+### Project Anchor Compose Testnet Env File Parameterization V1
+
+- compose testnet env_file parameterized: YES
+- file changed: `anchor-backend/docker-compose.override.yml`
+- default canonical env path preserved: `/etc/project-anchor/testnet.env`
+- override variable supported: `TESTNET_ENV_FILE`
+- bounded preflight temporary env copy supported: YES
+- `/etc/project-anchor/testnet.env` owner changed: NO
+- `/etc/project-anchor/testnet.env` mode changed: NO
+- secret values read or disclosed: NO
+- second bounded preflight retried in this task: NO
+- runtime path enabled: NO
+- real signing executed: NO
+- real HTTP/network attempted: NO
+- external request sent: NO
+- canary executed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_COMPOSE_ENV_FILE_PARAMETERIZATION_PR_MERGE`
