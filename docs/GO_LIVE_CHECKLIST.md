@@ -5739,3 +5739,29 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next safe status: `WAITING_FOR_FRESH_BOUNDED_CONTROLLED_TESTNET_SEND_AUTHORIZATION_WINDOW`
+
+### Project Anchor Controlled Testnet Send Success Closeout V1
+
+- controlled ORDER:testnet send executed: YES, exactly once
+- Evidence: **`docs/PROJECT_ANCHOR_CONTROLLED_TESTNET_SEND_SUCCESS_CLOSEOUT_V1.md`**
+- authorized idempotency key: `testnet:ops_manual:BTCUSDT:BUY:4:first-bounded-request:v1`
+- fresh authorization window used: YES
+- window time check: PASS
+- local POST attempted: YES
+- local POST executed: YES
+- automatic retry executed: NO
+- command id: `order-a06eed8f-cd60-4a4f-b3e9-84c540b98e6f`
+- command status: DONE
+- attempt: 1
+- execution mode: testnet
+- market: binance_testnet
+- external request started: YES
+- external status: FILLED
+- external order id present: YES
+- external order id: `22553435057`
+- event chain: PICKED -> POLICY_ALLOW -> KILL_SWITCH_CHECKED -> TESTNET_EXECUTOR_REQUESTED -> TESTNET_EXECUTOR_ACCEPTED -> ACTION_OK -> MARK_DONE
+- secret values printed/disclosed: NO
+- canary executed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_POST_CONTROLLED_TESTNET_SEND_RESULT_REVIEW`
