@@ -5597,3 +5597,24 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next safe status: `READY_FOR_DISABLED_ONLY_RUNNER_INTEGRATION_IMPLEMENTATION_OBSERVABILITY_REVIEW`
+
+### Project Anchor Second Bounded Preflight Authorization Request Prep V1
+
+- authorization request prep added: YES
+- workflow tier: medium-risk documentation prep
+- Evidence: **`docs/PROJECT_ANCHOR_SECOND_BOUNDED_PREFLIGHT_AUTHORIZATION_REQUEST_PREP_V1.md`**
+- canonical env path: `/etc/project-anchor/testnet.env`
+- operator local secret entry remains protected: YES
+- second bounded preflight authorized now: NO
+- second bounded preflight executed: NO
+- credentials/env/config read in this task: NO
+- actual secret values read: NO
+- secret values disclosed: NO
+- runtime path enabled: NO
+- real signing executed: NO
+- real HTTP/network attempted: NO
+- external request sent: NO
+- canary executed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `WAITING_FOR_OPERATOR_FILL_ON_SECOND_BOUNDED_PREFLIGHT_AUTHORIZATION_REQUEST`
