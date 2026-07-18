@@ -5718,3 +5718,24 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next safe status: `READY_FOR_EXPLICIT_CONTROLLED_TESTNET_SEND_AUTHORIZATION_DECISION`
+
+### Project Anchor Controlled Testnet Send Authorization Decision V1
+
+- controlled testnet send decision reviewed: YES
+- Evidence: **`docs/PROJECT_ANCHOR_CONTROLLED_TESTNET_SEND_AUTHORIZATION_DECISION_V1.md`**
+- second bounded preflight PASS evidence available: YES
+- one-shot dry-run evidence available: YES
+- controlled send runbook available: YES
+- readiness evidence sufficient to request a fresh bounded send window: YES
+- generic continuation wording accepted as exactly-one send authorization: NO
+- fresh bounded operator authorization window required before any POST: YES
+- POST executed: NO
+- real external request sent: NO
+- canary executed: NO
+- runtime path enabled: NO
+- real signing executed: NO
+- real HTTP/network attempted: NO
+- secret values read/disclosed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `WAITING_FOR_FRESH_BOUNDED_CONTROLLED_TESTNET_SEND_AUTHORIZATION_WINDOW`
