@@ -5657,3 +5657,31 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next safe status: `READY_FOR_COMPOSE_ENV_FILE_PARAMETERIZATION_PR_MERGE`
+
+### Project Anchor Second Bounded Preflight Retry PASS Closeout V1
+
+- second bounded preflight retry executed: YES, exactly once
+- result: PASS
+- Evidence: **`docs/PROJECT_ANCHOR_SECOND_BOUNDED_PREFLIGHT_RETRY_PASS_CLOSEOUT_V1.md`**
+- compose env file parameterization used: YES
+- temporary env copy cleaned: YES
+- canonical env owner changed: NO
+- canonical env mode changed: NO
+- required testnet env presence checks: PASS
+- backend container: YES
+- worker container: YES
+- `/health`: PASS
+- `/ops/state`: PASS
+- `/ops/worker`: PASS
+- kill switch false: PASS
+- worker heartbeat alive: PASS
+- telegram enabled: PASS
+- secret values printed/disclosed: NO
+- POST executed: NO
+- real external request sent: NO
+- canary executed: NO
+- runtime path enabled: NO
+- real signing executed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_POST_PREFLIGHT_RESULT_REVIEW_OR_NEXT_AUTHORIZATION_DECISION`
