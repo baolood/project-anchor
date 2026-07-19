@@ -1,0 +1,42 @@
+{
+  "blockers": [
+    "production credential access not authorized",
+    "production signing not authorized",
+    "production HTTP/network not authorized",
+    "go-live not authorized",
+    "live trading not authorized"
+  ],
+  "boundary": {
+    "canary_rerun": "NO",
+    "credentials_env_config_read": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_http_network_enabled": "NO",
+    "production_request_sent": "NO",
+    "production_signing_enabled": "NO",
+    "runtime_modified": "NO",
+    "secret_read": "NO"
+  },
+  "errors": [],
+  "evidence": {
+    "max_notional": "4",
+    "max_order_count": "1",
+    "production_market": "binance_spot",
+    "production_sides": "BUY_ONLY",
+    "production_symbols": "BTCUSDT",
+    "risk_limits_validation": "PASS"
+  },
+  "gates": {
+    "go_live": "NO",
+    "live_trading": "NO",
+    "production_credential_access": "NO",
+    "production_http_network": "NO",
+    "production_signing": "NO"
+  },
+  "generated_at": "2026-07-19T09:55:26Z",
+  "inputs": {
+    "risk_limits_config": "config/production_risk_limits.template.json",
+    "risk_limits_validation": "reports/production_risk_limits_validation.json"
+  },
+  "result": "BLOCKED"
+}
