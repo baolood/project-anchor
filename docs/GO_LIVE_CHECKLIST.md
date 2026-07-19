@@ -5927,3 +5927,40 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next safe status: `READY_FOR_PRODUCTION_RISK_LIMITS_REVIEW`
+
+### Project Anchor Production Risk Limits Review V1
+
+- production risk limits reviewed: YES
+- Evidence: **`docs/PROJECT_ANCHOR_PRODUCTION_RISK_LIMITS_REVIEW_V1.md`**
+- input go-live readiness result: NOT_READY_FOR_GO_LIVE_AUTHORIZATION
+- selected gap reviewed: production risk limits
+- maximum production notional reviewed as required input: YES
+- allowed production symbols reviewed as required input: YES
+- allowed production sides reviewed as required input: YES
+- maximum production order count reviewed as required input: YES
+- duplicate/idempotency posture reviewed as required input: YES
+- kill-switch dependency reviewed as required input: YES
+- stop conditions reviewed as required input: YES
+- monitoring window reviewed as required input: YES
+- production risk limits approved for execution: NO
+- maximum production notional approved: NO
+- allowed production symbols approved: NO
+- allowed production sides approved: NO
+- maximum production order count approved: NO
+- duplicate/idempotency posture approved for production: NO
+- kill-switch dependency approved for production: NO
+- stop conditions approved for production: NO
+- monitoring window approved for production: NO
+- go-live authorization granted by this review: NO
+- live trading authorization granted by this review: NO
+- production request sent in this review: NO
+- canary rerun in this review: NO
+- second canary executed in this review: NO
+- runtime path changed by this review: NO
+- credentials/env/config read by this review: NO
+- secret values read/disclosed: NO
+- production signing enabled: NO
+- production HTTP/network enabled: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_PRODUCTION_RISK_LIMITS_OPERATOR_FILL_DECISION`
