@@ -17,7 +17,7 @@
     "production_execution_ready": "FAIL",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-07-19T10:11:09Z",
+  "generated_at": "2026-07-19T10:50:07Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -35,7 +35,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-07-19T10:10:50.211743+00:00"
+    "worker_heartbeat_at": "2026-07-19T10:49:43.988321+00:00"
   },
   "latest_canary": {
     "attempt": 1,
@@ -88,6 +88,7 @@
   "overall_status": "WARN",
   "production_execution_readiness": {
     "blockers": [
+      "production credential readiness validation is not PASS",
       "production credential access not authorized",
       "production signing not authorized",
       "production HTTP/network not authorized",
@@ -108,6 +109,7 @@
     "evidence": {
       "max_notional": "4",
       "max_order_count": "1",
+      "production_credential_readiness": "FAIL",
       "production_market": "binance_spot",
       "production_sides": "BUY_ONLY",
       "production_symbols": "BTCUSDT",

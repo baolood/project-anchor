@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-19T10:11:09Z`
+Generated at: `2026-07-19T10:50:07Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-19T10:11:09Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-19T10:10:50.211743+00:00`
+- worker heartbeat at: `2026-07-19T10:49:43.988321+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -48,6 +48,7 @@ Generated at: `2026-07-19T10:11:09Z`
 
 ### Production Blockers
 
+- production credential readiness validation is not PASS
 - production credential access not authorized
 - production signing not authorized
 - production HTTP/network not authorized
