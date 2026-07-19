@@ -22,6 +22,9 @@ PRODUCTION_EXECUTION_AUTHORIZATION_DRY_GATE_REPORT = (
     REPORTS_DIR / "production_execution_authorization_dry_gate.json"
 )
 PRODUCTION_NO_SEND_EXECUTION_DRILL_REPORT = REPORTS_DIR / "production_no_send_execution_drill.json"
+PRODUCTION_UNSIGNED_CANONICAL_PAYLOAD_DRY_RUN_REPORT = (
+    REPORTS_DIR / "production_unsigned_canonical_payload_dry_run.json"
+)
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 CONTROLLED_COMMAND_ID = os.getenv(
@@ -217,6 +220,36 @@ def load_production_no_send_execution_drill() -> dict[str, Any]:
     }
 
 
+def load_production_unsigned_canonical_payload_dry_run() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "unsigned_canonical_payload_generated": False,
+        "sendable": False,
+        "boundary": {
+            "secret_read": "NO",
+            "production_request_sent": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(
+            PRODUCTION_UNSIGNED_CANONICAL_PAYLOAD_DRY_RUN_REPORT.read_text(encoding="utf-8")
+        )
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "unsigned_canonical_payload_generated": bool(
+            data.get("unsigned_canonical_payload_generated")
+        ),
+        "sendable": bool(data.get("sendable")),
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -252,6 +285,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         load_production_execution_authorization_dry_gate()
     )
     production_no_send_execution_drill = load_production_no_send_execution_drill()
+    production_unsigned_canonical_payload_dry_run = (
+        load_production_unsigned_canonical_payload_dry_run()
+    )
     production_execution_ready = production_execution_readiness.get("result") == "PASS"
 
     hard_failures = [
@@ -299,6 +335,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             production_execution_authorization_dry_gate
         ),
         "production_no_send_execution_drill": production_no_send_execution_drill,
+        "production_unsigned_canonical_payload_dry_run": (
+            production_unsigned_canonical_payload_dry_run
+        ),
         "go_live": {
             "verdict": "NO-GO",
             "blocking_gates": GO_LIVE_BLOCKERS,
@@ -325,6 +364,18 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "production_no_send_path_verified": pass_fail(
                 production_no_send_execution_drill.get("no_send_path_verified") is True
             ),
+            "production_unsigned_canonical_payload_dry_run_resolved": pass_fail(
+                production_unsigned_canonical_payload_dry_run.get("result") == "PASS"
+            ),
+            "production_unsigned_canonical_payload_generated": pass_fail(
+                production_unsigned_canonical_payload_dry_run.get(
+                    "unsigned_canonical_payload_generated"
+                )
+                is True
+            ),
+            "production_unsigned_canonical_payload_sendable": pass_fail(
+                production_unsigned_canonical_payload_dry_run.get("sendable") is True
+            ),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -345,6 +396,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     production_readiness = snapshot["production_execution_readiness"]
     production_dry_gate = snapshot["production_execution_authorization_dry_gate"]
     no_send_drill = snapshot["production_no_send_execution_drill"]
+    unsigned_payload = snapshot["production_unsigned_canonical_payload_dry_run"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
     production_blockers = "\n".join(
         f"- {item}" for item in production_readiness.get("blockers", [])
@@ -407,6 +459,12 @@ Generated at: `{snapshot["generated_at"]}`
 - result: {no_send_drill.get("result")}
 - no-send path verified: {str(no_send_drill.get("no_send_path_verified")).lower()}
 - authorized to execute: {str(no_send_drill.get("authorized_to_execute")).lower()}
+
+## Production Unsigned Canonical Payload Dry Run
+
+- result: {unsigned_payload.get("result")}
+- unsigned canonical payload generated: {str(unsigned_payload.get("unsigned_canonical_payload_generated")).lower()}
+- sendable: {str(unsigned_payload.get("sendable")).lower()}
 
 ### Production Gates
 
@@ -474,6 +532,14 @@ def main() -> int:
     print(
         "production_no_send_path_verified: "
         f"{str(snapshot['production_no_send_execution_drill'].get('no_send_path_verified')).lower()}"
+    )
+    print(
+        "production_unsigned_canonical_payload_dry_run: "
+        f"{snapshot['production_unsigned_canonical_payload_dry_run'].get('result')}"
+    )
+    print(
+        "production_unsigned_canonical_payload_generated: "
+        f"{str(snapshot['production_unsigned_canonical_payload_dry_run'].get('unsigned_canonical_payload_generated')).lower()}"
     )
     print("secret_read: NO")
     print("new_external_request_sent: NO")

@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-19T15:07:18Z`
+Generated at: `2026-07-19T15:15:33Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-19T15:07:18Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-19T15:07:16.483032+00:00`
+- worker heartbeat at: `2026-07-19T15:15:21.140482+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -50,6 +50,12 @@ Generated at: `2026-07-19T15:07:18Z`
 - result: PASS
 - no-send path verified: true
 - authorized to execute: false
+
+## Production Unsigned Canonical Payload Dry Run
+
+- result: PASS
+- unsigned canonical payload generated: true
+- sendable: false
 
 ### Production Gates
 
