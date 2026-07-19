@@ -5900,3 +5900,30 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next safe status: `READY_FOR_EXPLICIT_GO_LIVE_GAP_DECISION`
+
+### Project Anchor Go-Live Gap Decision V1
+
+- go-live gap decision recorded: YES
+- Evidence: **`docs/PROJECT_ANCHOR_GO_LIVE_GAP_DECISION_V1.md`**
+- input go-live readiness result: NOT_READY_FOR_GO_LIVE_AUTHORIZATION
+- controlled testnet filled evidence accepted: YES
+- exactly-one canary filled evidence accepted: YES
+- selected next gap: production risk limits review
+- decision result: `PROCEED_TO_PRODUCTION_RISK_LIMITS_REVIEW`
+- production market selection approved by this decision: NO
+- production credential provisioning approved by this decision: NO
+- production signing approved by this decision: NO
+- production HTTP/network execution approved by this decision: NO
+- rollback and stop conditions approved by this decision: NO
+- monitoring window approved by this decision: NO
+- go-live authorization granted by this decision: NO
+- live trading authorization granted by this decision: NO
+- canary rerun in this decision: NO
+- second canary executed in this decision: NO
+- production request sent in this decision: NO
+- runtime path changed by this decision: NO
+- credentials/env/config read by this decision: NO
+- secret values read/disclosed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_PRODUCTION_RISK_LIMITS_REVIEW`
