@@ -1,6 +1,6 @@
 # Production Execution Readiness
 
-Generated at: `2026-07-19T14:05:01Z`
+Generated at: `2026-07-19T14:21:39Z`
 
 ## Result
 
@@ -10,6 +10,7 @@ Generated at: `2026-07-19T14:05:01Z`
 
 - risk_limits_validation: PASS
 - production_credential_readiness: PASS
+- production_signing_readiness: FAIL
 - production_market: binance_spot
 - production_symbols: BTCUSDT
 - production_sides: BUY_ONLY
@@ -26,6 +27,7 @@ Generated at: `2026-07-19T14:05:01Z`
 
 ## Blockers
 
+- production signing readiness validation is not PASS
 - production credential access not authorized
 - production signing not authorized
 - production HTTP/network not authorized
