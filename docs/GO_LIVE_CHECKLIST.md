@@ -5964,3 +5964,36 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next safe status: `READY_FOR_PRODUCTION_RISK_LIMITS_OPERATOR_FILL_DECISION`
+
+### Project Anchor Production Risk Limits Operator Fill Decision V1
+
+- production risk limits operator fill decision recorded: YES
+- Evidence: **`docs/PROJECT_ANCHOR_PRODUCTION_RISK_LIMITS_OPERATOR_FILL_DECISION_V1.md`**
+- operator fill recommended now: YES
+- decision result: `PROCEED_TO_PRODUCTION_RISK_LIMITS_OPERATOR_FILL_REQUEST`
+- required production risk-limit fields documented: YES
+- missing-field rejection rule documented: YES
+- ambiguous-wording rejection rule documented: YES
+- explicit go-live rejection rule documented: YES
+- explicit live-trading rejection rule documented: YES
+- operator fill performed in this decision: NO
+- production risk-limit values filled by this decision: NO
+- production risk-limit values approved by this decision: NO
+- production market selection approved by this decision: NO
+- production credential provisioning approved by this decision: NO
+- production signing approved by this decision: NO
+- production HTTP/network execution approved by this decision: NO
+- production request approved by this decision: NO
+- go-live authorization granted by this decision: NO
+- live trading authorization granted by this decision: NO
+- production request sent in this decision: NO
+- canary rerun in this decision: NO
+- second canary executed in this decision: NO
+- runtime path changed by this decision: NO
+- credentials/env/config read by this decision: NO
+- secret values read/disclosed: NO
+- production signing enabled: NO
+- production HTTP/network enabled: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_PRODUCTION_RISK_LIMITS_OPERATOR_FILL_REQUEST`
