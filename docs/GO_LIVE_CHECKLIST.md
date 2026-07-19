@@ -5838,3 +5838,33 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next safe status: `READY_FOR_POST_CANARY_SUCCESS_REVIEW`
+
+### Project Anchor Post Canary Success Review V1
+
+- post canary success reviewed: YES
+- Evidence: **`docs/PROJECT_ANCHOR_POST_CANARY_SUCCESS_REVIEW_V1.md`**
+- reviewed command id: `order-f4fd182a-7a66-4f3c-a69f-f0a212c2c420`
+- reviewed idempotency key: `canary:ops_manual:BTCUSDT:BUY:4:first-canary-after-testnet-filled:v1`
+- command status: DONE
+- attempt: 1
+- execution mode: testnet
+- market: binance_testnet
+- external request started: YES
+- external status: FILLED
+- external order id present: YES
+- external order id: `22675431049`
+- exactly-one canary discipline preserved: YES
+- automatic retry avoided: YES
+- duplicate canary observed: NO
+- event chain complete: YES
+- testnet-only posture preserved: YES
+- secret values printed/disclosed: NO
+- second canary executed in this review: NO
+- external request sent in this review: NO
+- runtime path changed by this review: NO
+- credentials/env/config read by this review: NO
+- go-live readiness concluded by this review: NO
+- live trading authorization granted by this review: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_EXPLICIT_POST_CANARY_NEXT_DECISION`
