@@ -1,0 +1,118 @@
+{
+  "authorized_to_execute": false,
+  "boundary": {
+    "canary_rerun": "NO",
+    "credentials_env_config_read": "NO",
+    "dns_lookup_performed": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_credential_accessed": "NO",
+    "production_http_network_executed": "NO",
+    "production_request_sent": "NO",
+    "production_signing_executed": "NO",
+    "runtime_modified": "NO",
+    "secret_read": "NO",
+    "socket_opened": "NO"
+  },
+  "drill_steps": [
+    {
+      "result": "PASS",
+      "step": "load_non_secret_risk_limits"
+    },
+    {
+      "result": "PASS",
+      "step": "load_authorization_dry_gate"
+    },
+    {
+      "result": "PASS",
+      "step": "confirm_readiness_evidence"
+    },
+    {
+      "result": "PASS",
+      "step": "confirm_execution_authorization_absent"
+    },
+    {
+      "result": "PASS",
+      "step": "stop_before_credentials_signing_network"
+    }
+  ],
+  "dry_gate_summary": {
+    "execution_gates_blocking": 5,
+    "execution_gates_total": 5,
+    "readiness_checks_passed": 4,
+    "readiness_checks_total": 4,
+    "result": "PASS"
+  },
+  "errors": [],
+  "generated_at": "2026-07-19T15:06:29Z",
+  "inputs": {
+    "production_execution_authorization_dry_gate": "reports/production_execution_authorization_dry_gate.json",
+    "production_risk_limits": "config/production_risk_limits.template.json"
+  },
+  "no_send_boundary_checks": [
+    {
+      "actual": "NO",
+      "expected": "NO",
+      "name": "AUTHORIZED_PRODUCTION_CREDENTIAL_ACCESS",
+      "result": "PASS"
+    },
+    {
+      "actual": "NO",
+      "expected": "NO",
+      "name": "AUTHORIZED_PRODUCTION_SIGNING",
+      "result": "PASS"
+    },
+    {
+      "actual": "NO",
+      "expected": "NO",
+      "name": "AUTHORIZED_PRODUCTION_HTTP_NETWORK",
+      "result": "PASS"
+    },
+    {
+      "actual": "NO",
+      "expected": "NO",
+      "name": "AUTHORIZED_GO_LIVE",
+      "result": "PASS"
+    },
+    {
+      "actual": "NO",
+      "expected": "NO",
+      "name": "AUTHORIZED_LIVE_TRADING",
+      "result": "PASS"
+    }
+  ],
+  "no_send_path_verified": true,
+  "result": "PASS",
+  "risk_limit_checks": [
+    {
+      "actual": "binance_spot",
+      "expected": "binance_spot",
+      "name": "AUTHORIZED_PRODUCTION_MARKET",
+      "result": "PASS"
+    },
+    {
+      "actual": "BTCUSDT",
+      "expected": "BTCUSDT",
+      "name": "AUTHORIZED_PRODUCTION_SYMBOLS",
+      "result": "PASS"
+    },
+    {
+      "actual": "BUY_ONLY",
+      "expected": "BUY_ONLY",
+      "name": "AUTHORIZED_PRODUCTION_SIDES",
+      "result": "PASS"
+    },
+    {
+      "actual": "4",
+      "expected": "4",
+      "name": "AUTHORIZED_MAX_NOTIONAL",
+      "result": "PASS"
+    },
+    {
+      "actual": "1",
+      "expected": "1",
+      "name": "AUTHORIZED_MAX_ORDER_COUNT",
+      "result": "PASS"
+    }
+  ]
+}
