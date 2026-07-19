@@ -5868,3 +5868,35 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next safe status: `READY_FOR_EXPLICIT_POST_CANARY_NEXT_DECISION`
+
+### Project Anchor Go-Live Readiness Review V1
+
+- go-live readiness reviewed: YES
+- Evidence: **`docs/PROJECT_ANCHOR_GO_LIVE_READINESS_REVIEW_V1.md`**
+- controlled testnet filled evidence accepted: YES
+- exactly-one canary success accepted as input evidence: YES
+- canary command status reviewed: DONE
+- canary external status reviewed: FILLED
+- canary attempt reviewed: 1
+- canary event chain complete: YES
+- automatic retry avoided: YES
+- duplicate canary observed: NO
+- secret values printed/disclosed: NO
+- production market selection approved: NO
+- production credential provisioning approved: NO
+- production signing approved: NO
+- production HTTP/network execution approved: NO
+- production risk limits reviewed for go-live: NO
+- rollback and stop conditions approved for go-live: NO
+- monitoring window approved for go-live: NO
+- go-live authorization granted by this review: NO
+- live trading authorization granted by this review: NO
+- go-live readiness result: NOT_READY_FOR_GO_LIVE_AUTHORIZATION
+- canary rerun in this review: NO
+- second canary executed in this review: NO
+- production request sent in this review: NO
+- runtime path changed by this review: NO
+- credentials/env/config read by this review: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_EXPLICIT_GO_LIVE_GAP_DECISION`
