@@ -1,0 +1,68 @@
+{
+  "boundary": {
+    "canary_rerun": "NO",
+    "credentials_env_config_read": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_http_network_enabled": "NO",
+    "production_request_sent": "NO",
+    "production_signing_enabled": "NO",
+    "runtime_modified": "NO",
+    "secret_read": "NO"
+  },
+  "errors": [],
+  "gate_checks": [
+    {
+      "actual_value": "NO",
+      "blocker_present": true,
+      "expected_blocker": "production credential access not authorized",
+      "expected_value": "NO",
+      "gate": "production_credential_access",
+      "result": "PASS"
+    },
+    {
+      "actual_value": "NO",
+      "blocker_present": true,
+      "expected_blocker": "production signing not authorized",
+      "expected_value": "NO",
+      "gate": "production_signing",
+      "result": "PASS"
+    },
+    {
+      "actual_value": "NO",
+      "blocker_present": true,
+      "expected_blocker": "production HTTP/network not authorized",
+      "expected_value": "NO",
+      "gate": "production_http_network",
+      "result": "PASS"
+    },
+    {
+      "actual_value": "NO",
+      "blocker_present": true,
+      "expected_blocker": "go-live not authorized",
+      "expected_value": "NO",
+      "gate": "go_live",
+      "result": "PASS"
+    },
+    {
+      "actual_value": "NO",
+      "blocker_present": true,
+      "expected_blocker": "live trading not authorized",
+      "expected_value": "NO",
+      "gate": "live_trading",
+      "result": "PASS"
+    }
+  ],
+  "generated_at": "2026-07-19T10:21:24Z",
+  "inputs": {
+    "production_execution_readiness": "reports/production_execution_readiness.json"
+  },
+  "readiness_blocks_execution": true,
+  "readiness_result": "BLOCKED",
+  "result": "PASS",
+  "summary": {
+    "hard_gate_failures": [],
+    "hard_gates_blocking_as_expected": 5,
+    "total_hard_gates": 5
+  }
+}
