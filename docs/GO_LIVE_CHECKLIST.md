@@ -5787,3 +5787,26 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next safe status: `READY_FOR_EXPLICIT_POST_TESTNET_FILLED_NEXT_DECISION`
+
+### Project Anchor Post Testnet Filled Canary Readiness Review V1
+
+- post-testnet-filled canary readiness reviewed: YES
+- Evidence: **`docs/PROJECT_ANCHOR_POST_TESTNET_FILLED_CANARY_READINESS_REVIEW_V1.md`**
+- controlled testnet filled evidence accepted: YES
+- command status reviewed: DONE
+- external status reviewed: FILLED
+- exactly-one send discipline preserved: YES
+- automatic retry avoided: YES
+- duplicate send observed: NO
+- canary prerequisite evidence sufficient to request explicit canary authorization: YES
+- generic continuation wording accepted as canary authorization: NO
+- canary execution authorized by this review: NO
+- canary executed: NO
+- external request sent in this review: NO
+- second send executed in this review: NO
+- runtime path changed by this review: NO
+- credentials/env/config read by this review: NO
+- secret values read/disclosed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_EXPLICIT_EXACTLY_ONE_CANARY_EXECUTION_AUTHORIZATION`
