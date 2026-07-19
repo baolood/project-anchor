@@ -15,7 +15,7 @@
     "go_live_blockers_explicit": "PASS",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-07-19T08:54:09Z",
+  "generated_at": "2026-07-19T09:04:44Z",
   "go_live": {
     "blocking_gates": [
       "production market selection not approved",
@@ -34,7 +34,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-07-19T08:54:04.195756+00:00"
+    "worker_heartbeat_at": "2026-07-19T09:04:40.410788+00:00"
   },
   "latest_canary": {
     "attempt": 1,
