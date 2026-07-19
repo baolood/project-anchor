@@ -20,6 +20,7 @@ RISK_LIMITS_CONFIG = ROOT / "config" / "production_risk_limits.template.json"
 RISK_LIMITS_REPORT = ROOT / "reports" / "production_risk_limits_validation.json"
 PRODUCTION_CREDENTIAL_READINESS_REPORT = ROOT / "reports" / "production_credential_readiness_validation.json"
 PRODUCTION_SIGNING_READINESS_REPORT = ROOT / "reports" / "production_signing_readiness_validation.json"
+PRODUCTION_HTTP_NETWORK_READINESS_REPORT = ROOT / "reports" / "production_http_network_readiness_validation.json"
 REPORTS_DIR = ROOT / "reports"
 JSON_OUT = REPORTS_DIR / "production_execution_readiness.json"
 MD_OUT = REPORTS_DIR / "production_execution_readiness.md"
@@ -48,6 +49,7 @@ def build_report() -> tuple[dict[str, Any], int]:
     risk_report, risk_report_error = read_json(RISK_LIMITS_REPORT)
     credential_report, credential_report_error = read_json(PRODUCTION_CREDENTIAL_READINESS_REPORT)
     signing_report, signing_report_error = read_json(PRODUCTION_SIGNING_READINESS_REPORT)
+    http_network_report, http_network_report_error = read_json(PRODUCTION_HTTP_NETWORK_READINESS_REPORT)
 
     errors: list[str] = []
     blockers: list[str] = []
@@ -59,11 +61,14 @@ def build_report() -> tuple[dict[str, Any], int]:
         errors.append(credential_report_error)
     if signing_report_error:
         errors.append(signing_report_error)
+    if http_network_report_error:
+        errors.append(http_network_report_error)
 
     config = config or {}
     risk_report = risk_report or {}
     credential_report = credential_report or {}
     signing_report = signing_report or {}
+    http_network_report = http_network_report or {}
 
     risk_limits_pass = risk_report.get("result") == "PASS" and not risk_report.get("errors")
     if not risk_limits_pass:
@@ -76,6 +81,11 @@ def build_report() -> tuple[dict[str, Any], int]:
     signing_readiness_pass = signing_report.get("result") == "PASS" and not signing_report.get("errors")
     if not signing_readiness_pass:
         blockers.append("production signing readiness validation is not PASS")
+    http_network_readiness_pass = (
+        http_network_report.get("result") == "PASS" and not http_network_report.get("errors")
+    )
+    if not http_network_readiness_pass:
+        blockers.append("production HTTP/network readiness validation is not PASS")
 
     gates = {
         "production_credential_access": yes_no(config.get("AUTHORIZED_PRODUCTION_CREDENTIAL_ACCESS")),
@@ -109,11 +119,15 @@ def build_report() -> tuple[dict[str, Any], int]:
                 PRODUCTION_CREDENTIAL_READINESS_REPORT.relative_to(ROOT)
             ),
             "production_signing_readiness": str(PRODUCTION_SIGNING_READINESS_REPORT.relative_to(ROOT)),
+            "production_http_network_readiness": str(
+                PRODUCTION_HTTP_NETWORK_READINESS_REPORT.relative_to(ROOT)
+            ),
         },
         "evidence": {
             "risk_limits_validation": "PASS" if risk_limits_pass else "FAIL",
             "production_credential_readiness": "PASS" if credential_readiness_pass else "FAIL",
             "production_signing_readiness": "PASS" if signing_readiness_pass else "FAIL",
+            "production_http_network_readiness": "PASS" if http_network_readiness_pass else "FAIL",
             "production_market": config.get("AUTHORIZED_PRODUCTION_MARKET"),
             "production_symbols": config.get("AUTHORIZED_PRODUCTION_SYMBOLS"),
             "production_sides": config.get("AUTHORIZED_PRODUCTION_SIDES"),
