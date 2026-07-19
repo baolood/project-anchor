@@ -13,18 +13,19 @@
     "controlled_request_error": null,
     "controlled_request_evidence_resolved": "PASS",
     "go_live_blockers_explicit": "PASS",
+    "production_execution_readiness_resolved": "PASS",
+    "production_execution_ready": "FAIL",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-07-19T09:04:44Z",
+  "generated_at": "2026-07-19T10:11:09Z",
   "go_live": {
     "blocking_gates": [
-      "production market selection not approved",
-      "production credential provisioning not approved",
+      "production credential access not authorized",
       "production signing not approved",
       "production HTTP/network execution not approved",
-      "production risk limit values not operator-filled",
       "rollback and stop conditions not approved for go-live",
       "monitoring window not approved for go-live",
+      "go-live authorization not granted",
       "live trading authorization not granted"
     ],
     "verdict": "NO-GO"
@@ -34,7 +35,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-07-19T09:04:40.410788+00:00"
+    "worker_heartbeat_at": "2026-07-19T10:10:50.211743+00:00"
   },
   "latest_canary": {
     "attempt": 1,
@@ -85,6 +86,42 @@
     "symbol": "BTCUSDT"
   },
   "overall_status": "WARN",
+  "production_execution_readiness": {
+    "blockers": [
+      "production credential access not authorized",
+      "production signing not authorized",
+      "production HTTP/network not authorized",
+      "go-live not authorized",
+      "live trading not authorized"
+    ],
+    "boundary": {
+      "canary_rerun": "NO",
+      "credentials_env_config_read": "NO",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "production_http_network_enabled": "NO",
+      "production_request_sent": "NO",
+      "production_signing_enabled": "NO",
+      "runtime_modified": "NO",
+      "secret_read": "NO"
+    },
+    "evidence": {
+      "max_notional": "4",
+      "max_order_count": "1",
+      "production_market": "binance_spot",
+      "production_sides": "BUY_ONLY",
+      "production_symbols": "BTCUSDT",
+      "risk_limits_validation": "PASS"
+    },
+    "gates": {
+      "go_live": "NO",
+      "live_trading": "NO",
+      "production_credential_access": "NO",
+      "production_http_network": "NO",
+      "production_signing": "NO"
+    },
+    "result": "BLOCKED"
+  },
   "safety": {
     "canary_rerun": false,
     "kill_switch_enabled": false,
