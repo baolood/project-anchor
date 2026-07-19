@@ -18,6 +18,9 @@ REPORTS_DIR = ROOT / "reports"
 JSON_OUT = REPORTS_DIR / "operations_readiness_snapshot.json"
 MD_OUT = REPORTS_DIR / "operations_readiness_snapshot.md"
 PRODUCTION_EXECUTION_READINESS_REPORT = REPORTS_DIR / "production_execution_readiness.json"
+PRODUCTION_EXECUTION_AUTHORIZATION_DRY_GATE_REPORT = (
+    REPORTS_DIR / "production_execution_authorization_dry_gate.json"
+)
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 CONTROLLED_COMMAND_ID = os.getenv(
@@ -151,6 +154,39 @@ def load_production_execution_readiness() -> dict[str, Any]:
     }
 
 
+def load_production_execution_authorization_dry_gate() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "authorized_to_execute": False,
+        "summary": {
+            "readiness_checks_passed": 0,
+            "readiness_checks_total": 4,
+            "execution_gates_blocking": 0,
+            "execution_gates_total": 5,
+        },
+        "boundary": {
+            "secret_read": "NO",
+            "production_request_sent": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(
+            PRODUCTION_EXECUTION_AUTHORIZATION_DRY_GATE_REPORT.read_text(encoding="utf-8")
+        )
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "authorized_to_execute": bool(data.get("authorized_to_execute")),
+        "summary": data.get("summary") if isinstance(data.get("summary"), dict) else {},
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -182,6 +218,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     controlled_ok, controlled, controlled_error = command_snapshot(CONTROLLED_COMMAND_ID)
     canary_ok, canary, canary_error = command_snapshot(CANARY_COMMAND_ID)
     production_execution_readiness = load_production_execution_readiness()
+    production_execution_authorization_dry_gate = (
+        load_production_execution_authorization_dry_gate()
+    )
     production_execution_ready = production_execution_readiness.get("result") == "PASS"
 
     hard_failures = [
@@ -225,6 +264,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         "latest_controlled_request": controlled,
         "latest_canary": canary,
         "production_execution_readiness": production_execution_readiness,
+        "production_execution_authorization_dry_gate": (
+            production_execution_authorization_dry_gate
+        ),
         "go_live": {
             "verdict": "NO-GO",
             "blocking_gates": GO_LIVE_BLOCKERS,
@@ -239,6 +281,12 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
                 production_execution_readiness.get("result") in {"PASS", "BLOCKED"}
             ),
             "production_execution_ready": pass_fail(production_execution_ready),
+            "production_execution_authorization_dry_gate_resolved": pass_fail(
+                production_execution_authorization_dry_gate.get("result") == "PASS"
+            ),
+            "production_execution_authorized_to_execute": pass_fail(
+                production_execution_authorization_dry_gate.get("authorized_to_execute") is True
+            ),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -257,6 +305,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     controlled = snapshot["latest_controlled_request"]
     canary = snapshot["latest_canary"]
     production_readiness = snapshot["production_execution_readiness"]
+    production_dry_gate = snapshot["production_execution_authorization_dry_gate"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
     production_blockers = "\n".join(
         f"- {item}" for item in production_readiness.get("blockers", [])
@@ -306,6 +355,13 @@ Generated at: `{snapshot["generated_at"]}`
 ## Production Execution Readiness
 
 - result: {production_readiness.get("result")}
+
+## Production Execution Authorization Dry Gate
+
+- result: {production_dry_gate.get("result")}
+- authorized to execute: {str(production_dry_gate.get("authorized_to_execute")).lower()}
+- readiness checks: {production_dry_gate.get("summary", {}).get("readiness_checks_passed")}/{production_dry_gate.get("summary", {}).get("readiness_checks_total")}
+- execution gates blocking: {production_dry_gate.get("summary", {}).get("execution_gates_blocking")}/{production_dry_gate.get("summary", {}).get("execution_gates_total")}
 
 ### Production Gates
 
@@ -358,6 +414,14 @@ def main() -> int:
     print(f"blocking_gates: {len(snapshot['go_live']['blocking_gates'])}")
     print(f"production_execution_readiness: {snapshot['production_execution_readiness'].get('result')}")
     print(f"production_execution_blockers: {len(snapshot['production_execution_readiness'].get('blockers', []))}")
+    print(
+        "production_execution_authorization_dry_gate: "
+        f"{snapshot['production_execution_authorization_dry_gate'].get('result')}"
+    )
+    print(
+        "production_execution_authorized_to_execute: "
+        f"{str(snapshot['production_execution_authorization_dry_gate'].get('authorized_to_execute')).lower()}"
+    )
     print("secret_read: NO")
     print("new_external_request_sent: NO")
     print("canary_rerun: NO")

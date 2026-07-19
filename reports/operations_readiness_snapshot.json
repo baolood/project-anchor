@@ -13,11 +13,13 @@
     "controlled_request_error": null,
     "controlled_request_evidence_resolved": "PASS",
     "go_live_blockers_explicit": "PASS",
+    "production_execution_authorization_dry_gate_resolved": "PASS",
+    "production_execution_authorized_to_execute": "FAIL",
     "production_execution_readiness_resolved": "PASS",
     "production_execution_ready": "FAIL",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-07-19T14:49:22Z",
+  "generated_at": "2026-07-19T14:58:09Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -35,7 +37,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-07-19T14:49:05.588770+00:00"
+    "worker_heartbeat_at": "2026-07-19T14:57:40.834228+00:00"
   },
   "latest_canary": {
     "attempt": 1,
@@ -86,6 +88,30 @@
     "symbol": "BTCUSDT"
   },
   "overall_status": "WARN",
+  "production_execution_authorization_dry_gate": {
+    "authorized_to_execute": false,
+    "boundary": {
+      "canary_rerun": "NO",
+      "credentials_env_config_read": "NO",
+      "dns_lookup_performed": "NO",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "production_http_network_executed": "NO",
+      "production_request_sent": "NO",
+      "production_signing_executed": "NO",
+      "runtime_modified": "NO",
+      "secret_read": "NO",
+      "socket_opened": "NO"
+    },
+    "result": "PASS",
+    "summary": {
+      "execution_gates_authorized": 0,
+      "execution_gates_blocking": 5,
+      "execution_gates_total": 5,
+      "readiness_checks_passed": 4,
+      "readiness_checks_total": 4
+    }
+  },
   "production_execution_readiness": {
     "blockers": [
       "production credential access not authorized",
