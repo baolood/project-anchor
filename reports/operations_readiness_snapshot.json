@@ -1,0 +1,98 @@
+{
+  "boundary": {
+    "canary_rerun": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "new_external_request_sent": "NO",
+    "runtime_modified": "NO",
+    "secret_read": "NO"
+  },
+  "evidence_resolution": {
+    "canary_error": null,
+    "canary_evidence_resolved": "PASS",
+    "controlled_request_error": null,
+    "controlled_request_evidence_resolved": "PASS",
+    "go_live_blockers_explicit": "PASS",
+    "source_endpoints_readable": "PASS"
+  },
+  "generated_at": "2026-07-19T08:54:09Z",
+  "go_live": {
+    "blocking_gates": [
+      "production market selection not approved",
+      "production credential provisioning not approved",
+      "production signing not approved",
+      "production HTTP/network execution not approved",
+      "production risk limit values not operator-filled",
+      "rollback and stop conditions not approved for go-live",
+      "monitoring window not approved for go-live",
+      "live trading authorization not granted"
+    ],
+    "verdict": "NO-GO"
+  },
+  "health": {
+    "backend": "PASS",
+    "backend_error": null,
+    "worker": "PASS",
+    "worker_error": null,
+    "worker_heartbeat_at": "2026-07-19T08:54:04.195756+00:00"
+  },
+  "latest_canary": {
+    "attempt": 1,
+    "command_id": "order-f4fd182a-7a66-4f3c-a69f-f0a212c2c420",
+    "event_chain": [
+      "PICKED",
+      "POLICY_ALLOW",
+      "KILL_SWITCH_CHECKED",
+      "TESTNET_EXECUTOR_REQUESTED",
+      "TESTNET_EXECUTOR_ACCEPTED",
+      "ACTION_OK",
+      "MARK_DONE"
+    ],
+    "event_chain_resolved": true,
+    "executed_at": "2026-07-19T05:55:03.323572+00:00",
+    "execution_mode": "testnet",
+    "external_order_id_present": true,
+    "external_status": "FILLED",
+    "idempotency_key": "canary:ops_manual:BTCUSDT:BUY:4:first-canary-after-testnet-filled:v1",
+    "market": "binance_testnet",
+    "notional": 4.0,
+    "side": "BUY",
+    "status": "DONE",
+    "symbol": "BTCUSDT"
+  },
+  "latest_controlled_request": {
+    "attempt": 1,
+    "command_id": "order-a06eed8f-cd60-4a4f-b3e9-84c540b98e6f",
+    "event_chain": [
+      "PICKED",
+      "POLICY_ALLOW",
+      "KILL_SWITCH_CHECKED",
+      "TESTNET_EXECUTOR_REQUESTED",
+      "TESTNET_EXECUTOR_ACCEPTED",
+      "ACTION_OK",
+      "MARK_DONE"
+    ],
+    "event_chain_resolved": true,
+    "executed_at": "2026-07-18T15:39:27.590704+00:00",
+    "execution_mode": "testnet",
+    "external_order_id_present": true,
+    "external_status": "FILLED",
+    "idempotency_key": "testnet:ops_manual:BTCUSDT:BUY:4:first-bounded-request:v1",
+    "market": "binance_testnet",
+    "notional": 4.0,
+    "side": "BUY",
+    "status": "DONE",
+    "symbol": "BTCUSDT"
+  },
+  "overall_status": "WARN",
+  "safety": {
+    "canary_rerun": false,
+    "kill_switch_enabled": false,
+    "kill_switch_source": "none",
+    "live_trading_allowed": false,
+    "new_external_request_sent": false,
+    "runtime_mode": "testnet",
+    "runtime_modified": false,
+    "secret_read": false
+  }
+}
