@@ -5765,3 +5765,25 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next safe status: `READY_FOR_POST_CONTROLLED_TESTNET_SEND_RESULT_REVIEW`
+
+### Project Anchor Post Controlled Testnet Send Result Review V1
+
+- post controlled testnet send result reviewed: YES
+- Evidence: **`docs/PROJECT_ANCHOR_POST_CONTROLLED_TESTNET_SEND_RESULT_REVIEW_V1.md`**
+- reviewed command id: `order-a06eed8f-cd60-4a4f-b3e9-84c540b98e6f`
+- reviewed idempotency key: `testnet:ops_manual:BTCUSDT:BUY:4:first-bounded-request:v1`
+- command status: DONE
+- attempt: 1
+- external request started: YES
+- external status: FILLED
+- external order id present: YES
+- exactly-one send discipline preserved: YES
+- automatic retry avoided: YES
+- event chain complete: YES
+- secret values printed/disclosed: NO
+- second send executed in this review: NO
+- canary executed: NO
+- runtime path changed by this review: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_EXPLICIT_POST_TESTNET_FILLED_NEXT_DECISION`
