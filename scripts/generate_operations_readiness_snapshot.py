@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REPORTS_DIR = ROOT / "reports"
 JSON_OUT = REPORTS_DIR / "operations_readiness_snapshot.json"
 MD_OUT = REPORTS_DIR / "operations_readiness_snapshot.md"
+PRODUCTION_EXECUTION_READINESS_REPORT = REPORTS_DIR / "production_execution_readiness.json"
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 CONTROLLED_COMMAND_ID = os.getenv(
@@ -27,13 +28,12 @@ CANARY_COMMAND_ID = os.getenv(
 )
 
 GO_LIVE_BLOCKERS = [
-    "production market selection not approved",
-    "production credential provisioning not approved",
+    "production credential access not authorized",
     "production signing not approved",
     "production HTTP/network execution not approved",
-    "production risk limit values not operator-filled",
     "rollback and stop conditions not approved for go-live",
     "monitoring window not approved for go-live",
+    "go-live authorization not granted",
     "live trading authorization not granted",
 ]
 
@@ -123,6 +123,34 @@ def pass_fail(value: bool) -> str:
     return "PASS" if value else "FAIL"
 
 
+def load_production_execution_readiness() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "blockers": ["production execution readiness report unreadable"],
+        "gates": {},
+        "evidence": {},
+        "boundary": {
+            "secret_read": "NO",
+            "production_request_sent": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(PRODUCTION_EXECUTION_READINESS_REPORT.read_text(encoding="utf-8"))
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "blockers": data.get("blockers") if isinstance(data.get("blockers"), list) else [],
+        "gates": data.get("gates") if isinstance(data.get("gates"), dict) else {},
+        "evidence": data.get("evidence") if isinstance(data.get("evidence"), dict) else {},
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -153,6 +181,8 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
 
     controlled_ok, controlled, controlled_error = command_snapshot(CONTROLLED_COMMAND_ID)
     canary_ok, canary, canary_error = command_snapshot(CANARY_COMMAND_ID)
+    production_execution_readiness = load_production_execution_readiness()
+    production_execution_ready = production_execution_readiness.get("result") == "PASS"
 
     hard_failures = [
         not backend_ok,
@@ -194,6 +224,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         },
         "latest_controlled_request": controlled,
         "latest_canary": canary,
+        "production_execution_readiness": production_execution_readiness,
         "go_live": {
             "verdict": "NO-GO",
             "blocking_gates": GO_LIVE_BLOCKERS,
@@ -204,6 +235,10 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "controlled_request_error": controlled_error,
             "canary_evidence_resolved": pass_fail(canary_ok),
             "canary_error": canary_error,
+            "production_execution_readiness_resolved": pass_fail(
+                production_execution_readiness.get("result") in {"PASS", "BLOCKED"}
+            ),
+            "production_execution_ready": pass_fail(production_execution_ready),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -221,7 +256,14 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
 def markdown(snapshot: dict[str, Any]) -> str:
     controlled = snapshot["latest_controlled_request"]
     canary = snapshot["latest_canary"]
+    production_readiness = snapshot["production_execution_readiness"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
+    production_blockers = "\n".join(
+        f"- {item}" for item in production_readiness.get("blockers", [])
+    ) or "- none"
+    production_gates = "\n".join(
+        f"- {key}: {value}" for key, value in production_readiness.get("gates", {}).items()
+    ) or "- none"
     controlled_chain = " -> ".join(controlled.get("event_chain") or [])
     canary_chain = " -> ".join(canary.get("event_chain") or [])
 
@@ -260,6 +302,18 @@ Generated at: `{snapshot["generated_at"]}`
 - external order id present: {canary.get("external_order_id_present")}
 - executed at: `{canary.get("executed_at")}`
 - event chain: {canary_chain}
+
+## Production Execution Readiness
+
+- result: {production_readiness.get("result")}
+
+### Production Gates
+
+{production_gates}
+
+### Production Blockers
+
+{production_blockers}
 
 ## Go-Live Blocking Gates
 
@@ -302,6 +356,8 @@ def main() -> int:
     )
     print(f"go_live_verdict: {snapshot['go_live']['verdict']}")
     print(f"blocking_gates: {len(snapshot['go_live']['blocking_gates'])}")
+    print(f"production_execution_readiness: {snapshot['production_execution_readiness'].get('result')}")
+    print(f"production_execution_blockers: {len(snapshot['production_execution_readiness'].get('blockers', []))}")
     print("secret_read: NO")
     print("new_external_request_sent: NO")
     print("canary_rerun: NO")

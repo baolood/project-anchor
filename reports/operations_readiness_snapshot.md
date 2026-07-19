@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-19T09:04:44Z`
+Generated at: `2026-07-19T10:11:09Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-19T09:04:44Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-19T09:04:40.410788+00:00`
+- worker heartbeat at: `2026-07-19T10:10:50.211743+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -34,15 +34,34 @@ Generated at: `2026-07-19T09:04:44Z`
 - executed at: `2026-07-19T05:55:03.323572+00:00`
 - event chain: PICKED -> POLICY_ALLOW -> KILL_SWITCH_CHECKED -> TESTNET_EXECUTOR_REQUESTED -> TESTNET_EXECUTOR_ACCEPTED -> ACTION_OK -> MARK_DONE
 
+## Production Execution Readiness
+
+- result: BLOCKED
+
+### Production Gates
+
+- go_live: NO
+- live_trading: NO
+- production_credential_access: NO
+- production_http_network: NO
+- production_signing: NO
+
+### Production Blockers
+
+- production credential access not authorized
+- production signing not authorized
+- production HTTP/network not authorized
+- go-live not authorized
+- live trading not authorized
+
 ## Go-Live Blocking Gates
 
-- production market selection not approved
-- production credential provisioning not approved
+- production credential access not authorized
 - production signing not approved
 - production HTTP/network execution not approved
-- production risk limit values not operator-filled
 - rollback and stop conditions not approved for go-live
 - monitoring window not approved for go-live
+- go-live authorization not granted
 - live trading authorization not granted
 
 ## Boundary
