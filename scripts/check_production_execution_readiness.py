@@ -18,6 +18,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 RISK_LIMITS_CONFIG = ROOT / "config" / "production_risk_limits.template.json"
 RISK_LIMITS_REPORT = ROOT / "reports" / "production_risk_limits_validation.json"
+PRODUCTION_CREDENTIAL_READINESS_REPORT = ROOT / "reports" / "production_credential_readiness_validation.json"
 REPORTS_DIR = ROOT / "reports"
 JSON_OUT = REPORTS_DIR / "production_execution_readiness.json"
 MD_OUT = REPORTS_DIR / "production_execution_readiness.md"
@@ -44,6 +45,7 @@ def yes_no(value: Any) -> str:
 def build_report() -> tuple[dict[str, Any], int]:
     config, config_error = read_json(RISK_LIMITS_CONFIG)
     risk_report, risk_report_error = read_json(RISK_LIMITS_REPORT)
+    credential_report, credential_report_error = read_json(PRODUCTION_CREDENTIAL_READINESS_REPORT)
 
     errors: list[str] = []
     blockers: list[str] = []
@@ -51,13 +53,21 @@ def build_report() -> tuple[dict[str, Any], int]:
         errors.append(config_error)
     if risk_report_error:
         errors.append(risk_report_error)
+    if credential_report_error:
+        errors.append(credential_report_error)
 
     config = config or {}
     risk_report = risk_report or {}
+    credential_report = credential_report or {}
 
     risk_limits_pass = risk_report.get("result") == "PASS" and not risk_report.get("errors")
     if not risk_limits_pass:
         blockers.append("production risk limits validation is not PASS")
+    credential_readiness_pass = (
+        credential_report.get("result") == "PASS" and not credential_report.get("errors")
+    )
+    if not credential_readiness_pass:
+        blockers.append("production credential readiness validation is not PASS")
 
     gates = {
         "production_credential_access": yes_no(config.get("AUTHORIZED_PRODUCTION_CREDENTIAL_ACCESS")),
@@ -87,9 +97,13 @@ def build_report() -> tuple[dict[str, Any], int]:
         "inputs": {
             "risk_limits_config": str(RISK_LIMITS_CONFIG.relative_to(ROOT)),
             "risk_limits_validation": str(RISK_LIMITS_REPORT.relative_to(ROOT)),
+            "production_credential_readiness": str(
+                PRODUCTION_CREDENTIAL_READINESS_REPORT.relative_to(ROOT)
+            ),
         },
         "evidence": {
             "risk_limits_validation": "PASS" if risk_limits_pass else "FAIL",
+            "production_credential_readiness": "PASS" if credential_readiness_pass else "FAIL",
             "production_market": config.get("AUTHORIZED_PRODUCTION_MARKET"),
             "production_symbols": config.get("AUTHORIZED_PRODUCTION_SYMBOLS"),
             "production_sides": config.get("AUTHORIZED_PRODUCTION_SIDES"),
