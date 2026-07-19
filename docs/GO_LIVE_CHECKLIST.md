@@ -5810,3 +5810,31 @@ Record the choice + reason here:
 - go-live: NO-GO
 - live trading: NO-GO
 - next safe status: `READY_FOR_EXPLICIT_EXACTLY_ONE_CANARY_EXECUTION_AUTHORIZATION`
+
+### Project Anchor Exactly-One Canary Success Closeout V1
+
+- exactly-one canary executed: YES
+- Evidence: **`docs/PROJECT_ANCHOR_EXACTLY_ONE_CANARY_SUCCESS_CLOSEOUT_V1.md`**
+- authorized idempotency key: `canary:ops_manual:BTCUSDT:BUY:4:first-canary-after-testnet-filled:v1`
+- fresh authorization window used: YES
+- window time check: PASS
+- local POST attempted: YES
+- local POST executed: YES
+- automatic retry executed: NO
+- second canary executed: NO
+- command id: `order-f4fd182a-7a66-4f3c-a69f-f0a212c2c420`
+- command status: DONE
+- attempt: 1
+- execution mode: testnet
+- market: binance_testnet
+- external request started: YES
+- external status: FILLED
+- external order id present: YES
+- external order id: `22675431049`
+- event chain: PICKED -> POLICY_ALLOW -> KILL_SWITCH_CHECKED -> TESTNET_EXECUTOR_REQUESTED -> TESTNET_EXECUTOR_ACCEPTED -> ACTION_OK -> MARK_DONE
+- secret values printed/disclosed: NO
+- go-live authorized by this closeout: NO
+- live trading authorized by this closeout: NO
+- go-live: NO-GO
+- live trading: NO-GO
+- next safe status: `READY_FOR_POST_CANARY_SUCCESS_REVIEW`
