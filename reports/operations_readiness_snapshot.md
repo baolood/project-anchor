@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-21T07:25:27Z`
+Generated at: `2026-07-21T09:30:20Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-21T07:25:27Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-21T07:25:02.582249+00:00`
+- worker heartbeat at: `2026-07-21T09:30:05.897442+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -65,6 +65,14 @@ Generated at: `2026-07-21T07:25:27Z`
 - real signing executed: false
 - Authorization header generated: false
 - signed payload sendable: false
+
+## Production HTTP Request Interface Dry Run
+
+- result: PASS
+- request envelope shape valid: true
+- missing Authorization fail-closed: true
+- HTTP/network executed: false
+- request sent: false
 
 ### Production Gates
 

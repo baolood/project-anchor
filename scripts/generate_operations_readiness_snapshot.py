@@ -28,6 +28,9 @@ PRODUCTION_UNSIGNED_CANONICAL_PAYLOAD_DRY_RUN_REPORT = (
 PRODUCTION_SIGNING_INTERFACE_DRY_RUN_REPORT = (
     REPORTS_DIR / "production_signing_interface_dry_run.json"
 )
+PRODUCTION_HTTP_REQUEST_INTERFACE_DRY_RUN_REPORT = (
+    REPORTS_DIR / "production_http_request_interface_dry_run.json"
+)
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 CONTROLLED_COMMAND_ID = os.getenv(
@@ -286,6 +289,37 @@ def load_production_signing_interface_dry_run() -> dict[str, Any]:
     }
 
 
+def load_production_http_request_interface_dry_run() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "request_envelope_shape_valid": False,
+        "missing_authorization_fail_closed": False,
+        "http_network_executed": False,
+        "request_sent": False,
+        "boundary": {
+            "secret_read": "NO",
+            "production_http_network_executed": "NO",
+            "production_request_sent": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(PRODUCTION_HTTP_REQUEST_INTERFACE_DRY_RUN_REPORT.read_text(encoding="utf-8"))
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "request_envelope_shape_valid": bool(data.get("request_envelope_shape_valid")),
+        "missing_authorization_fail_closed": bool(data.get("missing_authorization_fail_closed")),
+        "http_network_executed": bool(data.get("http_network_executed")),
+        "request_sent": bool(data.get("request_sent")),
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -325,6 +359,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         load_production_unsigned_canonical_payload_dry_run()
     )
     production_signing_interface_dry_run = load_production_signing_interface_dry_run()
+    production_http_request_interface_dry_run = load_production_http_request_interface_dry_run()
     production_execution_ready = production_execution_readiness.get("result") == "PASS"
 
     hard_failures = [
@@ -376,6 +411,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             production_unsigned_canonical_payload_dry_run
         ),
         "production_signing_interface_dry_run": production_signing_interface_dry_run,
+        "production_http_request_interface_dry_run": production_http_request_interface_dry_run,
         "go_live": {
             "verdict": "NO-GO",
             "blocking_gates": GO_LIVE_BLOCKERS,
@@ -426,6 +462,21 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "production_real_signing_executed": pass_fail(
                 production_signing_interface_dry_run.get("real_signing_executed") is True
             ),
+            "production_http_request_interface_dry_run_resolved": pass_fail(
+                production_http_request_interface_dry_run.get("result") == "PASS"
+            ),
+            "production_http_request_envelope_shape_valid": pass_fail(
+                production_http_request_interface_dry_run.get("request_envelope_shape_valid") is True
+            ),
+            "production_http_missing_authorization_fail_closed": pass_fail(
+                production_http_request_interface_dry_run.get("missing_authorization_fail_closed") is True
+            ),
+            "production_http_network_executed": pass_fail(
+                production_http_request_interface_dry_run.get("http_network_executed") is True
+            ),
+            "production_request_sent": pass_fail(
+                production_http_request_interface_dry_run.get("request_sent") is True
+            ),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -448,6 +499,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     no_send_drill = snapshot["production_no_send_execution_drill"]
     unsigned_payload = snapshot["production_unsigned_canonical_payload_dry_run"]
     signing_interface = snapshot["production_signing_interface_dry_run"]
+    http_request_interface = snapshot["production_http_request_interface_dry_run"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
     production_blockers = "\n".join(
         f"- {item}" for item in production_readiness.get("blockers", [])
@@ -525,6 +577,14 @@ Generated at: `{snapshot["generated_at"]}`
 - real signing executed: {str(signing_interface.get("real_signing_executed")).lower()}
 - Authorization header generated: {str(signing_interface.get("authorization_header_generated")).lower()}
 - signed payload sendable: {str(signing_interface.get("signed_payload_sendable")).lower()}
+
+## Production HTTP Request Interface Dry Run
+
+- result: {http_request_interface.get("result")}
+- request envelope shape valid: {str(http_request_interface.get("request_envelope_shape_valid")).lower()}
+- missing Authorization fail-closed: {str(http_request_interface.get("missing_authorization_fail_closed")).lower()}
+- HTTP/network executed: {str(http_request_interface.get("http_network_executed")).lower()}
+- request sent: {str(http_request_interface.get("request_sent")).lower()}
 
 ### Production Gates
 
@@ -608,6 +668,14 @@ def main() -> int:
     print(
         "production_signing_missing_secret_fail_closed: "
         f"{str(snapshot['production_signing_interface_dry_run'].get('missing_secret_fail_closed')).lower()}"
+    )
+    print(
+        "production_http_request_interface_dry_run: "
+        f"{snapshot['production_http_request_interface_dry_run'].get('result')}"
+    )
+    print(
+        "production_http_missing_authorization_fail_closed: "
+        f"{str(snapshot['production_http_request_interface_dry_run'].get('missing_authorization_fail_closed')).lower()}"
     )
     print("secret_read: NO")
     print("new_external_request_sent: NO")
