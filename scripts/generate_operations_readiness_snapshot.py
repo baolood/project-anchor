@@ -34,6 +34,9 @@ PRODUCTION_HTTP_REQUEST_INTERFACE_DRY_RUN_REPORT = (
 PRODUCTION_PRE_SEND_READINESS_AGGREGATION_REPORT = (
     REPORTS_DIR / "production_pre_send_readiness_aggregation.json"
 )
+PRODUCTION_REQUEST_SEND_WINDOW_PLAN_REPORT = (
+    REPORTS_DIR / "production_request_send_window_plan.json"
+)
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 CONTROLLED_COMMAND_ID = os.getenv(
@@ -357,6 +360,44 @@ def load_production_pre_send_readiness_aggregation() -> dict[str, Any]:
     }
 
 
+def load_production_request_send_window_plan() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "plan_valid": False,
+        "send_authorized": False,
+        "execution_allowed_by_this_plan": False,
+        "next_gate": "BLOCKED_PRODUCTION_REQUEST_SEND_WINDOW_PLAN_UNREADABLE",
+        "planned_request": {},
+        "planned_window": {},
+        "boundary": {
+            "secret_read": "NO",
+            "production_request_sent": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(PRODUCTION_REQUEST_SEND_WINDOW_PLAN_REPORT.read_text(encoding="utf-8"))
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "plan_valid": bool(data.get("plan_valid")),
+        "send_authorized": bool(data.get("send_authorized")),
+        "execution_allowed_by_this_plan": bool(data.get("execution_allowed_by_this_plan")),
+        "next_gate": data.get("next_gate", "UNKNOWN"),
+        "planned_request": (
+            data.get("planned_request") if isinstance(data.get("planned_request"), dict) else {}
+        ),
+        "planned_window": (
+            data.get("planned_window") if isinstance(data.get("planned_window"), dict) else {}
+        ),
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -400,6 +441,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     production_pre_send_readiness_aggregation = (
         load_production_pre_send_readiness_aggregation()
     )
+    production_request_send_window_plan = load_production_request_send_window_plan()
     production_execution_ready = production_execution_readiness.get("result") == "PASS"
 
     hard_failures = [
@@ -455,6 +497,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         "production_pre_send_readiness_aggregation": (
             production_pre_send_readiness_aggregation
         ),
+        "production_request_send_window_plan": production_request_send_window_plan,
         "go_live": {
             "verdict": "NO-GO",
             "blocking_gates": GO_LIVE_BLOCKERS,
@@ -529,6 +572,15 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "production_request_send_authorized": pass_fail(
                 production_pre_send_readiness_aggregation.get("request_send_authorized") is True
             ),
+            "production_request_send_window_plan_resolved": pass_fail(
+                production_request_send_window_plan.get("result") == "PASS"
+            ),
+            "production_request_send_window_plan_valid": pass_fail(
+                production_request_send_window_plan.get("plan_valid") is True
+            ),
+            "production_request_send_window_authorized": pass_fail(
+                production_request_send_window_plan.get("send_authorized") is True
+            ),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -553,6 +605,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     signing_interface = snapshot["production_signing_interface_dry_run"]
     http_request_interface = snapshot["production_http_request_interface_dry_run"]
     pre_send = snapshot["production_pre_send_readiness_aggregation"]
+    send_window = snapshot["production_request_send_window_plan"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
     production_blockers = "\n".join(
         f"- {item}" for item in production_readiness.get("blockers", [])
@@ -647,6 +700,16 @@ Generated at: `{snapshot["generated_at"]}`
 - go-live allowed: {str(pre_send.get("go_live_allowed")).lower()}
 - live trading allowed: {str(pre_send.get("live_trading_allowed")).lower()}
 - next gate: {pre_send.get("next_gate")}
+
+## Production Request Send Window Plan
+
+- result: {send_window.get("result")}
+- plan valid: {str(send_window.get("plan_valid")).lower()}
+- send authorized: {str(send_window.get("send_authorized")).lower()}
+- execution allowed by this plan: {str(send_window.get("execution_allowed_by_this_plan")).lower()}
+- planned idempotency key template: `{send_window.get("planned_request", {}).get("idempotency_key_template")}`
+- window expires at: `{send_window.get("planned_window", {}).get("expires_at")}`
+- next gate: {send_window.get("next_gate")}
 
 ### Production Gates
 
@@ -754,6 +817,22 @@ def main() -> int:
     print(
         "production_pre_send_next_gate: "
         f"{snapshot['production_pre_send_readiness_aggregation'].get('next_gate')}"
+    )
+    print(
+        "production_request_send_window_plan: "
+        f"{snapshot['production_request_send_window_plan'].get('result')}"
+    )
+    print(
+        "production_request_send_window_plan_valid: "
+        f"{str(snapshot['production_request_send_window_plan'].get('plan_valid')).lower()}"
+    )
+    print(
+        "production_request_send_window_authorized: "
+        f"{str(snapshot['production_request_send_window_plan'].get('send_authorized')).lower()}"
+    )
+    print(
+        "production_request_send_window_next_gate: "
+        f"{snapshot['production_request_send_window_plan'].get('next_gate')}"
     )
     print("secret_read: NO")
     print("new_external_request_sent: NO")
