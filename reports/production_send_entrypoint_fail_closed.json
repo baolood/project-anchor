@@ -1,0 +1,52 @@
+{
+  "blocked_response_shape": {
+    "command_created": false,
+    "error": "PRODUCTION_SEND_NOT_AUTHORIZED",
+    "idempotency_key": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
+    "production_request_sent": false,
+    "requires_explicit_execution_gate": true,
+    "status": "blocked"
+  },
+  "boundary": {
+    "authorization_header_generated": "NO",
+    "dns_lookup_performed": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_http_network_executed": "NO",
+    "production_request_sent": "NO",
+    "production_signing_executed": "NO",
+    "secret_read": "NO",
+    "secret_value_disclosed": "NO",
+    "socket_opened": "NO"
+  },
+  "checks": [
+    {
+      "name": "valid_shape_accepted_by_validator",
+      "result": "PASS"
+    },
+    {
+      "name": "unbounded_notional_rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "wrong_idempotency_key_rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "secret_field_rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "blocked_response_has_no_command_id",
+      "result": "PASS"
+    }
+  ],
+  "command_created": false,
+  "entrypoint_present": true,
+  "generated_at": "2026-07-21T10:43:32Z",
+  "production_request_sent": false,
+  "result": "PASS",
+  "send_authorized": false,
+  "surface": "POST /trade-gate/production-order-intents",
+  "valid_shape_accepted_by_validator": true
+}

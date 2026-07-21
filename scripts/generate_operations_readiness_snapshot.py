@@ -37,6 +37,9 @@ PRODUCTION_PRE_SEND_READINESS_AGGREGATION_REPORT = (
 PRODUCTION_REQUEST_SEND_WINDOW_PLAN_REPORT = (
     REPORTS_DIR / "production_request_send_window_plan.json"
 )
+PRODUCTION_SEND_ENTRYPOINT_FAIL_CLOSED_REPORT = (
+    REPORTS_DIR / "production_send_entrypoint_fail_closed.json"
+)
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 CONTROLLED_COMMAND_ID = os.getenv(
@@ -398,6 +401,38 @@ def load_production_request_send_window_plan() -> dict[str, Any]:
     }
 
 
+def load_production_send_entrypoint_fail_closed() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "entrypoint_present": False,
+        "send_authorized": False,
+        "command_created": False,
+        "production_request_sent": False,
+        "surface": "POST /trade-gate/production-order-intents",
+        "boundary": {
+            "secret_read": "NO",
+            "production_request_sent": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(PRODUCTION_SEND_ENTRYPOINT_FAIL_CLOSED_REPORT.read_text(encoding="utf-8"))
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "entrypoint_present": bool(data.get("entrypoint_present")),
+        "send_authorized": bool(data.get("send_authorized")),
+        "command_created": bool(data.get("command_created")),
+        "production_request_sent": bool(data.get("production_request_sent")),
+        "surface": data.get("surface", "POST /trade-gate/production-order-intents"),
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -442,6 +477,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         load_production_pre_send_readiness_aggregation()
     )
     production_request_send_window_plan = load_production_request_send_window_plan()
+    production_send_entrypoint_fail_closed = load_production_send_entrypoint_fail_closed()
     production_execution_ready = production_execution_readiness.get("result") == "PASS"
 
     hard_failures = [
@@ -498,6 +534,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             production_pre_send_readiness_aggregation
         ),
         "production_request_send_window_plan": production_request_send_window_plan,
+        "production_send_entrypoint_fail_closed": production_send_entrypoint_fail_closed,
         "go_live": {
             "verdict": "NO-GO",
             "blocking_gates": GO_LIVE_BLOCKERS,
@@ -581,6 +618,15 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "production_request_send_window_authorized": pass_fail(
                 production_request_send_window_plan.get("send_authorized") is True
             ),
+            "production_send_entrypoint_fail_closed_resolved": pass_fail(
+                production_send_entrypoint_fail_closed.get("result") == "PASS"
+            ),
+            "production_send_entrypoint_present": pass_fail(
+                production_send_entrypoint_fail_closed.get("entrypoint_present") is True
+            ),
+            "production_send_entrypoint_authorized": pass_fail(
+                production_send_entrypoint_fail_closed.get("send_authorized") is True
+            ),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -606,6 +652,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     http_request_interface = snapshot["production_http_request_interface_dry_run"]
     pre_send = snapshot["production_pre_send_readiness_aggregation"]
     send_window = snapshot["production_request_send_window_plan"]
+    send_entrypoint = snapshot["production_send_entrypoint_fail_closed"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
     production_blockers = "\n".join(
         f"- {item}" for item in production_readiness.get("blockers", [])
@@ -710,6 +757,15 @@ Generated at: `{snapshot["generated_at"]}`
 - planned idempotency key template: `{send_window.get("planned_request", {}).get("idempotency_key_template")}`
 - window expires at: `{send_window.get("planned_window", {}).get("expires_at")}`
 - next gate: {send_window.get("next_gate")}
+
+## Production Send Entrypoint Fail-Closed
+
+- result: {send_entrypoint.get("result")}
+- surface: `{send_entrypoint.get("surface")}`
+- entrypoint present: {str(send_entrypoint.get("entrypoint_present")).lower()}
+- send authorized: {str(send_entrypoint.get("send_authorized")).lower()}
+- command created: {str(send_entrypoint.get("command_created")).lower()}
+- production request sent: {str(send_entrypoint.get("production_request_sent")).lower()}
 
 ### Production Gates
 
@@ -833,6 +889,18 @@ def main() -> int:
     print(
         "production_request_send_window_next_gate: "
         f"{snapshot['production_request_send_window_plan'].get('next_gate')}"
+    )
+    print(
+        "production_send_entrypoint_fail_closed: "
+        f"{snapshot['production_send_entrypoint_fail_closed'].get('result')}"
+    )
+    print(
+        "production_send_entrypoint_present: "
+        f"{str(snapshot['production_send_entrypoint_fail_closed'].get('entrypoint_present')).lower()}"
+    )
+    print(
+        "production_send_entrypoint_authorized: "
+        f"{str(snapshot['production_send_entrypoint_fail_closed'].get('send_authorized')).lower()}"
     )
     print("secret_read: NO")
     print("new_external_request_sent: NO")

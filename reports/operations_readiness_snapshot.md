@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-21T10:18:26Z`
+Generated at: `2026-07-21T10:43:13Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-21T10:18:26Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-21T10:18:04.893177+00:00`
+- worker heartbeat at: `2026-07-21T10:42:49.195935+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -92,6 +92,15 @@ Generated at: `2026-07-21T10:18:26Z`
 - planned idempotency key template: `production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1`
 - window expires at: `2026-07-21T11:16:12Z`
 - next gate: WAITING_FOR_EXPLICIT_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_AUTHORIZATION
+
+## Production Send Entrypoint Fail-Closed
+
+- result: PASS
+- surface: `POST /trade-gate/production-order-intents`
+- entrypoint present: true
+- send authorized: false
+- command created: false
+- production request sent: false
 
 ### Production Gates
 
