@@ -1,0 +1,129 @@
+{
+  "authorization_header_generated": false,
+  "boundary": {
+    "authorization_header_generated": "NO",
+    "canary_rerun": "NO",
+    "dns_lookup_performed": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_http_network_executed": "NO",
+    "production_request_sent": "NO",
+    "production_signing_executed": "NO",
+    "runtime_modified": "NO",
+    "secret_read": "NO",
+    "secret_value_disclosed": "NO",
+    "signed_payload_sendable": "NO",
+    "socket_opened": "NO"
+  },
+  "errors": [],
+  "fail_closed_output_shape": {
+    "authorization_header_value": null,
+    "external_order_id": null,
+    "external_order_id_present": false,
+    "failure_family": "PRODUCTION_SIGNING_SECRET_NOT_PROVIDED",
+    "failure_reason": "production_signing_secret_not_provided",
+    "material_id": null,
+    "network_sent": false,
+    "signature_value": null,
+    "signed_payload_sendable": false,
+    "status": "NOT_EXECUTED"
+  },
+  "generated_at": "2026-07-21T07:24:43Z",
+  "inputs": {
+    "production_signing_readiness": "reports/production_signing_readiness_validation.json",
+    "production_unsigned_canonical_payload": "reports/production_unsigned_canonical_payload_dry_run.json"
+  },
+  "missing_secret_fail_closed": true,
+  "real_signing_executed": false,
+  "result": "PASS",
+  "signed_payload_sendable": false,
+  "signing_field_checks": [
+    {
+      "actual": "PRESENT_VALID",
+      "expected": "PRESENT_VALID",
+      "name": "PRODUCTION_SIGNING_ALGORITHM",
+      "result": "PASS"
+    },
+    {
+      "actual": "PRESENT_VALID",
+      "expected": "PRESENT_VALID",
+      "name": "PRODUCTION_SIGNING_CANONICAL_PAYLOAD",
+      "result": "PASS"
+    },
+    {
+      "actual": "PRESENT_VALID",
+      "expected": "PRESENT_VALID",
+      "name": "PRODUCTION_SIGNING_FAILURE_CLOSED_PATH",
+      "result": "PASS"
+    },
+    {
+      "actual": "PRESENT_VALID",
+      "expected": "PRESENT_VALID",
+      "name": "PRODUCTION_SIGNING_IDEMPOTENCY_BINDING",
+      "result": "PASS"
+    },
+    {
+      "actual": "PRESENT_VALID",
+      "expected": "PRESENT_VALID",
+      "name": "PRODUCTION_SIGNING_LOG_REDACTION",
+      "result": "PASS"
+    },
+    {
+      "actual": "PRESENT_VALID",
+      "expected": "PRESENT_VALID",
+      "name": "PRODUCTION_SIGNING_SECRET_INPUT_BOUNDARY",
+      "result": "PASS"
+    },
+    {
+      "actual": "PRESENT_VALID",
+      "expected": "PRESENT_VALID",
+      "name": "PRODUCTION_SIGNING_TIMESTAMP_SOURCE",
+      "result": "PASS"
+    }
+  ],
+  "signing_input_shape": {
+    "canonical_payload_json_present": true,
+    "execution_mode": "production",
+    "idempotency_binding": "required_unique_key_per_authorized_window",
+    "market": "binance_spot",
+    "notional": "4",
+    "order_type": "market",
+    "side": "BUY",
+    "symbol": "BTCUSDT"
+  },
+  "signing_interface_shape_valid": true,
+  "validation_checks": [
+    {
+      "name": "unsigned_canonical_payload_report_pass",
+      "result": "PASS"
+    },
+    {
+      "name": "unsigned_payload_not_sendable",
+      "result": "PASS"
+    },
+    {
+      "name": "signing_readiness_report_pass",
+      "result": "PASS"
+    },
+    {
+      "name": "signing_fields_present_valid",
+      "result": "PASS"
+    },
+    {
+      "name": "signing_input_shape_valid",
+      "result": "PASS"
+    },
+    {
+      "name": "missing_secret_fails_closed",
+      "result": "PASS"
+    },
+    {
+      "name": "authorization_header_not_generated",
+      "result": "PASS"
+    },
+    {
+      "name": "signature_not_generated",
+      "result": "PASS"
+    }
+  ]
+}

@@ -25,6 +25,9 @@ PRODUCTION_NO_SEND_EXECUTION_DRILL_REPORT = REPORTS_DIR / "production_no_send_ex
 PRODUCTION_UNSIGNED_CANONICAL_PAYLOAD_DRY_RUN_REPORT = (
     REPORTS_DIR / "production_unsigned_canonical_payload_dry_run.json"
 )
+PRODUCTION_SIGNING_INTERFACE_DRY_RUN_REPORT = (
+    REPORTS_DIR / "production_signing_interface_dry_run.json"
+)
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 CONTROLLED_COMMAND_ID = os.getenv(
@@ -250,6 +253,39 @@ def load_production_unsigned_canonical_payload_dry_run() -> dict[str, Any]:
     }
 
 
+def load_production_signing_interface_dry_run() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "signing_interface_shape_valid": False,
+        "missing_secret_fail_closed": False,
+        "real_signing_executed": False,
+        "authorization_header_generated": False,
+        "signed_payload_sendable": False,
+        "boundary": {
+            "secret_read": "NO",
+            "production_signing_executed": "NO",
+            "production_request_sent": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(PRODUCTION_SIGNING_INTERFACE_DRY_RUN_REPORT.read_text(encoding="utf-8"))
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "signing_interface_shape_valid": bool(data.get("signing_interface_shape_valid")),
+        "missing_secret_fail_closed": bool(data.get("missing_secret_fail_closed")),
+        "real_signing_executed": bool(data.get("real_signing_executed")),
+        "authorization_header_generated": bool(data.get("authorization_header_generated")),
+        "signed_payload_sendable": bool(data.get("signed_payload_sendable")),
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -288,6 +324,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     production_unsigned_canonical_payload_dry_run = (
         load_production_unsigned_canonical_payload_dry_run()
     )
+    production_signing_interface_dry_run = load_production_signing_interface_dry_run()
     production_execution_ready = production_execution_readiness.get("result") == "PASS"
 
     hard_failures = [
@@ -338,6 +375,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         "production_unsigned_canonical_payload_dry_run": (
             production_unsigned_canonical_payload_dry_run
         ),
+        "production_signing_interface_dry_run": production_signing_interface_dry_run,
         "go_live": {
             "verdict": "NO-GO",
             "blocking_gates": GO_LIVE_BLOCKERS,
@@ -376,6 +414,18 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "production_unsigned_canonical_payload_sendable": pass_fail(
                 production_unsigned_canonical_payload_dry_run.get("sendable") is True
             ),
+            "production_signing_interface_dry_run_resolved": pass_fail(
+                production_signing_interface_dry_run.get("result") == "PASS"
+            ),
+            "production_signing_interface_shape_valid": pass_fail(
+                production_signing_interface_dry_run.get("signing_interface_shape_valid") is True
+            ),
+            "production_signing_missing_secret_fail_closed": pass_fail(
+                production_signing_interface_dry_run.get("missing_secret_fail_closed") is True
+            ),
+            "production_real_signing_executed": pass_fail(
+                production_signing_interface_dry_run.get("real_signing_executed") is True
+            ),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -397,6 +447,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     production_dry_gate = snapshot["production_execution_authorization_dry_gate"]
     no_send_drill = snapshot["production_no_send_execution_drill"]
     unsigned_payload = snapshot["production_unsigned_canonical_payload_dry_run"]
+    signing_interface = snapshot["production_signing_interface_dry_run"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
     production_blockers = "\n".join(
         f"- {item}" for item in production_readiness.get("blockers", [])
@@ -465,6 +516,15 @@ Generated at: `{snapshot["generated_at"]}`
 - result: {unsigned_payload.get("result")}
 - unsigned canonical payload generated: {str(unsigned_payload.get("unsigned_canonical_payload_generated")).lower()}
 - sendable: {str(unsigned_payload.get("sendable")).lower()}
+
+## Production Signing Interface Dry Run
+
+- result: {signing_interface.get("result")}
+- signing interface shape valid: {str(signing_interface.get("signing_interface_shape_valid")).lower()}
+- missing secret fail-closed: {str(signing_interface.get("missing_secret_fail_closed")).lower()}
+- real signing executed: {str(signing_interface.get("real_signing_executed")).lower()}
+- Authorization header generated: {str(signing_interface.get("authorization_header_generated")).lower()}
+- signed payload sendable: {str(signing_interface.get("signed_payload_sendable")).lower()}
 
 ### Production Gates
 
@@ -540,6 +600,14 @@ def main() -> int:
     print(
         "production_unsigned_canonical_payload_generated: "
         f"{str(snapshot['production_unsigned_canonical_payload_dry_run'].get('unsigned_canonical_payload_generated')).lower()}"
+    )
+    print(
+        "production_signing_interface_dry_run: "
+        f"{snapshot['production_signing_interface_dry_run'].get('result')}"
+    )
+    print(
+        "production_signing_missing_secret_fail_closed: "
+        f"{str(snapshot['production_signing_interface_dry_run'].get('missing_secret_fail_closed')).lower()}"
     )
     print("secret_read: NO")
     print("new_external_request_sent: NO")
