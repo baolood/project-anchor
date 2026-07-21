@@ -19,9 +19,12 @@
     "production_execution_ready": "FAIL",
     "production_no_send_execution_drill_resolved": "PASS",
     "production_no_send_path_verified": "PASS",
+    "production_unsigned_canonical_payload_dry_run_resolved": "PASS",
+    "production_unsigned_canonical_payload_generated": "PASS",
+    "production_unsigned_canonical_payload_sendable": "FAIL",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-07-19T15:07:18Z",
+  "generated_at": "2026-07-19T15:15:33Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -39,7 +42,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-07-19T15:07:16.483032+00:00"
+    "worker_heartbeat_at": "2026-07-19T15:15:21.140482+00:00"
   },
   "latest_canary": {
     "attempt": 1,
@@ -178,6 +181,25 @@
     },
     "no_send_path_verified": true,
     "result": "PASS"
+  },
+  "production_unsigned_canonical_payload_dry_run": {
+    "boundary": {
+      "authorization_header_generated": "NO",
+      "canary_rerun": "NO",
+      "dns_lookup_performed": "NO",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "production_http_network_executed": "NO",
+      "production_request_sent": "NO",
+      "production_signing_executed": "NO",
+      "runtime_modified": "NO",
+      "secret_read": "NO",
+      "secret_value_disclosed": "NO",
+      "socket_opened": "NO"
+    },
+    "result": "PASS",
+    "sendable": false,
+    "unsigned_canonical_payload_generated": true
   },
   "safety": {
     "canary_rerun": false,
