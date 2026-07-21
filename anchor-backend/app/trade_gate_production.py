@@ -4,6 +4,9 @@ from __future__ import annotations
 PRODUCTION_IDEMPOTENCY_KEY = (
     "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1"
 )
+PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT = (
+    "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_COMMAND_CREATION_ONLY"
+)
 
 FORBIDDEN_PRODUCTION_INPUT_FIELDS = frozenset(
     {
@@ -70,12 +73,38 @@ def validate_production_order_request(body: dict) -> tuple[bool, str | None]:
     return (True, None)
 
 
-def production_order_blocked_response() -> dict:
+def production_execution_gate_decision(config: dict | None = None) -> dict:
+    data = config if isinstance(config, dict) else {}
+    verdict = str(data.get("FINAL_OPERATOR_VERDICT", "")).strip()
+    enabled = data.get("PRODUCTION_EXECUTION_GATE_ENABLED") is True
+    exactly_one = data.get("PRODUCTION_EXACTLY_ONE_COMMAND_CREATION") is True
+    no_retry = data.get("PRODUCTION_NO_RETRY") is True
+    idempotency_key = str(data.get("PRODUCTION_IDEMPOTENCY_KEY", "")).strip()
+
+    checks = {
+        "gate_enabled": enabled,
+        "exactly_one_command_creation": exactly_one,
+        "no_retry": no_retry,
+        "idempotency_key_matches": idempotency_key == PRODUCTION_IDEMPOTENCY_KEY,
+        "operator_verdict_matches": verdict == PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT,
+    }
+    authorized = all(checks.values())
+    return {
+        "authorized": authorized,
+        "reason": "AUTHORIZED" if authorized else "PRODUCTION_EXECUTION_GATE_CLOSED",
+        "checks": checks,
+        "required_verdict": PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT,
+    }
+
+
+def production_order_blocked_response(gate_decision: dict | None = None) -> dict:
+    decision = gate_decision if isinstance(gate_decision, dict) else production_execution_gate_decision()
     return {
         "status": "blocked",
-        "error": "PRODUCTION_SEND_NOT_AUTHORIZED",
+        "error": decision.get("reason") or "PRODUCTION_EXECUTION_GATE_CLOSED",
         "command_created": False,
         "production_request_sent": False,
         "requires_explicit_execution_gate": True,
+        "execution_gate_authorized": bool(decision.get("authorized")),
         "idempotency_key": PRODUCTION_IDEMPOTENCY_KEY,
     }

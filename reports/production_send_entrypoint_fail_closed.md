@@ -1,6 +1,6 @@
 # Production Send Entrypoint Fail-Closed Check
 
-Generated at: `2026-07-21T10:43:32Z`
+Generated at: `2026-07-21T10:52:40Z`
 
 ## Result
 
@@ -9,6 +9,7 @@ Generated at: `2026-07-21T10:43:32Z`
 - entrypoint present: true
 - valid shape accepted by validator: true
 - send authorized: false
+- execution gate authorized: false
 - command created: false
 - production request sent: false
 
@@ -19,6 +20,8 @@ Generated at: `2026-07-21T10:43:32Z`
 - wrong_idempotency_key_rejected: PASS
 - secret_field_rejected: PASS
 - blocked_response_has_no_command_id: PASS
+- default_gate_closed: PASS
+- complete_gate_config_can_authorize_command_creation_decision: PASS
 
 ## Boundary
 
