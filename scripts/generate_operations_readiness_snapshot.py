@@ -31,6 +31,9 @@ PRODUCTION_SIGNING_INTERFACE_DRY_RUN_REPORT = (
 PRODUCTION_HTTP_REQUEST_INTERFACE_DRY_RUN_REPORT = (
     REPORTS_DIR / "production_http_request_interface_dry_run.json"
 )
+PRODUCTION_PRE_SEND_READINESS_AGGREGATION_REPORT = (
+    REPORTS_DIR / "production_pre_send_readiness_aggregation.json"
+)
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 CONTROLLED_COMMAND_ID = os.getenv(
@@ -320,6 +323,40 @@ def load_production_http_request_interface_dry_run() -> dict[str, Any]:
     }
 
 
+def load_production_pre_send_readiness_aggregation() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "evidence_chain_complete": False,
+        "request_send_authorized": False,
+        "go_live_allowed": False,
+        "live_trading_allowed": False,
+        "next_gate": "BLOCKED_PRODUCTION_PRE_SEND_EVIDENCE_UNREADABLE",
+        "boundary": {
+            "secret_read": "NO",
+            "production_request_sent": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(
+            PRODUCTION_PRE_SEND_READINESS_AGGREGATION_REPORT.read_text(encoding="utf-8")
+        )
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "evidence_chain_complete": bool(data.get("evidence_chain_complete")),
+        "request_send_authorized": bool(data.get("request_send_authorized")),
+        "go_live_allowed": bool(data.get("go_live_allowed")),
+        "live_trading_allowed": bool(data.get("live_trading_allowed")),
+        "next_gate": data.get("next_gate", "UNKNOWN"),
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -360,6 +397,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     )
     production_signing_interface_dry_run = load_production_signing_interface_dry_run()
     production_http_request_interface_dry_run = load_production_http_request_interface_dry_run()
+    production_pre_send_readiness_aggregation = (
+        load_production_pre_send_readiness_aggregation()
+    )
     production_execution_ready = production_execution_readiness.get("result") == "PASS"
 
     hard_failures = [
@@ -412,6 +452,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         ),
         "production_signing_interface_dry_run": production_signing_interface_dry_run,
         "production_http_request_interface_dry_run": production_http_request_interface_dry_run,
+        "production_pre_send_readiness_aggregation": (
+            production_pre_send_readiness_aggregation
+        ),
         "go_live": {
             "verdict": "NO-GO",
             "blocking_gates": GO_LIVE_BLOCKERS,
@@ -477,6 +520,15 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "production_request_sent": pass_fail(
                 production_http_request_interface_dry_run.get("request_sent") is True
             ),
+            "production_pre_send_readiness_aggregation_resolved": pass_fail(
+                production_pre_send_readiness_aggregation.get("result") == "PASS"
+            ),
+            "production_pre_send_evidence_chain_complete": pass_fail(
+                production_pre_send_readiness_aggregation.get("evidence_chain_complete") is True
+            ),
+            "production_request_send_authorized": pass_fail(
+                production_pre_send_readiness_aggregation.get("request_send_authorized") is True
+            ),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -500,6 +552,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     unsigned_payload = snapshot["production_unsigned_canonical_payload_dry_run"]
     signing_interface = snapshot["production_signing_interface_dry_run"]
     http_request_interface = snapshot["production_http_request_interface_dry_run"]
+    pre_send = snapshot["production_pre_send_readiness_aggregation"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
     production_blockers = "\n".join(
         f"- {item}" for item in production_readiness.get("blockers", [])
@@ -585,6 +638,15 @@ Generated at: `{snapshot["generated_at"]}`
 - missing Authorization fail-closed: {str(http_request_interface.get("missing_authorization_fail_closed")).lower()}
 - HTTP/network executed: {str(http_request_interface.get("http_network_executed")).lower()}
 - request sent: {str(http_request_interface.get("request_sent")).lower()}
+
+## Production Pre-Send Readiness Aggregation
+
+- result: {pre_send.get("result")}
+- evidence chain complete: {str(pre_send.get("evidence_chain_complete")).lower()}
+- request send authorized: {str(pre_send.get("request_send_authorized")).lower()}
+- go-live allowed: {str(pre_send.get("go_live_allowed")).lower()}
+- live trading allowed: {str(pre_send.get("live_trading_allowed")).lower()}
+- next gate: {pre_send.get("next_gate")}
 
 ### Production Gates
 
@@ -676,6 +738,22 @@ def main() -> int:
     print(
         "production_http_missing_authorization_fail_closed: "
         f"{str(snapshot['production_http_request_interface_dry_run'].get('missing_authorization_fail_closed')).lower()}"
+    )
+    print(
+        "production_pre_send_readiness_aggregation: "
+        f"{snapshot['production_pre_send_readiness_aggregation'].get('result')}"
+    )
+    print(
+        "production_pre_send_evidence_chain_complete: "
+        f"{str(snapshot['production_pre_send_readiness_aggregation'].get('evidence_chain_complete')).lower()}"
+    )
+    print(
+        "production_request_send_authorized: "
+        f"{str(snapshot['production_pre_send_readiness_aggregation'].get('request_send_authorized')).lower()}"
+    )
+    print(
+        "production_pre_send_next_gate: "
+        f"{snapshot['production_pre_send_readiness_aggregation'].get('next_gate')}"
     )
     print("secret_read: NO")
     print("new_external_request_sent: NO")
