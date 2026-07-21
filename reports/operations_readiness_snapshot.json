@@ -31,6 +31,9 @@
     "production_request_send_window_plan_resolved": "PASS",
     "production_request_send_window_plan_valid": "PASS",
     "production_request_sent": "FAIL",
+    "production_send_entrypoint_authorized": "FAIL",
+    "production_send_entrypoint_fail_closed_resolved": "PASS",
+    "production_send_entrypoint_present": "PASS",
     "production_signing_interface_dry_run_resolved": "PASS",
     "production_signing_interface_shape_valid": "PASS",
     "production_signing_missing_secret_fail_closed": "PASS",
@@ -39,7 +42,7 @@
     "production_unsigned_canonical_payload_sendable": "FAIL",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-07-21T10:18:26Z",
+  "generated_at": "2026-07-21T10:43:13Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -57,7 +60,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-07-21T10:18:04.893177+00:00"
+    "worker_heartbeat_at": "2026-07-21T10:42:49.195935+00:00"
   },
   "latest_canary": {
     "attempt": 1,
@@ -280,6 +283,26 @@
     },
     "result": "PASS",
     "send_authorized": false
+  },
+  "production_send_entrypoint_fail_closed": {
+    "boundary": {
+      "authorization_header_generated": "NO",
+      "dns_lookup_performed": "NO",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "production_http_network_executed": "NO",
+      "production_request_sent": "NO",
+      "production_signing_executed": "NO",
+      "secret_read": "NO",
+      "secret_value_disclosed": "NO",
+      "socket_opened": "NO"
+    },
+    "command_created": false,
+    "entrypoint_present": true,
+    "production_request_sent": false,
+    "result": "PASS",
+    "send_authorized": false,
+    "surface": "POST /trade-gate/production-order-intents"
   },
   "production_signing_interface_dry_run": {
     "authorization_header_generated": false,

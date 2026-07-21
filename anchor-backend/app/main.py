@@ -10,6 +10,10 @@ from app.api.routes import router
 from app.api.ops import router as ops_router
 from app.api.routes_domain_command_validation_dev import router as domain_command_validation_dev_router
 from app.domain_events import append_domain_event_pool
+from app.trade_gate_production import (
+    production_order_blocked_response,
+    validate_production_order_request,
+)
 
 try:
     import asyncpg  # type: ignore
@@ -814,6 +818,7 @@ _TRADE_GATE_FORBIDDEN_INPUT_FIELDS = frozenset(
     {
         "account_id",
         "api_key",
+        "api_secret",
         "exchange",
         "passphrase",
         "secret",
@@ -1164,6 +1169,21 @@ async def create_trade_gate_testnet_order_intent(body: dict = Body(default_facto
         "status": "ok",
         "command_id": command["id"],
     }
+
+
+@app.post("/trade-gate/production-order-intents")
+async def create_trade_gate_production_order_intent(body: dict = Body(default_factory=dict)):
+    request_body = dict(body) if body else {}
+    is_valid, reject_reason = validate_production_order_request(request_body)
+    if not is_valid:
+        return {
+            "status": "error",
+            "error": reject_reason,
+            "production_request_sent": False,
+            "command_created": False,
+        }
+
+    return production_order_blocked_response()
 
 
 @app.post("/domain-commands/{domain_id}/retry")
