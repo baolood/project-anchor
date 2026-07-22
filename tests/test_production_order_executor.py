@@ -1,5 +1,7 @@
+import io
 import sys
 import unittest
+import urllib.error
 from pathlib import Path
 
 
@@ -28,6 +30,31 @@ def _transport_input(**overrides):
     }
     data.update(overrides)
     return data
+
+
+class _FakeResponse:
+    status = 200
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def read(self):
+        return (
+            b'{"symbol":"BTCUSDT","orderId":12345,"clientOrderId":"fixture-client",'
+            b'"transactTime":1234567890,"status":"FILLED"}'
+        )
+
+
+class _FakeOpener:
+    def __init__(self):
+        self.calls = []
+
+    def __call__(self, request, timeout):
+        self.calls.append({"request": request, "timeout": timeout})
+        return _FakeResponse()
 
 
 class ProductionOrderExecutorTest(unittest.TestCase):
@@ -123,7 +150,7 @@ class ProductionOrderExecutorTest(unittest.TestCase):
         self.assertIsNone(terminal_type)
         self.assertIsNone(terminal_payload)
 
-    def test_run_execute_stops_before_http_transport(self):
+    def test_run_execute_stops_before_http_transport_when_not_enabled(self):
         outcome, requested_payload, terminal_type, terminal_payload = (
             run_production_order_request(
                 _transport_input(),
@@ -138,12 +165,76 @@ class ProductionOrderExecutorTest(unittest.TestCase):
         )
 
         self.assertFalse(outcome["ok"])
-        self.assertEqual(outcome["error"]["code"], "PRODUCTION_HTTP_TRANSPORT_NOT_WIRED")
+        self.assertEqual(outcome["error"]["code"], "PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED")
         self.assertFalse(outcome["error"]["external_request_started"])
         self.assertIsNone(requested_payload)
         self.assertIsNone(terminal_type)
         self.assertIsNone(terminal_payload)
         self.assertTrue(outcome["error"]["signed_request_shape"]["signature_present"])
+
+    def test_run_uses_injected_transport_once_when_transport_enabled(self):
+        fake_opener = _FakeOpener()
+
+        outcome, requested_payload, terminal_type, terminal_payload = (
+            run_production_order_request(
+                _transport_input(),
+                {
+                    "base_url": "https://api.binance.com",
+                    "api_key": "fixture-key",
+                    "api_secret": "fixture-secret",
+                },
+                1234567890,
+                execute=True,
+                transport_enabled=True,
+                opener=fake_opener,
+            )
+        )
+
+        self.assertTrue(outcome["ok"])
+        self.assertEqual(len(fake_opener.calls), 1)
+        self.assertEqual(terminal_type, "PRODUCTION_HTTP_RESPONSE")
+        self.assertTrue(requested_payload["signature_present"])
+        self.assertTrue(requested_payload["api_key_present"])
+        self.assertEqual(terminal_payload["external_status"], "FILLED")
+        self.assertTrue(terminal_payload["external_order_id_present"])
+        self.assertNotIn("fixture-key", str(outcome))
+        self.assertNotIn("fixture-secret", str(outcome))
+        self.assertNotIn("signature=", str(outcome))
+
+    def test_injected_http_error_fails_closed_without_secret_disclosure(self):
+        def failing_opener(request, timeout):
+            raise urllib.error.HTTPError(
+                request.full_url,
+                401,
+                "Unauthorized",
+                hdrs=None,
+                fp=io.BytesIO(b'{"code":-2015,"msg":"redacted"}'),
+            )
+
+        outcome, requested_payload, terminal_type, terminal_payload = (
+            run_production_order_request(
+                _transport_input(),
+                {
+                    "base_url": "https://api.binance.com",
+                    "api_key": "fixture-key",
+                    "api_secret": "fixture-secret",
+                },
+                1234567890,
+                execute=True,
+                transport_enabled=True,
+                opener=failing_opener,
+            )
+        )
+
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(outcome["error"]["code"], "PRODUCTION_HTTP_AUTH_REJECTED")
+        self.assertTrue(outcome["error"]["external_request_started"])
+        self.assertTrue(requested_payload["signature_present"])
+        self.assertEqual(terminal_type, "PRODUCTION_HTTP_AUTH_REJECTED")
+        self.assertEqual(terminal_payload["http_status"], 401)
+        self.assertNotIn("fixture-key", str(outcome))
+        self.assertNotIn("fixture-secret", str(outcome))
+        self.assertNotIn("signature=", str(outcome))
 
 
 if __name__ == "__main__":

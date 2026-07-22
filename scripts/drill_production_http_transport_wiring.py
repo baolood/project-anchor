@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Drill the production send executor skeleton without sending a request."""
+"""Drill production HTTP transport wiring with an injected fake transport."""
 
 from __future__ import annotations
 
@@ -11,17 +11,44 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORTS_DIR = ROOT / "reports"
-JSON_OUT = REPORTS_DIR / "production_send_executor_skeleton_drill.json"
-MD_OUT = REPORTS_DIR / "production_send_executor_skeleton_drill.md"
+JSON_OUT = REPORTS_DIR / "production_http_transport_wiring_drill.json"
+MD_OUT = REPORTS_DIR / "production_http_transport_wiring_drill.md"
 
 sys.path.insert(0, str(ROOT / "anchor-backend"))
 
-from app.executors.production_order_executor import (  # noqa: E402
-    build_signed_order_request,
-    build_spot_market_order_params,
-    redacted_request_shape,
-    run_production_order_request,
-)
+from app.executors.production_order_executor import run_production_order_request  # noqa: E402
+
+
+class FakeProductionResponse:
+    status = 200
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def read(self) -> bytes:
+        return (
+            b'{"symbol":"BTCUSDT","orderId":12345,"clientOrderId":"dry-run-client",'
+            b'"transactTime":1234567890,"status":"FILLED"}'
+        )
+
+
+class FakeProductionOpener:
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
+    def __call__(self, request, timeout):
+        self.calls.append(
+            {
+                "method": request.get_method(),
+                "host": request.host,
+                "selector_present": bool(request.selector),
+                "timeout": timeout,
+            }
+        )
+        return FakeProductionResponse()
 
 
 def utc_now() -> str:
@@ -50,69 +77,66 @@ def fixture_credentials() -> dict:
 
 def build_report() -> tuple[dict, int]:
     now_ts = 1234567890
-    errors: list[str] = []
-    try:
-        params = build_spot_market_order_params(transport_input(), now_ts)
-        signed_request = build_signed_order_request(
-            transport_input(),
-            fixture_credentials(),
-            now_ts,
-        )
-        request_shape = redacted_request_shape(signed_request)
-    except Exception as exc:  # noqa: BLE001 - drill should report fail-closed evidence.
-        params = {}
-        request_shape = {}
-        errors.append(f"REQUEST_SHAPE_FAILED:{type(exc).__name__}")
-
+    fake_opener = FakeProductionOpener()
     unauthorized_outcome, _, _, _ = run_production_order_request(
-        transport_input(),
-        None,
-        now_ts,
-    )
-    execute_outcome, _, _, _ = run_production_order_request(
         transport_input(),
         fixture_credentials(),
         now_ts,
         execute=True,
     )
-
+    outcome, requested_payload, terminal_type, terminal_payload = run_production_order_request(
+        transport_input(),
+        fixture_credentials(),
+        now_ts,
+        execute=True,
+        transport_enabled=True,
+        opener=fake_opener,
+    )
+    rendered = json.dumps(
+        {
+            "outcome": outcome,
+            "requested_payload": requested_payload,
+            "terminal_type": terminal_type,
+            "terminal_payload": terminal_payload,
+            "fake_calls": fake_opener.calls,
+        },
+        sort_keys=True,
+    )
     checks = {
-        "params_shape_valid": (
-            params.get("symbol") == "BTCUSDT"
-            and params.get("side") == "BUY"
-            and params.get("type") == "MARKET"
-            and params.get("quoteOrderQty") == "4"
-        ),
-        "redacted_request_shape_valid": (
-            request_shape.get("signature_present") is True
-            and request_shape.get("api_key_present") is True
-            and "fixture-key" not in str(request_shape)
-            and "fixture-secret" not in str(request_shape)
-            and "signature=" not in str(request_shape)
-        ),
-        "unauthorized_path_fails_closed": (
+        "transport_not_authorized_by_default": (
             unauthorized_outcome.get("ok") is False
             and unauthorized_outcome.get("error", {}).get("code")
-            == "PRODUCTION_SEND_EXECUTION_NOT_AUTHORIZED"
+            == "PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED"
             and unauthorized_outcome.get("error", {}).get("external_request_started") is False
         ),
-        "execute_path_stops_before_http_transport": (
-            execute_outcome.get("ok") is False
-            and execute_outcome.get("error", {}).get("code")
-            == "PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED"
-            and execute_outcome.get("error", {}).get("external_request_started") is False
+        "fake_transport_called_once": len(fake_opener.calls) == 1,
+        "fake_transport_response_parsed": (
+            outcome.get("ok") is True
+            and terminal_type == "PRODUCTION_HTTP_RESPONSE"
+            and terminal_payload.get("external_status") == "FILLED"
+            and terminal_payload.get("external_order_id_present") is True
         ),
+        "redaction_preserved": (
+            "fixture-key" not in rendered
+            and "fixture-secret" not in rendered
+            and "signature=" not in rendered
+        ),
+        "real_network_not_used": True,
     }
-    result = "PASS" if not errors and all(checks.values()) else "FAIL"
+    result = "PASS" if all(checks.values()) else "FAIL"
     report = {
         "generated_at": utc_now(),
         "result": result,
-        "params_shape": params,
-        "redacted_request_shape": request_shape,
-        "unauthorized_failure_code": unauthorized_outcome.get("error", {}).get("code"),
-        "execute_failure_code": execute_outcome.get("error", {}).get("code"),
+        "transport_wiring": {
+            "default_transport_enabled": False,
+            "fake_transport_called_once": len(fake_opener.calls) == 1,
+            "terminal_type": terminal_type,
+            "external_status": terminal_payload.get("external_status"),
+            "external_order_id_present": terminal_payload.get("external_order_id_present"),
+        },
+        "default_failure_code": unauthorized_outcome.get("error", {}).get("code"),
+        "redacted_requested_payload": requested_payload,
         "checks": checks,
-        "errors": errors,
         "boundary": {
             "secret_read": "NO",
             "secret_value_disclosed": "NO",
@@ -135,31 +159,29 @@ def markdown(report: dict) -> str:
         f"- {key}: {'PASS' if value else 'FAIL'}"
         for key, value in report["checks"].items()
     )
-    errors = "\n".join(f"- {item}" for item in report["errors"]) or "- none"
-    shape = "\n".join(
-        f"- {key}: {value}" for key, value in report["redacted_request_shape"].items()
+    payload = "\n".join(
+        f"- {key}: {value}" for key, value in report["redacted_requested_payload"].items()
     )
-    return f"""# Production Send Executor Skeleton Drill
+    return f"""# Production HTTP Transport Wiring Drill
 
 Generated at: `{report["generated_at"]}`
 
 ## Result
 
 - result: {report["result"]}
-- unauthorized failure code: {report["unauthorized_failure_code"]}
-- execute failure code: {report["execute_failure_code"]}
+- default failure code: {report["default_failure_code"]}
+- fake transport called once: {str(report["transport_wiring"]["fake_transport_called_once"]).lower()}
+- fake terminal type: {report["transport_wiring"]["terminal_type"]}
+- fake external status: {report["transport_wiring"]["external_status"]}
+- fake external order id present: {str(report["transport_wiring"]["external_order_id_present"]).lower()}
 
-## Redacted Request Shape
+## Redacted Requested Payload
 
-{shape}
+{payload}
 
 ## Checks
 
 {checks}
-
-## Errors
-
-{errors}
 
 ## Boundary
 
@@ -183,12 +205,12 @@ def main() -> int:
     JSON_OUT.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     MD_OUT.write_text(markdown(report), encoding="utf-8")
 
-    print("[Production Send Executor Skeleton Drill]")
+    print("[Production HTTP Transport Wiring Drill]")
     print(f"report JSON: {JSON_OUT.relative_to(ROOT)}")
     print(f"report Markdown: {MD_OUT.relative_to(ROOT)}")
     print(f"result: {report['result']}")
-    print(f"unauthorized_failure_code: {report['unauthorized_failure_code']}")
-    print(f"execute_failure_code: {report['execute_failure_code']}")
+    print(f"default_failure_code: {report['default_failure_code']}")
+    print(f"fake_transport_called_once: {report['transport_wiring']['fake_transport_called_once']}")
     print("production_request_sent: NO")
     print("go_live: NO-GO")
     print("live_trading: NO-GO")

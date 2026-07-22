@@ -1,6 +1,6 @@
 # Production Execution Handoff Snapshot
 
-Generated at: `2026-07-22T07:34:00Z`
+Generated at: `2026-07-22T08:02:59Z`
 
 ## Result
 
@@ -26,7 +26,11 @@ Generated at: `2026-07-22T07:34:00Z`
 - worker executable: false
 - send authorized: false
 - send executor skeleton: PASS
-- send executor execute failure code: PRODUCTION_HTTP_TRANSPORT_NOT_WIRED
+- send executor execute failure code: PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED
+- HTTP transport wiring: PASS
+- HTTP transport default failure code: PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED
+- HTTP transport fake terminal type: PRODUCTION_HTTP_RESPONSE
+- HTTP transport fake external status: FILLED
 - production request sent: false
 
 ## Checks
@@ -44,7 +48,9 @@ Generated at: `2026-07-22T07:34:00Z`
 - send_window_not_authorized: PASS
 - pre_send_chain_complete: PASS
 - production_send_executor_skeleton_ready: PASS
-- production_http_transport_not_wired: PASS
+- production_http_transport_not_authorized_by_default: PASS
+- production_http_transport_wiring_ready: PASS
+- production_http_transport_fake_response_parsed: PASS
 
 ## Go-Live Blocking Gates
 

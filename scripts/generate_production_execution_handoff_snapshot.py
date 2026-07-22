@@ -27,6 +27,7 @@ SEND_ENTRYPOINT = REPORTS_DIR / "production_send_entrypoint_fail_closed.json"
 PRE_SEND_AGGREGATION = REPORTS_DIR / "production_pre_send_readiness_aggregation.json"
 SEND_WINDOW_PLAN = REPORTS_DIR / "production_request_send_window_plan.json"
 SEND_EXECUTOR_SKELETON = REPORTS_DIR / "production_send_executor_skeleton_drill.json"
+HTTP_TRANSPORT_WIRING = REPORTS_DIR / "production_http_transport_wiring_drill.json"
 
 
 def utc_now() -> str:
@@ -55,6 +56,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     pre_send, pre_send_error = read_json(PRE_SEND_AGGREGATION)
     send_window, send_window_error = read_json(SEND_WINDOW_PLAN)
     executor_skeleton, executor_skeleton_error = read_json(SEND_EXECUTOR_SKELETON)
+    http_transport, http_transport_error = read_json(HTTP_TRANSPORT_WIRING)
     errors = [
         item
         for item in [
@@ -64,6 +66,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             pre_send_error,
             send_window_error,
             executor_skeleton_error,
+            http_transport_error,
         ]
         if item
     ]
@@ -104,8 +107,15 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         "send_window_not_authorized": send_window.get("send_authorized") is False,
         "pre_send_chain_complete": pre_send.get("evidence_chain_complete") is True,
         "production_send_executor_skeleton_ready": executor_skeleton.get("result") == "PASS",
-        "production_http_transport_not_wired": (
-            executor_skeleton.get("execute_failure_code") == "PRODUCTION_HTTP_TRANSPORT_NOT_WIRED"
+        "production_http_transport_not_authorized_by_default": (
+            executor_skeleton.get("execute_failure_code") == "PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED"
+            and http_transport.get("default_failure_code") == "PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED"
+        ),
+        "production_http_transport_wiring_ready": http_transport.get("result") == "PASS",
+        "production_http_transport_fake_response_parsed": (
+            http_transport.get("transport_wiring", {}).get("terminal_type")
+            == "PRODUCTION_HTTP_RESPONSE"
+            and http_transport.get("transport_wiring", {}).get("external_status") == "FILLED"
         ),
     }
     critical_checks = [
@@ -153,6 +163,10 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "send_authorized": entrypoint.get("send_authorized"),
             "send_executor_skeleton": executor_skeleton.get("result"),
             "send_executor_execute_failure_code": executor_skeleton.get("execute_failure_code"),
+            "http_transport_wiring": http_transport.get("result"),
+            "http_transport_default_failure_code": http_transport.get("default_failure_code"),
+            "http_transport_fake_terminal_type": http_transport.get("transport_wiring", {}).get("terminal_type"),
+            "http_transport_fake_external_status": http_transport.get("transport_wiring", {}).get("external_status"),
             "production_request_sent": False,
         },
         "go_live": {
@@ -212,6 +226,10 @@ Generated at: `{snapshot["generated_at"]}`
 - send authorized: {str(production.get("send_authorized")).lower()}
 - send executor skeleton: {production.get("send_executor_skeleton")}
 - send executor execute failure code: {production.get("send_executor_execute_failure_code")}
+- HTTP transport wiring: {production.get("http_transport_wiring")}
+- HTTP transport default failure code: {production.get("http_transport_default_failure_code")}
+- HTTP transport fake terminal type: {production.get("http_transport_fake_terminal_type")}
+- HTTP transport fake external status: {production.get("http_transport_fake_external_status")}
 - production request sent: {str(production.get("production_request_sent")).lower()}
 
 ## Checks

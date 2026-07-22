@@ -13,24 +13,15 @@
     "socket_opened": "NO"
   },
   "checks": {
-    "execute_path_stops_before_http_transport": true,
-    "params_shape_valid": true,
-    "redacted_request_shape_valid": true,
-    "unauthorized_path_fails_closed": true
+    "fake_transport_called_once": true,
+    "fake_transport_response_parsed": true,
+    "real_network_not_used": true,
+    "redaction_preserved": true,
+    "transport_not_authorized_by_default": true
   },
-  "errors": [],
-  "execute_failure_code": "PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED",
+  "default_failure_code": "PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED",
   "generated_at": "2026-07-22T08:02:59Z",
-  "params_shape": {
-    "newOrderRespType": "FULL",
-    "quoteOrderQty": "4",
-    "recvWindow": 5000,
-    "side": "BUY",
-    "symbol": "BTCUSDT",
-    "timestamp": 1234567890,
-    "type": "MARKET"
-  },
-  "redacted_request_shape": {
+  "redacted_requested_payload": {
     "api_key_present": true,
     "method": "POST",
     "quoteOrderQty": "4",
@@ -42,5 +33,11 @@
     "type": "MARKET"
   },
   "result": "PASS",
-  "unauthorized_failure_code": "PRODUCTION_SEND_EXECUTION_NOT_AUTHORIZED"
+  "transport_wiring": {
+    "default_transport_enabled": false,
+    "external_order_id_present": true,
+    "external_status": "FILLED",
+    "fake_transport_called_once": true,
+    "terminal_type": "PRODUCTION_HTTP_RESPONSE"
+  }
 }
