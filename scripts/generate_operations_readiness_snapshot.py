@@ -407,6 +407,8 @@ def load_production_send_entrypoint_fail_closed() -> dict[str, Any]:
         "entrypoint_present": False,
         "send_authorized": False,
         "execution_gate_authorized": False,
+        "command_creation_candidate": False,
+        "command_type": None,
         "command_created": False,
         "production_request_sent": False,
         "surface": "POST /trade-gate/production-order-intents",
@@ -428,6 +430,8 @@ def load_production_send_entrypoint_fail_closed() -> dict[str, Any]:
         "entrypoint_present": bool(data.get("entrypoint_present")),
         "send_authorized": bool(data.get("send_authorized")),
         "execution_gate_authorized": bool(data.get("execution_gate_authorized")),
+        "command_creation_candidate": bool(data.get("command_creation_candidate")),
+        "command_type": data.get("command_type"),
         "command_created": bool(data.get("command_created")),
         "production_request_sent": bool(data.get("production_request_sent")),
         "surface": data.get("surface", "POST /trade-gate/production-order-intents"),
@@ -632,6 +636,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "production_execution_gate_authorized": pass_fail(
                 production_send_entrypoint_fail_closed.get("execution_gate_authorized") is True
             ),
+            "production_command_creation_candidate_available": pass_fail(
+                production_send_entrypoint_fail_closed.get("command_creation_candidate") is True
+            ),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -770,6 +777,8 @@ Generated at: `{snapshot["generated_at"]}`
 - entrypoint present: {str(send_entrypoint.get("entrypoint_present")).lower()}
 - send authorized: {str(send_entrypoint.get("send_authorized")).lower()}
 - execution gate authorized: {str(send_entrypoint.get("execution_gate_authorized")).lower()}
+- command creation candidate: {str(send_entrypoint.get("command_creation_candidate")).lower()}
+- command type: `{send_entrypoint.get("command_type")}`
 - command created: {str(send_entrypoint.get("command_created")).lower()}
 - production request sent: {str(send_entrypoint.get("production_request_sent")).lower()}
 
@@ -911,6 +920,10 @@ def main() -> int:
     print(
         "production_execution_gate_authorized: "
         f"{str(snapshot['production_send_entrypoint_fail_closed'].get('execution_gate_authorized')).lower()}"
+    )
+    print(
+        "production_command_creation_candidate: "
+        f"{str(snapshot['production_send_entrypoint_fail_closed'].get('command_creation_candidate')).lower()}"
     )
     print("secret_read: NO")
     print("new_external_request_sent: NO")

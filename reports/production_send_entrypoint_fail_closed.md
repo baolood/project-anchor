@@ -1,6 +1,6 @@
 # Production Send Entrypoint Fail-Closed Check
 
-Generated at: `2026-07-21T10:52:40Z`
+Generated at: `2026-07-22T00:08:23Z`
 
 ## Result
 
@@ -10,6 +10,8 @@ Generated at: `2026-07-21T10:52:40Z`
 - valid shape accepted by validator: true
 - send authorized: false
 - execution gate authorized: false
+- command creation candidate: true
+- command type: `PRODUCTION_ORDER_INTENT`
 - command created: false
 - production request sent: false
 
@@ -22,6 +24,7 @@ Generated at: `2026-07-21T10:52:40Z`
 - blocked_response_has_no_command_id: PASS
 - default_gate_closed: PASS
 - complete_gate_config_can_authorize_command_creation_decision: PASS
+- authorized_gate_produces_non_send_command_creation_candidate: PASS
 
 ## Boundary
 
