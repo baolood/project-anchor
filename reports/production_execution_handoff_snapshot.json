@@ -1,0 +1,69 @@
+{
+  "boundary": {
+    "canary_rerun": "NO",
+    "dns_lookup_performed": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_http_network_executed": "NO",
+    "production_request_sent": "NO",
+    "production_signing_executed": "NO",
+    "secret_read": "NO",
+    "socket_opened": "NO"
+  },
+  "checks": {
+    "canary_filled": "PASS",
+    "controlled_request_filled": "PASS",
+    "go_live_blockers_explicit": "PASS",
+    "go_live_no_go": "PASS",
+    "pre_send_chain_complete": "PASS",
+    "production_command_candidate_available": "PASS",
+    "production_entrypoint_present": "PASS",
+    "production_non_executable_command_created": "PASS",
+    "production_request_not_sent": "PASS",
+    "production_send_not_authorized": "PASS",
+    "send_window_not_authorized": "PASS",
+    "send_window_plan_present": "PASS"
+  },
+  "errors": [],
+  "generated_at": "2026-07-22T01:50:00Z",
+  "go_live": {
+    "blocking_gates": [
+      "production credential access not authorized",
+      "production signing not approved",
+      "production HTTP/network execution not approved",
+      "rollback and stop conditions not approved for go-live",
+      "monitoring window not approved for go-live",
+      "go-live authorization not granted",
+      "live trading authorization not granted"
+    ],
+    "verdict": "NO-GO"
+  },
+  "handoff_status": "READY_FOR_DECISION",
+  "next_gate": "EXPLICIT_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_AUTHORIZATION",
+  "production_state": {
+    "command_creation_candidate": true,
+    "entrypoint_present": true,
+    "non_executable_command_id": "prod-order-drill-20260722T013656Z",
+    "non_executable_command_status": "CREATED_NOT_EXECUTABLE",
+    "production_request_sent": false,
+    "send_authorized": false,
+    "worker_executable": false
+  },
+  "result": "PASS",
+  "testnet_baseline": {
+    "canary": {
+      "command_id": "order-f4fd182a-7a66-4f3c-a69f-f0a212c2c420",
+      "executed_at": "2026-07-19T05:55:03.323572+00:00",
+      "external_order_id_present": true,
+      "external_status": "FILLED",
+      "status": "DONE"
+    },
+    "controlled_request": {
+      "command_id": "order-a06eed8f-cd60-4a4f-b3e9-84c540b98e6f",
+      "executed_at": "2026-07-18T15:39:27.590704+00:00",
+      "external_order_id_present": true,
+      "external_status": "FILLED",
+      "status": "DONE"
+    }
+  }
+}
