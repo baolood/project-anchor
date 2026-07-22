@@ -13,6 +13,9 @@
   "checks": {
     "canary_filled": "PASS",
     "controlled_request_filled": "PASS",
+    "gated_executor_current_template_closed": "PASS",
+    "gated_executor_fake_transport_ready": "PASS",
+    "gated_production_send_executor_entrypoint_ready": "PASS",
     "go_live_blockers_explicit": "PASS",
     "go_live_no_go": "PASS",
     "pre_send_chain_complete": "PASS",
@@ -35,7 +38,7 @@
     "send_window_plan_present": "PASS"
   },
   "errors": [],
-  "generated_at": "2026-07-22T08:30:29Z",
+  "generated_at": "2026-07-22T08:40:08Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -53,6 +56,9 @@
   "production_state": {
     "command_creation_candidate": true,
     "entrypoint_present": true,
+    "gated_executor_current_template_failure_code": "PRODUCTION_REQUEST_SEND_GATE_CLOSED",
+    "gated_executor_entrypoint": "PASS",
+    "gated_executor_fake_transport_external_status": "FILLED",
     "http_transport_default_failure_code": "PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED",
     "http_transport_fake_external_status": "FILLED",
     "http_transport_fake_terminal_type": "PRODUCTION_HTTP_RESPONSE",

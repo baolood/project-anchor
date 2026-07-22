@@ -1,6 +1,6 @@
 # Production Request Send Window Plan
 
-Generated at: `2026-07-22T08:30:29Z`
+Generated at: `2026-07-22T08:40:08Z`
 
 ## Result
 
@@ -13,10 +13,10 @@ Generated at: `2026-07-22T08:30:29Z`
 ## Planned Window
 
 - window_type: fresh_bounded_authorization_window
-- not_before: 2026-07-22T08:30:29Z
-- expires_at: 2026-07-22T09:30:29Z
+- not_before: 2026-07-22T08:40:08Z
+- expires_at: 2026-07-22T09:40:08Z
 - duration_minutes: 60
-- monitor_until: 2026-07-22T09:45:29Z
+- monitor_until: 2026-07-22T09:55:08Z
 - monitoring_window: 15_minutes_after_execution
 
 ## Planned Request

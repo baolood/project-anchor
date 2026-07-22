@@ -1,6 +1,6 @@
 # Production Pre-Send Readiness Aggregation
 
-Generated at: `2026-07-22T08:30:29Z`
+Generated at: `2026-07-22T08:40:08Z`
 
 ## Result
 
@@ -24,6 +24,7 @@ Generated at: `2026-07-22T08:30:29Z`
 - production_http_request_interface_dry_run: PASS
 - production_request_send_gate: PASS
 - production_send_decision_entrypoint: PASS
+- gated_production_send_executor_entrypoint: PASS
 
 ## Evidence Checks
 
@@ -38,6 +39,7 @@ Generated at: `2026-07-22T08:30:29Z`
 - http_request_interface_dry_run_pass: PASS (HTTP request envelope valid and missing Authorization fails closed)
 - production_request_send_gate_pass: PASS (request-send gate exists, defaults closed, and fixture can authorize exactly-one send)
 - production_send_decision_entrypoint_pass: PASS (send decision surface is wired to gate without sending)
+- gated_production_send_executor_entrypoint_pass: PASS (gated executor entrypoint is wired and fixture-drilled without real send)
 
 ## Boundary Checks
 

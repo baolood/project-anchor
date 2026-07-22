@@ -1,6 +1,6 @@
 # Production Execution Handoff Snapshot
 
-Generated at: `2026-07-22T08:30:29Z`
+Generated at: `2026-07-22T08:40:08Z`
 
 ## Result
 
@@ -37,6 +37,9 @@ Generated at: `2026-07-22T08:30:29Z`
 - send decision entrypoint: PASS
 - send decision current template ready: false
 - send decision authorized fixture ready: true
+- gated executor entrypoint: PASS
+- gated executor current template failure code: PRODUCTION_REQUEST_SEND_GATE_CLOSED
+- gated executor fake transport external status: FILLED
 - production request sent: false
 
 ## Checks
@@ -63,6 +66,9 @@ Generated at: `2026-07-22T08:30:29Z`
 - production_send_decision_entrypoint_ready: PASS
 - production_send_decision_current_template_blocked: PASS
 - production_send_decision_authorized_fixture_ready: PASS
+- gated_production_send_executor_entrypoint_ready: PASS
+- gated_executor_current_template_closed: PASS
+- gated_executor_fake_transport_ready: PASS
 
 ## Go-Live Blocking Gates
 
