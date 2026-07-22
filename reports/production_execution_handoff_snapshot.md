@@ -1,6 +1,6 @@
 # Production Execution Handoff Snapshot
 
-Generated at: `2026-07-22T01:50:00Z`
+Generated at: `2026-07-22T07:34:00Z`
 
 ## Result
 
@@ -25,6 +25,8 @@ Generated at: `2026-07-22T01:50:00Z`
 - non-executable command status: `CREATED_NOT_EXECUTABLE`
 - worker executable: false
 - send authorized: false
+- send executor skeleton: PASS
+- send executor execute failure code: PRODUCTION_HTTP_TRANSPORT_NOT_WIRED
 - production request sent: false
 
 ## Checks
@@ -41,6 +43,8 @@ Generated at: `2026-07-22T01:50:00Z`
 - send_window_plan_present: PASS
 - send_window_not_authorized: PASS
 - pre_send_chain_complete: PASS
+- production_send_executor_skeleton_ready: PASS
+- production_http_transport_not_wired: PASS
 
 ## Go-Live Blocking Gates
 

@@ -26,6 +26,7 @@ NON_EXECUTABLE_COMMAND_DRILL = (
 SEND_ENTRYPOINT = REPORTS_DIR / "production_send_entrypoint_fail_closed.json"
 PRE_SEND_AGGREGATION = REPORTS_DIR / "production_pre_send_readiness_aggregation.json"
 SEND_WINDOW_PLAN = REPORTS_DIR / "production_request_send_window_plan.json"
+SEND_EXECUTOR_SKELETON = REPORTS_DIR / "production_send_executor_skeleton_drill.json"
 
 
 def utc_now() -> str:
@@ -53,6 +54,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     entrypoint, entrypoint_error = read_json(SEND_ENTRYPOINT)
     pre_send, pre_send_error = read_json(PRE_SEND_AGGREGATION)
     send_window, send_window_error = read_json(SEND_WINDOW_PLAN)
+    executor_skeleton, executor_skeleton_error = read_json(SEND_EXECUTOR_SKELETON)
     errors = [
         item
         for item in [
@@ -61,6 +63,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             entrypoint_error,
             pre_send_error,
             send_window_error,
+            executor_skeleton_error,
         ]
         if item
     ]
@@ -100,6 +103,10 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         "send_window_plan_present": send_window.get("result") == "PASS",
         "send_window_not_authorized": send_window.get("send_authorized") is False,
         "pre_send_chain_complete": pre_send.get("evidence_chain_complete") is True,
+        "production_send_executor_skeleton_ready": executor_skeleton.get("result") == "PASS",
+        "production_http_transport_not_wired": (
+            executor_skeleton.get("execute_failure_code") == "PRODUCTION_HTTP_TRANSPORT_NOT_WIRED"
+        ),
     }
     critical_checks = [
         checks["controlled_request_filled"],
@@ -144,6 +151,8 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "non_executable_command_status": creation.get("command_status"),
             "worker_executable": creation.get("worker_executable"),
             "send_authorized": entrypoint.get("send_authorized"),
+            "send_executor_skeleton": executor_skeleton.get("result"),
+            "send_executor_execute_failure_code": executor_skeleton.get("execute_failure_code"),
             "production_request_sent": False,
         },
         "go_live": {
@@ -201,6 +210,8 @@ Generated at: `{snapshot["generated_at"]}`
 - non-executable command status: `{production.get("non_executable_command_status")}`
 - worker executable: {str(production.get("worker_executable")).lower()}
 - send authorized: {str(production.get("send_authorized")).lower()}
+- send executor skeleton: {production.get("send_executor_skeleton")}
+- send executor execute failure code: {production.get("send_executor_execute_failure_code")}
 - production request sent: {str(production.get("production_request_sent")).lower()}
 
 ## Checks
