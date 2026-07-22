@@ -43,6 +43,7 @@
     "production_no_send_execution_drill": "PASS",
     "production_request_send_gate": "PASS",
     "production_risk_limits": "PASS",
+    "production_send_decision_entrypoint": "PASS",
     "production_signing_interface_dry_run": "PASS",
     "production_signing_readiness": "PASS",
     "production_unsigned_canonical_payload_dry_run": "PASS"
@@ -99,9 +100,14 @@
       "evidence": "request-send gate exists, defaults closed, and fixture can authorize exactly-one send",
       "name": "production_request_send_gate_pass",
       "result": "PASS"
+    },
+    {
+      "evidence": "send decision surface is wired to gate without sending",
+      "name": "production_send_decision_entrypoint_pass",
+      "result": "PASS"
     }
   ],
-  "generated_at": "2026-07-22T08:22:35Z",
+  "generated_at": "2026-07-22T08:30:29Z",
   "go_live_allowed": false,
   "inputs": {
     "credential_readiness": "reports/production_credential_readiness_validation.json",
@@ -110,6 +116,7 @@
     "http_request_interface_dry_run": "reports/production_http_request_interface_dry_run.json",
     "no_send_execution_drill": "reports/production_no_send_execution_drill.json",
     "production_request_send_gate": "reports/production_request_send_gate.json",
+    "production_send_decision_entrypoint": "reports/production_send_decision_entrypoint.json",
     "risk_limits": "reports/production_risk_limits_validation.json",
     "signing_interface_dry_run": "reports/production_signing_interface_dry_run.json",
     "signing_readiness": "reports/production_signing_readiness_validation.json",

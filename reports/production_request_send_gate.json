@@ -107,7 +107,7 @@
   "fixed_now": "2026-07-22T08:00:00Z",
   "fixture_authorized": true,
   "fixture_required_verdict": "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_ONLY",
-  "generated_at": "2026-07-22T08:22:35Z",
+  "generated_at": "2026-07-22T08:30:29Z",
   "go_live_gate": {
     "authorized": false,
     "checks": {

@@ -15,8 +15,10 @@ from app.trade_gate_production import (
     is_worker_executable_command_status,
     load_production_execution_gate_config,
     production_order_command_creation_candidate_response,
+    production_order_send_decision_response,
     production_execution_gate_decision,
     production_order_blocked_response,
+    production_request_send_gate_decision,
     validate_production_order_request,
 )
 
@@ -1256,6 +1258,15 @@ async def create_trade_gate_production_order_intent(body: dict = Body(default_fa
         "execution_gate_authorized": True,
         "idempotency_key": candidate["idempotency_key"],
     }
+
+
+@app.post("/trade-gate/production-order-send-decisions")
+async def create_trade_gate_production_order_send_decision(body: dict = Body(default_factory=dict)):
+    request_body = dict(body) if body else {}
+    gate_decision = production_request_send_gate_decision(
+        load_production_execution_gate_config()
+    )
+    return production_order_send_decision_response(request_body, gate_decision)
 
 
 @app.post("/domain-commands/{domain_id}/retry")

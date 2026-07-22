@@ -34,6 +34,8 @@ INPUT_REPORTS = {
     "http_request_interface_dry_run": REPORTS_DIR
     / "production_http_request_interface_dry_run.json",
     "production_request_send_gate": REPORTS_DIR / "production_request_send_gate.json",
+    "production_send_decision_entrypoint": REPORTS_DIR
+    / "production_send_decision_entrypoint.json",
 }
 
 
@@ -85,6 +87,7 @@ def build_report() -> tuple[dict[str, Any], int]:
     signing_interface = reports["signing_interface_dry_run"]
     http_request = reports["http_request_interface_dry_run"]
     request_send_gate = reports["production_request_send_gate"]
+    send_decision_entrypoint = reports["production_send_decision_entrypoint"]
 
     evidence_checks = [
         check("risk_limits_validation_pass", risk_limits.get("result") == "PASS", "risk limits PASS"),
@@ -140,6 +143,15 @@ def build_report() -> tuple[dict[str, Any], int]:
             and request_send_gate.get("current_template_authorized") is False
             and request_send_gate.get("fixture_authorized") is True,
             "request-send gate exists, defaults closed, and fixture can authorize exactly-one send",
+        ),
+        check(
+            "production_send_decision_entrypoint_pass",
+            send_decision_entrypoint.get("result") == "PASS"
+            and send_decision_entrypoint.get("current_template_ready_for_exactly_one_send")
+            is False
+            and send_decision_entrypoint.get("authorized_fixture_ready_for_exactly_one_send")
+            is True,
+            "send decision surface is wired to gate without sending",
         ),
     ]
 
@@ -243,6 +255,7 @@ def build_report() -> tuple[dict[str, Any], int]:
             "production_signing_interface_dry_run": signing_interface.get("result"),
             "production_http_request_interface_dry_run": http_request.get("result"),
             "production_request_send_gate": request_send_gate.get("result"),
+            "production_send_decision_entrypoint": send_decision_entrypoint.get("result"),
         },
         "boundary": {
             "secret_read": "NO",

@@ -157,6 +157,49 @@ def production_request_send_gate_decision(
     }
 
 
+def production_order_send_decision_response(body: dict, gate_decision: dict | None = None) -> dict:
+    decision = gate_decision if isinstance(gate_decision, dict) else production_request_send_gate_decision()
+    is_valid, reject_reason = validate_production_order_request(body)
+    if not is_valid:
+        return {
+            "status": "error",
+            "error": reject_reason,
+            "ready_for_exactly_one_send": False,
+            "production_request_sent": False,
+            "go_live_allowed": False,
+            "live_trading_allowed": False,
+        }
+    if not decision.get("authorized"):
+        return {
+            "status": "blocked",
+            "error": decision.get("reason") or "PRODUCTION_REQUEST_SEND_GATE_CLOSED",
+            "ready_for_exactly_one_send": False,
+            "request_send_gate_authorized": False,
+            "production_request_sent": False,
+            "production_signing_executed": False,
+            "production_http_network_executed": False,
+            "go_live_allowed": False,
+            "live_trading_allowed": False,
+            "idempotency_key": PRODUCTION_IDEMPOTENCY_KEY,
+            "gate_checks": decision.get("checks", {}),
+        }
+
+    return {
+        "status": "ready_for_exactly_one_send",
+        "error": None,
+        "ready_for_exactly_one_send": True,
+        "request_send_gate_authorized": True,
+        "production_request_sent": False,
+        "production_signing_executed": False,
+        "production_http_network_executed": False,
+        "go_live_allowed": False,
+        "live_trading_allowed": False,
+        "idempotency_key": PRODUCTION_IDEMPOTENCY_KEY,
+        "transport_input": production_order_command_creation_payload(body),
+        "gate_checks": decision.get("checks", {}),
+    }
+
+
 def load_production_execution_gate_config(path: str | Path | None = None) -> dict:
     config_path = Path(path) if path is not None else PRODUCTION_EXECUTION_GATE_CONFIG_PATH
     try:

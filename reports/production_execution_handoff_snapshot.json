@@ -26,13 +26,16 @@
     "production_request_send_gate_fixture_authorizes": "PASS",
     "production_request_send_gate_ready": "PASS",
     "production_request_send_gate_template_closed": "PASS",
+    "production_send_decision_authorized_fixture_ready": "PASS",
+    "production_send_decision_current_template_blocked": "PASS",
+    "production_send_decision_entrypoint_ready": "PASS",
     "production_send_executor_skeleton_ready": "PASS",
     "production_send_not_authorized": "PASS",
     "send_window_not_authorized": "PASS",
     "send_window_plan_present": "PASS"
   },
   "errors": [],
-  "generated_at": "2026-07-22T08:22:35Z",
+  "generated_at": "2026-07-22T08:30:29Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -61,6 +64,9 @@
     "request_send_gate_current_template_authorized": false,
     "request_send_gate_fixture_authorized": true,
     "send_authorized": false,
+    "send_decision_authorized_fixture_ready": true,
+    "send_decision_current_template_ready": false,
+    "send_decision_entrypoint": "PASS",
     "send_executor_execute_failure_code": "PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED",
     "send_executor_skeleton": "PASS",
     "worker_executable": false
