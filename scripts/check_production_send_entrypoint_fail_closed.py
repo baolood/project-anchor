@@ -17,6 +17,7 @@ from app.trade_gate_production import (  # noqa: E402
     PRODUCTION_COMMAND_TYPE,
     PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT,
     PRODUCTION_IDEMPOTENCY_KEY,
+    load_production_execution_gate_config,
     production_order_command_creation_candidate_response,
     production_execution_gate_decision,
     production_order_blocked_response,
@@ -57,6 +58,8 @@ def build_report() -> tuple[dict, int]:
         dict(valid_body(), api_secret="redacted-fixture")
     )
     default_gate = production_execution_gate_decision()
+    current_gate_config = load_production_execution_gate_config()
+    current_config_gate = production_execution_gate_decision(current_gate_config)
     complete_gate = production_execution_gate_decision(
         {
             "PRODUCTION_EXECUTION_GATE_ENABLED": True,
@@ -113,6 +116,14 @@ def build_report() -> tuple[dict, int]:
             else "FAIL",
         },
         {
+            "name": "current_gate_config_loaded_and_closed",
+            "result": "PASS"
+            if isinstance(current_gate_config, dict)
+            and current_config_gate.get("authorized") is False
+            and current_config_gate.get("reason") == "PRODUCTION_EXECUTION_GATE_CLOSED"
+            else "FAIL",
+        },
+        {
             "name": "complete_gate_config_can_authorize_command_creation_decision",
             "result": "PASS" if complete_gate.get("authorized") is True else "FAIL",
         },
@@ -137,6 +148,7 @@ def build_report() -> tuple[dict, int]:
         "valid_shape_accepted_by_validator": ok and reason is None,
         "send_authorized": False,
         "execution_gate_authorized": False,
+        "current_gate_config_authorized": current_config_gate.get("authorized") is True,
         "command_creation_candidate": candidate.get("command_creation_candidate") is True,
         "command_type": PRODUCTION_COMMAND_TYPE,
         "non_executable_persistence_status": PRODUCTION_COMMAND_CREATED_STATUS,
@@ -144,6 +156,7 @@ def build_report() -> tuple[dict, int]:
         "command_created": False,
         "production_request_sent": False,
         "default_gate_decision": default_gate,
+        "current_gate_config_decision": current_config_gate,
         "complete_gate_fixture_decision": complete_gate,
         "command_creation_candidate_response_shape": candidate,
         "checks": checks,
@@ -178,6 +191,7 @@ Generated at: `{report["generated_at"]}`
 - valid shape accepted by validator: {str(report["valid_shape_accepted_by_validator"]).lower()}
 - send authorized: {str(report["send_authorized"]).lower()}
 - execution gate authorized: {str(report["execution_gate_authorized"]).lower()}
+- current gate config authorized: {str(report["current_gate_config_authorized"]).lower()}
 - command creation candidate: {str(report["command_creation_candidate"]).lower()}
 - command type: `{report["command_type"]}`
 - non-executable persistence status: `{report["non_executable_persistence_status"]}`
@@ -216,6 +230,7 @@ def main() -> int:
     print(f"entrypoint_present: {str(report['entrypoint_present']).lower()}")
     print(f"send_authorized: {str(report['send_authorized']).lower()}")
     print(f"execution_gate_authorized: {str(report['execution_gate_authorized']).lower()}")
+    print(f"current_gate_config_authorized: {str(report['current_gate_config_authorized']).lower()}")
     print(f"command_creation_candidate: {str(report['command_creation_candidate']).lower()}")
     print(f"command_type: {report['command_type']}")
     print(f"non_executable_persistence_status: {report['non_executable_persistence_status']}")

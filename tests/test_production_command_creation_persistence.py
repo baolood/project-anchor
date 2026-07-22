@@ -1,4 +1,5 @@
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from app.trade_gate_production import (  # noqa: E402
     PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT,
     PRODUCTION_IDEMPOTENCY_KEY,
     is_worker_executable_command_status,
+    load_production_execution_gate_config,
     production_order_command_creation_candidate_response,
     production_execution_gate_decision,
 )
@@ -82,6 +84,50 @@ class ProductionCommandCreationPersistenceTest(unittest.TestCase):
         self.assertFalse(response["command_created"])
         self.assertFalse(response["production_request_sent"])
         self.assertNotIn("command_id", response)
+
+    def test_current_gate_template_remains_closed(self):
+        config = load_production_execution_gate_config()
+        decision = production_execution_gate_decision(config)
+
+        self.assertFalse(decision["authorized"])
+        self.assertEqual(decision["reason"], "PRODUCTION_EXECUTION_GATE_CLOSED")
+
+    def test_missing_or_invalid_gate_config_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            missing = Path(tmp) / "missing.json"
+            invalid = Path(tmp) / "invalid.json"
+            invalid.write_text("not-json", encoding="utf-8")
+
+            self.assertEqual(load_production_execution_gate_config(missing), {})
+            self.assertEqual(load_production_execution_gate_config(invalid), {})
+            self.assertFalse(
+                production_execution_gate_decision(
+                    load_production_execution_gate_config(missing)
+                )["authorized"]
+            )
+
+    def test_complete_gate_config_file_can_authorize_command_creation_decision(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path = Path(tmp) / "gate.json"
+            config_path.write_text(
+                """
+{
+  "PRODUCTION_EXECUTION_GATE_ENABLED": true,
+  "PRODUCTION_EXACTLY_ONE_COMMAND_CREATION": true,
+  "PRODUCTION_NO_RETRY": true,
+  "PRODUCTION_IDEMPOTENCY_KEY": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
+  "FINAL_OPERATOR_VERDICT": "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_COMMAND_CREATION_ONLY"
+}
+""".strip(),
+                encoding="utf-8",
+            )
+
+            decision = production_execution_gate_decision(
+                load_production_execution_gate_config(config_path)
+            )
+
+        self.assertTrue(decision["authorized"])
+        self.assertEqual(decision["reason"], "AUTHORIZED")
 
 
 if __name__ == "__main__":

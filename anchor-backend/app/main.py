@@ -13,6 +13,7 @@ from app.domain_events import append_domain_event_pool
 from app.trade_gate_production import (
     PRODUCTION_COMMAND_CREATED_STATUS,
     is_worker_executable_command_status,
+    load_production_execution_gate_config,
     production_order_command_creation_candidate_response,
     production_execution_gate_decision,
     production_order_blocked_response,
@@ -1229,7 +1230,9 @@ async def create_trade_gate_production_order_intent(body: dict = Body(default_fa
             "command_created": False,
         }
 
-    gate_decision = production_execution_gate_decision()
+    gate_decision = production_execution_gate_decision(
+        load_production_execution_gate_config()
+    )
     candidate = production_order_command_creation_candidate_response(request_body, gate_decision)
     if not candidate.get("command_creation_candidate"):
         return production_order_blocked_response(gate_decision)
