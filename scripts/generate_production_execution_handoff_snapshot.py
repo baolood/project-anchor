@@ -29,6 +29,7 @@ SEND_WINDOW_PLAN = REPORTS_DIR / "production_request_send_window_plan.json"
 SEND_EXECUTOR_SKELETON = REPORTS_DIR / "production_send_executor_skeleton_drill.json"
 HTTP_TRANSPORT_WIRING = REPORTS_DIR / "production_http_transport_wiring_drill.json"
 REQUEST_SEND_GATE = REPORTS_DIR / "production_request_send_gate.json"
+SEND_DECISION_ENTRYPOINT = REPORTS_DIR / "production_send_decision_entrypoint.json"
 
 
 def utc_now() -> str:
@@ -59,6 +60,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     executor_skeleton, executor_skeleton_error = read_json(SEND_EXECUTOR_SKELETON)
     http_transport, http_transport_error = read_json(HTTP_TRANSPORT_WIRING)
     request_send_gate, request_send_gate_error = read_json(REQUEST_SEND_GATE)
+    send_decision_entrypoint, send_decision_entrypoint_error = read_json(SEND_DECISION_ENTRYPOINT)
     errors = [
         item
         for item in [
@@ -70,6 +72,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             executor_skeleton_error,
             http_transport_error,
             request_send_gate_error,
+            send_decision_entrypoint_error,
         ]
         if item
     ]
@@ -127,6 +130,15 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         "production_request_send_gate_fixture_authorizes": (
             request_send_gate.get("fixture_authorized") is True
         ),
+        "production_send_decision_entrypoint_ready": (
+            send_decision_entrypoint.get("result") == "PASS"
+        ),
+        "production_send_decision_current_template_blocked": (
+            send_decision_entrypoint.get("current_template_ready_for_exactly_one_send") is False
+        ),
+        "production_send_decision_authorized_fixture_ready": (
+            send_decision_entrypoint.get("authorized_fixture_ready_for_exactly_one_send") is True
+        ),
     }
     critical_checks = [
         checks["controlled_request_filled"],
@@ -180,6 +192,13 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "request_send_gate": request_send_gate.get("result"),
             "request_send_gate_current_template_authorized": request_send_gate.get("current_template_authorized"),
             "request_send_gate_fixture_authorized": request_send_gate.get("fixture_authorized"),
+            "send_decision_entrypoint": send_decision_entrypoint.get("result"),
+            "send_decision_current_template_ready": send_decision_entrypoint.get(
+                "current_template_ready_for_exactly_one_send"
+            ),
+            "send_decision_authorized_fixture_ready": send_decision_entrypoint.get(
+                "authorized_fixture_ready_for_exactly_one_send"
+            ),
             "production_request_sent": False,
         },
         "go_live": {
@@ -246,6 +265,9 @@ Generated at: `{snapshot["generated_at"]}`
 - request-send gate: {production.get("request_send_gate")}
 - request-send current template authorized: {str(production.get("request_send_gate_current_template_authorized")).lower()}
 - request-send fixture authorized: {str(production.get("request_send_gate_fixture_authorized")).lower()}
+- send decision entrypoint: {production.get("send_decision_entrypoint")}
+- send decision current template ready: {str(production.get("send_decision_current_template_ready")).lower()}
+- send decision authorized fixture ready: {str(production.get("send_decision_authorized_fixture_ready")).lower()}
 - production request sent: {str(production.get("production_request_sent")).lower()}
 
 ## Checks

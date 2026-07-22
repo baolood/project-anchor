@@ -1,6 +1,6 @@
 # Production Execution Handoff Snapshot
 
-Generated at: `2026-07-22T08:22:35Z`
+Generated at: `2026-07-22T08:30:29Z`
 
 ## Result
 
@@ -34,6 +34,9 @@ Generated at: `2026-07-22T08:22:35Z`
 - request-send gate: PASS
 - request-send current template authorized: false
 - request-send fixture authorized: true
+- send decision entrypoint: PASS
+- send decision current template ready: false
+- send decision authorized fixture ready: true
 - production request sent: false
 
 ## Checks
@@ -57,6 +60,9 @@ Generated at: `2026-07-22T08:22:35Z`
 - production_request_send_gate_ready: PASS
 - production_request_send_gate_template_closed: PASS
 - production_request_send_gate_fixture_authorizes: PASS
+- production_send_decision_entrypoint_ready: PASS
+- production_send_decision_current_template_blocked: PASS
+- production_send_decision_authorized_fixture_ready: PASS
 
 ## Go-Live Blocking Gates
 

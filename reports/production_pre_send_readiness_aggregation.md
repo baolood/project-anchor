@@ -1,6 +1,6 @@
 # Production Pre-Send Readiness Aggregation
 
-Generated at: `2026-07-22T08:22:35Z`
+Generated at: `2026-07-22T08:30:29Z`
 
 ## Result
 
@@ -23,6 +23,7 @@ Generated at: `2026-07-22T08:22:35Z`
 - production_signing_interface_dry_run: PASS
 - production_http_request_interface_dry_run: PASS
 - production_request_send_gate: PASS
+- production_send_decision_entrypoint: PASS
 
 ## Evidence Checks
 
@@ -36,6 +37,7 @@ Generated at: `2026-07-22T08:22:35Z`
 - signing_interface_dry_run_pass: PASS (signing interface shape valid and missing secret fails closed)
 - http_request_interface_dry_run_pass: PASS (HTTP request envelope valid and missing Authorization fails closed)
 - production_request_send_gate_pass: PASS (request-send gate exists, defaults closed, and fixture can authorize exactly-one send)
+- production_send_decision_entrypoint_pass: PASS (send decision surface is wired to gate without sending)
 
 ## Boundary Checks
 
