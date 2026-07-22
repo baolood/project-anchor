@@ -39,6 +39,7 @@ INPUT_REPORTS = {
     "gated_production_send_executor_entrypoint": REPORTS_DIR
     / "gated_production_send_executor_entrypoint.json",
     "production_credential_loader": REPORTS_DIR / "production_credential_loader.json",
+    "final_production_send_runner": REPORTS_DIR / "final_production_send_runner.json",
 }
 
 
@@ -93,6 +94,7 @@ def build_report() -> tuple[dict[str, Any], int]:
     send_decision_entrypoint = reports["production_send_decision_entrypoint"]
     gated_executor_entrypoint = reports["gated_production_send_executor_entrypoint"]
     credential_loader = reports["production_credential_loader"]
+    final_send_runner = reports["final_production_send_runner"]
 
     evidence_checks = [
         check("risk_limits_validation_pass", risk_limits.get("result") == "PASS", "risk limits PASS"),
@@ -175,6 +177,16 @@ def build_report() -> tuple[dict[str, Any], int]:
             == "PRODUCTION_CREDENTIAL_READ_NOT_AUTHORIZED"
             and credential_loader.get("loader_fixture_code") == "PRODUCTION_CREDENTIALS_LOADED",
             "credential loader defaults closed and fixture load validates redacted shape",
+        ),
+        check(
+            "final_production_send_runner_pass",
+            final_send_runner.get("result") == "PASS"
+            and final_send_runner.get("default_failure_code")
+            == "PRODUCTION_CREDENTIAL_READ_NOT_AUTHORIZED"
+            and final_send_runner.get("no_execute_failure_code")
+            == "PRODUCTION_SEND_EXECUTION_NOT_AUTHORIZED"
+            and final_send_runner.get("fake_transport_called_once") is True,
+            "final runner links gate, loader, executor, and fake transport without real send",
         ),
     ]
 
@@ -283,6 +295,7 @@ def build_report() -> tuple[dict[str, Any], int]:
                 "result"
             ),
             "production_credential_loader": credential_loader.get("result"),
+            "final_production_send_runner": final_send_runner.get("result"),
         },
         "boundary": {
             "secret_read": "NO",
