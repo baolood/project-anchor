@@ -32,6 +32,7 @@ REQUEST_SEND_GATE = REPORTS_DIR / "production_request_send_gate.json"
 SEND_DECISION_ENTRYPOINT = REPORTS_DIR / "production_send_decision_entrypoint.json"
 GATED_EXECUTOR_ENTRYPOINT = REPORTS_DIR / "gated_production_send_executor_entrypoint.json"
 PRODUCTION_CREDENTIAL_LOADER = REPORTS_DIR / "production_credential_loader.json"
+FINAL_PRODUCTION_SEND_RUNNER = REPORTS_DIR / "final_production_send_runner.json"
 
 
 def utc_now() -> str:
@@ -65,6 +66,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     send_decision_entrypoint, send_decision_entrypoint_error = read_json(SEND_DECISION_ENTRYPOINT)
     gated_executor_entrypoint, gated_executor_entrypoint_error = read_json(GATED_EXECUTOR_ENTRYPOINT)
     credential_loader, credential_loader_error = read_json(PRODUCTION_CREDENTIAL_LOADER)
+    final_send_runner, final_send_runner_error = read_json(FINAL_PRODUCTION_SEND_RUNNER)
     errors = [
         item
         for item in [
@@ -79,6 +81,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             send_decision_entrypoint_error,
             gated_executor_entrypoint_error,
             credential_loader_error,
+            final_send_runner_error,
         ]
         if item
     ]
@@ -161,6 +164,15 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             credential_loader.get("loader_default_code")
             == "PRODUCTION_CREDENTIAL_READ_NOT_AUTHORIZED"
         ),
+        "final_production_send_runner_ready": final_send_runner.get("result") == "PASS",
+        "final_runner_default_credential_read_closed": (
+            final_send_runner.get("default_failure_code")
+            == "PRODUCTION_CREDENTIAL_READ_NOT_AUTHORIZED"
+        ),
+        "final_runner_fixture_fake_transport_ready": (
+            final_send_runner.get("fake_transport_called_once") is True
+            and final_send_runner.get("fake_transport_external_status") == "FILLED"
+        ),
     }
     critical_checks = [
         checks["controlled_request_filled"],
@@ -232,6 +244,13 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "credential_loader_default_code": credential_loader.get("loader_default_code"),
             "real_credential_file_read": credential_loader.get("boundary", {}).get(
                 "real_credential_file_read"
+            ),
+            "final_send_runner": final_send_runner.get("result"),
+            "final_send_runner_default_failure_code": final_send_runner.get(
+                "default_failure_code"
+            ),
+            "final_send_runner_fake_transport_external_status": final_send_runner.get(
+                "fake_transport_external_status"
             ),
             "production_request_sent": False,
         },
@@ -308,6 +327,9 @@ Generated at: `{snapshot["generated_at"]}`
 - credential loader: {production.get("credential_loader")}
 - credential loader default code: {production.get("credential_loader_default_code")}
 - real credential file read: {production.get("real_credential_file_read")}
+- final send runner: {production.get("final_send_runner")}
+- final send runner default failure code: {production.get("final_send_runner_default_failure_code")}
+- final send runner fake transport external status: {production.get("final_send_runner_fake_transport_external_status")}
 - production request sent: {str(production.get("production_request_sent")).lower()}
 
 ## Checks
