@@ -4,7 +4,13 @@ import json
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime
 from typing import Any, Callable, Dict, Optional, Tuple
+
+from app.trade_gate_production import (
+    production_order_send_decision_response,
+    production_request_send_gate_decision,
+)
 
 
 DEFAULT_PRODUCTION_ORDER_PATH = "/api/v3/order"
@@ -260,5 +266,48 @@ def run_production_order_request(
     return send_signed_order_request(
         request,
         now_ts,
+        opener=opener,
+    )
+
+
+def run_gated_production_order_request(
+    body: Dict[str, Any],
+    gate_config: Dict[str, Any] | None,
+    credentials: Dict[str, str] | None,
+    now_ts: int,
+    *,
+    now: datetime | None = None,
+    execute: bool = False,
+    opener: Optional[Callable[..., Any]] = None,
+) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]], Optional[str], Optional[Dict[str, Any]]]:
+    gate_decision = production_request_send_gate_decision(gate_config, now=now)
+    send_decision = production_order_send_decision_response(body, gate_decision)
+    if send_decision.get("status") != "ready_for_exactly_one_send":
+        code = str(send_decision.get("error") or "PRODUCTION_REQUEST_SEND_GATE_CLOSED")
+        return _boundary_failure(
+            code,
+            ts=now_ts,
+            send_decision_status=send_decision.get("status"),
+            request_send_gate_authorized=False,
+            production_request_sent=False,
+            go_live_allowed=False,
+            live_trading_allowed=False,
+        )
+
+    transport_input = send_decision.get("transport_input")
+    if not isinstance(transport_input, dict):
+        return _boundary_failure(
+            "PRODUCTION_TRANSPORT_INPUT_MISSING",
+            ts=now_ts,
+            request_send_gate_authorized=True,
+            production_request_sent=False,
+        )
+
+    return run_production_order_request(
+        transport_input,
+        credentials,
+        now_ts,
+        execute=execute,
+        transport_enabled=bool(gate_decision.get("authorized")),
         opener=opener,
     )

@@ -36,6 +36,8 @@ INPUT_REPORTS = {
     "production_request_send_gate": REPORTS_DIR / "production_request_send_gate.json",
     "production_send_decision_entrypoint": REPORTS_DIR
     / "production_send_decision_entrypoint.json",
+    "gated_production_send_executor_entrypoint": REPORTS_DIR
+    / "gated_production_send_executor_entrypoint.json",
 }
 
 
@@ -88,6 +90,7 @@ def build_report() -> tuple[dict[str, Any], int]:
     http_request = reports["http_request_interface_dry_run"]
     request_send_gate = reports["production_request_send_gate"]
     send_decision_entrypoint = reports["production_send_decision_entrypoint"]
+    gated_executor_entrypoint = reports["gated_production_send_executor_entrypoint"]
 
     evidence_checks = [
         check("risk_limits_validation_pass", risk_limits.get("result") == "PASS", "risk limits PASS"),
@@ -152,6 +155,16 @@ def build_report() -> tuple[dict[str, Any], int]:
             and send_decision_entrypoint.get("authorized_fixture_ready_for_exactly_one_send")
             is True,
             "send decision surface is wired to gate without sending",
+        ),
+        check(
+            "gated_production_send_executor_entrypoint_pass",
+            gated_executor_entrypoint.get("result") == "PASS"
+            and gated_executor_entrypoint.get("current_template_failure_code")
+            == "PRODUCTION_REQUEST_SEND_GATE_CLOSED"
+            and gated_executor_entrypoint.get("ready_without_execute_failure_code")
+            == "PRODUCTION_SEND_EXECUTION_NOT_AUTHORIZED"
+            and gated_executor_entrypoint.get("fake_transport_called_once") is True,
+            "gated executor entrypoint is wired and fixture-drilled without real send",
         ),
     ]
 
@@ -256,6 +269,9 @@ def build_report() -> tuple[dict[str, Any], int]:
             "production_http_request_interface_dry_run": http_request.get("result"),
             "production_request_send_gate": request_send_gate.get("result"),
             "production_send_decision_entrypoint": send_decision_entrypoint.get("result"),
+            "gated_production_send_executor_entrypoint": gated_executor_entrypoint.get(
+                "result"
+            ),
         },
         "boundary": {
             "secret_read": "NO",

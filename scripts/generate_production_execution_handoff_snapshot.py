@@ -30,6 +30,7 @@ SEND_EXECUTOR_SKELETON = REPORTS_DIR / "production_send_executor_skeleton_drill.
 HTTP_TRANSPORT_WIRING = REPORTS_DIR / "production_http_transport_wiring_drill.json"
 REQUEST_SEND_GATE = REPORTS_DIR / "production_request_send_gate.json"
 SEND_DECISION_ENTRYPOINT = REPORTS_DIR / "production_send_decision_entrypoint.json"
+GATED_EXECUTOR_ENTRYPOINT = REPORTS_DIR / "gated_production_send_executor_entrypoint.json"
 
 
 def utc_now() -> str:
@@ -61,6 +62,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     http_transport, http_transport_error = read_json(HTTP_TRANSPORT_WIRING)
     request_send_gate, request_send_gate_error = read_json(REQUEST_SEND_GATE)
     send_decision_entrypoint, send_decision_entrypoint_error = read_json(SEND_DECISION_ENTRYPOINT)
+    gated_executor_entrypoint, gated_executor_entrypoint_error = read_json(GATED_EXECUTOR_ENTRYPOINT)
     errors = [
         item
         for item in [
@@ -73,6 +75,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             http_transport_error,
             request_send_gate_error,
             send_decision_entrypoint_error,
+            gated_executor_entrypoint_error,
         ]
         if item
     ]
@@ -139,6 +142,17 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         "production_send_decision_authorized_fixture_ready": (
             send_decision_entrypoint.get("authorized_fixture_ready_for_exactly_one_send") is True
         ),
+        "gated_production_send_executor_entrypoint_ready": (
+            gated_executor_entrypoint.get("result") == "PASS"
+        ),
+        "gated_executor_current_template_closed": (
+            gated_executor_entrypoint.get("current_template_failure_code")
+            == "PRODUCTION_REQUEST_SEND_GATE_CLOSED"
+        ),
+        "gated_executor_fake_transport_ready": (
+            gated_executor_entrypoint.get("fake_transport_called_once") is True
+            and gated_executor_entrypoint.get("fake_transport_external_status") == "FILLED"
+        ),
     }
     critical_checks = [
         checks["controlled_request_filled"],
@@ -198,6 +212,13 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             ),
             "send_decision_authorized_fixture_ready": send_decision_entrypoint.get(
                 "authorized_fixture_ready_for_exactly_one_send"
+            ),
+            "gated_executor_entrypoint": gated_executor_entrypoint.get("result"),
+            "gated_executor_current_template_failure_code": gated_executor_entrypoint.get(
+                "current_template_failure_code"
+            ),
+            "gated_executor_fake_transport_external_status": gated_executor_entrypoint.get(
+                "fake_transport_external_status"
             ),
             "production_request_sent": False,
         },
@@ -268,6 +289,9 @@ Generated at: `{snapshot["generated_at"]}`
 - send decision entrypoint: {production.get("send_decision_entrypoint")}
 - send decision current template ready: {str(production.get("send_decision_current_template_ready")).lower()}
 - send decision authorized fixture ready: {str(production.get("send_decision_authorized_fixture_ready")).lower()}
+- gated executor entrypoint: {production.get("gated_executor_entrypoint")}
+- gated executor current template failure code: {production.get("gated_executor_current_template_failure_code")}
+- gated executor fake transport external status: {production.get("gated_executor_fake_transport_external_status")}
 - production request sent: {str(production.get("production_request_sent")).lower()}
 
 ## Checks

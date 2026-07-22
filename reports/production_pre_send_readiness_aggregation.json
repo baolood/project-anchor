@@ -36,6 +36,7 @@
     }
   ],
   "decision_summary": {
+    "gated_production_send_executor_entrypoint": "PASS",
     "production_credential_readiness": "PASS",
     "production_execution_readiness": "BLOCKED",
     "production_http_network_readiness": "PASS",
@@ -105,13 +106,19 @@
       "evidence": "send decision surface is wired to gate without sending",
       "name": "production_send_decision_entrypoint_pass",
       "result": "PASS"
+    },
+    {
+      "evidence": "gated executor entrypoint is wired and fixture-drilled without real send",
+      "name": "gated_production_send_executor_entrypoint_pass",
+      "result": "PASS"
     }
   ],
-  "generated_at": "2026-07-22T08:30:29Z",
+  "generated_at": "2026-07-22T08:40:08Z",
   "go_live_allowed": false,
   "inputs": {
     "credential_readiness": "reports/production_credential_readiness_validation.json",
     "execution_readiness": "reports/production_execution_readiness.json",
+    "gated_production_send_executor_entrypoint": "reports/gated_production_send_executor_entrypoint.json",
     "http_network_readiness": "reports/production_http_network_readiness_validation.json",
     "http_request_interface_dry_run": "reports/production_http_request_interface_dry_run.json",
     "no_send_execution_drill": "reports/production_no_send_execution_drill.json",

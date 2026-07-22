@@ -2,6 +2,7 @@ import io
 import sys
 import unittest
 import urllib.error
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -13,6 +14,7 @@ from app.executors.production_order_executor import (  # noqa: E402
     build_signed_order_request,
     build_spot_market_order_params,
     redacted_request_shape,
+    run_gated_production_order_request,
     run_production_order_request,
     sign_query,
 )
@@ -27,6 +29,28 @@ def _transport_input(**overrides):
         "notional": 4,
         "order_type": "market",
         "idempotency_key": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
+    }
+    data.update(overrides)
+    return data
+
+
+def _authorized_gate_config(**overrides):
+    data = {
+        "AUTHORIZED_PRODUCTION_REQUEST_SEND": "YES",
+        "AUTHORIZED_PRODUCTION_CREDENTIAL_ACCESS": "YES",
+        "AUTHORIZED_PRODUCTION_SIGNING": "YES",
+        "AUTHORIZED_PRODUCTION_HTTP_NETWORK": "YES",
+        "AUTHORIZED_GO_LIVE": "NO",
+        "AUTHORIZED_LIVE_TRADING": "NO",
+        "PRODUCTION_REQUEST_SEND_WINDOW_OPEN": True,
+        "PRODUCTION_REQUEST_SEND_WINDOW_EXPIRES_AT": "2026-07-22T09:00:00Z",
+        "PRODUCTION_REQUEST_SEND_NO_RETRY": True,
+        "PRODUCTION_REQUEST_SEND_IDEMPOTENCY_KEY": (
+            "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1"
+        ),
+        "FINAL_PRODUCTION_REQUEST_SEND_OPERATOR_VERDICT": (
+            "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_ONLY"
+        ),
     }
     data.update(overrides)
     return data
@@ -232,6 +256,84 @@ class ProductionOrderExecutorTest(unittest.TestCase):
         self.assertTrue(requested_payload["signature_present"])
         self.assertEqual(terminal_type, "PRODUCTION_HTTP_AUTH_REJECTED")
         self.assertEqual(terminal_payload["http_status"], 401)
+        self.assertNotIn("fixture-key", str(outcome))
+        self.assertNotIn("fixture-secret", str(outcome))
+        self.assertNotIn("signature=", str(outcome))
+
+    def test_gated_run_stops_before_executor_when_send_gate_closed(self):
+        fake_opener = _FakeOpener()
+
+        outcome, requested_payload, terminal_type, terminal_payload = (
+            run_gated_production_order_request(
+                _transport_input(source="ops_manual"),
+                {},
+                {
+                    "base_url": "https://api.binance.com",
+                    "api_key": "fixture-key",
+                    "api_secret": "fixture-secret",
+                },
+                1234567890,
+                now=datetime(2026, 7, 22, 8, 0, tzinfo=timezone.utc),
+                execute=True,
+                opener=fake_opener,
+            )
+        )
+
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(outcome["error"]["code"], "PRODUCTION_REQUEST_SEND_GATE_CLOSED")
+        self.assertEqual(len(fake_opener.calls), 0)
+        self.assertIsNone(requested_payload)
+        self.assertIsNone(terminal_type)
+        self.assertIsNone(terminal_payload)
+        self.assertFalse(outcome["error"]["external_request_started"])
+
+    def test_gated_run_ready_but_execute_false_still_fails_closed(self):
+        outcome, requested_payload, terminal_type, terminal_payload = (
+            run_gated_production_order_request(
+                _transport_input(source="ops_manual"),
+                _authorized_gate_config(),
+                {
+                    "base_url": "https://api.binance.com",
+                    "api_key": "fixture-key",
+                    "api_secret": "fixture-secret",
+                },
+                1234567890,
+                now=datetime(2026, 7, 22, 8, 0, tzinfo=timezone.utc),
+            )
+        )
+
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(outcome["error"]["code"], "PRODUCTION_SEND_EXECUTION_NOT_AUTHORIZED")
+        self.assertFalse(outcome["error"]["external_request_started"])
+        self.assertIsNone(requested_payload)
+        self.assertIsNone(terminal_type)
+        self.assertIsNone(terminal_payload)
+
+    def test_gated_run_ready_with_fake_transport_parses_response(self):
+        fake_opener = _FakeOpener()
+
+        outcome, requested_payload, terminal_type, terminal_payload = (
+            run_gated_production_order_request(
+                _transport_input(source="ops_manual"),
+                _authorized_gate_config(),
+                {
+                    "base_url": "https://api.binance.com",
+                    "api_key": "fixture-key",
+                    "api_secret": "fixture-secret",
+                },
+                1234567890,
+                now=datetime(2026, 7, 22, 8, 0, tzinfo=timezone.utc),
+                execute=True,
+                opener=fake_opener,
+            )
+        )
+
+        self.assertTrue(outcome["ok"])
+        self.assertEqual(len(fake_opener.calls), 1)
+        self.assertEqual(terminal_type, "PRODUCTION_HTTP_RESPONSE")
+        self.assertEqual(terminal_payload["external_status"], "FILLED")
+        self.assertTrue(terminal_payload["external_order_id_present"])
+        self.assertTrue(requested_payload["signature_present"])
         self.assertNotIn("fixture-key", str(outcome))
         self.assertNotIn("fixture-secret", str(outcome))
         self.assertNotIn("signature=", str(outcome))
