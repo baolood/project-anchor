@@ -47,6 +47,10 @@
       "result": "PASS"
     },
     {
+      "name": "current_gate_config_loaded_and_closed",
+      "result": "PASS"
+    },
+    {
       "name": "complete_gate_config_can_authorize_command_creation_decision",
       "result": "PASS"
     },
@@ -96,6 +100,19 @@
     "reason": "AUTHORIZED",
     "required_verdict": "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_COMMAND_CREATION_ONLY"
   },
+  "current_gate_config_authorized": false,
+  "current_gate_config_decision": {
+    "authorized": false,
+    "checks": {
+      "exactly_one_command_creation": false,
+      "gate_enabled": false,
+      "idempotency_key_matches": true,
+      "no_retry": true,
+      "operator_verdict_matches": false
+    },
+    "reason": "PRODUCTION_EXECUTION_GATE_CLOSED",
+    "required_verdict": "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_COMMAND_CREATION_ONLY"
+  },
   "default_gate_decision": {
     "authorized": false,
     "checks": {
@@ -110,7 +127,7 @@
   },
   "entrypoint_present": true,
   "execution_gate_authorized": false,
-  "generated_at": "2026-07-22T01:11:32Z",
+  "generated_at": "2026-07-22T01:29:49Z",
   "non_executable_persistence_status": "CREATED_NOT_EXECUTABLE",
   "production_request_sent": false,
   "result": "PASS",

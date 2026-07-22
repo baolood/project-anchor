@@ -44,7 +44,7 @@
     "production_unsigned_canonical_payload_sendable": "FAIL",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-07-22T01:11:36Z",
+  "generated_at": "2026-07-22T01:30:03Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -62,7 +62,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-07-22T01:11:29.200366+00:00"
+    "worker_heartbeat_at": "2026-07-22T01:29:40.574018+00:00"
   },
   "latest_canary": {
     "attempt": 1,

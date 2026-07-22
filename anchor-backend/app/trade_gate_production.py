@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 
 PRODUCTION_IDEMPOTENCY_KEY = (
     "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1"
@@ -22,6 +25,9 @@ FORBIDDEN_PRODUCTION_INPUT_FIELDS = frozenset(
 
 PRODUCTION_COMMAND_TYPE = "PRODUCTION_ORDER_INTENT"
 PRODUCTION_COMMAND_CREATED_STATUS = "CREATED_NOT_EXECUTABLE"
+PRODUCTION_EXECUTION_GATE_CONFIG_PATH = (
+    Path(__file__).resolve().parents[2] / "config" / "production_execution_gate.template.json"
+)
 
 
 def coerce_positive_float(value: object) -> float | None:
@@ -98,6 +104,15 @@ def production_execution_gate_decision(config: dict | None = None) -> dict:
         "checks": checks,
         "required_verdict": PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT,
     }
+
+
+def load_production_execution_gate_config(path: str | Path | None = None) -> dict:
+    config_path = Path(path) if path is not None else PRODUCTION_EXECUTION_GATE_CONFIG_PATH
+    try:
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def is_worker_executable_command_status(status: object) -> bool:
