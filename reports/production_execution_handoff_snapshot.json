@@ -20,6 +20,8 @@
     "go_live_no_go": "PASS",
     "pre_send_chain_complete": "PASS",
     "production_command_candidate_available": "PASS",
+    "production_credential_loader_default_closed": "PASS",
+    "production_credential_loader_ready": "PASS",
     "production_entrypoint_present": "PASS",
     "production_http_transport_fake_response_parsed": "PASS",
     "production_http_transport_not_authorized_by_default": "PASS",
@@ -38,7 +40,7 @@
     "send_window_plan_present": "PASS"
   },
   "errors": [],
-  "generated_at": "2026-07-22T08:40:08Z",
+  "generated_at": "2026-07-22T08:55:33Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -55,6 +57,8 @@
   "next_gate": "EXPLICIT_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_AUTHORIZATION",
   "production_state": {
     "command_creation_candidate": true,
+    "credential_loader": "PASS",
+    "credential_loader_default_code": "PRODUCTION_CREDENTIAL_READ_NOT_AUTHORIZED",
     "entrypoint_present": true,
     "gated_executor_current_template_failure_code": "PRODUCTION_REQUEST_SEND_GATE_CLOSED",
     "gated_executor_entrypoint": "PASS",
@@ -66,6 +70,7 @@
     "non_executable_command_id": "prod-order-drill-20260722T013656Z",
     "non_executable_command_status": "CREATED_NOT_EXECUTABLE",
     "production_request_sent": false,
+    "real_credential_file_read": "NO",
     "request_send_gate": "PASS",
     "request_send_gate_current_template_authorized": false,
     "request_send_gate_fixture_authorized": true,

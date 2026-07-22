@@ -37,6 +37,7 @@
   ],
   "decision_summary": {
     "gated_production_send_executor_entrypoint": "PASS",
+    "production_credential_loader": "PASS",
     "production_credential_readiness": "PASS",
     "production_execution_readiness": "BLOCKED",
     "production_http_network_readiness": "PASS",
@@ -111,9 +112,14 @@
       "evidence": "gated executor entrypoint is wired and fixture-drilled without real send",
       "name": "gated_production_send_executor_entrypoint_pass",
       "result": "PASS"
+    },
+    {
+      "evidence": "credential loader defaults closed and fixture load validates redacted shape",
+      "name": "production_credential_loader_pass",
+      "result": "PASS"
     }
   ],
-  "generated_at": "2026-07-22T08:40:08Z",
+  "generated_at": "2026-07-22T08:55:33Z",
   "go_live_allowed": false,
   "inputs": {
     "credential_readiness": "reports/production_credential_readiness_validation.json",
@@ -122,6 +128,7 @@
     "http_network_readiness": "reports/production_http_network_readiness_validation.json",
     "http_request_interface_dry_run": "reports/production_http_request_interface_dry_run.json",
     "no_send_execution_drill": "reports/production_no_send_execution_drill.json",
+    "production_credential_loader": "reports/production_credential_loader.json",
     "production_request_send_gate": "reports/production_request_send_gate.json",
     "production_send_decision_entrypoint": "reports/production_send_decision_entrypoint.json",
     "risk_limits": "reports/production_risk_limits_validation.json",

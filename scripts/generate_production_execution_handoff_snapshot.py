@@ -31,6 +31,7 @@ HTTP_TRANSPORT_WIRING = REPORTS_DIR / "production_http_transport_wiring_drill.js
 REQUEST_SEND_GATE = REPORTS_DIR / "production_request_send_gate.json"
 SEND_DECISION_ENTRYPOINT = REPORTS_DIR / "production_send_decision_entrypoint.json"
 GATED_EXECUTOR_ENTRYPOINT = REPORTS_DIR / "gated_production_send_executor_entrypoint.json"
+PRODUCTION_CREDENTIAL_LOADER = REPORTS_DIR / "production_credential_loader.json"
 
 
 def utc_now() -> str:
@@ -63,6 +64,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     request_send_gate, request_send_gate_error = read_json(REQUEST_SEND_GATE)
     send_decision_entrypoint, send_decision_entrypoint_error = read_json(SEND_DECISION_ENTRYPOINT)
     gated_executor_entrypoint, gated_executor_entrypoint_error = read_json(GATED_EXECUTOR_ENTRYPOINT)
+    credential_loader, credential_loader_error = read_json(PRODUCTION_CREDENTIAL_LOADER)
     errors = [
         item
         for item in [
@@ -76,6 +78,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             request_send_gate_error,
             send_decision_entrypoint_error,
             gated_executor_entrypoint_error,
+            credential_loader_error,
         ]
         if item
     ]
@@ -153,6 +156,11 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             gated_executor_entrypoint.get("fake_transport_called_once") is True
             and gated_executor_entrypoint.get("fake_transport_external_status") == "FILLED"
         ),
+        "production_credential_loader_ready": credential_loader.get("result") == "PASS",
+        "production_credential_loader_default_closed": (
+            credential_loader.get("loader_default_code")
+            == "PRODUCTION_CREDENTIAL_READ_NOT_AUTHORIZED"
+        ),
     }
     critical_checks = [
         checks["controlled_request_filled"],
@@ -219,6 +227,11 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             ),
             "gated_executor_fake_transport_external_status": gated_executor_entrypoint.get(
                 "fake_transport_external_status"
+            ),
+            "credential_loader": credential_loader.get("result"),
+            "credential_loader_default_code": credential_loader.get("loader_default_code"),
+            "real_credential_file_read": credential_loader.get("boundary", {}).get(
+                "real_credential_file_read"
             ),
             "production_request_sent": False,
         },
@@ -292,6 +305,9 @@ Generated at: `{snapshot["generated_at"]}`
 - gated executor entrypoint: {production.get("gated_executor_entrypoint")}
 - gated executor current template failure code: {production.get("gated_executor_current_template_failure_code")}
 - gated executor fake transport external status: {production.get("gated_executor_fake_transport_external_status")}
+- credential loader: {production.get("credential_loader")}
+- credential loader default code: {production.get("credential_loader_default_code")}
+- real credential file read: {production.get("real_credential_file_read")}
 - production request sent: {str(production.get("production_request_sent")).lower()}
 
 ## Checks
