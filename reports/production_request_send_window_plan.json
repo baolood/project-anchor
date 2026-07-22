@@ -15,7 +15,7 @@
   },
   "errors": [],
   "execution_allowed_by_this_plan": false,
-  "generated_at": "2026-07-22T09:04:07Z",
+  "generated_at": "2026-07-22T09:16:55Z",
   "inputs": {
     "pre_send_aggregation": "reports/production_pre_send_readiness_aggregation.json",
     "risk_limits_config": "config/production_risk_limits.template.json"
@@ -35,10 +35,10 @@
   },
   "planned_window": {
     "duration_minutes": 60,
-    "expires_at": "2026-07-22T10:04:07Z",
-    "monitor_until": "2026-07-22T10:19:07Z",
+    "expires_at": "2026-07-22T10:16:55Z",
+    "monitor_until": "2026-07-22T10:31:55Z",
     "monitoring_window": "15_minutes_after_execution",
-    "not_before": "2026-07-22T09:04:07Z",
+    "not_before": "2026-07-22T09:16:55Z",
     "window_type": "fresh_bounded_authorization_window"
   },
   "preconditions": {

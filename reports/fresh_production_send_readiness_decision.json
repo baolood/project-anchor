@@ -1,0 +1,108 @@
+{
+  "boundary": {
+    "authorization_header_generated": "NO",
+    "canary_rerun": "NO",
+    "credential_file_read": "NO",
+    "dns_lookup_performed": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_http_network_executed": "NO",
+    "production_request_sent": "NO",
+    "production_signing_executed": "NO",
+    "runtime_modified": "NO",
+    "secret_value_disclosed": "NO",
+    "socket_opened": "NO"
+  },
+  "checks": [
+    {
+      "evidence": "handoff snapshot PASS / READY_FOR_DECISION",
+      "name": "handoff_ready_for_decision",
+      "result": "PASS"
+    },
+    {
+      "evidence": "pre-send aggregation PASS and complete",
+      "name": "pre_send_chain_complete",
+      "result": "PASS"
+    },
+    {
+      "evidence": "final runner PASS with fail-closed defaults and fake transport evidence",
+      "name": "final_runner_ready",
+      "result": "PASS"
+    },
+    {
+      "evidence": "send window plan PASS",
+      "name": "window_plan_valid",
+      "result": "PASS"
+    },
+    {
+      "evidence": "window plan remains non-authorizing",
+      "name": "window_plan_not_authorizing",
+      "result": "PASS"
+    },
+    {
+      "evidence": "current time is within the latest planned window",
+      "name": "fresh_window_current",
+      "result": "PASS"
+    },
+    {
+      "evidence": "all evidence says production request has not been sent",
+      "name": "production_request_not_sent",
+      "result": "PASS"
+    },
+    {
+      "evidence": "production risk limits remain exactly-one BTCUSDT BUY max notional 4",
+      "name": "risk_limits_bounded",
+      "result": "PASS"
+    },
+    {
+      "evidence": "go-live remains NO-GO",
+      "name": "go_live_still_no_go",
+      "result": "PASS"
+    },
+    {
+      "evidence": "live trading remains NO-GO",
+      "name": "live_trading_still_no_go",
+      "result": "PASS"
+    }
+  ],
+  "decision": "READY_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_WINDOW_OPEN",
+  "errors": [],
+  "execution_performed_by_this_decision": false,
+  "generated_at": "2026-07-22T09:16:55Z",
+  "inputs": {
+    "final_runner": "reports/final_production_send_runner.json",
+    "handoff": "reports/production_execution_handoff_snapshot.json",
+    "pre_send": "reports/production_pre_send_readiness_aggregation.json",
+    "risk_limits": "config/production_risk_limits.template.json",
+    "window_plan": "reports/production_request_send_window_plan.json"
+  },
+  "planned_request": {
+    "idempotency_key_template": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
+    "idempotency_policy": "required_unique_key_per_authorized_window",
+    "market": "binance_spot",
+    "max_notional": "4",
+    "max_order_count": "1",
+    "order_type": "market",
+    "sendable": false,
+    "side": "BUY",
+    "symbol": "BTCUSDT"
+  },
+  "planned_window": {
+    "duration_minutes": 60,
+    "expires_at": "2026-07-22T10:16:55Z",
+    "monitor_until": "2026-07-22T10:31:55Z",
+    "monitoring_window": "15_minutes_after_execution",
+    "not_before": "2026-07-22T09:16:55Z",
+    "window_type": "fresh_bounded_authorization_window"
+  },
+  "result": "PASS",
+  "risk_limit_summary": {
+    "idempotency_policy": "required_unique_key_per_authorized_window",
+    "market": "binance_spot",
+    "max_notional": "4",
+    "max_order_count": "1",
+    "sides": "BUY_ONLY",
+    "symbols": "BTCUSDT"
+  },
+  "send_authorized_by_this_decision": false
+}
