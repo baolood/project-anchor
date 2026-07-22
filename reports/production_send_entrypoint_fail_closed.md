@@ -1,6 +1,6 @@
 # Production Send Entrypoint Fail-Closed Check
 
-Generated at: `2026-07-22T00:08:23Z`
+Generated at: `2026-07-22T01:11:32Z`
 
 ## Result
 
@@ -12,6 +12,8 @@ Generated at: `2026-07-22T00:08:23Z`
 - execution gate authorized: false
 - command creation candidate: true
 - command type: `PRODUCTION_ORDER_INTENT`
+- non-executable persistence status: `CREATED_NOT_EXECUTABLE`
+- worker executable: false
 - command created: false
 - production request sent: false
 

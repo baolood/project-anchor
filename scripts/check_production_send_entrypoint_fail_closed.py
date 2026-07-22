@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "anchor-backend"))
 
 from app.trade_gate_production import (  # noqa: E402
+    PRODUCTION_COMMAND_CREATED_STATUS,
     PRODUCTION_COMMAND_TYPE,
     PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT,
     PRODUCTION_IDEMPOTENCY_KEY,
@@ -138,6 +139,8 @@ def build_report() -> tuple[dict, int]:
         "execution_gate_authorized": False,
         "command_creation_candidate": candidate.get("command_creation_candidate") is True,
         "command_type": PRODUCTION_COMMAND_TYPE,
+        "non_executable_persistence_status": PRODUCTION_COMMAND_CREATED_STATUS,
+        "worker_executable": False,
         "command_created": False,
         "production_request_sent": False,
         "default_gate_decision": default_gate,
@@ -177,6 +180,8 @@ Generated at: `{report["generated_at"]}`
 - execution gate authorized: {str(report["execution_gate_authorized"]).lower()}
 - command creation candidate: {str(report["command_creation_candidate"]).lower()}
 - command type: `{report["command_type"]}`
+- non-executable persistence status: `{report["non_executable_persistence_status"]}`
+- worker executable: {str(report["worker_executable"]).lower()}
 - command created: {str(report["command_created"]).lower()}
 - production request sent: {str(report["production_request_sent"]).lower()}
 
@@ -213,6 +218,8 @@ def main() -> int:
     print(f"execution_gate_authorized: {str(report['execution_gate_authorized']).lower()}")
     print(f"command_creation_candidate: {str(report['command_creation_candidate']).lower()}")
     print(f"command_type: {report['command_type']}")
+    print(f"non_executable_persistence_status: {report['non_executable_persistence_status']}")
+    print(f"worker_executable: {str(report['worker_executable']).lower()}")
     print(f"command_created: {str(report['command_created']).lower()}")
     print(f"production_request_sent: {str(report['production_request_sent']).lower()}")
     print("secret_read: NO")
