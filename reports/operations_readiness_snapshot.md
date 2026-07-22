@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-22T01:30:03Z`
+Generated at: `2026-07-22T01:38:20Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-22T01:30:03Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-22T01:29:40.574018+00:00`
+- worker heartbeat at: `2026-07-22T01:38:15.274074+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -106,6 +106,16 @@ Generated at: `2026-07-22T01:30:03Z`
 - worker executable: false
 - command created: false
 - production request sent: false
+
+## Production Non-Executable Command Creation Drill
+
+- result: PASS
+- command id: `prod-order-drill-20260722T013656Z`
+- command type: `PRODUCTION_ORDER_INTENT`
+- command status: `CREATED_NOT_EXECUTABLE`
+- worker executable: false
+- pre worker executable count: 0
+- post worker executable count: 0
 
 ### Production Gates
 
