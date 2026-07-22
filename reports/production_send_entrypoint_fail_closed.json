@@ -1,6 +1,7 @@
 {
   "blocked_response_shape": {
     "command_created": false,
+    "command_creation_candidate": false,
     "error": "PRODUCTION_EXECUTION_GATE_CLOSED",
     "execution_gate_authorized": false,
     "idempotency_key": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
@@ -48,9 +49,41 @@
     {
       "name": "complete_gate_config_can_authorize_command_creation_decision",
       "result": "PASS"
+    },
+    {
+      "name": "authorized_gate_produces_non_send_command_creation_candidate",
+      "result": "PASS"
     }
   ],
   "command_created": false,
+  "command_creation_candidate": true,
+  "command_creation_candidate_response_shape": {
+    "command_created": false,
+    "command_creation_candidate": true,
+    "command_type": "PRODUCTION_ORDER_INTENT",
+    "error": null,
+    "execution_gate_authorized": true,
+    "idempotency_key": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
+    "payload": {
+      "command_creation_only": true,
+      "command_type": "PRODUCTION_ORDER_INTENT",
+      "execution_mode": "production",
+      "idempotency_key": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
+      "market": "binance_spot",
+      "notional": 4.0,
+      "order_type": "market",
+      "production_http_network_executed": false,
+      "production_request_sent": false,
+      "production_signing_executed": false,
+      "side": "BUY",
+      "source": "ops_manual",
+      "symbol": "BTCUSDT"
+    },
+    "production_request_sent": false,
+    "requires_explicit_execution_gate": true,
+    "status": "ready_to_create_command"
+  },
+  "command_type": "PRODUCTION_ORDER_INTENT",
   "complete_gate_fixture_decision": {
     "authorized": true,
     "checks": {
@@ -77,7 +110,7 @@
   },
   "entrypoint_present": true,
   "execution_gate_authorized": false,
-  "generated_at": "2026-07-21T10:52:40Z",
+  "generated_at": "2026-07-22T00:08:23Z",
   "production_request_sent": false,
   "result": "PASS",
   "send_authorized": false,

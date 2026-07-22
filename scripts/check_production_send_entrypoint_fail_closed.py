@@ -13,8 +13,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "anchor-backend"))
 
 from app.trade_gate_production import (  # noqa: E402
+    PRODUCTION_COMMAND_TYPE,
     PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT,
     PRODUCTION_IDEMPOTENCY_KEY,
+    production_order_command_creation_candidate_response,
     production_execution_gate_decision,
     production_order_blocked_response,
     validate_production_order_request,
@@ -64,6 +66,10 @@ def build_report() -> tuple[dict, int]:
         }
     )
     blocked = production_order_blocked_response(default_gate)
+    candidate = production_order_command_creation_candidate_response(
+        valid_body(),
+        complete_gate,
+    )
 
     checks = [
         {
@@ -109,6 +115,17 @@ def build_report() -> tuple[dict, int]:
             "name": "complete_gate_config_can_authorize_command_creation_decision",
             "result": "PASS" if complete_gate.get("authorized") is True else "FAIL",
         },
+        {
+            "name": "authorized_gate_produces_non_send_command_creation_candidate",
+            "result": "PASS"
+            if candidate.get("status") == "ready_to_create_command"
+            and candidate.get("command_type") == PRODUCTION_COMMAND_TYPE
+            and candidate.get("command_creation_candidate") is True
+            and candidate.get("command_created") is False
+            and candidate.get("production_request_sent") is False
+            and "command_id" not in candidate
+            else "FAIL",
+        },
     ]
     passed = all(item["result"] == "PASS" for item in checks)
     report = {
@@ -119,10 +136,13 @@ def build_report() -> tuple[dict, int]:
         "valid_shape_accepted_by_validator": ok and reason is None,
         "send_authorized": False,
         "execution_gate_authorized": False,
+        "command_creation_candidate": candidate.get("command_creation_candidate") is True,
+        "command_type": PRODUCTION_COMMAND_TYPE,
         "command_created": False,
         "production_request_sent": False,
         "default_gate_decision": default_gate,
         "complete_gate_fixture_decision": complete_gate,
+        "command_creation_candidate_response_shape": candidate,
         "checks": checks,
         "blocked_response_shape": blocked,
         "boundary": {
@@ -155,6 +175,8 @@ Generated at: `{report["generated_at"]}`
 - valid shape accepted by validator: {str(report["valid_shape_accepted_by_validator"]).lower()}
 - send authorized: {str(report["send_authorized"]).lower()}
 - execution gate authorized: {str(report["execution_gate_authorized"]).lower()}
+- command creation candidate: {str(report["command_creation_candidate"]).lower()}
+- command type: `{report["command_type"]}`
 - command created: {str(report["command_created"]).lower()}
 - production request sent: {str(report["production_request_sent"]).lower()}
 
@@ -189,6 +211,8 @@ def main() -> int:
     print(f"entrypoint_present: {str(report['entrypoint_present']).lower()}")
     print(f"send_authorized: {str(report['send_authorized']).lower()}")
     print(f"execution_gate_authorized: {str(report['execution_gate_authorized']).lower()}")
+    print(f"command_creation_candidate: {str(report['command_creation_candidate']).lower()}")
+    print(f"command_type: {report['command_type']}")
     print(f"command_created: {str(report['command_created']).lower()}")
     print(f"production_request_sent: {str(report['production_request_sent']).lower()}")
     print("secret_read: NO")

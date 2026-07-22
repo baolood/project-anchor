@@ -20,6 +20,8 @@ FORBIDDEN_PRODUCTION_INPUT_FIELDS = frozenset(
     }
 )
 
+PRODUCTION_COMMAND_TYPE = "PRODUCTION_ORDER_INTENT"
+
 
 def coerce_positive_float(value: object) -> float | None:
     if isinstance(value, bool):
@@ -102,9 +104,60 @@ def production_order_blocked_response(gate_decision: dict | None = None) -> dict
     return {
         "status": "blocked",
         "error": decision.get("reason") or "PRODUCTION_EXECUTION_GATE_CLOSED",
+        "command_creation_candidate": False,
         "command_created": False,
         "production_request_sent": False,
         "requires_explicit_execution_gate": True,
         "execution_gate_authorized": bool(decision.get("authorized")),
         "idempotency_key": PRODUCTION_IDEMPOTENCY_KEY,
+    }
+
+
+def production_order_command_creation_payload(body: dict) -> dict:
+    notional = coerce_positive_float(body.get("notional"))
+    return {
+        "command_type": PRODUCTION_COMMAND_TYPE,
+        "execution_mode": "production",
+        "market": "binance_spot",
+        "symbol": "BTCUSDT",
+        "side": "BUY",
+        "notional": notional,
+        "order_type": "market",
+        "source": "ops_manual",
+        "idempotency_key": PRODUCTION_IDEMPOTENCY_KEY,
+        "command_creation_only": True,
+        "production_signing_executed": False,
+        "production_http_network_executed": False,
+        "production_request_sent": False,
+    }
+
+
+def production_order_command_creation_candidate_response(
+    body: dict,
+    gate_decision: dict | None = None,
+) -> dict:
+    decision = gate_decision if isinstance(gate_decision, dict) else production_execution_gate_decision()
+    is_valid, reject_reason = validate_production_order_request(body)
+    if not is_valid:
+        return {
+            "status": "error",
+            "error": reject_reason,
+            "command_creation_candidate": False,
+            "command_created": False,
+            "production_request_sent": False,
+        }
+    if not decision.get("authorized"):
+        return production_order_blocked_response(decision)
+
+    return {
+        "status": "ready_to_create_command",
+        "error": None,
+        "command_type": PRODUCTION_COMMAND_TYPE,
+        "command_creation_candidate": True,
+        "command_created": False,
+        "production_request_sent": False,
+        "requires_explicit_execution_gate": True,
+        "execution_gate_authorized": True,
+        "idempotency_key": PRODUCTION_IDEMPOTENCY_KEY,
+        "payload": production_order_command_creation_payload(body),
     }
