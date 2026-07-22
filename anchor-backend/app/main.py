@@ -11,6 +11,9 @@ from app.api.ops import router as ops_router
 from app.api.routes_domain_command_validation_dev import router as domain_command_validation_dev_router
 from app.domain_events import append_domain_event_pool
 from app.trade_gate_production import (
+    PRODUCTION_COMMAND_CREATED_STATUS,
+    is_worker_executable_command_status,
+    production_order_command_creation_candidate_response,
     production_execution_gate_decision,
     production_order_blocked_response,
     validate_production_order_request,
@@ -1024,6 +1027,48 @@ async def _create_domain_command(cmd_id_prefix: str, cmd_type: str, payload: dic
     }
 
 
+async def _create_non_executable_domain_command(
+    cmd_id_prefix: str,
+    cmd_type: str,
+    status: str,
+    payload: dict | None = None,
+    cmd_id: str | None = None,
+) -> dict:
+    normalized_status = str(status or "").strip().upper()
+    if is_worker_executable_command_status(normalized_status):
+        raise HTTPException(
+            status_code=500,
+            detail="Non-executable command status cannot be PENDING or RUNNING",
+        )
+
+    pool = await _get_domain_pg_pool()
+    if cmd_id is None:
+        cmd_id = f"{cmd_id_prefix}-{uuid.uuid4()}"
+    now = datetime.utcnow()
+    payload_json = _json_dumps(payload if payload else {})
+    sql = """
+    INSERT INTO commands_domain
+      (id, type, status, payload, attempt, created_at, updated_at)
+    VALUES
+      ($1, $2, $3, $4::jsonb, 0, $5, $5)
+    RETURNING id, type, status, created_at, updated_at;
+    """
+    try:
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(sql, cmd_id, cmd_type, normalized_status, payload_json, now)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DB insert failed: {e}")
+    if row is None:
+        raise HTTPException(status_code=500, detail="DB insert returned no row")
+    return {
+        "id": row["id"],
+        "type": row["type"],
+        "status": row["status"],
+        "created_at": row["created_at"].isoformat(),
+        "updated_at": row["updated_at"].isoformat(),
+    }
+
+
 async def _domain_command_response_by_id(domain_id: str) -> dict:
     """Fetch domain command and return response dict (same shape as GET). Raises HTTPException if not found."""
     pool = await _get_domain_pg_pool()
@@ -1184,7 +1229,30 @@ async def create_trade_gate_production_order_intent(body: dict = Body(default_fa
             "command_created": False,
         }
 
-    return production_order_blocked_response(production_execution_gate_decision())
+    gate_decision = production_execution_gate_decision()
+    candidate = production_order_command_creation_candidate_response(request_body, gate_decision)
+    if not candidate.get("command_creation_candidate"):
+        return production_order_blocked_response(gate_decision)
+
+    command = await _create_non_executable_domain_command(
+        "prod-order",
+        str(candidate["command_type"]),
+        PRODUCTION_COMMAND_CREATED_STATUS,
+        candidate.get("payload") if isinstance(candidate.get("payload"), dict) else {},
+    )
+    return {
+        "status": "command_created_not_executable",
+        "command_id": command["id"],
+        "command_type": command["type"],
+        "command_status": command["status"],
+        "command_created": True,
+        "worker_executable": False,
+        "production_request_sent": False,
+        "production_signing_executed": False,
+        "production_http_network_executed": False,
+        "execution_gate_authorized": True,
+        "idempotency_key": candidate["idempotency_key"],
+    }
 
 
 @app.post("/domain-commands/{domain_id}/retry")

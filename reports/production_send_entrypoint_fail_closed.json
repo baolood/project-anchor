@@ -110,10 +110,12 @@
   },
   "entrypoint_present": true,
   "execution_gate_authorized": false,
-  "generated_at": "2026-07-22T00:08:23Z",
+  "generated_at": "2026-07-22T01:11:32Z",
+  "non_executable_persistence_status": "CREATED_NOT_EXECUTABLE",
   "production_request_sent": false,
   "result": "PASS",
   "send_authorized": false,
   "surface": "POST /trade-gate/production-order-intents",
-  "valid_shape_accepted_by_validator": true
+  "valid_shape_accepted_by_validator": true,
+  "worker_executable": false
 }

@@ -21,6 +21,7 @@ FORBIDDEN_PRODUCTION_INPUT_FIELDS = frozenset(
 )
 
 PRODUCTION_COMMAND_TYPE = "PRODUCTION_ORDER_INTENT"
+PRODUCTION_COMMAND_CREATED_STATUS = "CREATED_NOT_EXECUTABLE"
 
 
 def coerce_positive_float(value: object) -> float | None:
@@ -97,6 +98,10 @@ def production_execution_gate_decision(config: dict | None = None) -> dict:
         "checks": checks,
         "required_verdict": PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT,
     }
+
+
+def is_worker_executable_command_status(status: object) -> bool:
+    return str(status or "").strip().upper() in {"PENDING", "RUNNING"}
 
 
 def production_order_blocked_response(gate_decision: dict | None = None) -> dict:

@@ -44,7 +44,7 @@
     "production_unsigned_canonical_payload_sendable": "FAIL",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-07-22T00:08:25Z",
+  "generated_at": "2026-07-22T01:11:36Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -62,7 +62,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-07-22T00:08:18.503889+00:00"
+    "worker_heartbeat_at": "2026-07-22T01:11:29.200366+00:00"
   },
   "latest_canary": {
     "attempt": 1,
@@ -304,10 +304,12 @@
     "command_type": "PRODUCTION_ORDER_INTENT",
     "entrypoint_present": true,
     "execution_gate_authorized": false,
+    "non_executable_persistence_status": "CREATED_NOT_EXECUTABLE",
     "production_request_sent": false,
     "result": "PASS",
     "send_authorized": false,
-    "surface": "POST /trade-gate/production-order-intents"
+    "surface": "POST /trade-gate/production-order-intents",
+    "worker_executable": false
   },
   "production_signing_interface_dry_run": {
     "authorization_header_generated": false,

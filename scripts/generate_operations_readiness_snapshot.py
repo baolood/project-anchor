@@ -409,6 +409,8 @@ def load_production_send_entrypoint_fail_closed() -> dict[str, Any]:
         "execution_gate_authorized": False,
         "command_creation_candidate": False,
         "command_type": None,
+        "non_executable_persistence_status": None,
+        "worker_executable": False,
         "command_created": False,
         "production_request_sent": False,
         "surface": "POST /trade-gate/production-order-intents",
@@ -432,6 +434,8 @@ def load_production_send_entrypoint_fail_closed() -> dict[str, Any]:
         "execution_gate_authorized": bool(data.get("execution_gate_authorized")),
         "command_creation_candidate": bool(data.get("command_creation_candidate")),
         "command_type": data.get("command_type"),
+        "non_executable_persistence_status": data.get("non_executable_persistence_status"),
+        "worker_executable": bool(data.get("worker_executable")),
         "command_created": bool(data.get("command_created")),
         "production_request_sent": bool(data.get("production_request_sent")),
         "surface": data.get("surface", "POST /trade-gate/production-order-intents"),
@@ -779,6 +783,8 @@ Generated at: `{snapshot["generated_at"]}`
 - execution gate authorized: {str(send_entrypoint.get("execution_gate_authorized")).lower()}
 - command creation candidate: {str(send_entrypoint.get("command_creation_candidate")).lower()}
 - command type: `{send_entrypoint.get("command_type")}`
+- non-executable persistence status: `{send_entrypoint.get("non_executable_persistence_status")}`
+- worker executable: {str(send_entrypoint.get("worker_executable")).lower()}
 - command created: {str(send_entrypoint.get("command_created")).lower()}
 - production request sent: {str(send_entrypoint.get("production_request_sent")).lower()}
 
