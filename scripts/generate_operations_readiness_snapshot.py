@@ -40,6 +40,9 @@ PRODUCTION_REQUEST_SEND_WINDOW_PLAN_REPORT = (
 PRODUCTION_SEND_ENTRYPOINT_FAIL_CLOSED_REPORT = (
     REPORTS_DIR / "production_send_entrypoint_fail_closed.json"
 )
+PRODUCTION_NON_EXECUTABLE_COMMAND_CREATION_DRILL_REPORT = (
+    REPORTS_DIR / "production_non_executable_command_creation_drill.json"
+)
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 CONTROLLED_COMMAND_ID = os.getenv(
@@ -443,6 +446,43 @@ def load_production_send_entrypoint_fail_closed() -> dict[str, Any]:
     }
 
 
+def load_production_non_executable_command_creation_drill() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "command_id": None,
+        "command_type": None,
+        "command_status": None,
+        "worker_executable": True,
+        "production_request_sent": "UNKNOWN",
+        "boundary": {
+            "secret_read": "NO",
+            "production_request_sent": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(
+            PRODUCTION_NON_EXECUTABLE_COMMAND_CREATION_DRILL_REPORT.read_text(
+                encoding="utf-8"
+            )
+        )
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "command_id": data.get("command_id"),
+        "command_type": data.get("command_type"),
+        "command_status": data.get("command_status"),
+        "worker_executable": bool(data.get("worker_executable")),
+        "pre_worker_executable_count": data.get("pre_worker_executable_count"),
+        "post_worker_executable_count": data.get("post_worker_executable_count"),
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -488,6 +528,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     )
     production_request_send_window_plan = load_production_request_send_window_plan()
     production_send_entrypoint_fail_closed = load_production_send_entrypoint_fail_closed()
+    production_non_executable_command_creation_drill = (
+        load_production_non_executable_command_creation_drill()
+    )
     production_execution_ready = production_execution_readiness.get("result") == "PASS"
 
     hard_failures = [
@@ -545,6 +588,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         ),
         "production_request_send_window_plan": production_request_send_window_plan,
         "production_send_entrypoint_fail_closed": production_send_entrypoint_fail_closed,
+        "production_non_executable_command_creation_drill": (
+            production_non_executable_command_creation_drill
+        ),
         "go_live": {
             "verdict": "NO-GO",
             "blocking_gates": GO_LIVE_BLOCKERS,
@@ -643,6 +689,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "production_command_creation_candidate_available": pass_fail(
                 production_send_entrypoint_fail_closed.get("command_creation_candidate") is True
             ),
+            "production_non_executable_command_creation_drill_resolved": pass_fail(
+                production_non_executable_command_creation_drill.get("result") == "PASS"
+            ),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -669,6 +718,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     pre_send = snapshot["production_pre_send_readiness_aggregation"]
     send_window = snapshot["production_request_send_window_plan"]
     send_entrypoint = snapshot["production_send_entrypoint_fail_closed"]
+    non_executable_creation = snapshot["production_non_executable_command_creation_drill"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
     production_blockers = "\n".join(
         f"- {item}" for item in production_readiness.get("blockers", [])
@@ -787,6 +837,16 @@ Generated at: `{snapshot["generated_at"]}`
 - worker executable: {str(send_entrypoint.get("worker_executable")).lower()}
 - command created: {str(send_entrypoint.get("command_created")).lower()}
 - production request sent: {str(send_entrypoint.get("production_request_sent")).lower()}
+
+## Production Non-Executable Command Creation Drill
+
+- result: {non_executable_creation.get("result")}
+- command id: `{non_executable_creation.get("command_id")}`
+- command type: `{non_executable_creation.get("command_type")}`
+- command status: `{non_executable_creation.get("command_status")}`
+- worker executable: {str(non_executable_creation.get("worker_executable")).lower()}
+- pre worker executable count: {non_executable_creation.get("pre_worker_executable_count")}
+- post worker executable count: {non_executable_creation.get("post_worker_executable_count")}
 
 ### Production Gates
 
@@ -930,6 +990,18 @@ def main() -> int:
     print(
         "production_command_creation_candidate: "
         f"{str(snapshot['production_send_entrypoint_fail_closed'].get('command_creation_candidate')).lower()}"
+    )
+    print(
+        "production_non_executable_command_creation_drill: "
+        f"{snapshot['production_non_executable_command_creation_drill'].get('result')}"
+    )
+    print(
+        "production_non_executable_command_status: "
+        f"{snapshot['production_non_executable_command_creation_drill'].get('command_status')}"
+    )
+    print(
+        "production_non_executable_worker_executable: "
+        f"{str(snapshot['production_non_executable_command_creation_drill'].get('worker_executable')).lower()}"
     )
     print("secret_read: NO")
     print("new_external_request_sent: NO")
