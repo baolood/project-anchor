@@ -23,13 +23,16 @@
     "production_http_transport_wiring_ready": "PASS",
     "production_non_executable_command_created": "PASS",
     "production_request_not_sent": "PASS",
+    "production_request_send_gate_fixture_authorizes": "PASS",
+    "production_request_send_gate_ready": "PASS",
+    "production_request_send_gate_template_closed": "PASS",
     "production_send_executor_skeleton_ready": "PASS",
     "production_send_not_authorized": "PASS",
     "send_window_not_authorized": "PASS",
     "send_window_plan_present": "PASS"
   },
   "errors": [],
-  "generated_at": "2026-07-22T08:14:07Z",
+  "generated_at": "2026-07-22T08:22:35Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -54,6 +57,9 @@
     "non_executable_command_id": "prod-order-drill-20260722T013656Z",
     "non_executable_command_status": "CREATED_NOT_EXECUTABLE",
     "production_request_sent": false,
+    "request_send_gate": "PASS",
+    "request_send_gate_current_template_authorized": false,
+    "request_send_gate_fixture_authorized": true,
     "send_authorized": false,
     "send_executor_execute_failure_code": "PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED",
     "send_executor_skeleton": "PASS",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -9,6 +10,9 @@ PRODUCTION_IDEMPOTENCY_KEY = (
 )
 PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT = (
     "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_COMMAND_CREATION_ONLY"
+)
+PRODUCTION_REQUEST_SEND_GATE_REQUIRED_VERDICT = (
+    "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_ONLY"
 )
 
 FORBIDDEN_PRODUCTION_INPUT_FIELDS = frozenset(
@@ -103,6 +107,53 @@ def production_execution_gate_decision(config: dict | None = None) -> dict:
         "reason": "AUTHORIZED" if authorized else "PRODUCTION_EXECUTION_GATE_CLOSED",
         "checks": checks,
         "required_verdict": PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT,
+    }
+
+
+def _parse_utc(value: object) -> datetime | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(raw.replace("Z", "+00:00")).astimezone(timezone.utc)
+    except ValueError:
+        return None
+
+
+def production_request_send_gate_decision(
+    config: dict | None = None,
+    *,
+    now: datetime | None = None,
+) -> dict:
+    data = config if isinstance(config, dict) else {}
+    current_time = now.astimezone(timezone.utc) if now else datetime.now(timezone.utc)
+    verdict = str(data.get("FINAL_PRODUCTION_REQUEST_SEND_OPERATOR_VERDICT", "")).strip()
+    expires_at = _parse_utc(data.get("PRODUCTION_REQUEST_SEND_WINDOW_EXPIRES_AT"))
+    idempotency_key = str(data.get("PRODUCTION_REQUEST_SEND_IDEMPOTENCY_KEY", "")).strip()
+    window_open = data.get("PRODUCTION_REQUEST_SEND_WINDOW_OPEN") is True
+
+    checks = {
+        "request_send_authorized": data.get("AUTHORIZED_PRODUCTION_REQUEST_SEND") == "YES",
+        "credential_access_authorized": data.get("AUTHORIZED_PRODUCTION_CREDENTIAL_ACCESS") == "YES",
+        "production_signing_authorized": data.get("AUTHORIZED_PRODUCTION_SIGNING") == "YES",
+        "production_http_network_authorized": data.get("AUTHORIZED_PRODUCTION_HTTP_NETWORK") == "YES",
+        "go_live_not_authorized": data.get("AUTHORIZED_GO_LIVE") == "NO",
+        "live_trading_not_authorized": data.get("AUTHORIZED_LIVE_TRADING") == "NO",
+        "window_open": window_open,
+        "window_expires_at_valid": expires_at is not None,
+        "window_not_expired": expires_at is not None and current_time < expires_at,
+        "no_retry": data.get("PRODUCTION_REQUEST_SEND_NO_RETRY") is True,
+        "idempotency_key_matches": idempotency_key == PRODUCTION_IDEMPOTENCY_KEY,
+        "operator_verdict_matches": verdict == PRODUCTION_REQUEST_SEND_GATE_REQUIRED_VERDICT,
+    }
+    authorized = all(checks.values())
+    return {
+        "authorized": authorized,
+        "reason": "AUTHORIZED" if authorized else "PRODUCTION_REQUEST_SEND_GATE_CLOSED",
+        "checks": checks,
+        "required_verdict": PRODUCTION_REQUEST_SEND_GATE_REQUIRED_VERDICT,
+        "go_live_allowed": False,
+        "live_trading_allowed": False,
     }
 
 

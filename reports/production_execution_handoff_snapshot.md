@@ -1,6 +1,6 @@
 # Production Execution Handoff Snapshot
 
-Generated at: `2026-07-22T08:14:07Z`
+Generated at: `2026-07-22T08:22:35Z`
 
 ## Result
 
@@ -31,6 +31,9 @@ Generated at: `2026-07-22T08:14:07Z`
 - HTTP transport default failure code: PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED
 - HTTP transport fake terminal type: PRODUCTION_HTTP_RESPONSE
 - HTTP transport fake external status: FILLED
+- request-send gate: PASS
+- request-send current template authorized: false
+- request-send fixture authorized: true
 - production request sent: false
 
 ## Checks
@@ -51,6 +54,9 @@ Generated at: `2026-07-22T08:14:07Z`
 - production_http_transport_not_authorized_by_default: PASS
 - production_http_transport_wiring_ready: PASS
 - production_http_transport_fake_response_parsed: PASS
+- production_request_send_gate_ready: PASS
+- production_request_send_gate_template_closed: PASS
+- production_request_send_gate_fixture_authorizes: PASS
 
 ## Go-Live Blocking Gates
 

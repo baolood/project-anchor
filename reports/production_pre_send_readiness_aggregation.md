@@ -1,6 +1,6 @@
 # Production Pre-Send Readiness Aggregation
 
-Generated at: `2026-07-22T08:14:07Z`
+Generated at: `2026-07-22T08:22:35Z`
 
 ## Result
 
@@ -22,6 +22,7 @@ Generated at: `2026-07-22T08:14:07Z`
 - production_unsigned_canonical_payload_dry_run: PASS
 - production_signing_interface_dry_run: PASS
 - production_http_request_interface_dry_run: PASS
+- production_request_send_gate: PASS
 
 ## Evidence Checks
 
@@ -34,6 +35,7 @@ Generated at: `2026-07-22T08:14:07Z`
 - unsigned_payload_dry_run_pass: PASS (unsigned canonical payload generated but not sendable)
 - signing_interface_dry_run_pass: PASS (signing interface shape valid and missing secret fails closed)
 - http_request_interface_dry_run_pass: PASS (HTTP request envelope valid and missing Authorization fails closed)
+- production_request_send_gate_pass: PASS (request-send gate exists, defaults closed, and fixture can authorize exactly-one send)
 
 ## Boundary Checks
 

@@ -41,6 +41,7 @@
     "production_http_network_readiness": "PASS",
     "production_http_request_interface_dry_run": "PASS",
     "production_no_send_execution_drill": "PASS",
+    "production_request_send_gate": "PASS",
     "production_risk_limits": "PASS",
     "production_signing_interface_dry_run": "PASS",
     "production_signing_readiness": "PASS",
@@ -93,9 +94,14 @@
       "evidence": "HTTP request envelope valid and missing Authorization fails closed",
       "name": "http_request_interface_dry_run_pass",
       "result": "PASS"
+    },
+    {
+      "evidence": "request-send gate exists, defaults closed, and fixture can authorize exactly-one send",
+      "name": "production_request_send_gate_pass",
+      "result": "PASS"
     }
   ],
-  "generated_at": "2026-07-22T08:14:07Z",
+  "generated_at": "2026-07-22T08:22:35Z",
   "go_live_allowed": false,
   "inputs": {
     "credential_readiness": "reports/production_credential_readiness_validation.json",
@@ -103,6 +109,7 @@
     "http_network_readiness": "reports/production_http_network_readiness_validation.json",
     "http_request_interface_dry_run": "reports/production_http_request_interface_dry_run.json",
     "no_send_execution_drill": "reports/production_no_send_execution_drill.json",
+    "production_request_send_gate": "reports/production_request_send_gate.json",
     "risk_limits": "reports/production_risk_limits_validation.json",
     "signing_interface_dry_run": "reports/production_signing_interface_dry_run.json",
     "signing_readiness": "reports/production_signing_readiness_validation.json",
