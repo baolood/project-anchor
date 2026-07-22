@@ -1,0 +1,133 @@
+{
+  "authorized_fixture_gate": {
+    "authorized": true,
+    "checks": {
+      "credential_access_authorized": true,
+      "go_live_not_authorized": true,
+      "idempotency_key_matches": true,
+      "live_trading_not_authorized": true,
+      "no_retry": true,
+      "operator_verdict_matches": true,
+      "production_http_network_authorized": true,
+      "production_signing_authorized": true,
+      "request_send_authorized": true,
+      "window_expires_at_valid": true,
+      "window_not_expired": true,
+      "window_open": true
+    },
+    "go_live_allowed": false,
+    "live_trading_allowed": false,
+    "reason": "AUTHORIZED",
+    "required_verdict": "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_ONLY"
+  },
+  "boundary": {
+    "authorization_header_generated": "NO",
+    "canary_rerun": "NO",
+    "dns_lookup_performed": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_http_network_executed": "NO",
+    "production_request_sent": "NO",
+    "production_signing_executed": "NO",
+    "secret_read": "NO",
+    "secret_value_disclosed": "NO",
+    "socket_opened": "NO"
+  },
+  "checks": {
+    "complete_fixture_authorizes_exactly_one_send": true,
+    "current_template_gate_closed": true,
+    "default_gate_closed": true,
+    "expired_window_rejected": true,
+    "go_live_and_live_trading_rejected": true
+  },
+  "current_template_authorized": false,
+  "current_template_gate": {
+    "authorized": false,
+    "checks": {
+      "credential_access_authorized": false,
+      "go_live_not_authorized": true,
+      "idempotency_key_matches": true,
+      "live_trading_not_authorized": true,
+      "no_retry": true,
+      "operator_verdict_matches": false,
+      "production_http_network_authorized": false,
+      "production_signing_authorized": false,
+      "request_send_authorized": false,
+      "window_expires_at_valid": false,
+      "window_not_expired": false,
+      "window_open": false
+    },
+    "go_live_allowed": false,
+    "live_trading_allowed": false,
+    "reason": "PRODUCTION_REQUEST_SEND_GATE_CLOSED",
+    "required_verdict": "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_ONLY"
+  },
+  "default_gate": {
+    "authorized": false,
+    "checks": {
+      "credential_access_authorized": false,
+      "go_live_not_authorized": false,
+      "idempotency_key_matches": false,
+      "live_trading_not_authorized": false,
+      "no_retry": false,
+      "operator_verdict_matches": false,
+      "production_http_network_authorized": false,
+      "production_signing_authorized": false,
+      "request_send_authorized": false,
+      "window_expires_at_valid": false,
+      "window_not_expired": false,
+      "window_open": false
+    },
+    "go_live_allowed": false,
+    "live_trading_allowed": false,
+    "reason": "PRODUCTION_REQUEST_SEND_GATE_CLOSED",
+    "required_verdict": "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_ONLY"
+  },
+  "expired_window_gate": {
+    "authorized": false,
+    "checks": {
+      "credential_access_authorized": true,
+      "go_live_not_authorized": true,
+      "idempotency_key_matches": true,
+      "live_trading_not_authorized": true,
+      "no_retry": true,
+      "operator_verdict_matches": true,
+      "production_http_network_authorized": true,
+      "production_signing_authorized": true,
+      "request_send_authorized": true,
+      "window_expires_at_valid": true,
+      "window_not_expired": false,
+      "window_open": true
+    },
+    "go_live_allowed": false,
+    "live_trading_allowed": false,
+    "reason": "PRODUCTION_REQUEST_SEND_GATE_CLOSED",
+    "required_verdict": "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_ONLY"
+  },
+  "fixed_now": "2026-07-22T08:00:00Z",
+  "fixture_authorized": true,
+  "fixture_required_verdict": "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_ONLY",
+  "generated_at": "2026-07-22T08:22:35Z",
+  "go_live_gate": {
+    "authorized": false,
+    "checks": {
+      "credential_access_authorized": true,
+      "go_live_not_authorized": false,
+      "idempotency_key_matches": true,
+      "live_trading_not_authorized": false,
+      "no_retry": true,
+      "operator_verdict_matches": true,
+      "production_http_network_authorized": true,
+      "production_signing_authorized": true,
+      "request_send_authorized": true,
+      "window_expires_at_valid": true,
+      "window_not_expired": true,
+      "window_open": true
+    },
+    "go_live_allowed": false,
+    "live_trading_allowed": false,
+    "reason": "PRODUCTION_REQUEST_SEND_GATE_CLOSED",
+    "required_verdict": "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_ONLY"
+  },
+  "result": "PASS"
+}

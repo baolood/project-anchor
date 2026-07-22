@@ -1,5 +1,6 @@
 import sys
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -10,10 +11,12 @@ from app.trade_gate_production import (  # noqa: E402
     PRODUCTION_COMMAND_TYPE,
     PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT,
     PRODUCTION_IDEMPOTENCY_KEY,
+    PRODUCTION_REQUEST_SEND_GATE_REQUIRED_VERDICT,
     production_order_command_creation_candidate_response,
     production_order_command_creation_payload,
     production_execution_gate_decision,
     production_order_blocked_response,
+    production_request_send_gate_decision,
     validate_production_order_request,
 )
 
@@ -109,6 +112,92 @@ class ProductionTradeGateFailClosedTest(unittest.TestCase):
 
         self.assertTrue(decision["authorized"])
         self.assertEqual(decision["reason"], "AUTHORIZED")
+
+    def test_request_send_gate_defaults_closed(self):
+        decision = production_request_send_gate_decision(
+            now=datetime(2026, 7, 22, 8, 0, tzinfo=timezone.utc)
+        )
+
+        self.assertFalse(decision["authorized"])
+        self.assertEqual(decision["reason"], "PRODUCTION_REQUEST_SEND_GATE_CLOSED")
+        self.assertFalse(decision["checks"]["request_send_authorized"])
+        self.assertFalse(decision["go_live_allowed"])
+        self.assertFalse(decision["live_trading_allowed"])
+
+    def test_request_send_gate_accepts_exactly_one_window_without_go_live(self):
+        decision = production_request_send_gate_decision(
+            {
+                "AUTHORIZED_PRODUCTION_REQUEST_SEND": "YES",
+                "AUTHORIZED_PRODUCTION_CREDENTIAL_ACCESS": "YES",
+                "AUTHORIZED_PRODUCTION_SIGNING": "YES",
+                "AUTHORIZED_PRODUCTION_HTTP_NETWORK": "YES",
+                "AUTHORIZED_GO_LIVE": "NO",
+                "AUTHORIZED_LIVE_TRADING": "NO",
+                "PRODUCTION_REQUEST_SEND_WINDOW_OPEN": True,
+                "PRODUCTION_REQUEST_SEND_WINDOW_EXPIRES_AT": "2026-07-22T09:00:00Z",
+                "PRODUCTION_REQUEST_SEND_NO_RETRY": True,
+                "PRODUCTION_REQUEST_SEND_IDEMPOTENCY_KEY": PRODUCTION_IDEMPOTENCY_KEY,
+                "FINAL_PRODUCTION_REQUEST_SEND_OPERATOR_VERDICT": (
+                    PRODUCTION_REQUEST_SEND_GATE_REQUIRED_VERDICT
+                ),
+            },
+            now=datetime(2026, 7, 22, 8, 0, tzinfo=timezone.utc),
+        )
+
+        self.assertTrue(decision["authorized"])
+        self.assertEqual(decision["reason"], "AUTHORIZED")
+        self.assertTrue(decision["checks"]["production_http_network_authorized"])
+        self.assertTrue(decision["checks"]["go_live_not_authorized"])
+        self.assertTrue(decision["checks"]["live_trading_not_authorized"])
+        self.assertFalse(decision["go_live_allowed"])
+        self.assertFalse(decision["live_trading_allowed"])
+
+    def test_request_send_gate_rejects_expired_window(self):
+        decision = production_request_send_gate_decision(
+            {
+                "AUTHORIZED_PRODUCTION_REQUEST_SEND": "YES",
+                "AUTHORIZED_PRODUCTION_CREDENTIAL_ACCESS": "YES",
+                "AUTHORIZED_PRODUCTION_SIGNING": "YES",
+                "AUTHORIZED_PRODUCTION_HTTP_NETWORK": "YES",
+                "AUTHORIZED_GO_LIVE": "NO",
+                "AUTHORIZED_LIVE_TRADING": "NO",
+                "PRODUCTION_REQUEST_SEND_WINDOW_OPEN": True,
+                "PRODUCTION_REQUEST_SEND_WINDOW_EXPIRES_AT": "2026-07-22T07:59:59Z",
+                "PRODUCTION_REQUEST_SEND_NO_RETRY": True,
+                "PRODUCTION_REQUEST_SEND_IDEMPOTENCY_KEY": PRODUCTION_IDEMPOTENCY_KEY,
+                "FINAL_PRODUCTION_REQUEST_SEND_OPERATOR_VERDICT": (
+                    PRODUCTION_REQUEST_SEND_GATE_REQUIRED_VERDICT
+                ),
+            },
+            now=datetime(2026, 7, 22, 8, 0, tzinfo=timezone.utc),
+        )
+
+        self.assertFalse(decision["authorized"])
+        self.assertFalse(decision["checks"]["window_not_expired"])
+
+    def test_request_send_gate_rejects_go_live_or_live_trading(self):
+        decision = production_request_send_gate_decision(
+            {
+                "AUTHORIZED_PRODUCTION_REQUEST_SEND": "YES",
+                "AUTHORIZED_PRODUCTION_CREDENTIAL_ACCESS": "YES",
+                "AUTHORIZED_PRODUCTION_SIGNING": "YES",
+                "AUTHORIZED_PRODUCTION_HTTP_NETWORK": "YES",
+                "AUTHORIZED_GO_LIVE": "YES",
+                "AUTHORIZED_LIVE_TRADING": "YES",
+                "PRODUCTION_REQUEST_SEND_WINDOW_OPEN": True,
+                "PRODUCTION_REQUEST_SEND_WINDOW_EXPIRES_AT": "2026-07-22T09:00:00Z",
+                "PRODUCTION_REQUEST_SEND_NO_RETRY": True,
+                "PRODUCTION_REQUEST_SEND_IDEMPOTENCY_KEY": PRODUCTION_IDEMPOTENCY_KEY,
+                "FINAL_PRODUCTION_REQUEST_SEND_OPERATOR_VERDICT": (
+                    PRODUCTION_REQUEST_SEND_GATE_REQUIRED_VERDICT
+                ),
+            },
+            now=datetime(2026, 7, 22, 8, 0, tzinfo=timezone.utc),
+        )
+
+        self.assertFalse(decision["authorized"])
+        self.assertFalse(decision["checks"]["go_live_not_authorized"])
+        self.assertFalse(decision["checks"]["live_trading_not_authorized"])
 
     def test_command_creation_payload_is_non_secret_and_not_sendable(self):
         payload = production_order_command_creation_payload(_valid_production_body())

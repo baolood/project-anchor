@@ -33,6 +33,7 @@ INPUT_REPORTS = {
     "signing_interface_dry_run": REPORTS_DIR / "production_signing_interface_dry_run.json",
     "http_request_interface_dry_run": REPORTS_DIR
     / "production_http_request_interface_dry_run.json",
+    "production_request_send_gate": REPORTS_DIR / "production_request_send_gate.json",
 }
 
 
@@ -83,6 +84,7 @@ def build_report() -> tuple[dict[str, Any], int]:
     unsigned_payload = reports["unsigned_canonical_payload_dry_run"]
     signing_interface = reports["signing_interface_dry_run"]
     http_request = reports["http_request_interface_dry_run"]
+    request_send_gate = reports["production_request_send_gate"]
 
     evidence_checks = [
         check("risk_limits_validation_pass", risk_limits.get("result") == "PASS", "risk limits PASS"),
@@ -131,6 +133,13 @@ def build_report() -> tuple[dict[str, Any], int]:
             and http_request.get("http_network_executed") is False
             and http_request.get("request_sent") is False,
             "HTTP request envelope valid and missing Authorization fails closed",
+        ),
+        check(
+            "production_request_send_gate_pass",
+            request_send_gate.get("result") == "PASS"
+            and request_send_gate.get("current_template_authorized") is False
+            and request_send_gate.get("fixture_authorized") is True,
+            "request-send gate exists, defaults closed, and fixture can authorize exactly-one send",
         ),
     ]
 
@@ -233,6 +242,7 @@ def build_report() -> tuple[dict[str, Any], int]:
             "production_unsigned_canonical_payload_dry_run": unsigned_payload.get("result"),
             "production_signing_interface_dry_run": signing_interface.get("result"),
             "production_http_request_interface_dry_run": http_request.get("result"),
+            "production_request_send_gate": request_send_gate.get("result"),
         },
         "boundary": {
             "secret_read": "NO",

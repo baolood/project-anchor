@@ -28,6 +28,7 @@ PRE_SEND_AGGREGATION = REPORTS_DIR / "production_pre_send_readiness_aggregation.
 SEND_WINDOW_PLAN = REPORTS_DIR / "production_request_send_window_plan.json"
 SEND_EXECUTOR_SKELETON = REPORTS_DIR / "production_send_executor_skeleton_drill.json"
 HTTP_TRANSPORT_WIRING = REPORTS_DIR / "production_http_transport_wiring_drill.json"
+REQUEST_SEND_GATE = REPORTS_DIR / "production_request_send_gate.json"
 
 
 def utc_now() -> str:
@@ -57,6 +58,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     send_window, send_window_error = read_json(SEND_WINDOW_PLAN)
     executor_skeleton, executor_skeleton_error = read_json(SEND_EXECUTOR_SKELETON)
     http_transport, http_transport_error = read_json(HTTP_TRANSPORT_WIRING)
+    request_send_gate, request_send_gate_error = read_json(REQUEST_SEND_GATE)
     errors = [
         item
         for item in [
@@ -67,6 +69,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             send_window_error,
             executor_skeleton_error,
             http_transport_error,
+            request_send_gate_error,
         ]
         if item
     ]
@@ -116,6 +119,13 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             http_transport.get("transport_wiring", {}).get("terminal_type")
             == "PRODUCTION_HTTP_RESPONSE"
             and http_transport.get("transport_wiring", {}).get("external_status") == "FILLED"
+        ),
+        "production_request_send_gate_ready": request_send_gate.get("result") == "PASS",
+        "production_request_send_gate_template_closed": (
+            request_send_gate.get("current_template_authorized") is False
+        ),
+        "production_request_send_gate_fixture_authorizes": (
+            request_send_gate.get("fixture_authorized") is True
         ),
     }
     critical_checks = [
@@ -167,6 +177,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "http_transport_default_failure_code": http_transport.get("default_failure_code"),
             "http_transport_fake_terminal_type": http_transport.get("transport_wiring", {}).get("terminal_type"),
             "http_transport_fake_external_status": http_transport.get("transport_wiring", {}).get("external_status"),
+            "request_send_gate": request_send_gate.get("result"),
+            "request_send_gate_current_template_authorized": request_send_gate.get("current_template_authorized"),
+            "request_send_gate_fixture_authorized": request_send_gate.get("fixture_authorized"),
             "production_request_sent": False,
         },
         "go_live": {
@@ -230,6 +243,9 @@ Generated at: `{snapshot["generated_at"]}`
 - HTTP transport default failure code: {production.get("http_transport_default_failure_code")}
 - HTTP transport fake terminal type: {production.get("http_transport_fake_terminal_type")}
 - HTTP transport fake external status: {production.get("http_transport_fake_external_status")}
+- request-send gate: {production.get("request_send_gate")}
+- request-send current template authorized: {str(production.get("request_send_gate_current_template_authorized")).lower()}
+- request-send fixture authorized: {str(production.get("request_send_gate_fixture_authorized")).lower()}
 - production request sent: {str(production.get("production_request_sent")).lower()}
 
 ## Checks
