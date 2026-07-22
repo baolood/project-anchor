@@ -38,6 +38,7 @@ INPUT_REPORTS = {
     / "production_send_decision_entrypoint.json",
     "gated_production_send_executor_entrypoint": REPORTS_DIR
     / "gated_production_send_executor_entrypoint.json",
+    "production_credential_loader": REPORTS_DIR / "production_credential_loader.json",
 }
 
 
@@ -91,6 +92,7 @@ def build_report() -> tuple[dict[str, Any], int]:
     request_send_gate = reports["production_request_send_gate"]
     send_decision_entrypoint = reports["production_send_decision_entrypoint"]
     gated_executor_entrypoint = reports["gated_production_send_executor_entrypoint"]
+    credential_loader = reports["production_credential_loader"]
 
     evidence_checks = [
         check("risk_limits_validation_pass", risk_limits.get("result") == "PASS", "risk limits PASS"),
@@ -165,6 +167,14 @@ def build_report() -> tuple[dict[str, Any], int]:
             == "PRODUCTION_SEND_EXECUTION_NOT_AUTHORIZED"
             and gated_executor_entrypoint.get("fake_transport_called_once") is True,
             "gated executor entrypoint is wired and fixture-drilled without real send",
+        ),
+        check(
+            "production_credential_loader_pass",
+            credential_loader.get("result") == "PASS"
+            and credential_loader.get("loader_default_code")
+            == "PRODUCTION_CREDENTIAL_READ_NOT_AUTHORIZED"
+            and credential_loader.get("loader_fixture_code") == "PRODUCTION_CREDENTIALS_LOADED",
+            "credential loader defaults closed and fixture load validates redacted shape",
         ),
     ]
 
@@ -272,6 +282,7 @@ def build_report() -> tuple[dict[str, Any], int]:
             "gated_production_send_executor_entrypoint": gated_executor_entrypoint.get(
                 "result"
             ),
+            "production_credential_loader": credential_loader.get("result"),
         },
         "boundary": {
             "secret_read": "NO",
