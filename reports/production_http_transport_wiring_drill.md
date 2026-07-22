@@ -1,14 +1,17 @@
-# Production Send Executor Skeleton Drill
+# Production HTTP Transport Wiring Drill
 
 Generated at: `2026-07-22T08:02:59Z`
 
 ## Result
 
 - result: PASS
-- unauthorized failure code: PRODUCTION_SEND_EXECUTION_NOT_AUTHORIZED
-- execute failure code: PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED
+- default failure code: PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED
+- fake transport called once: true
+- fake terminal type: PRODUCTION_HTTP_RESPONSE
+- fake external status: FILLED
+- fake external order id present: true
 
-## Redacted Request Shape
+## Redacted Requested Payload
 
 - method: POST
 - request_path: /api/v3/order
@@ -22,14 +25,11 @@ Generated at: `2026-07-22T08:02:59Z`
 
 ## Checks
 
-- params_shape_valid: PASS
-- redacted_request_shape_valid: PASS
-- unauthorized_path_fails_closed: PASS
-- execute_path_stops_before_http_transport: PASS
-
-## Errors
-
-- none
+- transport_not_authorized_by_default: PASS
+- fake_transport_called_once: PASS
+- fake_transport_response_parsed: PASS
+- redaction_preserved: PASS
+- real_network_not_used: PASS
 
 ## Boundary
 
