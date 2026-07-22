@@ -1,7 +1,8 @@
 {
   "blocked_response_shape": {
     "command_created": false,
-    "error": "PRODUCTION_SEND_NOT_AUTHORIZED",
+    "error": "PRODUCTION_EXECUTION_GATE_CLOSED",
+    "execution_gate_authorized": false,
     "idempotency_key": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
     "production_request_sent": false,
     "requires_explicit_execution_gate": true,
@@ -39,11 +40,44 @@
     {
       "name": "blocked_response_has_no_command_id",
       "result": "PASS"
+    },
+    {
+      "name": "default_gate_closed",
+      "result": "PASS"
+    },
+    {
+      "name": "complete_gate_config_can_authorize_command_creation_decision",
+      "result": "PASS"
     }
   ],
   "command_created": false,
+  "complete_gate_fixture_decision": {
+    "authorized": true,
+    "checks": {
+      "exactly_one_command_creation": true,
+      "gate_enabled": true,
+      "idempotency_key_matches": true,
+      "no_retry": true,
+      "operator_verdict_matches": true
+    },
+    "reason": "AUTHORIZED",
+    "required_verdict": "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_COMMAND_CREATION_ONLY"
+  },
+  "default_gate_decision": {
+    "authorized": false,
+    "checks": {
+      "exactly_one_command_creation": false,
+      "gate_enabled": false,
+      "idempotency_key_matches": false,
+      "no_retry": false,
+      "operator_verdict_matches": false
+    },
+    "reason": "PRODUCTION_EXECUTION_GATE_CLOSED",
+    "required_verdict": "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_COMMAND_CREATION_ONLY"
+  },
   "entrypoint_present": true,
-  "generated_at": "2026-07-21T10:43:32Z",
+  "execution_gate_authorized": false,
+  "generated_at": "2026-07-21T10:52:40Z",
   "production_request_sent": false,
   "result": "PASS",
   "send_authorized": false,

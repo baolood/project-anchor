@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-21T10:43:13Z`
+Generated at: `2026-07-21T10:52:18Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-21T10:43:13Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-21T10:42:49.195935+00:00`
+- worker heartbeat at: `2026-07-21T10:51:54.374868+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -99,6 +99,7 @@ Generated at: `2026-07-21T10:43:13Z`
 - surface: `POST /trade-gate/production-order-intents`
 - entrypoint present: true
 - send authorized: false
+- execution gate authorized: false
 - command created: false
 - production request sent: false
 

@@ -11,6 +11,7 @@ from app.api.ops import router as ops_router
 from app.api.routes_domain_command_validation_dev import router as domain_command_validation_dev_router
 from app.domain_events import append_domain_event_pool
 from app.trade_gate_production import (
+    production_execution_gate_decision,
     production_order_blocked_response,
     validate_production_order_request,
 )
@@ -1183,7 +1184,7 @@ async def create_trade_gate_production_order_intent(body: dict = Body(default_fa
             "command_created": False,
         }
 
-    return production_order_blocked_response()
+    return production_order_blocked_response(production_execution_gate_decision())
 
 
 @app.post("/domain-commands/{domain_id}/retry")
