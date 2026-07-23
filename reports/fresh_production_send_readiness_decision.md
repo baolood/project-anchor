@@ -1,6 +1,6 @@
 # Fresh Production Send Readiness Decision
 
-Generated at: `2026-07-22T09:16:55Z`
+Generated at: `2026-07-23T01:22:51Z`
 
 ## Result
 
@@ -21,10 +21,10 @@ Generated at: `2026-07-22T09:16:55Z`
 ## Planned Window
 
 - duration_minutes: 60
-- expires_at: 2026-07-22T10:16:55Z
-- monitor_until: 2026-07-22T10:31:55Z
+- expires_at: 2026-07-23T02:22:51Z
+- monitor_until: 2026-07-23T02:37:51Z
 - monitoring_window: 15_minutes_after_execution
-- not_before: 2026-07-22T09:16:55Z
+- not_before: 2026-07-23T01:22:51Z
 - window_type: fresh_bounded_authorization_window
 
 ## Planned Request
