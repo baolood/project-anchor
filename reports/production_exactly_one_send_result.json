@@ -1,0 +1,62 @@
+{
+  "boundary": {
+    "authorization_header_value_disclosed": "NO",
+    "canary_rerun": "NO",
+    "credential_file_read": "NO",
+    "dns_lookup_or_socket_possible": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_http_network_attempted": "NO",
+    "production_request_accepted": "NO",
+    "production_request_attempted": "NO",
+    "production_signing_executed": "NO",
+    "secret_hash_disclosed": "NO",
+    "secret_length_disclosed": "NO",
+    "secret_prefix_suffix_disclosed": "NO",
+    "secret_value_disclosed": "NO"
+  },
+  "credential_contract": {
+    "checks": {
+      "file_exists": false,
+      "group_matches": false,
+      "mode_matches": false,
+      "owner_matches": false,
+      "path_matches_contract": true
+    },
+    "compliant": false,
+    "expected_group": "wheel",
+    "expected_mode": "600",
+    "expected_owner": "root",
+    "expected_path": "/etc/project-anchor/production.env",
+    "observed_group": null,
+    "observed_mode": null,
+    "observed_owner": null,
+    "path": "/etc/project-anchor/production.env"
+  },
+  "execution_requested": false,
+  "failure_code": "PRODUCTION_SEND_EXECUTION_NOT_REQUESTED",
+  "generated_at": "2026-07-25T02:12:57Z",
+  "readiness_decision": "READY_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_WINDOW_OPEN",
+  "readiness_result": "PASS",
+  "request": {
+    "idempotency_key": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
+    "market": "binance_spot",
+    "max_notional": 4,
+    "order_type": "market",
+    "side": "BUY",
+    "symbol": "BTCUSDT"
+  },
+  "requested_payload_shape": null,
+  "result": "BLOCKED",
+  "success": false,
+  "terminal": {
+    "exchange_error_code_present": null,
+    "exchange_error_message_present": null,
+    "external_order_id_present": false,
+    "external_request_started": false,
+    "external_status": null,
+    "http_status": null,
+    "terminal_type": null,
+    "transport_error_type": null
+  }
+}
