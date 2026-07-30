@@ -24,9 +24,9 @@
       "path_matches_contract": true
     },
     "compliant": false,
-    "expected_group": "wheel",
+    "expected_group": "project_anchor_runtime",
     "expected_mode": "600",
-    "expected_owner": "root",
+    "expected_owner": "project_anchor_runtime",
     "expected_path": "/etc/project-anchor/production.env",
     "observed_group": null,
     "observed_mode": null,
@@ -36,7 +36,7 @@
   },
   "execution_requested": false,
   "failure_code": "PRODUCTION_SEND_EXECUTION_NOT_REQUESTED",
-  "generated_at": "2026-07-30T09:02:14Z",
+  "generated_at": "2026-07-30T10:27:38Z",
   "readiness_decision": "READY_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_WINDOW_OPEN",
   "readiness_result": "PASS",
   "request": {
