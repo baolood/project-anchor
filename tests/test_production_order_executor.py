@@ -256,6 +256,44 @@ class ProductionOrderExecutorTest(unittest.TestCase):
         self.assertTrue(requested_payload["signature_present"])
         self.assertEqual(terminal_type, "PRODUCTION_HTTP_AUTH_REJECTED")
         self.assertEqual(terminal_payload["http_status"], 401)
+        self.assertEqual(terminal_payload["exchange_error_code"], -2015)
+        self.assertEqual(terminal_payload["exchange_error_msg"], "redacted")
+        self.assertNotIn("fixture-key", str(outcome))
+        self.assertNotIn("fixture-secret", str(outcome))
+        self.assertNotIn("signature=", str(outcome))
+
+    def test_injected_http_400_records_exchange_rejection_without_secret_disclosure(self):
+        def failing_opener(request, timeout):
+            raise urllib.error.HTTPError(
+                request.full_url,
+                400,
+                "Bad Request",
+                hdrs=None,
+                fp=io.BytesIO(b'{"code":-1013,"msg":"Filter failure: MIN_NOTIONAL"}'),
+            )
+
+        outcome, requested_payload, terminal_type, terminal_payload = (
+            run_production_order_request(
+                _transport_input(),
+                {
+                    "base_url": "https://api.binance.com",
+                    "api_key": "fixture-key",
+                    "api_secret": "fixture-secret",
+                },
+                1234567890,
+                execute=True,
+                transport_enabled=True,
+                opener=failing_opener,
+            )
+        )
+
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(outcome["error"]["code"], "PRODUCTION_HTTP_REQUEST_REJECTED")
+        self.assertTrue(requested_payload["signature_present"])
+        self.assertEqual(terminal_type, "PRODUCTION_HTTP_REQUEST_REJECTED")
+        self.assertEqual(terminal_payload["http_status"], 400)
+        self.assertEqual(terminal_payload["exchange_error_code"], -1013)
+        self.assertEqual(terminal_payload["exchange_error_msg"], "Filter failure: MIN_NOTIONAL")
         self.assertNotIn("fixture-key", str(outcome))
         self.assertNotIn("fixture-secret", str(outcome))
         self.assertNotIn("signature=", str(outcome))
