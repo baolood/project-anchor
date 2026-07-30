@@ -1,18 +1,18 @@
 # Production Post-Send Read-Only Reconciliation
 
-Generated at: `2026-07-30T14:14:34Z`
+Generated at: `2026-07-30T14:20:33Z`
 
 ## Result
 
-- result: BLOCKED
+- result: PASS
 - next gate: POST_PRODUCTION_SEND_OPERATIONS_DECISION
 
 ## Order Reconciliation
 
 - orders returned: 1
-- matching FILLED order count: 0
+- matching FILLED order count: 1
 - BTCUSDT order count in window: 1
-- matching order present: false
+- matching order present: true
 
 ## Account Reconciliation
 
@@ -28,7 +28,7 @@ Generated at: `2026-07-30T14:14:34Z`
 - readonly_queries_attempted: PASS (read-only order and account queries were attempted)
 - order_query_ok: PASS (allOrders read-only query returned a list)
 - account_query_ok: PASS (account read-only query returned an object)
-- matching_filled_order_count_one: FAIL (exactly one matching FILLED BTCUSDT BUY market order found)
+- matching_filled_order_count_one: PASS (exactly one matching FILLED BTCUSDT BUY market order found)
 - no_second_symbol_order_in_window: PASS (exactly one BTCUSDT order found in the authorized window)
 - usdt_balance_visible: PASS (USDT balance row is visible without recording amount)
 - btc_balance_visible: PASS (BTC balance row is visible without recording amount)

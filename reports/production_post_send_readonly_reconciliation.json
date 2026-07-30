@@ -50,7 +50,7 @@
     {
       "evidence": "exactly one matching FILLED BTCUSDT BUY market order found",
       "name": "matching_filled_order_count_one",
-      "result": "FAIL"
+      "result": "PASS"
     },
     {
       "evidence": "exactly one BTCUSDT order found in the authorized window",
@@ -83,7 +83,7 @@
     "secret_value_disclosed": false
   },
   "errors": [],
-  "generated_at": "2026-07-30T14:14:34Z",
+  "generated_at": "2026-07-30T14:20:33Z",
   "inputs": {
     "credential_path": "/etc/project-anchor/production.env",
     "risk_limits": "config/production_risk_limits.template.json",
@@ -92,9 +92,34 @@
   },
   "next_gate": "POST_PRODUCTION_SEND_OPERATIONS_DECISION",
   "order_reconciliation": {
-    "matching_filled_order_count": 0,
-    "matching_order": null,
+    "matching_filled_order_count": 1,
+    "matching_order": {
+      "client_order_id_present": true,
+      "cummulative_quote_qty": "9.75580800",
+      "executed_qty_present": true,
+      "order_id_present": true,
+      "side": "BUY",
+      "status": "FILLED",
+      "symbol": "BTCUSDT",
+      "time_present": true,
+      "type": "MARKET",
+      "update_time_present": true
+    },
     "orders_returned": 1,
+    "redacted_symbol_orders": [
+      {
+        "client_order_id_present": true,
+        "cummulative_quote_qty": "9.75580800",
+        "executed_qty_present": true,
+        "order_id_present": true,
+        "side": "BUY",
+        "status": "FILLED",
+        "symbol": "BTCUSDT",
+        "time_present": true,
+        "type": "MARKET",
+        "update_time_present": true
+      }
+    ],
     "symbol_order_count_in_window": 1
   },
   "query_scope": {
@@ -106,5 +131,5 @@
     "window_end_present": true,
     "window_start_present": true
   },
-  "result": "BLOCKED"
+  "result": "PASS"
 }
