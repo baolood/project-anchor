@@ -1,0 +1,95 @@
+{
+  "boundary": {
+    "canary_rerun": "NO",
+    "credential_file_read": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "new_production_request_sent": "NO",
+    "production_http_network_attempted": "NO",
+    "production_signing_executed": "NO",
+    "runtime_modified": "NO",
+    "second_production_request_sent": "NO",
+    "secret_value_disclosed": "NO"
+  },
+  "checks": [
+    {
+      "evidence": "stored exactly-one production send evidence is PASS / FILLED",
+      "name": "production_send_recorded_pass",
+      "result": "PASS"
+    },
+    {
+      "evidence": "stored post-send read-only reconciliation is PASS",
+      "name": "readonly_reconciliation_recorded_pass",
+      "result": "PASS"
+    },
+    {
+      "evidence": "exactly one matching BTCUSDT BUY order was found in the authorized window",
+      "name": "exactly_one_order_confirmed",
+      "result": "PASS"
+    },
+    {
+      "evidence": "USDT/BTC rows are visible, while balance amounts remain unrecorded",
+      "name": "account_rows_visible_without_amounts",
+      "result": "PASS"
+    },
+    {
+      "evidence": "post-production operations decision keeps continuous trading disabled",
+      "name": "operations_decision_pass",
+      "result": "PASS"
+    },
+    {
+      "evidence": "continuous runtime and automatic trading remain disabled",
+      "name": "continuous_trading_disabled",
+      "result": "PASS"
+    },
+    {
+      "evidence": "production risk limits remain BTCUSDT BUY_ONLY max notional 10 order count 1",
+      "name": "risk_limits_still_bounded",
+      "result": "PASS"
+    },
+    {
+      "evidence": "go-live and live trading remain blocked",
+      "name": "go_live_and_live_trading_blocked",
+      "result": "PASS"
+    },
+    {
+      "evidence": "monitoring snapshot did not send or imply another request",
+      "name": "no_new_or_second_request",
+      "result": "PASS"
+    },
+    {
+      "evidence": "stored evidence contains no secret disclosure",
+      "name": "no_secret_disclosure",
+      "result": "PASS"
+    }
+  ],
+  "errors": [],
+  "generated_at": "2026-07-30T14:37:42Z",
+  "inputs": {
+    "execution_readiness": "reports/production_execution_readiness.json",
+    "operations_decision": "reports/post_production_operations_decision.json",
+    "readonly_reconciliation": "reports/production_post_send_readonly_reconciliation.json",
+    "risk_limits": "config/production_risk_limits.template.json",
+    "send_result": "reports/production_exactly_one_send_result.json"
+  },
+  "next_gate": "POST_PRODUCTION_MONITORING_SURFACE_OR_FREEZE",
+  "result": "PASS",
+  "snapshot": {
+    "automatic_trading_enabled": "NO",
+    "balance_amounts_recorded": "NO",
+    "btc_balance_row_present": true,
+    "continuous_runtime_enabled": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "matching_filled_order_count": 1,
+    "production_order_status": "FILLED",
+    "production_request_sent": "YES",
+    "risk_limit_max_notional": "10",
+    "risk_limit_max_order_count": "1",
+    "risk_limit_side": "BUY_ONLY",
+    "risk_limit_symbol": "BTCUSDT",
+    "symbol_order_count_in_window": 1,
+    "usdt_balance_row_present": true
+  },
+  "status": "MONITORING_READY_CONTINUOUS_TRADING_DISABLED"
+}
