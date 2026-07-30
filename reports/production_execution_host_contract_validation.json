@@ -1,0 +1,50 @@
+{
+  "boundary": {
+    "credential_file_read": "NO",
+    "dns_lookup": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_http_network_attempted": "NO",
+    "production_order_sent": "NO",
+    "production_request_sent": "NO",
+    "production_signing_executed": "NO",
+    "secret_value_disclosed": "NO",
+    "secret_value_read": "NO",
+    "socket_opened": "NO"
+  },
+  "checks": {
+    "api_ip_whitelist_present": true,
+    "branch_matches": false,
+    "hostname_matches": false,
+    "os_family_matches": false,
+    "repo_path_matches": false,
+    "runtime_identity_expected": true,
+    "workspace_clean": false
+  },
+  "errors": [
+    "hostname_matches",
+    "os_family_matches",
+    "repo_path_matches",
+    "branch_matches",
+    "workspace_clean"
+  ],
+  "expected": {
+    "binance_api_ip_whitelist": "45.76.190.109",
+    "branch": "main",
+    "hostname": "vultr",
+    "os_family": "Linux",
+    "repo_path": "/root/project-anchor",
+    "runtime_identity": "project_anchor_runtime"
+  },
+  "generated_at": "2026-07-30T12:22:00Z",
+  "observed": {
+    "branch": "codex/project-anchor-production-execution-host-contract",
+    "git_status_short": "M scripts/check_production_execution_readiness.py\n?? config/production_execution_host_contract.json\n?? scripts/validate_production_execution_host_contract.py\n?? tests/test_production_execution_host_contract.py",
+    "head": "d220dc4",
+    "hostname": "MacBook-Air",
+    "os_family": "Darwin",
+    "repo_path": "/Users/baolood/Projects/project-anchor",
+    "user": "baolood"
+  },
+  "result": "BLOCKED"
+}

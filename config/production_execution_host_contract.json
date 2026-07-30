@@ -1,0 +1,14 @@
+{
+  "expected_hostname": "vultr",
+  "expected_os_family": "Linux",
+  "expected_repo_path": "/root/project-anchor",
+  "expected_binance_api_ip_whitelist": "45.76.190.109",
+  "expected_branch": "main",
+  "expected_runtime_identity": "project_anchor_runtime",
+  "secret_value_disclosure": "NO",
+  "dns_lookup": "NO",
+  "socket_open": "NO",
+  "production_request_sent": "NO",
+  "go_live": "NO-GO",
+  "live_trading": "NO-GO"
+}
