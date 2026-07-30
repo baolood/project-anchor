@@ -124,6 +124,35 @@ class ProductionExactlyOneSendExecutorTest(unittest.TestCase):
         self.assertEqual(report["boundary"]["production_request_attempted"], "NO")
         self.assertEqual(len(fake.calls), 0)
 
+    def test_execute_blocks_when_credential_owner_is_not_runtime_owner(self):
+        fake = _FakeOpener()
+        original = executor.owner_group_mode
+        executor.owner_group_mode = lambda path: {
+            "exists": True,
+            "owner": "root",
+            "group": "wheel",
+            "mode": "600",
+            "stat_error": None,
+        }
+        try:
+            report, exit_code = executor.build_execution_report(
+                execute=True,
+                credential_path=Path("/etc/project-anchor/production.env"),
+                now=datetime(2026, 7, 25, 1, 0, tzinfo=timezone.utc),
+                opener=fake,
+                readiness_report=_readiness(),
+            )
+        finally:
+            executor.owner_group_mode = original
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(report["result"], "BLOCKED")
+        self.assertEqual(report["failure_code"], "PRODUCTION_CREDENTIAL_CONTRACT_NOT_COMPLIANT")
+        self.assertFalse(report["credential_contract"]["checks"]["owner_matches"])
+        self.assertEqual(report["boundary"]["credential_file_read"], "NO")
+        self.assertEqual(report["boundary"]["production_request_attempted"], "NO")
+        self.assertEqual(len(fake.calls), 0)
+
     def test_fixture_execute_with_fake_transport_redacts_secrets(self):
         fake = _FakeOpener()
         with tempfile.NamedTemporaryFile("w", encoding="utf-8") as tmp:
@@ -148,6 +177,49 @@ class ProductionExactlyOneSendExecutorTest(unittest.TestCase):
         self.assertEqual(report["boundary"]["production_signing_executed"], "YES")
         self.assertEqual(report["boundary"]["production_request_attempted"], "YES")
         self.assertEqual(report["boundary"]["production_request_accepted"], "YES")
+        self.assertNotIn("fixture-production-key", rendered)
+        self.assertNotIn("fixture-production-secret", rendered)
+        self.assertNotIn("fixture-production-key-id", rendered)
+        self.assertNotIn("signature=", rendered)
+
+    def test_fixture_execute_with_runtime_owner_contract_redacts_secrets(self):
+        fake = _FakeOpener()
+        original = executor.owner_group_mode
+        original_load_contract = executor.load_contract
+        executor.owner_group_mode = lambda path: {
+            "exists": True,
+            "owner": "project_anchor_runtime",
+            "group": "project_anchor_runtime",
+            "mode": "600",
+            "stat_error": None,
+        }
+        try:
+            with tempfile.NamedTemporaryFile("w", encoding="utf-8") as tmp:
+                tmp.write(_fixture_env())
+                tmp.flush()
+                executor.load_contract = lambda: {
+                    "canonical_path": tmp.name,
+                    "expected_owner": "project_anchor_runtime",
+                    "expected_group": "project_anchor_runtime",
+                    "expected_mode": "600",
+                }
+
+                report, exit_code = executor.build_execution_report(
+                    execute=True,
+                    credential_path=Path(tmp.name),
+                    now=datetime(2026, 7, 25, 1, 0, tzinfo=timezone.utc),
+                    opener=fake,
+                    readiness_report=_readiness(),
+                )
+        finally:
+            executor.owner_group_mode = original
+            executor.load_contract = original_load_contract
+
+        rendered = str(report)
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(report["credential_contract"]["compliant"])
+        self.assertTrue(report["success"])
+        self.assertEqual(len(fake.calls), 1)
         self.assertNotIn("fixture-production-key", rendered)
         self.assertNotIn("fixture-production-secret", rendered)
         self.assertNotIn("fixture-production-key-id", rendered)

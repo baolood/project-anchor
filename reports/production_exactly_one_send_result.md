@@ -1,6 +1,6 @@
 # Production Exactly-One Send Result
 
-Generated at: `2026-07-30T09:02:14Z`
+Generated at: `2026-07-30T10:27:38Z`
 
 ## Result
 
@@ -23,8 +23,8 @@ Generated at: `2026-07-30T09:02:14Z`
 ## Credential Contract
 
 - path: `/etc/project-anchor/production.env`
-- expected owner: root
-- expected group: wheel
+- expected owner: project_anchor_runtime
+- expected group: project_anchor_runtime
 - expected mode: 600
 - stat error: PERMISSION_DENIED
 - observed owner: None
