@@ -31,11 +31,12 @@
     "observed_group": null,
     "observed_mode": null,
     "observed_owner": null,
-    "path": "/etc/project-anchor/production.env"
+    "path": "/etc/project-anchor/production.env",
+    "stat_error": "PERMISSION_DENIED"
   },
   "execution_requested": false,
   "failure_code": "PRODUCTION_SEND_EXECUTION_NOT_REQUESTED",
-  "generated_at": "2026-07-25T02:12:57Z",
+  "generated_at": "2026-07-30T09:02:14Z",
   "readiness_decision": "READY_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_WINDOW_OPEN",
   "readiness_result": "PASS",
   "request": {

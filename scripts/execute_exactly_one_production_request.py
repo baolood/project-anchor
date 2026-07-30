@@ -68,6 +68,15 @@ def owner_group_mode(path: Path) -> dict[str, Any]:
             "owner": None,
             "group": None,
             "mode": None,
+            "stat_error": "FILE_NOT_FOUND",
+        }
+    except PermissionError:
+        return {
+            "exists": None,
+            "owner": None,
+            "group": None,
+            "mode": None,
+            "stat_error": "PERMISSION_DENIED",
         }
     try:
         owner = pwd.getpwuid(st.st_uid).pw_name
@@ -82,6 +91,7 @@ def owner_group_mode(path: Path) -> dict[str, Any]:
         "owner": owner,
         "group": group,
         "mode": f"{stat.S_IMODE(st.st_mode):03o}",
+        "stat_error": None,
     }
 
 
@@ -104,6 +114,7 @@ def credential_contract_status(path: Path, contract: dict[str, Any]) -> dict[str
         "expected_owner": expected_owner,
         "expected_group": expected_group,
         "expected_mode": expected_mode,
+        "stat_error": observed["stat_error"],
         "observed_owner": observed["owner"],
         "observed_group": observed["group"],
         "observed_mode": observed["mode"],
@@ -309,6 +320,7 @@ Generated at: `{report["generated_at"]}`
 - expected owner: {contract["expected_owner"]}
 - expected group: {contract["expected_group"]}
 - expected mode: {contract["expected_mode"]}
+- stat error: {contract["stat_error"]}
 - observed owner: {contract["observed_owner"]}
 - observed group: {contract["observed_group"]}
 - observed mode: {contract["observed_mode"]}

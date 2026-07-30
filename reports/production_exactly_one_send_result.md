@@ -1,6 +1,6 @@
 # Production Exactly-One Send Result
 
-Generated at: `2026-07-25T02:12:57Z`
+Generated at: `2026-07-30T09:02:14Z`
 
 ## Result
 
@@ -26,6 +26,7 @@ Generated at: `2026-07-25T02:12:57Z`
 - expected owner: root
 - expected group: wheel
 - expected mode: 600
+- stat error: PERMISSION_DENIED
 - observed owner: None
 - observed group: None
 - observed mode: None

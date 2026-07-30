@@ -94,6 +94,36 @@ class ProductionExactlyOneSendExecutorTest(unittest.TestCase):
         self.assertEqual(report["boundary"]["credential_file_read"], "NO")
         self.assertEqual(report["boundary"]["production_request_attempted"], "NO")
 
+    def test_execute_blocks_when_credential_stat_is_permission_denied(self):
+        fake = _FakeOpener()
+        original = executor.owner_group_mode
+        executor.owner_group_mode = lambda path: {
+            "exists": None,
+            "owner": None,
+            "group": None,
+            "mode": None,
+            "stat_error": "PERMISSION_DENIED",
+        }
+        try:
+            report, exit_code = executor.build_execution_report(
+                execute=True,
+                credential_path=Path("/etc/project-anchor/production.env"),
+                now=datetime(2026, 7, 25, 1, 0, tzinfo=timezone.utc),
+                opener=fake,
+                readiness_report=_readiness(),
+            )
+        finally:
+            executor.owner_group_mode = original
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(report["result"], "BLOCKED")
+        self.assertEqual(report["failure_code"], "PRODUCTION_CREDENTIAL_CONTRACT_NOT_COMPLIANT")
+        self.assertEqual(report["credential_contract"]["stat_error"], "PERMISSION_DENIED")
+        self.assertEqual(report["boundary"]["credential_file_read"], "NO")
+        self.assertEqual(report["boundary"]["production_signing_executed"], "NO")
+        self.assertEqual(report["boundary"]["production_request_attempted"], "NO")
+        self.assertEqual(len(fake.calls), 0)
+
     def test_fixture_execute_with_fake_transport_redacts_secrets(self):
         fake = _FakeOpener()
         with tempfile.NamedTemporaryFile("w", encoding="utf-8") as tmp:
