@@ -24,6 +24,7 @@ MD_OUT = REPORTS_DIR / "production_pre_send_readiness_aggregation.md"
 INPUT_REPORTS = {
     "risk_limits": REPORTS_DIR / "production_risk_limits_validation.json",
     "credential_readiness": REPORTS_DIR / "production_credential_readiness_validation.json",
+    "api_configuration": REPORTS_DIR / "production_api_configuration_validation.json",
     "signing_readiness": REPORTS_DIR / "production_signing_readiness_validation.json",
     "http_network_readiness": REPORTS_DIR / "production_http_network_readiness_validation.json",
     "execution_readiness": REPORTS_DIR / "production_execution_readiness.json",
@@ -83,6 +84,7 @@ def build_report() -> tuple[dict[str, Any], int]:
 
     risk_limits = reports["risk_limits"]
     credential = reports["credential_readiness"]
+    api_configuration = reports["api_configuration"]
     signing = reports["signing_readiness"]
     http_network = reports["http_network_readiness"]
     execution = reports["execution_readiness"]
@@ -102,6 +104,11 @@ def build_report() -> tuple[dict[str, Any], int]:
             "credential_readiness_pass",
             credential.get("result") == "PASS",
             "non-secret production credential readiness PASS",
+        ),
+        check(
+            "api_configuration_pass",
+            api_configuration.get("result") == "PASS",
+            "Binance API configuration is read-only, IP-restricted, and non-trading",
         ),
         check("signing_readiness_pass", signing.get("result") == "PASS", "signing readiness PASS"),
         check(
@@ -282,6 +289,7 @@ def build_report() -> tuple[dict[str, Any], int]:
         "decision_summary": {
             "production_risk_limits": risk_limits.get("result"),
             "production_credential_readiness": credential.get("result"),
+            "production_api_configuration": api_configuration.get("result"),
             "production_signing_readiness": signing.get("result"),
             "production_http_network_readiness": http_network.get("result"),
             "production_execution_readiness": execution.get("result"),
