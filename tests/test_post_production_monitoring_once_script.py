@@ -40,8 +40,11 @@ class PostProductionMonitoringOnceScriptTest(unittest.TestCase):
                 check=False,
             )
             alert_path = Path(tmp) / "post_production_monitoring_alert.json"
+            notification_path = Path(tmp) / "post_production_monitoring_alert_notification.json"
             self.assertTrue(alert_path.exists())
+            self.assertTrue(notification_path.exists())
             alert = json.loads(alert_path.read_text(encoding="utf-8"))
+            notification = json.loads(notification_path.read_text(encoding="utf-8"))
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("POST_PRODUCTION_MONITORING_ONCE_RESULT=PASS", result.stdout)
@@ -52,6 +55,8 @@ class PostProductionMonitoringOnceScriptTest(unittest.TestCase):
         self.assertIn("LIVE_TRADING=NO-GO", result.stdout)
         self.assertEqual(alert["result"], "CLEAR")
         self.assertEqual(alert["boundary"]["new_production_request_sent"], "NO")
+        self.assertEqual(notification["result"], "SUPPRESSED")
+        self.assertEqual(notification["boundary"]["new_production_request_sent"], "NO")
 
 
 if __name__ == "__main__":

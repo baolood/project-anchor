@@ -7,16 +7,12 @@
     "new_production_request_sent": "NO",
     "production_http_network_attempted": "NO",
     "production_signing_executed": "NO",
-    "runtime_modified": "NO",
     "second_production_request_sent": "NO",
     "secret_value_disclosed": "NO"
   },
-  "failed_checks": [],
   "generated_at": "2026-07-30T15:59:19Z",
-  "result": "CLEAR",
-  "severity": "none",
-  "source_run_result": "PASS",
-  "source_run_status": "POST_PRODUCTION_MONITORING_RUN_READY",
-  "status": "POST_PRODUCTION_MONITORING_ALERT_CLEAR",
-  "summary": "Post-production monitoring is clear."
+  "last_alert_generated_at": "2026-07-30T15:59:19Z",
+  "last_alert_result": "CLEAR",
+  "last_alert_status": "POST_PRODUCTION_MONITORING_ALERT_CLEAR",
+  "last_notification_decision": "SUPPRESS"
 }
