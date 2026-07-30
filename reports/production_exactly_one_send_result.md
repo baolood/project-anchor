@@ -1,12 +1,12 @@
 # Production Exactly-One Send Result
 
-Generated at: `2026-07-30T13:37:45Z`
+Generated at: `2026-07-30T13:52:57Z`
 
 ## Result
 
-- result: FAIL
-- success: false
-- failure code: PRODUCTION_HTTP_REQUEST_REJECTED
+- result: PASS
+- success: true
+- failure code: None
 - execution requested: true
 - readiness result: PASS
 - readiness decision: READY_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_WINDOW_OPEN
@@ -41,15 +41,15 @@ Generated at: `2026-07-30T13:37:45Z`
 
 ## Terminal
 
-- terminal type: PRODUCTION_HTTP_REQUEST_REJECTED
-- http status: 400
-- external status: None
+- terminal type: PRODUCTION_HTTP_RESPONSE
+- http status: 200
+- external status: FILLED
 - external request started: true
-- external order id present: false
-- exchange error code present: True
-- exchange error message present: True
-- exchange error code: -2010
-- exchange error message: Account has insufficient balance for requested action.
+- external order id present: true
+- exchange error code present: None
+- exchange error message present: None
+- exchange error code: None
+- exchange error message: None
 - transport error type: None
 
 ## Boundary
@@ -64,7 +64,7 @@ Generated at: `2026-07-30T13:37:45Z`
 - DNS lookup or socket possible: YES
 - production HTTP/network attempted: YES
 - production request attempted: YES
-- production request accepted: NO
+- production request accepted: YES
 - canary rerun: NO
 - go-live: NO-GO
 - live trading: NO-GO
