@@ -1,10 +1,10 @@
 # Production Execution Host Contract Validation
 
-Generated at: `2026-07-30T12:22:00Z`
+Generated at: `2026-07-30T12:30:55Z`
 
 ## Result
 
-- result: BLOCKED
+- result: PASS
 
 ## Expected
 
@@ -17,34 +17,27 @@ Generated at: `2026-07-30T12:22:00Z`
 
 ## Observed
 
-- hostname: MacBook-Air
-- os_family: Darwin
-- repo_path: /Users/baolood/Projects/project-anchor
-- branch: codex/project-anchor-production-execution-host-contract
-- head: d220dc4
-- git_status_short: M scripts/check_production_execution_readiness.py
-?? config/production_execution_host_contract.json
-?? scripts/validate_production_execution_host_contract.py
-?? tests/test_production_execution_host_contract.py
-- user: baolood
+- hostname: vultr
+- os_family: Linux
+- repo_path: /root/project-anchor
+- branch: main
+- head: 3645184
+- git_status_short:
+- user: root
 
 ## Checks
 
-- hostname_matches: False
-- os_family_matches: False
-- repo_path_matches: False
-- branch_matches: False
-- workspace_clean: False
+- hostname_matches: True
+- os_family_matches: True
+- repo_path_matches: True
+- branch_matches: True
+- workspace_clean: True
 - api_ip_whitelist_present: True
 - runtime_identity_expected: True
 
 ## Errors
 
-- hostname_matches
-- os_family_matches
-- repo_path_matches
-- branch_matches
-- workspace_clean
+- none
 
 ## Boundary
 

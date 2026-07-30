@@ -14,20 +14,14 @@
   },
   "checks": {
     "api_ip_whitelist_present": true,
-    "branch_matches": false,
-    "hostname_matches": false,
-    "os_family_matches": false,
-    "repo_path_matches": false,
+    "branch_matches": true,
+    "hostname_matches": true,
+    "os_family_matches": true,
+    "repo_path_matches": true,
     "runtime_identity_expected": true,
-    "workspace_clean": false
+    "workspace_clean": true
   },
-  "errors": [
-    "hostname_matches",
-    "os_family_matches",
-    "repo_path_matches",
-    "branch_matches",
-    "workspace_clean"
-  ],
+  "errors": [],
   "expected": {
     "binance_api_ip_whitelist": "45.76.190.109",
     "branch": "main",
@@ -36,15 +30,15 @@
     "repo_path": "/root/project-anchor",
     "runtime_identity": "project_anchor_runtime"
   },
-  "generated_at": "2026-07-30T12:22:00Z",
+  "generated_at": "2026-07-30T12:30:55Z",
   "observed": {
-    "branch": "codex/project-anchor-production-execution-host-contract",
-    "git_status_short": "M scripts/check_production_execution_readiness.py\n?? config/production_execution_host_contract.json\n?? scripts/validate_production_execution_host_contract.py\n?? tests/test_production_execution_host_contract.py",
-    "head": "d220dc4",
-    "hostname": "MacBook-Air",
-    "os_family": "Darwin",
-    "repo_path": "/Users/baolood/Projects/project-anchor",
-    "user": "baolood"
+    "branch": "main",
+    "git_status_short": "",
+    "head": "3645184",
+    "hostname": "vultr",
+    "os_family": "Linux",
+    "repo_path": "/root/project-anchor",
+    "user": "root"
   },
-  "result": "BLOCKED"
+  "result": "PASS"
 }
