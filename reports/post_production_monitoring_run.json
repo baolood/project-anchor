@@ -1,0 +1,58 @@
+{
+  "boundary": {
+    "canary_rerun": "NO",
+    "credential_file_read": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "new_production_request_sent": "NO",
+    "production_http_network_attempted": "NO",
+    "production_signing_executed": "NO",
+    "runtime_modified": "NO",
+    "second_production_request_sent": "NO",
+    "secret_value_disclosed": "NO"
+  },
+  "checks": [
+    {
+      "evidence": "post-production monitoring snapshot returned PASS",
+      "name": "snapshot_result_pass",
+      "result": "PASS"
+    },
+    {
+      "evidence": "monitoring is ready while continuous trading remains disabled",
+      "name": "monitoring_status_safe",
+      "result": "PASS"
+    },
+    {
+      "evidence": "exactly one filled BTCUSDT order remains recorded in the authorized window",
+      "name": "exactly_one_production_order_still_recorded",
+      "result": "PASS"
+    },
+    {
+      "evidence": "continuous runtime and automatic trading remain disabled",
+      "name": "continuous_runtime_disabled",
+      "result": "PASS"
+    },
+    {
+      "evidence": "runner kept credential/signing/network/request/runtime boundaries closed",
+      "name": "runner_did_not_touch_runtime_boundaries",
+      "result": "PASS"
+    },
+    {
+      "evidence": "go-live and live trading remain NO-GO",
+      "name": "go_live_and_live_trading_still_no_go",
+      "result": "PASS"
+    }
+  ],
+  "generated_at": "2026-07-30T14:43:27Z",
+  "inputs": {
+    "snapshot_json": "reports/post_production_monitoring_snapshot.json",
+    "snapshot_markdown": "reports/post_production_monitoring_snapshot.md",
+    "snapshot_script": "scripts/generate_post_production_monitoring_snapshot.py"
+  },
+  "next_gate": "POST_PRODUCTION_MONITORING_SURFACE_OR_OPERATOR_FREEZE",
+  "result": "PASS",
+  "snapshot_generated_at": "2026-07-30T14:43:27Z",
+  "snapshot_result": "PASS",
+  "snapshot_status": "MONITORING_READY_CONTINUOUS_TRADING_DISABLED",
+  "status": "POST_PRODUCTION_MONITORING_RUN_READY"
+}
