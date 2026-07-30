@@ -1,6 +1,6 @@
 # Fresh Production Send Readiness Decision
 
-Generated at: `2026-07-30T13:17:35Z`
+Generated at: `2026-07-30T13:32:04Z`
 
 ## Result
 
@@ -14,25 +14,25 @@ Generated at: `2026-07-30T13:17:35Z`
 - market: binance_spot
 - symbols: BTCUSDT
 - sides: BUY_ONLY
-- max_notional: 4
+- max_notional: 10
 - max_order_count: 1
 - idempotency_policy: required_unique_key_per_authorized_window
 
 ## Planned Window
 
 - duration_minutes: 60
-- expires_at: 2026-07-30T14:17:35Z
-- monitor_until: 2026-07-30T14:32:35Z
+- expires_at: 2026-07-30T14:31:05Z
+- monitor_until: 2026-07-30T14:46:05Z
 - monitoring_window: 15_minutes_after_execution
-- not_before: 2026-07-30T13:17:35Z
+- not_before: 2026-07-30T13:31:05Z
 - window_type: fresh_bounded_authorization_window
 
 ## Planned Request
 
-- idempotency_key_template: production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1
+- idempotency_key_template: production:ops_manual:BTCUSDT:BUY:10:first-bounded-production-request:v1
 - idempotency_policy: required_unique_key_per_authorized_window
 - market: binance_spot
-- max_notional: 4
+- max_notional: 10
 - max_order_count: 1
 - order_type: market
 - sendable: False
@@ -48,7 +48,7 @@ Generated at: `2026-07-30T13:17:35Z`
 - window_plan_not_authorizing: PASS (window plan remains non-authorizing)
 - fresh_window_current: PASS (current time is within the latest planned window)
 - production_request_not_sent: PASS (all evidence says production request has not been sent)
-- risk_limits_bounded: PASS (production risk limits remain exactly-one BTCUSDT BUY max notional 4)
+- risk_limits_bounded: PASS (production risk limits remain exactly-one BTCUSDT BUY max notional 10)
 - go_live_still_no_go: PASS (go-live remains NO-GO)
 - live_trading_still_no_go: PASS (live trading remains NO-GO)
 

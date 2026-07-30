@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 PRODUCTION_IDEMPOTENCY_KEY = (
-    "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1"
+    "production:ops_manual:BTCUSDT:BUY:10:first-bounded-production-request:v1"
 )
 PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT = (
     "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_COMMAND_CREATION_ONLY"
@@ -71,7 +71,7 @@ def validate_production_order_request(body: dict) -> tuple[bool, str | None]:
         return (False, "PRODUCTION_SYMBOL_INVALID")
     if side != "BUY":
         return (False, "PRODUCTION_SIDE_INVALID")
-    if notional is None or notional != 4.0:
+    if notional is None or notional != 10.0:
         return (False, "PRODUCTION_NOTIONAL_INVALID")
     if order_type != "market":
         return (False, "PRODUCTION_ORDER_TYPE_INVALID")

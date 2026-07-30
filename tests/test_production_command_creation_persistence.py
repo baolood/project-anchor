@@ -23,7 +23,7 @@ def _valid_production_body(**overrides):
     body = {
         "symbol": "BTCUSDT",
         "side": "BUY",
-        "notional": 4,
+        "notional": 10,
         "order_type": "market",
         "execution_mode": "production",
         "market": "binance_spot",
@@ -115,7 +115,7 @@ class ProductionCommandCreationPersistenceTest(unittest.TestCase):
   "PRODUCTION_EXECUTION_GATE_ENABLED": true,
   "PRODUCTION_EXACTLY_ONE_COMMAND_CREATION": true,
   "PRODUCTION_NO_RETRY": true,
-  "PRODUCTION_IDEMPOTENCY_KEY": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
+  "PRODUCTION_IDEMPOTENCY_KEY": "production:ops_manual:BTCUSDT:BUY:10:first-bounded-production-request:v1",
   "FINAL_OPERATOR_VERDICT": "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_COMMAND_CREATION_ONLY"
 }
 """.strip(),

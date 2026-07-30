@@ -44,7 +44,7 @@
     "result": "PASS"
   },
   "errors": [],
-  "generated_at": "2026-07-19T15:06:29Z",
+  "generated_at": "2026-07-30T13:30:40Z",
   "inputs": {
     "production_execution_authorization_dry_gate": "reports/production_execution_authorization_dry_gate.json",
     "production_risk_limits": "config/production_risk_limits.template.json"
@@ -103,8 +103,8 @@
       "result": "PASS"
     },
     {
-      "actual": "4",
-      "expected": "4",
+      "actual": "10",
+      "expected": "10",
       "name": "AUTHORIZED_MAX_NOTIONAL",
       "result": "PASS"
     },

@@ -1,6 +1,6 @@
 # Production Execution Readiness
 
-Generated at: `2026-07-30T12:30:55Z`
+Generated at: `2026-07-30T13:30:57Z`
 
 ## Result
 
@@ -19,7 +19,7 @@ Generated at: `2026-07-30T12:30:55Z`
 - production_market: binance_spot
 - production_symbols: BTCUSDT
 - production_sides: BUY_ONLY
-- max_notional: 4
+- max_notional: 10
 - max_order_count: 1
 
 ## Gates

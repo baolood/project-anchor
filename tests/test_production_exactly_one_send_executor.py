@@ -207,6 +207,8 @@ class ProductionExactlyOneSendExecutorTest(unittest.TestCase):
         self.assertTrue(report["success"])
         self.assertEqual(len(fake.calls), 1)
         self.assertEqual(report["terminal"]["external_status"], "FILLED")
+        self.assertEqual(report["request"]["max_notional"], "10")
+        self.assertEqual(report["requested_payload_shape"]["quoteOrderQty"], "10")
         self.assertEqual(report["boundary"]["credential_file_read"], "YES")
         self.assertEqual(report["boundary"]["production_signing_executed"], "YES")
         self.assertEqual(report["boundary"]["production_request_attempted"], "YES")

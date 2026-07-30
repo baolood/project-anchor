@@ -20,11 +20,11 @@
     "transport_not_authorized_by_default": true
   },
   "default_failure_code": "PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED",
-  "generated_at": "2026-07-22T08:02:59Z",
+  "generated_at": "2026-07-30T13:30:40Z",
   "redacted_requested_payload": {
     "api_key_present": true,
     "method": "POST",
-    "quoteOrderQty": "4",
+    "quoteOrderQty": "10",
     "request_path": "/api/v3/order",
     "sendable": true,
     "side": "BUY",
