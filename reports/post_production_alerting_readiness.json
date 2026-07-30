@@ -1,0 +1,37 @@
+{
+  "boundary": {
+    "alerting_env_content_read": "NO",
+    "canary_rerun": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_env_read": "NO",
+    "production_request_sent": "NO",
+    "second_production_request_sent": "NO",
+    "telegram_bot_token_value_disclosed": "NO",
+    "telegram_chat_id_value_disclosed": "NO",
+    "telegram_http_attempted": "NO",
+    "telegram_message_sent": "NO"
+  },
+  "checks": {
+    "exists": "NO",
+    "expected_group": "project_anchor_runtime",
+    "expected_mode": "640",
+    "expected_owner": "root",
+    "group": "",
+    "group_match": "NO",
+    "mode": "",
+    "mode_match": "NO",
+    "owner": "",
+    "owner_match": "NO",
+    "path": "/etc/project-anchor/alerting.env",
+    "telegram_bot_token_present": "NOT_INSPECTED",
+    "telegram_chat_id_present": "NOT_INSPECTED",
+    "telegram_notify_enabled_present": "NOT_INSPECTED",
+    "telegram_notify_enabled_valid": "NOT_INSPECTED"
+  },
+  "failure_code": "ALERTING_ENV_FILE_MISSING_OR_UNREADABLE_METADATA",
+  "generated_at": "2026-07-30T16:18:22Z",
+  "inspect_env_requested": false,
+  "result": "BLOCKED",
+  "status": "POST_PRODUCTION_ALERTING_READINESS_BLOCKED"
+}
