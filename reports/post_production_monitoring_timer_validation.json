@@ -1,0 +1,49 @@
+{
+  "boundary": {
+    "canary_rerun": "NO",
+    "credential_file_read": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "new_production_request_sent": "NO",
+    "production_http_network_attempted": "NO",
+    "production_signing_executed": "NO",
+    "runtime_modified_by_builder": "NO",
+    "second_production_request_sent": "NO",
+    "secret_value_disclosed": "NO"
+  },
+  "checks": [
+    {
+      "evidence": "service unit calls the existing read-only monitoring command",
+      "name": "service_invokes_monitoring_once",
+      "result": "PASS"
+    },
+    {
+      "evidence": "service unit writes reports to the runtime output directory",
+      "name": "runtime_output_dir_configured",
+      "result": "PASS"
+    },
+    {
+      "evidence": "service unit includes narrow systemd safety hardening",
+      "name": "systemd_safety_hardening_present",
+      "result": "PASS"
+    },
+    {
+      "evidence": "timer unit has the expected refresh cadence",
+      "name": "timer_cadence_configured",
+      "result": "PASS"
+    },
+    {
+      "evidence": "unit content avoids credential, send, reconciliation, curl, ssh, and scp paths",
+      "name": "forbidden_execution_tokens_absent",
+      "result": "PASS"
+    }
+  ],
+  "errors": [],
+  "generated_at": "2026-07-30T15:22:47Z",
+  "interval_minutes": 15,
+  "output_dir": "/var/lib/project-anchor/reports",
+  "project_root": "/root/project-anchor",
+  "result": "PASS",
+  "service_unit": "project-anchor-post-production-monitoring.service",
+  "timer_unit": "project-anchor-post-production-monitoring.timer"
+}
