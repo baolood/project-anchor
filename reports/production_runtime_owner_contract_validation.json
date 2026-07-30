@@ -1,0 +1,67 @@
+{
+  "boundary": {
+    "canary_executed": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "owner_mode_changed": "NO",
+    "production_env_changed": "NO",
+    "production_http_network_attempted": "NO",
+    "production_order_sent": "NO",
+    "production_request_sent": "NO",
+    "production_signing_executed": "NO",
+    "secret_value_disclosed": "NO",
+    "secret_value_read": "NO",
+    "transport_called_when_blocked": "NO"
+  },
+  "checks": {
+    "env_file_exists": false,
+    "env_group_expectation_explicit": true,
+    "env_mode_expectation_600": true,
+    "env_owner_expectation_explicit": true,
+    "go_live_no_go": true,
+    "group_based_secret_access_no": true,
+    "group_match": false,
+    "identity_unresolved_fail_closed": true,
+    "interactive_sudo_required_no": true,
+    "live_trading_no_go": true,
+    "mode_match": false,
+    "mode_mismatch_fail_closed": true,
+    "owner_match": false,
+    "owner_mismatch_fail_closed": true,
+    "owner_or_mode_change_authorized_no": true,
+    "production_env_change_authorized_no": true,
+    "production_request_authorized_no": true,
+    "runtime_group_explicit": true,
+    "runtime_group_resolved": false,
+    "runtime_identity_explicit": true,
+    "runtime_identity_resolved": false,
+    "stat_permission_failure_fail_closed": true
+  },
+  "contract": {
+    "canonical_env_path": "/etc/project-anchor/production.env",
+    "expected_env_group": "project-anchor-runtime",
+    "expected_env_mode": "600",
+    "expected_env_owner": "project-anchor-runtime",
+    "group_based_secret_access": "NO",
+    "interactive_sudo_required": "NO",
+    "runtime_group": "project-anchor-runtime",
+    "runtime_identity": "project-anchor-runtime"
+  },
+  "errors": [
+    "runtime_identity_resolved",
+    "runtime_group_resolved",
+    "env_file_exists",
+    "owner_match",
+    "group_match",
+    "mode_match"
+  ],
+  "generated_at": "2026-07-30T09:19:16Z",
+  "observed_env": {
+    "exists": null,
+    "group": null,
+    "mode": null,
+    "owner": null,
+    "stat_error": "PERMISSION_DENIED"
+  },
+  "result": "BLOCKED"
+}
