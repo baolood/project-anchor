@@ -68,7 +68,7 @@
   "decision": "READY_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_WINDOW_OPEN",
   "errors": [],
   "execution_performed_by_this_decision": false,
-  "generated_at": "2026-07-30T10:38:49Z",
+  "generated_at": "2026-07-30T10:56:17Z",
   "inputs": {
     "final_runner": "reports/final_production_send_runner.json",
     "handoff": "reports/production_execution_handoff_snapshot.json",
@@ -89,10 +89,10 @@
   },
   "planned_window": {
     "duration_minutes": 60,
-    "expires_at": "2026-07-30T11:38:45Z",
-    "monitor_until": "2026-07-30T11:53:45Z",
+    "expires_at": "2026-07-30T11:56:17Z",
+    "monitor_until": "2026-07-30T12:11:17Z",
     "monitoring_window": "15_minutes_after_execution",
-    "not_before": "2026-07-30T10:38:45Z",
+    "not_before": "2026-07-30T10:56:17Z",
     "window_type": "fresh_bounded_authorization_window"
   },
   "result": "PASS",

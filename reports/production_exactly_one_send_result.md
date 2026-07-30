@@ -1,13 +1,13 @@
 # Production Exactly-One Send Result
 
-Generated at: `2026-07-30T10:27:38Z`
+Generated at: `2026-07-30T10:56:17Z`
 
 ## Result
 
 - result: BLOCKED
 - success: false
-- failure code: PRODUCTION_SEND_EXECUTION_NOT_REQUESTED
-- execution requested: false
+- failure code: PRODUCTION_EXECUTION_HOST_NOT_WHITELISTED
+- execution requested: true
 - readiness result: PASS
 - readiness decision: READY_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_WINDOW_OPEN
 
@@ -20,13 +20,20 @@ Generated at: `2026-07-30T10:27:38Z`
 - max notional: 4
 - order type: market
 
+## Execution Host Contract
+
+- expected Binance API IP whitelist: 45.76.190.109
+- observed platform: Darwin
+- compliant: false
+- failure code: PRODUCTION_EXECUTION_HOST_NOT_WHITELISTED
+
 ## Credential Contract
 
 - path: `/etc/project-anchor/production.env`
 - expected owner: project_anchor_runtime
 - expected group: project_anchor_runtime
 - expected mode: 600
-- stat error: PERMISSION_DENIED
+- stat error: NOT_EVALUATED_EXECUTION_HOST_NOT_COMPLIANT
 - observed owner: None
 - observed group: None
 - observed mode: None

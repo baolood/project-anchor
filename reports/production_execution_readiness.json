@@ -39,7 +39,7 @@
     "production_http_network": "NO",
     "production_signing": "NO"
   },
-  "generated_at": "2026-07-30T10:38:27Z",
+  "generated_at": "2026-07-30T10:46:52Z",
   "inputs": {
     "production_api_configuration": "reports/production_api_configuration_validation.json",
     "production_credential_readiness": "reports/production_credential_readiness_validation.json",

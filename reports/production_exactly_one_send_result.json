@@ -17,10 +17,10 @@
   },
   "credential_contract": {
     "checks": {
-      "file_exists": false,
-      "group_matches": false,
-      "mode_matches": false,
-      "owner_matches": false,
+      "file_exists": null,
+      "group_matches": null,
+      "mode_matches": null,
+      "owner_matches": null,
       "path_matches_contract": true
     },
     "compliant": false,
@@ -32,11 +32,21 @@
     "observed_mode": null,
     "observed_owner": null,
     "path": "/etc/project-anchor/production.env",
-    "stat_error": "PERMISSION_DENIED"
+    "stat_error": "NOT_EVALUATED_EXECUTION_HOST_NOT_COMPLIANT"
   },
-  "execution_requested": false,
-  "failure_code": "PRODUCTION_SEND_EXECUTION_NOT_REQUESTED",
-  "generated_at": "2026-07-30T10:27:38Z",
+  "execution_host_contract": {
+    "checks": {
+      "api_ip_whitelist_present": true,
+      "macos_local_execution_blocked": false
+    },
+    "compliant": false,
+    "expected_binance_api_ip_whitelist": "45.76.190.109",
+    "failure_code": "PRODUCTION_EXECUTION_HOST_NOT_WHITELISTED",
+    "observed_platform": "Darwin"
+  },
+  "execution_requested": true,
+  "failure_code": "PRODUCTION_EXECUTION_HOST_NOT_WHITELISTED",
+  "generated_at": "2026-07-30T10:56:17Z",
   "readiness_decision": "READY_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_WINDOW_OPEN",
   "readiness_result": "PASS",
   "request": {
