@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import grp
 import json
+import platform
 import pwd
 import stat
 import sys
@@ -24,6 +25,7 @@ from typing import Any, Callable
 ROOT = Path(__file__).resolve().parents[1]
 REPORTS_DIR = ROOT / "reports"
 CONTRACT_PATH = ROOT / "config" / "production_credential_contract.json"
+API_CONFIGURATION_PATH = ROOT / "config" / "production_api_configuration.template.json"
 JSON_OUT = REPORTS_DIR / "production_exactly_one_send_result.json"
 MD_OUT = REPORTS_DIR / "production_exactly_one_send_result.md"
 
@@ -57,6 +59,31 @@ def read_json(path: Path) -> dict[str, Any]:
 
 def load_contract() -> dict[str, Any]:
     return read_json(CONTRACT_PATH)
+
+
+def load_api_configuration() -> dict[str, Any]:
+    return read_json(API_CONFIGURATION_PATH)
+
+
+def execution_host_contract_status(
+    api_configuration: dict[str, Any],
+    *,
+    platform_name: str | None = None,
+) -> dict[str, Any]:
+    observed_platform = platform_name or platform.system()
+    whitelisted_ip = str(api_configuration.get("BINANCE_API_IP_WHITELIST") or "").strip()
+    macos_local_blocked = observed_platform == "Darwin" and bool(whitelisted_ip)
+    checks = {
+        "api_ip_whitelist_present": bool(whitelisted_ip),
+        "macos_local_execution_blocked": not macos_local_blocked,
+    }
+    return {
+        "expected_binance_api_ip_whitelist": whitelisted_ip,
+        "observed_platform": observed_platform,
+        "checks": checks,
+        "compliant": all(checks.values()),
+        "failure_code": None if all(checks.values()) else "PRODUCTION_EXECUTION_HOST_NOT_WHITELISTED",
+    }
 
 
 def owner_group_mode(path: Path) -> dict[str, Any]:
@@ -122,6 +149,32 @@ def credential_contract_status(path: Path, contract: dict[str, Any]) -> dict[str
         "compliant": all(checks.values()),
     }
 
+
+
+def credential_contract_not_evaluated(path: Path, contract: dict[str, Any]) -> dict[str, Any]:
+    expected_path = str(contract.get("canonical_path") or "")
+    expected_owner = str(contract.get("expected_owner") or "")
+    expected_group = str(contract.get("expected_group") or "")
+    expected_mode = str(contract.get("expected_mode") or "")
+    return {
+        "path": str(path),
+        "expected_path": expected_path,
+        "expected_owner": expected_owner,
+        "expected_group": expected_group,
+        "expected_mode": expected_mode,
+        "stat_error": "NOT_EVALUATED_EXECUTION_HOST_NOT_COMPLIANT",
+        "observed_owner": None,
+        "observed_group": None,
+        "observed_mode": None,
+        "checks": {
+            "path_matches_contract": str(path) == expected_path,
+            "file_exists": None,
+            "owner_matches": None,
+            "group_matches": None,
+            "mode_matches": None,
+        },
+        "compliant": False,
+    }
 
 def request_body() -> dict[str, Any]:
     return {
@@ -192,11 +245,26 @@ def build_execution_report(
     opener: Callable[..., Any] | None = None,
     readiness_report: dict[str, Any] | None = None,
     enforce_credential_contract: bool = True,
+    platform_name: str | None = None,
+    enforce_execution_host_contract: bool = True,
 ) -> tuple[dict[str, Any], int]:
     current = now or utc_now()
     now_ts = int(current.timestamp() * 1000)
     contract = load_contract()
-    contract_status = credential_contract_status(credential_path, contract)
+    api_configuration = load_api_configuration()
+    execution_host_contract = execution_host_contract_status(
+        api_configuration,
+        platform_name=platform_name,
+    )
+    execution_host_blocks = (
+        execute
+        and enforce_execution_host_contract
+        and not execution_host_contract["compliant"]
+    )
+    if execution_host_blocks:
+        contract_status = credential_contract_not_evaluated(credential_path, contract)
+    else:
+        contract_status = credential_contract_status(credential_path, contract)
     if readiness_report is not None:
         readiness = readiness_report
     elif execute:
@@ -218,6 +286,8 @@ def build_execution_report(
         failure_code = "PRODUCTION_SEND_EXECUTION_NOT_REQUESTED"
     elif not readiness_pass:
         failure_code = "FRESH_PRODUCTION_SEND_READINESS_NOT_PASS"
+    elif enforce_execution_host_contract and not execution_host_contract["compliant"]:
+        failure_code = str(execution_host_contract.get("failure_code") or "PRODUCTION_EXECUTION_HOST_NOT_ALLOWED")
     elif enforce_credential_contract and not contract_status["compliant"]:
         failure_code = "PRODUCTION_CREDENTIAL_CONTRACT_NOT_COMPLIANT"
     else:
@@ -249,6 +319,7 @@ def build_execution_report(
         "readiness_result": readiness.get("result"),
         "readiness_decision": readiness.get("decision"),
         "credential_contract": contract_status,
+        "execution_host_contract": execution_host_contract,
         "request": {
             "idempotency_key": PRODUCTION_IDEMPOTENCY_KEY,
             "market": "binance_spot",
@@ -290,6 +361,7 @@ def build_execution_report(
 
 def markdown(report: dict[str, Any]) -> str:
     contract = report["credential_contract"]
+    execution_host = report["execution_host_contract"]
     terminal = report["terminal"]
     boundary = report["boundary"]
     return f"""# Production Exactly-One Send Result
@@ -313,6 +385,13 @@ Generated at: `{report["generated_at"]}`
 - side: {report["request"]["side"]}
 - max notional: {report["request"]["max_notional"]}
 - order type: {report["request"]["order_type"]}
+
+## Execution Host Contract
+
+- expected Binance API IP whitelist: {execution_host["expected_binance_api_ip_whitelist"]}
+- observed platform: {execution_host["observed_platform"]}
+- compliant: {str(execution_host["compliant"]).lower()}
+- failure code: {execution_host["failure_code"]}
 
 ## Credential Contract
 

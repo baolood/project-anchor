@@ -87,12 +87,43 @@ class ProductionExactlyOneSendExecutorTest(unittest.TestCase):
                 now=datetime(2026, 7, 25, 1, 0, tzinfo=timezone.utc),
                 readiness_report={"result": "FAIL", "decision": "BLOCKED"},
                 enforce_credential_contract=False,
+                platform_name="Linux",
             )
 
         self.assertEqual(exit_code, 1)
         self.assertEqual(report["failure_code"], "FRESH_PRODUCTION_SEND_READINESS_NOT_PASS")
         self.assertEqual(report["boundary"]["credential_file_read"], "NO")
         self.assertEqual(report["boundary"]["production_request_attempted"], "NO")
+
+    def test_execute_blocks_on_macos_when_api_whitelist_requires_remote_ip(self):
+        fake = _FakeOpener()
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8") as tmp:
+            tmp.write(_fixture_env())
+            tmp.flush()
+
+            report, exit_code = executor.build_execution_report(
+                execute=True,
+                credential_path=Path(tmp.name),
+                now=datetime(2026, 7, 25, 1, 0, tzinfo=timezone.utc),
+                opener=fake,
+                readiness_report=_readiness(),
+                enforce_credential_contract=False,
+                platform_name="Darwin",
+            )
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(report["result"], "BLOCKED")
+        self.assertEqual(report["failure_code"], "PRODUCTION_EXECUTION_HOST_NOT_WHITELISTED")
+        self.assertEqual(report["execution_host_contract"]["observed_platform"], "Darwin")
+        self.assertFalse(report["execution_host_contract"]["compliant"])
+        self.assertEqual(
+            report["credential_contract"]["stat_error"],
+            "NOT_EVALUATED_EXECUTION_HOST_NOT_COMPLIANT",
+        )
+        self.assertEqual(report["boundary"]["credential_file_read"], "NO")
+        self.assertEqual(report["boundary"]["production_signing_executed"], "NO")
+        self.assertEqual(report["boundary"]["production_request_attempted"], "NO")
+        self.assertEqual(len(fake.calls), 0)
 
     def test_execute_blocks_when_credential_stat_is_permission_denied(self):
         fake = _FakeOpener()
@@ -111,6 +142,7 @@ class ProductionExactlyOneSendExecutorTest(unittest.TestCase):
                 now=datetime(2026, 7, 25, 1, 0, tzinfo=timezone.utc),
                 opener=fake,
                 readiness_report=_readiness(),
+                platform_name="Linux",
             )
         finally:
             executor.owner_group_mode = original
@@ -141,6 +173,7 @@ class ProductionExactlyOneSendExecutorTest(unittest.TestCase):
                 now=datetime(2026, 7, 25, 1, 0, tzinfo=timezone.utc),
                 opener=fake,
                 readiness_report=_readiness(),
+                platform_name="Linux",
             )
         finally:
             executor.owner_group_mode = original
@@ -166,6 +199,7 @@ class ProductionExactlyOneSendExecutorTest(unittest.TestCase):
                 opener=fake,
                 readiness_report=_readiness(),
                 enforce_credential_contract=False,
+                platform_name="Linux",
             )
 
         rendered = str(report)
@@ -210,6 +244,7 @@ class ProductionExactlyOneSendExecutorTest(unittest.TestCase):
                     now=datetime(2026, 7, 25, 1, 0, tzinfo=timezone.utc),
                     opener=fake,
                     readiness_report=_readiness(),
+                    platform_name="Linux",
                 )
         finally:
             executor.owner_group_mode = original
