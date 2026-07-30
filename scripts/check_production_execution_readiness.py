@@ -20,6 +20,9 @@ RISK_LIMITS_CONFIG = ROOT / "config" / "production_risk_limits.template.json"
 RISK_LIMITS_REPORT = ROOT / "reports" / "production_risk_limits_validation.json"
 PRODUCTION_CREDENTIAL_READINESS_REPORT = ROOT / "reports" / "production_credential_readiness_validation.json"
 PRODUCTION_API_CONFIGURATION_REPORT = ROOT / "reports" / "production_api_configuration_validation.json"
+PRODUCTION_EXECUTION_HOST_CONTRACT_REPORT = (
+    ROOT / "reports" / "production_execution_host_contract_validation.json"
+)
 PRODUCTION_RUNTIME_OWNER_CONTRACT_REPORT = ROOT / "reports" / "production_runtime_owner_contract_validation.json"
 PRODUCTION_RUNTIME_IDENTITY_PROVISIONING_PLAN_REPORT = (
     ROOT / "reports" / "production_runtime_identity_provisioning_plan_validation.json"
@@ -54,6 +57,9 @@ def build_report() -> tuple[dict[str, Any], int]:
     risk_report, risk_report_error = read_json(RISK_LIMITS_REPORT)
     credential_report, credential_report_error = read_json(PRODUCTION_CREDENTIAL_READINESS_REPORT)
     api_configuration_report, api_configuration_report_error = read_json(PRODUCTION_API_CONFIGURATION_REPORT)
+    execution_host_report, execution_host_report_error = read_json(
+        PRODUCTION_EXECUTION_HOST_CONTRACT_REPORT
+    )
     runtime_owner_report, runtime_owner_report_error = read_json(PRODUCTION_RUNTIME_OWNER_CONTRACT_REPORT)
     runtime_identity_plan_report, runtime_identity_plan_report_error = read_json(
         PRODUCTION_RUNTIME_IDENTITY_PROVISIONING_PLAN_REPORT
@@ -71,6 +77,8 @@ def build_report() -> tuple[dict[str, Any], int]:
         errors.append(credential_report_error)
     if api_configuration_report_error:
         errors.append(api_configuration_report_error)
+    if execution_host_report_error:
+        errors.append(execution_host_report_error)
     if runtime_owner_report_error:
         errors.append(runtime_owner_report_error)
     if runtime_identity_plan_report_error:
@@ -84,6 +92,7 @@ def build_report() -> tuple[dict[str, Any], int]:
     risk_report = risk_report or {}
     credential_report = credential_report or {}
     api_configuration_report = api_configuration_report or {}
+    execution_host_report = execution_host_report or {}
     runtime_owner_report = runtime_owner_report or {}
     runtime_identity_plan_report = runtime_identity_plan_report or {}
     signing_report = signing_report or {}
@@ -103,6 +112,11 @@ def build_report() -> tuple[dict[str, Any], int]:
     )
     if not api_configuration_pass:
         blockers.append("production API configuration validation is not PASS")
+    execution_host_contract_pass = (
+        execution_host_report.get("result") == "PASS" and not execution_host_report.get("errors")
+    )
+    if not execution_host_contract_pass:
+        blockers.append("production execution host contract validation is not PASS")
     runtime_owner_contract_pass = (
         runtime_owner_report.get("result") == "PASS" and not runtime_owner_report.get("errors")
     )
@@ -155,6 +169,9 @@ def build_report() -> tuple[dict[str, Any], int]:
                 PRODUCTION_CREDENTIAL_READINESS_REPORT.relative_to(ROOT)
             ),
             "production_api_configuration": str(PRODUCTION_API_CONFIGURATION_REPORT.relative_to(ROOT)),
+            "production_execution_host_contract": str(
+                PRODUCTION_EXECUTION_HOST_CONTRACT_REPORT.relative_to(ROOT)
+            ),
             "production_runtime_owner_contract": str(
                 PRODUCTION_RUNTIME_OWNER_CONTRACT_REPORT.relative_to(ROOT)
             ),
@@ -170,6 +187,7 @@ def build_report() -> tuple[dict[str, Any], int]:
             "risk_limits_validation": "PASS" if risk_limits_pass else "FAIL",
             "production_credential_readiness": "PASS" if credential_readiness_pass else "FAIL",
             "production_api_configuration": "PASS" if api_configuration_pass else "FAIL",
+            "production_execution_host_contract": "PASS" if execution_host_contract_pass else "FAIL",
             "production_runtime_owner_contract": "PASS" if runtime_owner_contract_pass else "FAIL",
             "production_runtime_identity_provisioning_plan": (
                 "PASS" if runtime_identity_provisioning_plan_pass else "FAIL"
@@ -255,6 +273,10 @@ def main() -> int:
     print(f"blockers: {len(report['blockers'])}")
     print(f"risk_limits_validation: {report['evidence']['risk_limits_validation']}")
     print(f"production_api_configuration: {report['evidence']['production_api_configuration']}")
+    print(
+        "production_execution_host_contract: "
+        f"{report['evidence']['production_execution_host_contract']}"
+    )
     print(
         "production_runtime_owner_contract: "
         f"{report['evidence']['production_runtime_owner_contract']}"
