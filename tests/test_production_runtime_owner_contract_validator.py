@@ -14,11 +14,15 @@ spec.loader.exec_module(validator)
 
 def _config():
     return {
-        "runtime_identity": "project-anchor-runtime",
-        "runtime_group": "project-anchor-runtime",
+        "runtime_identity": "project_anchor_runtime",
+        "runtime_group": "project_anchor_runtime",
+        "canonical_env_dir": "/etc/project-anchor",
         "canonical_env_path": "/etc/project-anchor/production.env",
-        "expected_env_owner": "project-anchor-runtime",
-        "expected_env_group": "project-anchor-runtime",
+        "expected_env_dir_owner": "root",
+        "expected_env_dir_group": "project_anchor_runtime",
+        "expected_env_dir_mode": "710",
+        "expected_env_owner": "project_anchor_runtime",
+        "expected_env_group": "project_anchor_runtime",
         "expected_env_mode": "600",
         "group_based_secret_access": "NO",
         "interactive_sudo_required": "NO",
@@ -34,10 +38,22 @@ def _config():
     }
 
 
-def _patch_validator(*, observed, user_exists=True, group_exists=True):
+def _patch_validator(*, observed, observed_dir=None, user_exists=True, group_exists=True):
     original_owner_group_mode = validator.owner_group_mode
     original_identity_exists = validator.identity_exists
-    validator.owner_group_mode = lambda path: observed
+
+    def fake_owner_group_mode(path):
+        if str(path) == "/etc/project-anchor":
+            return observed_dir or {
+                "exists": True,
+                "owner": "root",
+                "group": "project_anchor_runtime",
+                "mode": "710",
+                "stat_error": None,
+            }
+        return observed
+
+    validator.owner_group_mode = fake_owner_group_mode
 
     def fake_identity_exists(name, *, group=False):
         return group_exists if group else user_exists
@@ -55,8 +71,8 @@ class ProductionRuntimeOwnerContractValidatorTest(unittest.TestCase):
         originals = _patch_validator(
             observed={
                 "exists": True,
-                "owner": "project-anchor-runtime",
-                "group": "project-anchor-runtime",
+                "owner": "project_anchor_runtime",
+                "group": "project_anchor_runtime",
                 "mode": "600",
                 "stat_error": None,
             }
@@ -94,8 +110,8 @@ class ProductionRuntimeOwnerContractValidatorTest(unittest.TestCase):
         originals = _patch_validator(
             observed={
                 "exists": True,
-                "owner": "project-anchor-runtime",
-                "group": "project-anchor-runtime",
+                "owner": "project_anchor_runtime",
+                "group": "project_anchor_runtime",
                 "mode": "640",
                 "stat_error": None,
             }
@@ -113,8 +129,8 @@ class ProductionRuntimeOwnerContractValidatorTest(unittest.TestCase):
         originals = _patch_validator(
             observed={
                 "exists": True,
-                "owner": "project-anchor-runtime",
-                "group": "project-anchor-runtime",
+                "owner": "project_anchor_runtime",
+                "group": "project_anchor_runtime",
                 "mode": "600",
                 "stat_error": None,
             },
@@ -147,6 +163,32 @@ class ProductionRuntimeOwnerContractValidatorTest(unittest.TestCase):
         self.assertEqual(report["result"], "BLOCKED")
         self.assertEqual(report["observed_env"]["stat_error"], "PERMISSION_DENIED")
         self.assertTrue(report["checks"]["stat_permission_failure_fail_closed"])
+
+    def test_directory_group_mismatch_blocks(self):
+        originals = _patch_validator(
+            observed={
+                "exists": True,
+                "owner": "project_anchor_runtime",
+                "group": "project_anchor_runtime",
+                "mode": "600",
+                "stat_error": None,
+            },
+            observed_dir={
+                "exists": True,
+                "owner": "root",
+                "group": "wheel",
+                "mode": "700",
+                "stat_error": None,
+            },
+        )
+        try:
+            report = validator.validate(_config())
+        finally:
+            _restore_validator(originals)
+
+        self.assertEqual(report["result"], "BLOCKED")
+        self.assertFalse(report["checks"]["env_dir_group_match"])
+        self.assertFalse(report["checks"]["env_dir_mode_match"])
 
 
 if __name__ == "__main__":

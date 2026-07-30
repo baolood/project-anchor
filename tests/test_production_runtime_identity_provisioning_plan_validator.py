@@ -17,22 +17,30 @@ spec.loader.exec_module(validator)
 
 def _contract():
     return {
-        "runtime_identity": "project-anchor-runtime",
-        "runtime_group": "project-anchor-runtime",
+        "runtime_identity": "project_anchor_runtime",
+        "runtime_group": "project_anchor_runtime",
+        "canonical_env_dir": "/etc/project-anchor",
         "canonical_env_path": "/etc/project-anchor/production.env",
-        "expected_env_owner": "project-anchor-runtime",
-        "expected_env_group": "project-anchor-runtime",
+        "expected_env_dir_owner": "root",
+        "expected_env_dir_group": "project_anchor_runtime",
+        "expected_env_dir_mode": "710",
+        "expected_env_owner": "project_anchor_runtime",
+        "expected_env_group": "project_anchor_runtime",
         "expected_env_mode": "600",
     }
 
 
 def _plan():
     return {
-        "target_runtime_identity": "project-anchor-runtime",
-        "target_runtime_group": "project-anchor-runtime",
+        "target_runtime_identity": "project_anchor_runtime",
+        "target_runtime_group": "project_anchor_runtime",
+        "target_env_dir": "/etc/project-anchor",
+        "target_env_dir_owner": "root",
+        "target_env_dir_group": "project_anchor_runtime",
+        "target_env_dir_mode": "710",
         "target_env_path": "/etc/project-anchor/production.env",
-        "target_env_owner": "project-anchor-runtime",
-        "target_env_group": "project-anchor-runtime",
+        "target_env_owner": "project_anchor_runtime",
+        "target_env_group": "project_anchor_runtime",
         "target_env_mode": "600",
         "execution_authorized": "NO",
         "dry_validation_only": "YES",
@@ -45,20 +53,30 @@ def _plan():
             {
                 "name": "create_runtime_group",
                 "operation": "create_group_if_absent",
-                "command_template": "sudo dscl . -create /Groups/project-anchor-runtime",
+                "command_template": "sudo dscl . -create /Groups/project_anchor_runtime",
             },
             {
                 "name": "create_runtime_identity",
                 "operation": "create_user_if_absent",
-                "command_template": "sudo dscl . -create /Users/project-anchor-runtime",
+                "command_template": "sudo dscl . -create /Users/project_anchor_runtime",
             },
             {
                 "name": "align_production_env_owner",
                 "operation": "chown",
                 "command_template": (
-                    "sudo chown project-anchor-runtime:project-anchor-runtime "
+                    "sudo chown project_anchor_runtime:project_anchor_runtime "
                     "/etc/project-anchor/production.env"
                 ),
+            },
+            {
+                "name": "align_production_env_dir_group",
+                "operation": "chgrp",
+                "command_template": "sudo chgrp project_anchor_runtime /etc/project-anchor",
+            },
+            {
+                "name": "enforce_production_env_dir_mode",
+                "operation": "chmod",
+                "command_template": "sudo chmod 710 /etc/project-anchor",
             },
             {
                 "name": "enforce_production_env_mode",
@@ -76,6 +94,16 @@ def _plan():
                 "name": "restore_root_wheel_owner_if_required",
                 "operation": "chown",
                 "command_template": "sudo chown root:wheel /etc/project-anchor/production.env",
+            },
+            {
+                "name": "restore_root_wheel_dir_group_if_required",
+                "operation": "chgrp",
+                "command_template": "sudo chgrp wheel /etc/project-anchor",
+            },
+            {
+                "name": "restore_dir_mode_700",
+                "operation": "chmod",
+                "command_template": "sudo chmod 700 /etc/project-anchor",
             },
             {
                 "name": "restore_mode_600",
@@ -121,6 +149,15 @@ class ProductionRuntimeIdentityProvisioningPlanValidatorTest(unittest.TestCase):
 
         self.assertEqual(report["result"], "BLOCKED")
         self.assertIn("target_env_mode_600", report["errors"])
+
+    def test_wrong_directory_mode_target_blocks(self):
+        plan = _plan()
+        plan["target_env_dir_mode"] = "700"
+
+        report = validator.validate(plan, _contract(), {"result": "BLOCKED"})
+
+        self.assertEqual(report["result"], "BLOCKED")
+        self.assertIn("target_env_dir_mode_710", report["errors"])
 
     def test_send_or_network_command_blocks(self):
         plan = _plan()

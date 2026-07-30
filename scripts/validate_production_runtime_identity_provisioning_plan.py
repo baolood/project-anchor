@@ -75,6 +75,10 @@ def has_step(plan: dict[str, Any], name: str, operation: str) -> bool:
 def validate(plan: dict[str, Any], contract: dict[str, Any], contract_report: dict[str, Any]) -> dict[str, Any]:
     target_identity = as_text(plan.get("target_runtime_identity"))
     target_group = as_text(plan.get("target_runtime_group"))
+    target_env_dir = as_text(plan.get("target_env_dir"))
+    target_env_dir_owner = as_text(plan.get("target_env_dir_owner"))
+    target_env_dir_group = as_text(plan.get("target_env_dir_group"))
+    target_env_dir_mode = as_text(plan.get("target_env_dir_mode"))
     target_env_path = as_text(plan.get("target_env_path"))
     target_owner = as_text(plan.get("target_env_owner"))
     target_env_group = as_text(plan.get("target_env_group"))
@@ -82,6 +86,10 @@ def validate(plan: dict[str, Any], contract: dict[str, Any], contract_report: di
 
     contract_identity = as_text(contract.get("runtime_identity"))
     contract_group = as_text(contract.get("runtime_group"))
+    contract_env_dir = as_text(contract.get("canonical_env_dir"))
+    contract_env_dir_owner = as_text(contract.get("expected_env_dir_owner"))
+    contract_env_dir_group = as_text(contract.get("expected_env_dir_group"))
+    contract_env_dir_mode = as_text(contract.get("expected_env_dir_mode"))
     contract_env_path = as_text(contract.get("canonical_env_path"))
     contract_owner = as_text(contract.get("expected_env_owner"))
     contract_env_group = as_text(contract.get("expected_env_group"))
@@ -90,9 +98,14 @@ def validate(plan: dict[str, Any], contract: dict[str, Any], contract_report: di
     checks = {
         "runtime_identity_target_explicit": bool(target_identity),
         "runtime_group_target_explicit": bool(target_group),
+        "env_dir_target_explicit": bool(target_env_dir),
         "env_path_target_explicit": bool(target_env_path),
         "target_identity_matches_contract": target_identity == contract_identity,
         "target_group_matches_contract": target_group == contract_group,
+        "target_env_dir_matches_contract": target_env_dir == contract_env_dir,
+        "target_env_dir_owner_matches_contract": target_env_dir_owner == contract_env_dir_owner,
+        "target_env_dir_group_matches_contract": target_env_dir_group == contract_env_dir_group,
+        "target_env_dir_mode_710": target_env_dir_mode == "710" and contract_env_dir_mode == "710",
         "target_env_path_matches_contract": target_env_path == contract_env_path,
         "target_env_owner_matches_contract": target_owner == contract_owner,
         "target_env_group_matches_contract": target_env_group == contract_env_group,
@@ -110,6 +123,18 @@ def validate(plan: dict[str, Any], contract: dict[str, Any], contract_report: di
         and f"{target_owner}:{target_env_group}" in json.dumps(steps(plan, "provisioning_steps")),
         "chmod_step_targets_600": has_step(plan, "enforce_production_env_mode", "chmod")
         and "chmod 600" in json.dumps(steps(plan, "provisioning_steps")),
+        "dir_chgrp_step_targets_contract": has_step(
+            plan,
+            "align_production_env_dir_group",
+            "chgrp",
+        )
+        and target_env_dir_group in json.dumps(steps(plan, "provisioning_steps")),
+        "dir_chmod_step_targets_710": has_step(
+            plan,
+            "enforce_production_env_dir_mode",
+            "chmod",
+        )
+        and "chmod 710" in json.dumps(steps(plan, "provisioning_steps")),
         "read_only_validation_step_present": has_step(
             plan,
             "validate_runtime_owner_contract",
@@ -128,6 +153,10 @@ def validate(plan: dict[str, Any], contract: dict[str, Any], contract_report: di
         "plan": {
             "target_runtime_identity": target_identity,
             "target_runtime_group": target_group,
+            "target_env_dir": target_env_dir,
+            "target_env_dir_owner": target_env_dir_owner,
+            "target_env_dir_group": target_env_dir_group,
+            "target_env_dir_mode": target_env_dir_mode,
             "target_env_path": target_env_path,
             "target_env_owner": target_owner,
             "target_env_group": target_env_group,
@@ -178,6 +207,10 @@ Generated at: `{report["generated_at"]}`
 
 - target runtime identity: {plan["target_runtime_identity"]}
 - target runtime group: {plan["target_runtime_group"]}
+- target env dir: `{plan["target_env_dir"]}`
+- target env dir owner: {plan["target_env_dir_owner"]}
+- target env dir group: {plan["target_env_dir_group"]}
+- target env dir mode: {plan["target_env_dir_mode"]}
 - target env path: `{plan["target_env_path"]}`
 - target env owner: {plan["target_env_owner"]}
 - target env group: {plan["target_env_group"]}
