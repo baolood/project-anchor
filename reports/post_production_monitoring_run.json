@@ -43,15 +43,17 @@
       "result": "PASS"
     }
   ],
-  "generated_at": "2026-07-30T15:05:40Z",
+  "generated_at": "2026-07-30T15:41:12Z",
   "inputs": {
+    "alert_json": "reports/post_production_monitoring_alert.json",
+    "alert_markdown": "reports/post_production_monitoring_alert.md",
     "snapshot_json": "reports/post_production_monitoring_snapshot.json",
     "snapshot_markdown": "reports/post_production_monitoring_snapshot.md",
     "snapshot_script": "scripts/generate_post_production_monitoring_snapshot.py"
   },
   "next_gate": "POST_PRODUCTION_MONITORING_SURFACE_OR_OPERATOR_FREEZE",
   "result": "PASS",
-  "snapshot_generated_at": "2026-07-30T15:05:40Z",
+  "snapshot_generated_at": "2026-07-30T15:41:12Z",
   "snapshot_result": "PASS",
   "snapshot_status": "MONITORING_READY_CONTINUOUS_TRADING_DISABLED",
   "status": "POST_PRODUCTION_MONITORING_RUN_READY"

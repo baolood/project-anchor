@@ -49,6 +49,10 @@ class PostProductionMonitoringRunnerTest(unittest.TestCase):
         self.assertEqual(report["boundary"]["new_production_request_sent"], "NO")
         self.assertEqual(report["boundary"]["go_live"], "NO-GO")
         self.assertEqual(report["boundary"]["live_trading"], "NO-GO")
+        alert = runner.build_alert_report(report)
+        self.assertEqual(alert["result"], "CLEAR")
+        self.assertEqual(alert["status"], "POST_PRODUCTION_MONITORING_ALERT_CLEAR")
+        self.assertEqual(alert["boundary"]["new_production_request_sent"], "NO")
 
     def test_runner_blocks_if_snapshot_failed(self):
         report, exit_code = runner.build_run_report(_snapshot(result="BLOCKED"), 1)
@@ -57,6 +61,11 @@ class PostProductionMonitoringRunnerTest(unittest.TestCase):
         self.assertEqual(report["result"], "BLOCKED")
         failed = {item["name"] for item in report["checks"] if item["result"] == "FAIL"}
         self.assertIn("snapshot_result_pass", failed)
+        alert = runner.build_alert_report(report)
+        self.assertEqual(alert["result"], "ACTIVE")
+        self.assertEqual(alert["status"], "POST_PRODUCTION_MONITORING_ALERT_ACTIVE")
+        self.assertEqual(alert["severity"], "page")
+        self.assertEqual(len(alert["failed_checks"]), 1)
 
     def test_runner_blocks_if_snapshot_implies_second_request(self):
         snapshot = _snapshot(

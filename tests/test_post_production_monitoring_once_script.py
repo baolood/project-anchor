@@ -1,4 +1,5 @@
 import os
+import json
 import subprocess
 import tempfile
 import unittest
@@ -38,6 +39,9 @@ class PostProductionMonitoringOnceScriptTest(unittest.TestCase):
                 stderr=subprocess.PIPE,
                 check=False,
             )
+            alert_path = Path(tmp) / "post_production_monitoring_alert.json"
+            self.assertTrue(alert_path.exists())
+            alert = json.loads(alert_path.read_text(encoding="utf-8"))
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("POST_PRODUCTION_MONITORING_ONCE_RESULT=PASS", result.stdout)
@@ -46,6 +50,8 @@ class PostProductionMonitoringOnceScriptTest(unittest.TestCase):
         self.assertIn("SECOND_PRODUCTION_REQUEST_SENT=NO", result.stdout)
         self.assertIn("GO_LIVE=NO-GO", result.stdout)
         self.assertIn("LIVE_TRADING=NO-GO", result.stdout)
+        self.assertEqual(alert["result"], "CLEAR")
+        self.assertEqual(alert["boundary"]["new_production_request_sent"], "NO")
 
 
 if __name__ == "__main__":
