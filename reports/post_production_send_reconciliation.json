@@ -1,0 +1,140 @@
+{
+  "boundary": {
+    "authorization_header_value_disclosed": "NO",
+    "canary_rerun": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "new_production_request_sent_by_reconciliation": "NO",
+    "retry_performed": "NO",
+    "second_production_request_sent": "NO",
+    "secret_hash_disclosed": "NO",
+    "secret_length_disclosed": "NO",
+    "secret_prefix_suffix_disclosed": "NO",
+    "secret_value_disclosed": "NO"
+  },
+  "checks": [
+    {
+      "evidence": "send report result is PASS",
+      "name": "send_result_pass",
+      "result": "PASS"
+    },
+    {
+      "evidence": "production request was attempted exactly by the send report",
+      "name": "production_request_attempted",
+      "result": "PASS"
+    },
+    {
+      "evidence": "production request was accepted",
+      "name": "production_request_accepted",
+      "result": "PASS"
+    },
+    {
+      "evidence": "terminal HTTP status is 200",
+      "name": "http_200",
+      "result": "PASS"
+    },
+    {
+      "evidence": "terminal external status is FILLED",
+      "name": "terminal_filled",
+      "result": "PASS"
+    },
+    {
+      "evidence": "external order id presence is true",
+      "name": "external_order_id_present",
+      "result": "PASS"
+    },
+    {
+      "evidence": "idempotency key matches current max notional risk limit",
+      "name": "idempotency_key_matches_risk_limit",
+      "result": "PASS"
+    },
+    {
+      "evidence": "send window plan is PASS",
+      "name": "window_plan_pass",
+      "result": "PASS"
+    },
+    {
+      "evidence": "fresh send readiness decision was PASS",
+      "name": "fresh_decision_pass",
+      "result": "PASS"
+    },
+    {
+      "evidence": "window plan remains non-authorizing",
+      "name": "window_plan_did_not_authorize_send",
+      "result": "PASS"
+    },
+    {
+      "evidence": "fresh readiness decision remains non-authorizing",
+      "name": "fresh_decision_did_not_authorize_send",
+      "result": "PASS"
+    },
+    {
+      "evidence": "symbol is BTCUSDT",
+      "name": "bounded_symbol",
+      "result": "PASS"
+    },
+    {
+      "evidence": "side is BUY",
+      "name": "bounded_side",
+      "result": "PASS"
+    },
+    {
+      "evidence": "max notional is 10",
+      "name": "bounded_notional",
+      "result": "PASS"
+    },
+    {
+      "evidence": "max order count is one",
+      "name": "exactly_one_order_count",
+      "result": "PASS"
+    },
+    {
+      "evidence": "secret values, lengths, prefixes/suffixes, and hashes were not disclosed",
+      "name": "no_secret_disclosure",
+      "result": "PASS"
+    },
+    {
+      "evidence": "Authorization header value was not disclosed",
+      "name": "authorization_header_not_disclosed",
+      "result": "PASS"
+    },
+    {
+      "evidence": "canary was not rerun",
+      "name": "no_canary_rerun",
+      "result": "PASS"
+    },
+    {
+      "evidence": "go-live remains NO-GO",
+      "name": "go_live_no_go",
+      "result": "PASS"
+    },
+    {
+      "evidence": "live trading remains NO-GO",
+      "name": "live_trading_no_go",
+      "result": "PASS"
+    }
+  ],
+  "errors": [],
+  "generated_at": "2026-07-30T14:02:53Z",
+  "inputs": {
+    "fresh_decision": "reports/fresh_production_send_readiness_decision.json",
+    "risk_limits": "config/production_risk_limits.template.json",
+    "send_result": "reports/production_exactly_one_send_result.json",
+    "window_plan": "reports/production_request_send_window_plan.json"
+  },
+  "next_gate": "POST_PRODUCTION_SEND_MONITORING_AND_BALANCE_RECONCILIATION",
+  "result": "PASS",
+  "summary": {
+    "external_order_id_present": true,
+    "external_status": "FILLED",
+    "http_status": 200,
+    "idempotency_key": "production:ops_manual:BTCUSDT:BUY:10:first-bounded-production-request:v1",
+    "max_notional": "10",
+    "production_request_accepted": "YES",
+    "production_request_attempted": "YES",
+    "production_send_result": "PASS",
+    "production_send_success": true,
+    "side": "BUY",
+    "symbol": "BTCUSDT"
+  }
+}
