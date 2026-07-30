@@ -20,10 +20,10 @@
   },
   "errors": [],
   "execute_failure_code": "PRODUCTION_HTTP_TRANSPORT_NOT_AUTHORIZED",
-  "generated_at": "2026-07-22T08:02:59Z",
+  "generated_at": "2026-07-30T13:30:39Z",
   "params_shape": {
     "newOrderRespType": "FULL",
-    "quoteOrderQty": "4",
+    "quoteOrderQty": "10",
     "recvWindow": 5000,
     "side": "BUY",
     "symbol": "BTCUSDT",
@@ -33,7 +33,7 @@
   "redacted_request_shape": {
     "api_key_present": true,
     "method": "POST",
-    "quoteOrderQty": "4",
+    "quoteOrderQty": "10",
     "request_path": "/api/v3/order",
     "sendable": true,
     "side": "BUY",

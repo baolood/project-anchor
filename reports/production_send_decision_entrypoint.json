@@ -23,7 +23,7 @@
   },
   "current_template_ready_for_exactly_one_send": false,
   "current_template_status": "blocked",
-  "generated_at": "2026-07-22T08:30:29Z",
+  "generated_at": "2026-07-30T13:32:28Z",
   "result": "PASS",
   "surface": "POST /trade-gate/production-order-send-decisions"
 }

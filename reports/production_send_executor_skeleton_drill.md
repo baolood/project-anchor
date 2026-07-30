@@ -1,6 +1,6 @@
 # Production Send Executor Skeleton Drill
 
-Generated at: `2026-07-22T08:02:59Z`
+Generated at: `2026-07-30T13:30:39Z`
 
 ## Result
 
@@ -15,7 +15,7 @@ Generated at: `2026-07-22T08:02:59Z`
 - symbol: BTCUSDT
 - side: BUY
 - type: MARKET
-- quoteOrderQty: 4
+- quoteOrderQty: 10
 - signature_present: True
 - api_key_present: True
 - sendable: True

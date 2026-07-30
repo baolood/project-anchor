@@ -61,9 +61,9 @@ def transport_input() -> dict:
         "market": "binance_spot",
         "symbol": "BTCUSDT",
         "side": "BUY",
-        "notional": 4,
+        "notional": 10,
         "order_type": "market",
-        "idempotency_key": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
+        "idempotency_key": "production:ops_manual:BTCUSDT:BUY:10:first-bounded-production-request:v1",
     }
 
 

@@ -19,7 +19,7 @@
   },
   "errors": [],
   "evidence": {
-    "max_notional": "4",
+    "max_notional": "10",
     "max_order_count": "1",
     "production_api_configuration": "PASS",
     "production_credential_readiness": "PASS",
@@ -40,7 +40,7 @@
     "production_http_network": "NO",
     "production_signing": "NO"
   },
-  "generated_at": "2026-07-30T12:30:55Z",
+  "generated_at": "2026-07-30T13:30:57Z",
   "inputs": {
     "production_api_configuration": "reports/production_api_configuration_validation.json",
     "production_credential_readiness": "reports/production_credential_readiness_validation.json",

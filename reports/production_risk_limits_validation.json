@@ -26,7 +26,7 @@
     "AUTHORIZED_STOP_CONDITIONS": "PRESENT",
     "FINAL_OPERATOR_VERDICT": "PRESENT"
   },
-  "generated_at": "2026-07-19T09:44:01Z",
+  "generated_at": "2026-07-30T13:30:43Z",
   "input_file": "config/production_risk_limits.template.json",
   "result": "PASS",
   "warnings": []

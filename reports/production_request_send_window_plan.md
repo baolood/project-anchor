@@ -1,6 +1,6 @@
 # Production Request Send Window Plan
 
-Generated at: `2026-07-30T13:17:35Z`
+Generated at: `2026-07-30T13:31:05Z`
 
 ## Result
 
@@ -13,10 +13,10 @@ Generated at: `2026-07-30T13:17:35Z`
 ## Planned Window
 
 - window_type: fresh_bounded_authorization_window
-- not_before: 2026-07-30T13:17:35Z
-- expires_at: 2026-07-30T14:17:35Z
+- not_before: 2026-07-30T13:31:05Z
+- expires_at: 2026-07-30T14:31:05Z
 - duration_minutes: 60
-- monitor_until: 2026-07-30T14:32:35Z
+- monitor_until: 2026-07-30T14:46:05Z
 - monitoring_window: 15_minutes_after_execution
 
 ## Planned Request
@@ -24,11 +24,11 @@ Generated at: `2026-07-30T13:17:35Z`
 - market: binance_spot
 - symbol: BTCUSDT
 - side: BUY
-- max_notional: 4
+- max_notional: 10
 - max_order_count: 1
 - order_type: market
 - idempotency_policy: required_unique_key_per_authorized_window
-- idempotency_key_template: production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1
+- idempotency_key_template: production:ops_manual:BTCUSDT:BUY:10:first-bounded-production-request:v1
 - sendable: False
 
 ## Preconditions

@@ -34,9 +34,9 @@ def transport_input() -> dict:
         "market": "binance_spot",
         "symbol": "BTCUSDT",
         "side": "BUY",
-        "notional": 4,
+        "notional": 10,
         "order_type": "market",
-        "idempotency_key": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
+        "idempotency_key": "production:ops_manual:BTCUSDT:BUY:10:first-bounded-production-request:v1",
     }
 
 
@@ -81,7 +81,7 @@ def build_report() -> tuple[dict, int]:
             params.get("symbol") == "BTCUSDT"
             and params.get("side") == "BUY"
             and params.get("type") == "MARKET"
-            and params.get("quoteOrderQty") == "4"
+            and params.get("quoteOrderQty") == "10"
         ),
         "redacted_request_shape_valid": (
             request_shape.get("signature_present") is True

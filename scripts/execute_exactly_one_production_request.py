@@ -177,10 +177,12 @@ def credential_contract_not_evaluated(path: Path, contract: dict[str, Any]) -> d
     }
 
 def request_body() -> dict[str, Any]:
+    risk_limits = read_json(ROOT / "config" / "production_risk_limits.template.json")
+    notional = risk_limits.get("AUTHORIZED_MAX_NOTIONAL") or 10
     return {
         "symbol": "BTCUSDT",
         "side": "BUY",
-        "notional": 4,
+        "notional": notional,
         "order_type": "market",
         "execution_mode": "production",
         "market": "binance_spot",
@@ -325,7 +327,7 @@ def build_execution_report(
             "market": "binance_spot",
             "symbol": "BTCUSDT",
             "side": "BUY",
-            "max_notional": 4,
+            "max_notional": request_body()["notional"],
             "order_type": "market",
         },
         "terminal": {

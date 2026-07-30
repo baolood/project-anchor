@@ -1,6 +1,6 @@
 # Production No-Send Execution Drill
 
-Generated at: `2026-07-19T15:06:29Z`
+Generated at: `2026-07-30T13:30:40Z`
 
 ## Result
 
@@ -21,7 +21,7 @@ Generated at: `2026-07-19T15:06:29Z`
 - AUTHORIZED_PRODUCTION_MARKET: PASS (actual: binance_spot, expected: binance_spot)
 - AUTHORIZED_PRODUCTION_SYMBOLS: PASS (actual: BTCUSDT, expected: BTCUSDT)
 - AUTHORIZED_PRODUCTION_SIDES: PASS (actual: BUY_ONLY, expected: BUY_ONLY)
-- AUTHORIZED_MAX_NOTIONAL: PASS (actual: 4, expected: 4)
+- AUTHORIZED_MAX_NOTIONAL: PASS (actual: 10, expected: 10)
 - AUTHORIZED_MAX_ORDER_COUNT: PASS (actual: 1, expected: 1)
 
 ## No-Send Boundary Checks

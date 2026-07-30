@@ -26,7 +26,7 @@ def _valid_production_body(**overrides):
     body = {
         "symbol": "BTCUSDT",
         "side": "BUY",
-        "notional": 4,
+        "notional": 10,
         "order_type": "market",
         "execution_mode": "production",
         "market": "binance_spot",
@@ -256,7 +256,7 @@ class ProductionTradeGateFailClosedTest(unittest.TestCase):
         self.assertEqual(payload["market"], "binance_spot")
         self.assertEqual(payload["symbol"], "BTCUSDT")
         self.assertEqual(payload["side"], "BUY")
-        self.assertEqual(payload["notional"], 4.0)
+        self.assertEqual(payload["notional"], 10.0)
         self.assertTrue(payload["command_creation_only"])
         self.assertFalse(payload["production_signing_executed"])
         self.assertFalse(payload["production_http_network_executed"])

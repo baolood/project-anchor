@@ -144,9 +144,9 @@ def build_report() -> tuple[dict[str, Any], int]:
             risk_limit_summary["market"] == "binance_spot"
             and risk_limit_summary["symbols"] == "BTCUSDT"
             and risk_limit_summary["sides"] == "BUY_ONLY"
-            and str(risk_limit_summary["max_notional"]) == "4"
+            and str(risk_limit_summary["max_notional"]) == "10"
             and str(risk_limit_summary["max_order_count"]) == "1",
-            "production risk limits remain exactly-one BTCUSDT BUY max notional 4",
+            "production risk limits remain exactly-one BTCUSDT BUY max notional 10",
         ),
         check(
             "go_live_still_no_go",

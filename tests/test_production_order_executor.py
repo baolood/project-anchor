@@ -26,9 +26,9 @@ def _transport_input(**overrides):
         "market": "binance_spot",
         "symbol": "BTCUSDT",
         "side": "BUY",
-        "notional": 4,
+        "notional": 10,
         "order_type": "market",
-        "idempotency_key": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
+        "idempotency_key": "production:ops_manual:BTCUSDT:BUY:10:first-bounded-production-request:v1",
     }
     data.update(overrides)
     return data
@@ -46,7 +46,7 @@ def _authorized_gate_config(**overrides):
         "PRODUCTION_REQUEST_SEND_WINDOW_EXPIRES_AT": "2026-07-22T09:00:00Z",
         "PRODUCTION_REQUEST_SEND_NO_RETRY": True,
         "PRODUCTION_REQUEST_SEND_IDEMPOTENCY_KEY": (
-            "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1"
+            "production:ops_manual:BTCUSDT:BUY:10:first-bounded-production-request:v1"
         ),
         "FINAL_PRODUCTION_REQUEST_SEND_OPERATOR_VERDICT": (
             "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_ONLY"
@@ -88,7 +88,7 @@ class ProductionOrderExecutorTest(unittest.TestCase):
         self.assertEqual(params["symbol"], "BTCUSDT")
         self.assertEqual(params["side"], "BUY")
         self.assertEqual(params["type"], "MARKET")
-        self.assertEqual(params["quoteOrderQty"], "4")
+        self.assertEqual(params["quoteOrderQty"], "10")
         self.assertEqual(params["newOrderRespType"], "FULL")
         self.assertEqual(params["timestamp"], 1234567890)
 

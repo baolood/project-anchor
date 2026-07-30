@@ -68,7 +68,7 @@ def request_body() -> dict:
     return {
         "symbol": "BTCUSDT",
         "side": "BUY",
-        "notional": 4,
+        "notional": 10,
         "order_type": "market",
         "execution_mode": "production",
         "market": "binance_spot",
