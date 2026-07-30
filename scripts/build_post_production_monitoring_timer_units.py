@@ -18,7 +18,14 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
-def service_unit(project_root: str, output_dir: str) -> str:
+def bind_paths(project_root: str, source_project_root: str | None) -> str:
+    if source_project_root and source_project_root != project_root:
+        return f"{source_project_root}:{project_root}"
+    return project_root
+
+
+def service_unit(project_root: str, output_dir: str, source_project_root: str | None = None) -> str:
+    project_bind = bind_paths(project_root, source_project_root)
     return f"""[Unit]
 Description=Project Anchor read-only post-production monitoring refresh
 Documentation=https://github.com/baolood/project-anchor
@@ -32,7 +39,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=full
-BindReadOnlyPaths={project_root}
+BindReadOnlyPaths={project_bind}
 ReadWritePaths={output_dir}
 """
 
@@ -115,6 +122,7 @@ Generated at: `{report["generated_at"]}`
 
 def build_report(
     project_root: str,
+    source_project_root: str | None,
     output_dir: str,
     interval_minutes: int,
     service_text: str,
@@ -159,6 +167,7 @@ def build_report(
         "service_unit": SERVICE_NAME,
         "timer_unit": TIMER_NAME,
         "project_root": project_root,
+        "source_project_root": source_project_root,
         "output_dir": output_dir,
         "interval_minutes": interval_minutes,
         "checks": checks,
@@ -181,6 +190,7 @@ def build_report(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project-root", default="/root/project-anchor")
+    parser.add_argument("--source-project-root", default=None)
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--interval-minutes", type=int, default=15)
     parser.add_argument("--unit-dir", required=True)
@@ -195,7 +205,7 @@ def main() -> int:
     unit_dir.mkdir(parents=True, exist_ok=True)
     report_dir.mkdir(parents=True, exist_ok=True)
 
-    service_text = service_unit(args.project_root, args.output_dir)
+    service_text = service_unit(args.project_root, args.output_dir, args.source_project_root)
     timer_text = timer_unit(args.interval_minutes)
     errors = validate_units(service_text, timer_text)
 
@@ -206,6 +216,7 @@ def main() -> int:
 
     report = build_report(
         args.project_root,
+        args.source_project_root,
         args.output_dir,
         args.interval_minutes,
         service_text,
