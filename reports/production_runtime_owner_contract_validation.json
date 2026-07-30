@@ -15,26 +15,35 @@
   },
   "checks": {
     "env_dir_exists": true,
+    "env_dir_expectation_explicit": true,
+    "env_dir_group_expectation_explicit": true,
     "env_dir_group_match": true,
+    "env_dir_mode_expectation_710": true,
     "env_dir_mode_match": true,
+    "env_dir_owner_expectation_explicit": true,
     "env_dir_owner_match": true,
     "env_file_exists": true,
+    "env_group_expectation_explicit": true,
+    "env_mode_expectation_600": true,
+    "env_owner_expectation_explicit": true,
     "go_live_no_go": true,
     "group_based_secret_access_no": true,
     "group_match": true,
+    "identity_unresolved_fail_closed": true,
     "interactive_sudo_required_no": true,
     "live_trading_no_go": true,
     "mode_match": true,
+    "mode_mismatch_fail_closed": true,
     "owner_match": true,
+    "owner_mismatch_fail_closed": true,
     "owner_or_mode_change_authorized_no": true,
     "production_env_change_authorized_no": true,
     "production_request_authorized_no": true,
-    "running_as_root_for_metadata_only": true,
     "runtime_group_explicit": true,
     "runtime_group_resolved": true,
-    "runtime_identity_can_read_env_file": true,
     "runtime_identity_explicit": true,
-    "runtime_identity_resolved": true
+    "runtime_identity_resolved": true,
+    "stat_permission_failure_fail_closed": true
   },
   "contract": {
     "canonical_env_dir": "/etc/project-anchor",
@@ -51,7 +60,7 @@
     "runtime_identity": "project_anchor_runtime"
   },
   "errors": [],
-  "generated_at": "2026-07-30T10:06:19Z",
+  "generated_at": "2026-07-30T12:59:37Z",
   "observed_env": {
     "exists": true,
     "group": "project_anchor_runtime",
@@ -66,6 +75,5 @@
     "owner": "root",
     "stat_error": null
   },
-  "result": "PASS",
-  "validation_mode": "macos_root_assisted_metadata_only"
+  "result": "PASS"
 }
