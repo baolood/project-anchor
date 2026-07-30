@@ -1,6 +1,6 @@
 # Production Exactly-One Send Result
 
-Generated at: `2026-07-30T12:59:57Z`
+Generated at: `2026-07-30T13:17:35Z`
 
 ## Result
 
@@ -48,6 +48,8 @@ Generated at: `2026-07-30T12:59:57Z`
 - external order id present: false
 - exchange error code present: True
 - exchange error message present: True
+- exchange error code: -1013
+- exchange error message: Filter failure: NOTIONAL
 - transport error type: None
 
 ## Boundary
