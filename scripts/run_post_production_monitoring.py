@@ -25,6 +25,8 @@ RUN_JSON_OUT = OUTPUT_DIR / "post_production_monitoring_run.json"
 RUN_MD_OUT = OUTPUT_DIR / "post_production_monitoring_run.md"
 SNAPSHOT_JSON_OUT = OUTPUT_DIR / "post_production_monitoring_snapshot.json"
 SNAPSHOT_MD_OUT = OUTPUT_DIR / "post_production_monitoring_snapshot.md"
+ALERT_JSON_OUT = OUTPUT_DIR / "post_production_monitoring_alert.json"
+ALERT_MD_OUT = OUTPUT_DIR / "post_production_monitoring_alert.md"
 
 
 def utc_now() -> str:
@@ -110,6 +112,8 @@ def build_run_report(snapshot_report: dict[str, Any], snapshot_exit_code: int) -
             "snapshot_script": str(SNAPSHOT_SCRIPT.relative_to(ROOT)),
             "snapshot_json": str(SNAPSHOT_JSON_OUT),
             "snapshot_markdown": str(SNAPSHOT_MD_OUT),
+            "alert_json": str(ALERT_JSON_OUT),
+            "alert_markdown": str(ALERT_MD_OUT),
         },
         "boundary": {
             "credential_file_read": "NO",
@@ -126,6 +130,45 @@ def build_run_report(snapshot_report: dict[str, Any], snapshot_exit_code: int) -
         "next_gate": "POST_PRODUCTION_MONITORING_SURFACE_OR_OPERATOR_FREEZE",
     }
     return report, 0 if result == "PASS" else 1
+
+
+def build_alert_report(run_report: dict[str, Any]) -> dict[str, Any]:
+    failed_checks = [
+        item
+        for item in run_report.get("checks", [])
+        if isinstance(item, dict) and item.get("result") != "PASS"
+    ]
+    active = run_report.get("result") != "PASS"
+    return {
+        "generated_at": utc_now(),
+        "result": "ACTIVE" if active else "CLEAR",
+        "status": (
+            "POST_PRODUCTION_MONITORING_ALERT_ACTIVE"
+            if active
+            else "POST_PRODUCTION_MONITORING_ALERT_CLEAR"
+        ),
+        "severity": "page" if active else "none",
+        "source_run_status": run_report.get("status"),
+        "source_run_result": run_report.get("result"),
+        "failed_checks": failed_checks,
+        "summary": (
+            "Post-production monitoring is blocked; operator review required."
+            if active
+            else "Post-production monitoring is clear."
+        ),
+        "boundary": {
+            "credential_file_read": "NO",
+            "secret_value_disclosed": "NO",
+            "production_signing_executed": "NO",
+            "production_http_network_attempted": "NO",
+            "new_production_request_sent": "NO",
+            "second_production_request_sent": "NO",
+            "canary_rerun": "NO",
+            "runtime_modified": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
 
 
 def markdown(report: dict[str, Any]) -> str:
@@ -156,6 +199,39 @@ Generated at: `{report["generated_at"]}`
 """
 
 
+def alert_markdown(report: dict[str, Any]) -> str:
+    failed = report.get("failed_checks", [])
+    failed_lines = "\n".join(
+        f"- {item.get('name')}: {item.get('result')} ({item.get('evidence')})"
+        for item in failed
+        if isinstance(item, dict)
+    )
+    if not failed_lines:
+        failed_lines = "- none"
+    boundary = "\n".join(f"- {key}: {value}" for key, value in report["boundary"].items())
+    return f"""# Post Production Monitoring Alert
+
+Generated at: `{report["generated_at"]}`
+
+## Result
+
+- result: {report["result"]}
+- status: {report["status"]}
+- severity: {report["severity"]}
+- summary: {report["summary"]}
+- source run result: {report["source_run_result"]}
+- source run status: {report["source_run_status"]}
+
+## Failed Checks
+
+{failed_lines}
+
+## Boundary
+
+{boundary}
+"""
+
+
 def main() -> int:
     snapshot_module = load_snapshot_module()
     snapshot_report, snapshot_exit_code = snapshot_module.build_report()
@@ -167,8 +243,11 @@ def main() -> int:
     SNAPSHOT_MD_OUT.write_text(snapshot_module.markdown(snapshot_report), encoding="utf-8")
 
     run_report, exit_code = build_run_report(snapshot_report, snapshot_exit_code)
+    alert_report = build_alert_report(run_report)
     RUN_JSON_OUT.write_text(json.dumps(run_report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     RUN_MD_OUT.write_text(markdown(run_report), encoding="utf-8")
+    ALERT_JSON_OUT.write_text(json.dumps(alert_report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    ALERT_MD_OUT.write_text(alert_markdown(alert_report), encoding="utf-8")
 
     print("[Post Production Monitoring Run]")
     print(f"output dir: {OUTPUT_DIR}")
@@ -176,7 +255,10 @@ def main() -> int:
     print(f"run Markdown: {RUN_MD_OUT}")
     print(f"snapshot JSON: {SNAPSHOT_JSON_OUT}")
     print(f"snapshot Markdown: {SNAPSHOT_MD_OUT}")
+    print(f"alert JSON: {ALERT_JSON_OUT}")
+    print(f"alert Markdown: {ALERT_MD_OUT}")
     print(f"result: {run_report['result']}")
+    print(f"alert: {alert_report['result']}")
     print(f"status: {run_report['status']}")
     print(f"new_production_request_sent: {run_report['boundary']['new_production_request_sent']}")
     print(f"go_live: {run_report['boundary']['go_live']}")

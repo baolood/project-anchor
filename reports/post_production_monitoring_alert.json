@@ -1,0 +1,22 @@
+{
+  "boundary": {
+    "canary_rerun": "NO",
+    "credential_file_read": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "new_production_request_sent": "NO",
+    "production_http_network_attempted": "NO",
+    "production_signing_executed": "NO",
+    "runtime_modified": "NO",
+    "second_production_request_sent": "NO",
+    "secret_value_disclosed": "NO"
+  },
+  "failed_checks": [],
+  "generated_at": "2026-07-30T15:41:12Z",
+  "result": "CLEAR",
+  "severity": "none",
+  "source_run_result": "PASS",
+  "source_run_status": "POST_PRODUCTION_MONITORING_RUN_READY",
+  "status": "POST_PRODUCTION_MONITORING_ALERT_CLEAR",
+  "summary": "Post-production monitoring is clear."
+}
