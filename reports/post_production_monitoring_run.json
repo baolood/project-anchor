@@ -43,7 +43,7 @@
       "result": "PASS"
     }
   ],
-  "generated_at": "2026-07-30T14:43:27Z",
+  "generated_at": "2026-07-30T15:05:40Z",
   "inputs": {
     "snapshot_json": "reports/post_production_monitoring_snapshot.json",
     "snapshot_markdown": "reports/post_production_monitoring_snapshot.md",
@@ -51,7 +51,7 @@
   },
   "next_gate": "POST_PRODUCTION_MONITORING_SURFACE_OR_OPERATOR_FREEZE",
   "result": "PASS",
-  "snapshot_generated_at": "2026-07-30T14:43:27Z",
+  "snapshot_generated_at": "2026-07-30T15:05:40Z",
   "snapshot_result": "PASS",
   "snapshot_status": "MONITORING_READY_CONTINUOUS_TRADING_DISABLED",
   "status": "POST_PRODUCTION_MONITORING_RUN_READY"
