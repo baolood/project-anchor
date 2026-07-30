@@ -1,35 +1,35 @@
 # Post Production Alerting Readiness
 
-Generated at: `2026-07-30T16:18:22Z`
+Generated at: `2026-07-30T16:24:04Z`
 
 ## Result
 
-- result: BLOCKED
-- status: POST_PRODUCTION_ALERTING_READINESS_BLOCKED
-- failure code: ALERTING_ENV_FILE_MISSING_OR_UNREADABLE_METADATA
-- inspect env requested: False
+- result: PASS
+- status: POST_PRODUCTION_ALERTING_READY
+- failure code: none
+- inspect env requested: True
 
 ## Checks
 
 - path: /etc/project-anchor/alerting.env
-- exists: NO
-- owner: 
-- group: 
-- mode: 
+- exists: YES
+- owner: root
+- group: project_anchor_runtime
+- mode: 640
 - expected_owner: root
 - expected_group: project_anchor_runtime
 - expected_mode: 640
-- owner_match: NO
-- group_match: NO
-- mode_match: NO
-- telegram_notify_enabled_present: NOT_INSPECTED
-- telegram_notify_enabled_valid: NOT_INSPECTED
-- telegram_bot_token_present: NOT_INSPECTED
-- telegram_chat_id_present: NOT_INSPECTED
+- owner_match: YES
+- group_match: YES
+- mode_match: YES
+- telegram_notify_enabled_present: YES
+- telegram_notify_enabled_valid: YES
+- telegram_bot_token_present: YES
+- telegram_chat_id_present: YES
 
 ## Boundary
 
-- alerting_env_content_read: NO
+- alerting_env_content_read: YES
 - telegram_bot_token_value_disclosed: NO
 - telegram_chat_id_value_disclosed: NO
 - telegram_http_attempted: NO

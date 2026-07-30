@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-22T02:05:04Z`
+Generated at: `2026-07-30T16:39:35Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-22T02:05:04Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-22T02:05:01.175094+00:00`
+- worker heartbeat at: `2026-07-30T16:39:10.047325+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -89,8 +89,8 @@ Generated at: `2026-07-22T02:05:04Z`
 - plan valid: true
 - send authorized: false
 - execution allowed by this plan: false
-- planned idempotency key template: `production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1`
-- window expires at: `2026-07-21T11:16:12Z`
+- planned idempotency key template: `production:ops_manual:BTCUSDT:BUY:10:first-bounded-production-request:v1`
+- window expires at: `2026-07-30T14:52:57Z`
 - next gate: WAITING_FOR_EXPLICIT_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_AUTHORIZATION
 
 ## Production Send Entrypoint Fail-Closed
@@ -116,6 +116,35 @@ Generated at: `2026-07-22T02:05:04Z`
 - worker executable: false
 - pre worker executable count: 0
 - post worker executable count: 0
+
+## Post-Production Monitoring
+
+- result: PASS
+- status: POST_PRODUCTION_MONITORING_RUN_READY
+- snapshot result: PASS
+- snapshot status: MONITORING_READY_CONTINUOUS_TRADING_DISABLED
+- generated at: `2026-07-30T15:59:19Z`
+
+## Post-Production Alerting Readiness
+
+- result: PASS
+- status: POST_PRODUCTION_ALERTING_READY
+- failure code: none
+- alerting env content read: YES
+- Telegram HTTP attempted: NO
+- Telegram message sent: NO
+
+## Post-Production Telegram Sender
+
+- result: BLOCKED
+- status: POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED
+- source payload result: SUPPRESSED
+- execute requested: true
+- send attempted: NO
+- send result: NOT_ATTEMPTED
+- failure code: PAYLOAD_NOT_READY_TO_SEND
+- alerting env read: NO
+- Telegram HTTP attempted: NO
 
 ### Production Gates
 

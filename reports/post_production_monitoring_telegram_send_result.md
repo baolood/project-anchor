@@ -1,12 +1,12 @@
 # Post Production Monitoring Telegram Send Result
 
-Generated at: `2026-07-30T16:11:35Z`
+Generated at: `2026-07-30T16:32:37Z`
 
 ## Result
 
 - result: BLOCKED
 - status: POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED
-- execute requested: False
+- execute requested: True
 - source payload result: SUPPRESSED
 - send attempted: NO
 - send result: NOT_ATTEMPTED

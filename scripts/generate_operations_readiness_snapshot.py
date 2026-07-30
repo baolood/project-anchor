@@ -43,6 +43,11 @@ PRODUCTION_SEND_ENTRYPOINT_FAIL_CLOSED_REPORT = (
 PRODUCTION_NON_EXECUTABLE_COMMAND_CREATION_DRILL_REPORT = (
     REPORTS_DIR / "production_non_executable_command_creation_drill.json"
 )
+POST_PRODUCTION_MONITORING_RUN_REPORT = REPORTS_DIR / "post_production_monitoring_run.json"
+POST_PRODUCTION_ALERTING_READINESS_REPORT = REPORTS_DIR / "post_production_alerting_readiness.json"
+POST_PRODUCTION_TELEGRAM_SEND_RESULT_REPORT = (
+    REPORTS_DIR / "post_production_monitoring_telegram_send_result.json"
+)
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 CONTROLLED_COMMAND_ID = os.getenv(
@@ -483,6 +488,115 @@ def load_production_non_executable_command_creation_drill() -> dict[str, Any]:
     }
 
 
+def load_post_production_monitoring_run() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "status": "POST_PRODUCTION_MONITORING_RUN_UNREADABLE",
+        "snapshot_result": "UNREADABLE",
+        "snapshot_status": "UNREADABLE",
+        "generated_at": None,
+        "checks": [],
+        "boundary": {
+            "credential_file_read": "NO",
+            "secret_value_disclosed": "NO",
+            "production_signing_executed": "NO",
+            "production_http_network_attempted": "NO",
+            "new_production_request_sent": "NO",
+            "second_production_request_sent": "NO",
+            "canary_rerun": "NO",
+            "runtime_modified": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(POST_PRODUCTION_MONITORING_RUN_REPORT.read_text(encoding="utf-8"))
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "status": data.get("status", "UNKNOWN"),
+        "snapshot_result": data.get("snapshot_result", "UNKNOWN"),
+        "snapshot_status": data.get("snapshot_status", "UNKNOWN"),
+        "generated_at": data.get("generated_at"),
+        "checks": data.get("checks") if isinstance(data.get("checks"), list) else [],
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
+def load_post_production_alerting_readiness() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "status": "POST_PRODUCTION_ALERTING_READINESS_UNREADABLE",
+        "failure_code": "REPORT_UNREADABLE",
+        "checks": {},
+        "boundary": {
+            "alerting_env_content_read": "NO",
+            "telegram_bot_token_value_disclosed": "NO",
+            "telegram_chat_id_value_disclosed": "NO",
+            "telegram_http_attempted": "NO",
+            "telegram_message_sent": "NO",
+            "production_request_sent": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(POST_PRODUCTION_ALERTING_READINESS_REPORT.read_text(encoding="utf-8"))
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "status": data.get("status", "UNKNOWN"),
+        "failure_code": data.get("failure_code", ""),
+        "inspect_env_requested": bool(data.get("inspect_env_requested")),
+        "checks": data.get("checks") if isinstance(data.get("checks"), dict) else {},
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
+def load_post_production_telegram_send_result() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_UNREADABLE",
+        "failure_code": "REPORT_UNREADABLE",
+        "execute_requested": False,
+        "source_payload_result": "UNKNOWN",
+        "send_attempted": "NO",
+        "send_result": "NOT_ATTEMPTED",
+        "boundary": {
+            "alerting_env_read": "NO",
+            "secret_value_disclosed": "NO",
+            "telegram_http_attempted": "NO",
+            "production_request_sent": "NO",
+            "second_production_request_sent": "NO",
+            "canary_rerun": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(POST_PRODUCTION_TELEGRAM_SEND_RESULT_REPORT.read_text(encoding="utf-8"))
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "status": data.get("status", "UNKNOWN"),
+        "failure_code": data.get("failure_code", ""),
+        "execute_requested": bool(data.get("execute_requested")),
+        "source_payload_result": data.get("source_payload_result"),
+        "send_attempted": data.get("send_attempted", "NO"),
+        "send_result": data.get("send_result", "NOT_ATTEMPTED"),
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -531,6 +645,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     production_non_executable_command_creation_drill = (
         load_production_non_executable_command_creation_drill()
     )
+    post_production_monitoring_run = load_post_production_monitoring_run()
+    post_production_alerting_readiness = load_post_production_alerting_readiness()
+    post_production_telegram_send_result = load_post_production_telegram_send_result()
     production_execution_ready = production_execution_readiness.get("result") == "PASS"
 
     hard_failures = [
@@ -591,6 +708,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         "production_non_executable_command_creation_drill": (
             production_non_executable_command_creation_drill
         ),
+        "post_production_monitoring_run": post_production_monitoring_run,
+        "post_production_alerting_readiness": post_production_alerting_readiness,
+        "post_production_telegram_send_result": post_production_telegram_send_result,
         "go_live": {
             "verdict": "NO-GO",
             "blocking_gates": GO_LIVE_BLOCKERS,
@@ -692,6 +812,41 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "production_non_executable_command_creation_drill_resolved": pass_fail(
                 production_non_executable_command_creation_drill.get("result") == "PASS"
             ),
+            "post_production_monitoring_run_resolved": pass_fail(
+                post_production_monitoring_run.get("result") == "PASS"
+            ),
+            "post_production_alerting_readiness_resolved": pass_fail(
+                post_production_alerting_readiness.get("result") == "PASS"
+            ),
+            "post_production_alerting_secret_disclosure": pass_fail(
+                post_production_alerting_readiness.get("boundary", {}).get(
+                    "telegram_bot_token_value_disclosed"
+                )
+                != "YES"
+                and post_production_alerting_readiness.get("boundary", {}).get(
+                    "telegram_chat_id_value_disclosed"
+                )
+                != "YES"
+            ),
+            "post_production_telegram_sender_result_resolved": pass_fail(
+                post_production_telegram_send_result.get("result") in {"PASS", "BLOCKED"}
+            ),
+            "post_production_telegram_sender_fail_closed_or_delivered": pass_fail(
+                (
+                    post_production_telegram_send_result.get("result") == "PASS"
+                    and post_production_telegram_send_result.get("send_result") == "DELIVERED"
+                )
+                or (
+                    post_production_telegram_send_result.get("result") == "BLOCKED"
+                    and post_production_telegram_send_result.get("send_attempted") == "NO"
+                )
+            ),
+            "post_production_telegram_secret_disclosed": pass_fail(
+                post_production_telegram_send_result.get("boundary", {}).get(
+                    "secret_value_disclosed"
+                )
+                != "YES"
+            ),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -719,6 +874,9 @@ def markdown(snapshot: dict[str, Any]) -> str:
     send_window = snapshot["production_request_send_window_plan"]
     send_entrypoint = snapshot["production_send_entrypoint_fail_closed"]
     non_executable_creation = snapshot["production_non_executable_command_creation_drill"]
+    post_monitoring = snapshot["post_production_monitoring_run"]
+    post_alerting = snapshot["post_production_alerting_readiness"]
+    post_telegram = snapshot["post_production_telegram_send_result"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
     production_blockers = "\n".join(
         f"- {item}" for item in production_readiness.get("blockers", [])
@@ -728,6 +886,8 @@ def markdown(snapshot: dict[str, Any]) -> str:
     ) or "- none"
     controlled_chain = " -> ".join(controlled.get("event_chain") or [])
     canary_chain = " -> ".join(canary.get("event_chain") or [])
+    post_alerting_failure_code = post_alerting.get("failure_code") or "none"
+    post_telegram_failure_code = post_telegram.get("failure_code") or "none"
 
     return f"""# Project Anchor Operations Readiness Snapshot
 
@@ -847,6 +1007,35 @@ Generated at: `{snapshot["generated_at"]}`
 - worker executable: {str(non_executable_creation.get("worker_executable")).lower()}
 - pre worker executable count: {non_executable_creation.get("pre_worker_executable_count")}
 - post worker executable count: {non_executable_creation.get("post_worker_executable_count")}
+
+## Post-Production Monitoring
+
+- result: {post_monitoring.get("result")}
+- status: {post_monitoring.get("status")}
+- snapshot result: {post_monitoring.get("snapshot_result")}
+- snapshot status: {post_monitoring.get("snapshot_status")}
+- generated at: `{post_monitoring.get("generated_at")}`
+
+## Post-Production Alerting Readiness
+
+- result: {post_alerting.get("result")}
+- status: {post_alerting.get("status")}
+- failure code: {post_alerting_failure_code}
+- alerting env content read: {post_alerting.get("boundary", {}).get("alerting_env_content_read")}
+- Telegram HTTP attempted: {post_alerting.get("boundary", {}).get("telegram_http_attempted")}
+- Telegram message sent: {post_alerting.get("boundary", {}).get("telegram_message_sent")}
+
+## Post-Production Telegram Sender
+
+- result: {post_telegram.get("result")}
+- status: {post_telegram.get("status")}
+- source payload result: {post_telegram.get("source_payload_result")}
+- execute requested: {str(post_telegram.get("execute_requested")).lower()}
+- send attempted: {post_telegram.get("send_attempted")}
+- send result: {post_telegram.get("send_result")}
+- failure code: {post_telegram_failure_code}
+- alerting env read: {post_telegram.get("boundary", {}).get("alerting_env_read")}
+- Telegram HTTP attempted: {post_telegram.get("boundary", {}).get("telegram_http_attempted")}
 
 ### Production Gates
 
@@ -1002,6 +1191,38 @@ def main() -> int:
     print(
         "production_non_executable_worker_executable: "
         f"{str(snapshot['production_non_executable_command_creation_drill'].get('worker_executable')).lower()}"
+    )
+    print(
+        "post_production_monitoring_run: "
+        f"{snapshot['post_production_monitoring_run'].get('result')}"
+    )
+    print(
+        "post_production_monitoring_status: "
+        f"{snapshot['post_production_monitoring_run'].get('status')}"
+    )
+    print(
+        "post_production_alerting_readiness: "
+        f"{snapshot['post_production_alerting_readiness'].get('result')}"
+    )
+    print(
+        "post_production_alerting_status: "
+        f"{snapshot['post_production_alerting_readiness'].get('status')}"
+    )
+    print(
+        "post_production_telegram_sender_result: "
+        f"{snapshot['post_production_telegram_send_result'].get('result')}"
+    )
+    print(
+        "post_production_telegram_sender_status: "
+        f"{snapshot['post_production_telegram_send_result'].get('status')}"
+    )
+    print(
+        "post_production_telegram_send_attempted: "
+        f"{snapshot['post_production_telegram_send_result'].get('send_attempted')}"
+    )
+    print(
+        "post_production_telegram_http_attempted: "
+        f"{snapshot['post_production_telegram_send_result'].get('boundary', {}).get('telegram_http_attempted')}"
     )
     print("secret_read: NO")
     print("new_external_request_sent: NO")
