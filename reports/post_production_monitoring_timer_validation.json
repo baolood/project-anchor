@@ -39,11 +39,12 @@
     }
   ],
   "errors": [],
-  "generated_at": "2026-07-30T15:28:12Z",
+  "generated_at": "2026-07-30T15:33:52Z",
   "interval_minutes": 15,
   "output_dir": "/var/lib/project-anchor/reports",
-  "project_root": "/root/project-anchor",
+  "project_root": "/opt/project-anchor",
   "result": "PASS",
   "service_unit": "project-anchor-post-production-monitoring.service",
+  "source_project_root": "/root/project-anchor",
   "timer_unit": "project-anchor-post-production-monitoring.timer"
 }

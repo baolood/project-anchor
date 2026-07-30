@@ -19,17 +19,22 @@ spec.loader.exec_module(module)
 
 class PostProductionMonitoringTimerUnitsTest(unittest.TestCase):
     def test_unit_content_is_read_only_monitoring_only(self):
-        service = module.service_unit("/root/project-anchor", "/var/lib/project-anchor/reports")
+        service = module.service_unit(
+            "/opt/project-anchor",
+            "/var/lib/project-anchor/reports",
+            "/root/project-anchor",
+        )
         timer = module.timer_unit(15)
         errors = module.validate_units(service, timer)
 
         self.assertEqual(errors, [])
         self.assertIn("run_post_production_monitoring_once.sh", service)
+        self.assertIn("WorkingDirectory=/opt/project-anchor", service)
         self.assertIn("POST_PRODUCTION_MONITORING_OUTPUT_DIR=/var/lib/project-anchor/reports", service)
         self.assertIn("NoNewPrivileges=true", service)
         self.assertIn("ProtectSystem=full", service)
         self.assertIn("ProtectHome=true", service)
-        self.assertIn("BindReadOnlyPaths=/root/project-anchor", service)
+        self.assertIn("BindReadOnlyPaths=/root/project-anchor:/opt/project-anchor", service)
         self.assertIn("OnUnitActiveSec=15min", timer)
         combined = service + timer
         self.assertNotIn("production.env", combined)
@@ -81,6 +86,7 @@ class PostProductionMonitoringTimerUnitsTest(unittest.TestCase):
 
         self.assertIn("systemctl enable --now", install_text)
         self.assertIn('REPORT_DIR="${POST_PRODUCTION_MONITORING_REPORT_DIR:-$OUTPUT_DIR}"', install_text)
+        self.assertIn("UNIT_PROJECT_ROOT", install_text)
         self.assertIn("systemctl disable --now", uninstall_text)
         self.assertIn("CREDENTIAL_FILE_READ=NO", combined)
         self.assertIn("NEW_PRODUCTION_REQUEST_SENT=NO", combined)
@@ -88,6 +94,16 @@ class PostProductionMonitoringTimerUnitsTest(unittest.TestCase):
         self.assertNotIn("execute_exactly_one_production_request.py", combined)
         self.assertNotIn("reconcile_production_post_send_readonly.py", combined)
         self.assertNotIn("production.env", combined)
+
+    def test_bind_paths_uses_same_path_when_no_runtime_alias_is_needed(self):
+        self.assertEqual(
+            module.bind_paths("/srv/project-anchor", None),
+            "/srv/project-anchor",
+        )
+        self.assertEqual(
+            module.bind_paths("/srv/project-anchor", "/root/project-anchor"),
+            "/root/project-anchor:/srv/project-anchor",
+        )
 
 
 if __name__ == "__main__":

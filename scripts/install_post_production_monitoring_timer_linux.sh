@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT="${PROJECT_ANCHOR_ROOT:-/root/project-anchor}"
+UNIT_PROJECT_ROOT="${POST_PRODUCTION_MONITORING_UNIT_PROJECT_ROOT:-/opt/project-anchor}"
 OUTPUT_DIR="${POST_PRODUCTION_MONITORING_OUTPUT_DIR:-/var/lib/project-anchor/reports}"
 INTERVAL_MINUTES="${POST_PRODUCTION_MONITORING_INTERVAL_MINUTES:-15}"
 UNIT_DIR="${POST_PRODUCTION_MONITORING_UNIT_DIR:-/etc/systemd/system}"
@@ -22,9 +23,11 @@ if [[ ! -x "$ROOT/scripts/run_post_production_monitoring_once.sh" ]]; then
 fi
 
 install -d -m 755 "$OUTPUT_DIR"
+install -d -m 755 "$UNIT_PROJECT_ROOT"
 
 python3 "$ROOT/scripts/build_post_production_monitoring_timer_units.py" \
-  --project-root "$ROOT" \
+  --project-root "$UNIT_PROJECT_ROOT" \
+  --source-project-root "$ROOT" \
   --output-dir "$OUTPUT_DIR" \
   --interval-minutes "$INTERVAL_MINUTES" \
   --unit-dir "$UNIT_DIR" \
@@ -38,6 +41,7 @@ echo "POST_PRODUCTION_MONITORING_TIMER_INSTALL_RESULT=PASS"
 echo "SERVICE=$SERVICE_NAME"
 echo "TIMER=$TIMER_NAME"
 echo "OUTPUT_DIR=$OUTPUT_DIR"
+echo "UNIT_PROJECT_ROOT=$UNIT_PROJECT_ROOT"
 echo "INTERVAL_MINUTES=$INTERVAL_MINUTES"
 echo "CREDENTIAL_FILE_READ=NO"
 echo "NEW_PRODUCTION_REQUEST_SENT=NO"
