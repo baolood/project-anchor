@@ -38,6 +38,7 @@
   "decision_summary": {
     "final_production_send_runner": "PASS",
     "gated_production_send_executor_entrypoint": "PASS",
+    "production_api_configuration": "PASS",
     "production_credential_loader": "PASS",
     "production_credential_readiness": "PASS",
     "production_execution_readiness": "BLOCKED",
@@ -62,6 +63,11 @@
     {
       "evidence": "non-secret production credential readiness PASS",
       "name": "credential_readiness_pass",
+      "result": "PASS"
+    },
+    {
+      "evidence": "Binance API configuration is read-only, IP-restricted, and non-trading",
+      "name": "api_configuration_pass",
       "result": "PASS"
     },
     {
@@ -125,9 +131,10 @@
       "result": "PASS"
     }
   ],
-  "generated_at": "2026-07-22T09:04:07Z",
+  "generated_at": "2026-07-30T08:35:43Z",
   "go_live_allowed": false,
   "inputs": {
+    "api_configuration": "reports/production_api_configuration_validation.json",
     "credential_readiness": "reports/production_credential_readiness_validation.json",
     "execution_readiness": "reports/production_execution_readiness.json",
     "final_production_send_runner": "reports/final_production_send_runner.json",

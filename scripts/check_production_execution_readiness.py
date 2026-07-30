@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RISK_LIMITS_CONFIG = ROOT / "config" / "production_risk_limits.template.json"
 RISK_LIMITS_REPORT = ROOT / "reports" / "production_risk_limits_validation.json"
 PRODUCTION_CREDENTIAL_READINESS_REPORT = ROOT / "reports" / "production_credential_readiness_validation.json"
+PRODUCTION_API_CONFIGURATION_REPORT = ROOT / "reports" / "production_api_configuration_validation.json"
 PRODUCTION_SIGNING_READINESS_REPORT = ROOT / "reports" / "production_signing_readiness_validation.json"
 PRODUCTION_HTTP_NETWORK_READINESS_REPORT = ROOT / "reports" / "production_http_network_readiness_validation.json"
 REPORTS_DIR = ROOT / "reports"
@@ -48,6 +49,7 @@ def build_report() -> tuple[dict[str, Any], int]:
     config, config_error = read_json(RISK_LIMITS_CONFIG)
     risk_report, risk_report_error = read_json(RISK_LIMITS_REPORT)
     credential_report, credential_report_error = read_json(PRODUCTION_CREDENTIAL_READINESS_REPORT)
+    api_configuration_report, api_configuration_report_error = read_json(PRODUCTION_API_CONFIGURATION_REPORT)
     signing_report, signing_report_error = read_json(PRODUCTION_SIGNING_READINESS_REPORT)
     http_network_report, http_network_report_error = read_json(PRODUCTION_HTTP_NETWORK_READINESS_REPORT)
 
@@ -59,6 +61,8 @@ def build_report() -> tuple[dict[str, Any], int]:
         errors.append(risk_report_error)
     if credential_report_error:
         errors.append(credential_report_error)
+    if api_configuration_report_error:
+        errors.append(api_configuration_report_error)
     if signing_report_error:
         errors.append(signing_report_error)
     if http_network_report_error:
@@ -67,6 +71,7 @@ def build_report() -> tuple[dict[str, Any], int]:
     config = config or {}
     risk_report = risk_report or {}
     credential_report = credential_report or {}
+    api_configuration_report = api_configuration_report or {}
     signing_report = signing_report or {}
     http_network_report = http_network_report or {}
 
@@ -78,6 +83,12 @@ def build_report() -> tuple[dict[str, Any], int]:
     )
     if not credential_readiness_pass:
         blockers.append("production credential readiness validation is not PASS")
+    api_configuration_pass = (
+        api_configuration_report.get("result") == "PASS"
+        and not api_configuration_report.get("errors")
+    )
+    if not api_configuration_pass:
+        blockers.append("production API configuration validation is not PASS")
     signing_readiness_pass = signing_report.get("result") == "PASS" and not signing_report.get("errors")
     if not signing_readiness_pass:
         blockers.append("production signing readiness validation is not PASS")
@@ -118,6 +129,7 @@ def build_report() -> tuple[dict[str, Any], int]:
             "production_credential_readiness": str(
                 PRODUCTION_CREDENTIAL_READINESS_REPORT.relative_to(ROOT)
             ),
+            "production_api_configuration": str(PRODUCTION_API_CONFIGURATION_REPORT.relative_to(ROOT)),
             "production_signing_readiness": str(PRODUCTION_SIGNING_READINESS_REPORT.relative_to(ROOT)),
             "production_http_network_readiness": str(
                 PRODUCTION_HTTP_NETWORK_READINESS_REPORT.relative_to(ROOT)
@@ -126,6 +138,7 @@ def build_report() -> tuple[dict[str, Any], int]:
         "evidence": {
             "risk_limits_validation": "PASS" if risk_limits_pass else "FAIL",
             "production_credential_readiness": "PASS" if credential_readiness_pass else "FAIL",
+            "production_api_configuration": "PASS" if api_configuration_pass else "FAIL",
             "production_signing_readiness": "PASS" if signing_readiness_pass else "FAIL",
             "production_http_network_readiness": "PASS" if http_network_readiness_pass else "FAIL",
             "production_market": config.get("AUTHORIZED_PRODUCTION_MARKET"),
@@ -206,6 +219,7 @@ def main() -> int:
     print(f"result: {report['result']}")
     print(f"blockers: {len(report['blockers'])}")
     print(f"risk_limits_validation: {report['evidence']['risk_limits_validation']}")
+    print(f"production_api_configuration: {report['evidence']['production_api_configuration']}")
     print(f"production_credential_access: {report['gates']['production_credential_access']}")
     print(f"production_signing: {report['gates']['production_signing']}")
     print(f"production_http_network: {report['gates']['production_http_network']}")

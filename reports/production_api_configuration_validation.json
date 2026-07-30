@@ -1,0 +1,34 @@
+{
+  "boundary": {
+    "binance_api_called": "NO",
+    "credential_file_read": "NO",
+    "dns_lookup": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_http_network_enabled": "NO",
+    "production_request_sent": "NO",
+    "production_signing_enabled": "NO",
+    "secret_value_disclosed": "NO",
+    "secret_value_read": "NO",
+    "socket_opened": "NO",
+    "spot_trading_enabled": "NO",
+    "withdraw_enabled": "NO"
+  },
+  "errors": [],
+  "field_status": {
+    "AUTHORIZED_GO_LIVE": "NO",
+    "AUTHORIZED_LIVE_TRADING": "NO",
+    "AUTHORIZED_PRODUCTION_HTTP_NETWORK": "NO",
+    "AUTHORIZED_PRODUCTION_REQUEST": "NO",
+    "AUTHORIZED_PRODUCTION_SIGNING": "NO",
+    "BINANCE_API_IP_WHITELIST": "45.76.190.109",
+    "FINAL_OPERATOR_VERDICT": "APPROVED_FOR_PRODUCTION_API_CONFIGURATION_READINESS_ONLY",
+    "PRODUCTION_API_CONFIG_SAVED": "YES",
+    "READ_PERMISSION": "YES",
+    "SPOT_TRADING_PERMISSION": "NO",
+    "WITHDRAW_PERMISSION": "NO"
+  },
+  "generated_at": "2026-07-30T08:32:51Z",
+  "input_file": "config/production_api_configuration.template.json",
+  "result": "PASS"
+}
