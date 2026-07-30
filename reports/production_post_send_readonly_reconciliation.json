@@ -1,0 +1,110 @@
+{
+  "account_reconciliation": {
+    "account_payload_visible": true,
+    "balance_amounts_recorded": "NO",
+    "btc_balance_row_present": true,
+    "usdt_balance_row_present": true
+  },
+  "boundary": {
+    "authorization_header_value_disclosed": "NO",
+    "canary_rerun": "NO",
+    "credential_file_read": "YES",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_order_sent": "NO",
+    "read_only_account_query_attempted": "YES",
+    "read_only_order_query_attempted": "YES",
+    "retry_performed": "NO",
+    "second_production_request_sent": "NO",
+    "secret_hash_disclosed": "NO",
+    "secret_length_disclosed": "NO",
+    "secret_prefix_suffix_disclosed": "NO",
+    "secret_value_disclosed": "NO"
+  },
+  "checks": [
+    {
+      "evidence": "stored production send report is PASS",
+      "name": "send_report_pass",
+      "result": "PASS"
+    },
+    {
+      "evidence": "stored terminal external status is FILLED",
+      "name": "stored_terminal_filled",
+      "result": "PASS"
+    },
+    {
+      "evidence": "read-only order and account queries were attempted",
+      "name": "readonly_queries_attempted",
+      "result": "PASS"
+    },
+    {
+      "evidence": "allOrders read-only query returned a list",
+      "name": "order_query_ok",
+      "result": "PASS"
+    },
+    {
+      "evidence": "account read-only query returned an object",
+      "name": "account_query_ok",
+      "result": "PASS"
+    },
+    {
+      "evidence": "exactly one matching FILLED BTCUSDT BUY market order found",
+      "name": "matching_filled_order_count_one",
+      "result": "FAIL"
+    },
+    {
+      "evidence": "exactly one BTCUSDT order found in the authorized window",
+      "name": "no_second_symbol_order_in_window",
+      "result": "PASS"
+    },
+    {
+      "evidence": "USDT balance row is visible without recording amount",
+      "name": "usdt_balance_visible",
+      "result": "PASS"
+    },
+    {
+      "evidence": "BTC balance row is visible without recording amount",
+      "name": "btc_balance_visible",
+      "result": "PASS"
+    }
+  ],
+  "credential_shape": {
+    "api_key_present": true,
+    "api_secret_present": true,
+    "base_url_present": true,
+    "field_status": {
+      "PRODUCTION_EXCHANGE_API_KEY": "PRESENT_VALID",
+      "PRODUCTION_EXCHANGE_API_SECRET": "PRESENT_VALID",
+      "PRODUCTION_EXCHANGE_BASE_URL": "PRESENT_VALID",
+      "PRODUCTION_EXCHANGE_KEY_ID": "PRESENT_VALID"
+    },
+    "key_id_present": true,
+    "loaded": true,
+    "secret_value_disclosed": false
+  },
+  "errors": [],
+  "generated_at": "2026-07-30T14:14:34Z",
+  "inputs": {
+    "credential_path": "/etc/project-anchor/production.env",
+    "risk_limits": "config/production_risk_limits.template.json",
+    "send_result": "reports/production_exactly_one_send_result.json",
+    "window_plan": "reports/production_request_send_window_plan.json"
+  },
+  "next_gate": "POST_PRODUCTION_SEND_OPERATIONS_DECISION",
+  "order_reconciliation": {
+    "matching_filled_order_count": 0,
+    "matching_order": null,
+    "orders_returned": 1,
+    "symbol_order_count_in_window": 1
+  },
+  "query_scope": {
+    "account_query_endpoint": "/api/v3/account",
+    "max_notional": "10",
+    "order_query_endpoint": "/api/v3/allOrders",
+    "side": "BUY",
+    "symbol": "BTCUSDT",
+    "window_end_present": true,
+    "window_start_present": true
+  },
+  "result": "BLOCKED"
+}
