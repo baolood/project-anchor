@@ -1,11 +1,10 @@
 # Production Runtime Owner Contract Validation
 
-Generated at: `2026-07-30T10:06:19Z`
+Generated at: `2026-07-30T12:59:37Z`
 
 ## Result
 
 - result: PASS
-- validation mode: macos_root_assisted_metadata_only
 
 ## Contract
 
@@ -40,22 +39,31 @@ Generated at: `2026-07-30T10:06:19Z`
 
 ## Checks
 
-- running_as_root_for_metadata_only: PASS
 - runtime_identity_explicit: PASS
 - runtime_identity_resolved: PASS
 - runtime_group_explicit: PASS
 - runtime_group_resolved: PASS
+- env_dir_expectation_explicit: PASS
+- env_dir_owner_expectation_explicit: PASS
+- env_dir_group_expectation_explicit: PASS
+- env_dir_mode_expectation_710: PASS
 - env_dir_exists: PASS
 - env_dir_owner_match: PASS
 - env_dir_group_match: PASS
 - env_dir_mode_match: PASS
+- env_owner_expectation_explicit: PASS
+- env_group_expectation_explicit: PASS
+- env_mode_expectation_600: PASS
 - env_file_exists: PASS
 - owner_match: PASS
 - group_match: PASS
 - mode_match: PASS
-- runtime_identity_can_read_env_file: PASS
 - interactive_sudo_required_no: PASS
 - group_based_secret_access_no: PASS
+- owner_mismatch_fail_closed: PASS
+- mode_mismatch_fail_closed: PASS
+- identity_unresolved_fail_closed: PASS
+- stat_permission_failure_fail_closed: PASS
 - production_env_change_authorized_no: PASS
 - owner_or_mode_change_authorized_no: PASS
 - production_request_authorized_no: PASS

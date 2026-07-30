@@ -1,12 +1,12 @@
 # Production Exactly-One Send Result
 
-Generated at: `2026-07-30T10:56:17Z`
+Generated at: `2026-07-30T12:59:57Z`
 
 ## Result
 
-- result: BLOCKED
+- result: FAIL
 - success: false
-- failure code: PRODUCTION_EXECUTION_HOST_NOT_WHITELISTED
+- failure code: PRODUCTION_HTTP_REQUEST_REJECTED
 - execution requested: true
 - readiness result: PASS
 - readiness decision: READY_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_WINDOW_OPEN
@@ -23,9 +23,9 @@ Generated at: `2026-07-30T10:56:17Z`
 ## Execution Host Contract
 
 - expected Binance API IP whitelist: 45.76.190.109
-- observed platform: Darwin
-- compliant: false
-- failure code: PRODUCTION_EXECUTION_HOST_NOT_WHITELISTED
+- observed platform: Linux
+- compliant: true
+- failure code: None
 
 ## Credential Contract
 
@@ -33,35 +33,35 @@ Generated at: `2026-07-30T10:56:17Z`
 - expected owner: project_anchor_runtime
 - expected group: project_anchor_runtime
 - expected mode: 600
-- stat error: NOT_EVALUATED_EXECUTION_HOST_NOT_COMPLIANT
-- observed owner: None
-- observed group: None
-- observed mode: None
-- compliant: false
+- stat error: None
+- observed owner: project_anchor_runtime
+- observed group: project_anchor_runtime
+- observed mode: 600
+- compliant: true
 
 ## Terminal
 
-- terminal type: None
-- http status: None
+- terminal type: PRODUCTION_HTTP_REQUEST_REJECTED
+- http status: 400
 - external status: None
-- external request started: false
+- external request started: true
 - external order id present: false
-- exchange error code present: None
-- exchange error message present: None
+- exchange error code present: True
+- exchange error message present: True
 - transport error type: None
 
 ## Boundary
 
-- credential file read: NO
+- credential file read: YES
 - secret value disclosed: NO
 - secret length disclosed: NO
 - secret prefix/suffix disclosed: NO
 - secret hash disclosed: NO
-- production signing executed: NO
+- production signing executed: YES
 - Authorization header value disclosed: NO
-- DNS lookup or socket possible: NO
-- production HTTP/network attempted: NO
-- production request attempted: NO
+- DNS lookup or socket possible: YES
+- production HTTP/network attempted: YES
+- production request attempted: YES
 - production request accepted: NO
 - canary rerun: NO
 - go-live: NO-GO

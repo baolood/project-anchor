@@ -2,14 +2,14 @@
   "boundary": {
     "authorization_header_value_disclosed": "NO",
     "canary_rerun": "NO",
-    "credential_file_read": "NO",
-    "dns_lookup_or_socket_possible": "NO",
+    "credential_file_read": "YES",
+    "dns_lookup_or_socket_possible": "YES",
     "go_live": "NO-GO",
     "live_trading": "NO-GO",
-    "production_http_network_attempted": "NO",
+    "production_http_network_attempted": "YES",
     "production_request_accepted": "NO",
-    "production_request_attempted": "NO",
-    "production_signing_executed": "NO",
+    "production_request_attempted": "YES",
+    "production_signing_executed": "YES",
     "secret_hash_disclosed": "NO",
     "secret_length_disclosed": "NO",
     "secret_prefix_suffix_disclosed": "NO",
@@ -17,36 +17,36 @@
   },
   "credential_contract": {
     "checks": {
-      "file_exists": null,
-      "group_matches": null,
-      "mode_matches": null,
-      "owner_matches": null,
+      "file_exists": true,
+      "group_matches": true,
+      "mode_matches": true,
+      "owner_matches": true,
       "path_matches_contract": true
     },
-    "compliant": false,
+    "compliant": true,
     "expected_group": "project_anchor_runtime",
     "expected_mode": "600",
     "expected_owner": "project_anchor_runtime",
     "expected_path": "/etc/project-anchor/production.env",
-    "observed_group": null,
-    "observed_mode": null,
-    "observed_owner": null,
+    "observed_group": "project_anchor_runtime",
+    "observed_mode": "600",
+    "observed_owner": "project_anchor_runtime",
     "path": "/etc/project-anchor/production.env",
-    "stat_error": "NOT_EVALUATED_EXECUTION_HOST_NOT_COMPLIANT"
+    "stat_error": null
   },
   "execution_host_contract": {
     "checks": {
       "api_ip_whitelist_present": true,
-      "macos_local_execution_blocked": false
+      "macos_local_execution_blocked": true
     },
-    "compliant": false,
+    "compliant": true,
     "expected_binance_api_ip_whitelist": "45.76.190.109",
-    "failure_code": "PRODUCTION_EXECUTION_HOST_NOT_WHITELISTED",
-    "observed_platform": "Darwin"
+    "failure_code": null,
+    "observed_platform": "Linux"
   },
   "execution_requested": true,
-  "failure_code": "PRODUCTION_EXECUTION_HOST_NOT_WHITELISTED",
-  "generated_at": "2026-07-30T10:56:17Z",
+  "failure_code": "PRODUCTION_HTTP_REQUEST_REJECTED",
+  "generated_at": "2026-07-30T12:59:57Z",
   "readiness_decision": "READY_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_WINDOW_OPEN",
   "readiness_result": "PASS",
   "request": {
@@ -57,17 +57,27 @@
     "side": "BUY",
     "symbol": "BTCUSDT"
   },
-  "requested_payload_shape": null,
-  "result": "BLOCKED",
+  "requested_payload_shape": {
+    "api_key_present": true,
+    "method": "POST",
+    "quoteOrderQty": "4",
+    "request_path": "/api/v3/order",
+    "sendable": true,
+    "side": "BUY",
+    "signature_present": true,
+    "symbol": "BTCUSDT",
+    "type": "MARKET"
+  },
+  "result": "FAIL",
   "success": false,
   "terminal": {
-    "exchange_error_code_present": null,
-    "exchange_error_message_present": null,
+    "exchange_error_code_present": true,
+    "exchange_error_message_present": true,
     "external_order_id_present": false,
-    "external_request_started": false,
+    "external_request_started": true,
     "external_status": null,
-    "http_status": null,
-    "terminal_type": null,
+    "http_status": 400,
+    "terminal_type": "PRODUCTION_HTTP_REQUEST_REJECTED",
     "transport_error_type": null
   }
 }
