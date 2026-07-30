@@ -336,6 +336,8 @@ def build_execution_report(
             "external_order_id_present": external_order_id_present,
             "exchange_error_code_present": terminal.get("exchange_error_code_present"),
             "exchange_error_message_present": terminal.get("exchange_error_message_present"),
+            "exchange_error_code": terminal.get("exchange_error_code"),
+            "exchange_error_msg": terminal.get("exchange_error_msg"),
             "transport_error_type": terminal.get("transport_error_type"),
         },
         "requested_payload_shape": requested_payload,
@@ -414,6 +416,8 @@ Generated at: `{report["generated_at"]}`
 - external order id present: {str(terminal["external_order_id_present"]).lower()}
 - exchange error code present: {terminal["exchange_error_code_present"]}
 - exchange error message present: {terminal["exchange_error_message_present"]}
+- exchange error code: {terminal["exchange_error_code"]}
+- exchange error message: {terminal["exchange_error_msg"]}
 - transport error type: {terminal["transport_error_type"]}
 
 ## Boundary

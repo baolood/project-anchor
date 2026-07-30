@@ -147,6 +147,13 @@ def _redacted_exchange_result(payload: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _redacted_exchange_error(body: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "exchange_error_code": body.get("code"),
+        "exchange_error_msg": str(body.get("msg") or "") if body.get("msg") is not None else None,
+    }
+
+
 def send_signed_order_request(
     request: Dict[str, Any],
     now_ts: int,
@@ -175,6 +182,7 @@ def send_signed_order_request(
         finally:
             exc.close()
         failure_family = _failure_family_for_http_error(int(exc.code))
+        exchange_error = _redacted_exchange_error(body)
         outcome = {
             "ok": False,
             "result": None,
@@ -189,6 +197,7 @@ def send_signed_order_request(
                 "timeout_policy_label": "single_attempt_v1",
                 "exchange_error_code_present": body.get("code") is not None,
                 "exchange_error_message_present": body.get("msg") is not None,
+                **exchange_error,
                 "ts": now_ts,
             },
         }
