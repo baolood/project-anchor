@@ -5,7 +5,7 @@ ROOT="${PROJECT_ANCHOR_ROOT:-/root/project-anchor}"
 OUTPUT_DIR="${POST_PRODUCTION_MONITORING_OUTPUT_DIR:-/var/lib/project-anchor/reports}"
 INTERVAL_MINUTES="${POST_PRODUCTION_MONITORING_INTERVAL_MINUTES:-15}"
 UNIT_DIR="${POST_PRODUCTION_MONITORING_UNIT_DIR:-/etc/systemd/system}"
-REPORT_DIR="${POST_PRODUCTION_MONITORING_REPORT_DIR:-$ROOT/reports}"
+REPORT_DIR="${POST_PRODUCTION_MONITORING_REPORT_DIR:-$OUTPUT_DIR}"
 SERVICE_NAME="project-anchor-post-production-monitoring.service"
 TIMER_NAME="project-anchor-post-production-monitoring.timer"
 

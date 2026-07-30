@@ -32,6 +32,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=full
+BindReadOnlyPaths={project_root}
 ReadWritePaths={output_dir}
 """
 
@@ -73,6 +74,7 @@ def validate_units(service_text: str, timer_text: str) -> list[str]:
         DEFAULT_OUTPUT_DIR,
         "NoNewPrivileges=true",
         "ProtectSystem=full",
+        "BindReadOnlyPaths=",
     ]
     for token in required:
         if token not in combined:
@@ -137,7 +139,7 @@ def build_report(
                 if "NoNewPrivileges=true" in service_text and "ProtectSystem=full" in service_text
                 else "FAIL"
             ),
-            "evidence": "service unit includes narrow systemd safety hardening",
+            "evidence": "service unit includes narrow systemd safety hardening with project-root read-only binding",
         },
         {
             "name": "timer_cadence_configured",

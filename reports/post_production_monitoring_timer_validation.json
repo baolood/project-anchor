@@ -23,7 +23,7 @@
       "result": "PASS"
     },
     {
-      "evidence": "service unit includes narrow systemd safety hardening",
+      "evidence": "service unit includes narrow systemd safety hardening with project-root read-only binding",
       "name": "systemd_safety_hardening_present",
       "result": "PASS"
     },
@@ -39,7 +39,7 @@
     }
   ],
   "errors": [],
-  "generated_at": "2026-07-30T15:22:47Z",
+  "generated_at": "2026-07-30T15:28:12Z",
   "interval_minutes": 15,
   "output_dir": "/var/lib/project-anchor/reports",
   "project_root": "/root/project-anchor",
