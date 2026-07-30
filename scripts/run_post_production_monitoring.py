@@ -27,6 +27,9 @@ SNAPSHOT_JSON_OUT = OUTPUT_DIR / "post_production_monitoring_snapshot.json"
 SNAPSHOT_MD_OUT = OUTPUT_DIR / "post_production_monitoring_snapshot.md"
 ALERT_JSON_OUT = OUTPUT_DIR / "post_production_monitoring_alert.json"
 ALERT_MD_OUT = OUTPUT_DIR / "post_production_monitoring_alert.md"
+ALERT_STATE_JSON_OUT = OUTPUT_DIR / "post_production_monitoring_alert_state.json"
+ALERT_NOTIFICATION_JSON_OUT = OUTPUT_DIR / "post_production_monitoring_alert_notification.json"
+ALERT_NOTIFICATION_MD_OUT = OUTPUT_DIR / "post_production_monitoring_alert_notification.md"
 
 
 def utc_now() -> str:
@@ -114,6 +117,9 @@ def build_run_report(snapshot_report: dict[str, Any], snapshot_exit_code: int) -
             "snapshot_markdown": str(SNAPSHOT_MD_OUT),
             "alert_json": str(ALERT_JSON_OUT),
             "alert_markdown": str(ALERT_MD_OUT),
+            "alert_state_json": str(ALERT_STATE_JSON_OUT),
+            "alert_notification_json": str(ALERT_NOTIFICATION_JSON_OUT),
+            "alert_notification_markdown": str(ALERT_NOTIFICATION_MD_OUT),
         },
         "boundary": {
             "credential_file_read": "NO",
@@ -169,6 +175,62 @@ def build_alert_report(run_report: dict[str, Any]) -> dict[str, Any]:
             "live_trading": "NO-GO",
         },
     }
+
+
+def load_previous_alert_state(path: Path) -> dict[str, Any]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def build_alert_notification(
+    alert_report: dict[str, Any],
+    previous_state: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    previous_result = previous_state.get("last_alert_result")
+    current_result = alert_report.get("result")
+    should_notify = current_result == "ACTIVE" and previous_result != "ACTIVE"
+    state = {
+        "generated_at": utc_now(),
+        "last_alert_result": current_result,
+        "last_alert_status": alert_report.get("status"),
+        "last_alert_generated_at": alert_report.get("generated_at"),
+        "last_notification_decision": "EMIT" if should_notify else "SUPPRESS",
+        "boundary": {
+            "credential_file_read": "NO",
+            "secret_value_disclosed": "NO",
+            "production_signing_executed": "NO",
+            "production_http_network_attempted": "NO",
+            "new_production_request_sent": "NO",
+            "second_production_request_sent": "NO",
+            "canary_rerun": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    notification = {
+        "generated_at": utc_now(),
+        "result": "EMITTED" if should_notify else "SUPPRESSED",
+        "status": (
+            "POST_PRODUCTION_MONITORING_NOTIFICATION_READY"
+            if should_notify
+            else "POST_PRODUCTION_MONITORING_NOTIFICATION_SUPPRESSED"
+        ),
+        "reason": (
+            "alert transitioned to ACTIVE"
+            if should_notify
+            else "alert is clear or already active"
+        ),
+        "channel": "local_outbox",
+        "alert_result": current_result,
+        "alert_status": alert_report.get("status"),
+        "alert_summary": alert_report.get("summary"),
+        "failed_checks": alert_report.get("failed_checks", []),
+        "boundary": state["boundary"],
+    }
+    return state, notification
 
 
 def markdown(report: dict[str, Any]) -> str:
@@ -232,6 +294,40 @@ Generated at: `{report["generated_at"]}`
 """
 
 
+def notification_markdown(report: dict[str, Any]) -> str:
+    failed = report.get("failed_checks", [])
+    failed_lines = "\n".join(
+        f"- {item.get('name')}: {item.get('result')} ({item.get('evidence')})"
+        for item in failed
+        if isinstance(item, dict)
+    )
+    if not failed_lines:
+        failed_lines = "- none"
+    boundary = "\n".join(f"- {key}: {value}" for key, value in report["boundary"].items())
+    return f"""# Post Production Monitoring Alert Notification
+
+Generated at: `{report["generated_at"]}`
+
+## Result
+
+- result: {report["result"]}
+- status: {report["status"]}
+- reason: {report["reason"]}
+- channel: {report["channel"]}
+- alert result: {report["alert_result"]}
+- alert status: {report["alert_status"]}
+- alert summary: {report["alert_summary"]}
+
+## Failed Checks
+
+{failed_lines}
+
+## Boundary
+
+{boundary}
+"""
+
+
 def main() -> int:
     snapshot_module = load_snapshot_module()
     snapshot_report, snapshot_exit_code = snapshot_module.build_report()
@@ -244,10 +340,21 @@ def main() -> int:
 
     run_report, exit_code = build_run_report(snapshot_report, snapshot_exit_code)
     alert_report = build_alert_report(run_report)
+    previous_alert_state = load_previous_alert_state(ALERT_STATE_JSON_OUT)
+    alert_state, alert_notification = build_alert_notification(alert_report, previous_alert_state)
     RUN_JSON_OUT.write_text(json.dumps(run_report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     RUN_MD_OUT.write_text(markdown(run_report), encoding="utf-8")
     ALERT_JSON_OUT.write_text(json.dumps(alert_report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     ALERT_MD_OUT.write_text(alert_markdown(alert_report), encoding="utf-8")
+    ALERT_STATE_JSON_OUT.write_text(
+        json.dumps(alert_state, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    ALERT_NOTIFICATION_JSON_OUT.write_text(
+        json.dumps(alert_notification, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    ALERT_NOTIFICATION_MD_OUT.write_text(notification_markdown(alert_notification), encoding="utf-8")
 
     print("[Post Production Monitoring Run]")
     print(f"output dir: {OUTPUT_DIR}")
@@ -257,8 +364,12 @@ def main() -> int:
     print(f"snapshot Markdown: {SNAPSHOT_MD_OUT}")
     print(f"alert JSON: {ALERT_JSON_OUT}")
     print(f"alert Markdown: {ALERT_MD_OUT}")
+    print(f"alert state JSON: {ALERT_STATE_JSON_OUT}")
+    print(f"alert notification JSON: {ALERT_NOTIFICATION_JSON_OUT}")
+    print(f"alert notification Markdown: {ALERT_NOTIFICATION_MD_OUT}")
     print(f"result: {run_report['result']}")
     print(f"alert: {alert_report['result']}")
+    print(f"notification: {alert_notification['result']}")
     print(f"status: {run_report['status']}")
     print(f"new_production_request_sent: {run_report['boundary']['new_production_request_sent']}")
     print(f"go_live: {run_report['boundary']['go_live']}")

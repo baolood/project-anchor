@@ -53,6 +53,10 @@ class PostProductionMonitoringRunnerTest(unittest.TestCase):
         self.assertEqual(alert["result"], "CLEAR")
         self.assertEqual(alert["status"], "POST_PRODUCTION_MONITORING_ALERT_CLEAR")
         self.assertEqual(alert["boundary"]["new_production_request_sent"], "NO")
+        state, notification = runner.build_alert_notification(alert, {})
+        self.assertEqual(state["last_notification_decision"], "SUPPRESS")
+        self.assertEqual(notification["result"], "SUPPRESSED")
+        self.assertEqual(notification["boundary"]["new_production_request_sent"], "NO")
 
     def test_runner_blocks_if_snapshot_failed(self):
         report, exit_code = runner.build_run_report(_snapshot(result="BLOCKED"), 1)
@@ -66,6 +70,20 @@ class PostProductionMonitoringRunnerTest(unittest.TestCase):
         self.assertEqual(alert["status"], "POST_PRODUCTION_MONITORING_ALERT_ACTIVE")
         self.assertEqual(alert["severity"], "page")
         self.assertEqual(len(alert["failed_checks"]), 1)
+        state, notification = runner.build_alert_notification(alert, {})
+        self.assertEqual(state["last_notification_decision"], "EMIT")
+        self.assertEqual(notification["result"], "EMITTED")
+        self.assertEqual(notification["channel"], "local_outbox")
+
+    def test_alert_notification_suppresses_repeated_active_state(self):
+        report, _ = runner.build_run_report(_snapshot(result="BLOCKED"), 1)
+        alert = runner.build_alert_report(report)
+        previous_state = {"last_alert_result": "ACTIVE"}
+
+        state, notification = runner.build_alert_notification(alert, previous_state)
+
+        self.assertEqual(state["last_notification_decision"], "SUPPRESS")
+        self.assertEqual(notification["result"], "SUPPRESSED")
 
     def test_runner_blocks_if_snapshot_implies_second_request(self):
         snapshot = _snapshot(
