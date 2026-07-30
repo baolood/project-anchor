@@ -1,6 +1,6 @@
 # Post Production Monitoring Timer Unit Build
 
-Generated at: `2026-07-30T15:22:47Z`
+Generated at: `2026-07-30T15:28:12Z`
 
 ## Result
 
@@ -14,7 +14,7 @@ Generated at: `2026-07-30T15:22:47Z`
 
 - service_invokes_monitoring_once: PASS (service unit calls the existing read-only monitoring command)
 - runtime_output_dir_configured: PASS (service unit writes reports to the runtime output directory)
-- systemd_safety_hardening_present: PASS (service unit includes narrow systemd safety hardening)
+- systemd_safety_hardening_present: PASS (service unit includes narrow systemd safety hardening with project-root read-only binding)
 - timer_cadence_configured: PASS (timer unit has the expected refresh cadence)
 - forbidden_execution_tokens_absent: PASS (unit content avoids credential, send, reconciliation, curl, ssh, and scp paths)
 

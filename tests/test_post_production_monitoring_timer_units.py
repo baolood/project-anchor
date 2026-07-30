@@ -28,6 +28,8 @@ class PostProductionMonitoringTimerUnitsTest(unittest.TestCase):
         self.assertIn("POST_PRODUCTION_MONITORING_OUTPUT_DIR=/var/lib/project-anchor/reports", service)
         self.assertIn("NoNewPrivileges=true", service)
         self.assertIn("ProtectSystem=full", service)
+        self.assertIn("ProtectHome=true", service)
+        self.assertIn("BindReadOnlyPaths=/root/project-anchor", service)
         self.assertIn("OnUnitActiveSec=15min", timer)
         combined = service + timer
         self.assertNotIn("production.env", combined)
@@ -78,6 +80,7 @@ class PostProductionMonitoringTimerUnitsTest(unittest.TestCase):
         combined = install_text + "\n" + uninstall_text
 
         self.assertIn("systemctl enable --now", install_text)
+        self.assertIn('REPORT_DIR="${POST_PRODUCTION_MONITORING_REPORT_DIR:-$OUTPUT_DIR}"', install_text)
         self.assertIn("systemctl disable --now", uninstall_text)
         self.assertIn("CREDENTIAL_FILE_READ=NO", combined)
         self.assertIn("NEW_PRODUCTION_REQUEST_SENT=NO", combined)
