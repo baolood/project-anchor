@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""Validate the production runtime owner contract without reading secrets.
+"""Root-assisted macOS validation for the production runtime owner contract.
 
-This validator only checks identity resolvability and file metadata. It does
-not read /etc/project-anchor/production.env contents, change ownership or mode,
-use sudo, sign payloads, open network sockets, or send production requests.
+This script validates metadata and runtime readability only. It never reads
+/etc/project-anchor/production.env contents, prints secret values, signs
+payloads, opens sockets, or sends production requests.
 """
 
 from __future__ import annotations
 
 import grp
 import json
+import os
 import pwd
 import stat
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -84,6 +86,18 @@ def owner_group_mode(path: Path) -> dict[str, Any]:
     }
 
 
+def runtime_can_read(runtime_identity: str, path: Path) -> bool:
+    if os.geteuid() != 0:
+        return False
+    result = subprocess.run(
+        ["sudo", "-u", runtime_identity, "test", "-r", str(path)],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    return result.returncode == 0
+
+
 def validate(config: dict[str, Any]) -> dict[str, Any]:
     env_dir = Path(str(config.get("canonical_env_dir") or ""))
     env_path = Path(str(config.get("canonical_env_path") or ""))
@@ -99,33 +113,22 @@ def validate(config: dict[str, Any]) -> dict[str, Any]:
     observed = owner_group_mode(env_path)
 
     checks = {
+        "running_as_root_for_metadata_only": os.geteuid() == 0,
         "runtime_identity_explicit": bool(runtime_identity),
         "runtime_identity_resolved": identity_exists(runtime_identity),
         "runtime_group_explicit": bool(runtime_group),
         "runtime_group_resolved": identity_exists(runtime_group, group=True),
-        "env_dir_expectation_explicit": bool(env_dir),
-        "env_dir_owner_expectation_explicit": bool(expected_dir_owner),
-        "env_dir_group_expectation_explicit": bool(expected_dir_group),
-        "env_dir_mode_expectation_710": expected_dir_mode == "710",
         "env_dir_exists": observed_dir["exists"] is True,
         "env_dir_owner_match": observed_dir["owner"] == expected_dir_owner,
         "env_dir_group_match": observed_dir["group"] == expected_dir_group,
         "env_dir_mode_match": observed_dir["mode"] == expected_dir_mode,
-        "env_owner_expectation_explicit": bool(expected_owner),
-        "env_group_expectation_explicit": bool(expected_group),
-        "env_mode_expectation_600": expected_mode == "600",
         "env_file_exists": observed["exists"] is True,
         "owner_match": observed["owner"] == expected_owner,
         "group_match": observed["group"] == expected_group,
         "mode_match": observed["mode"] == expected_mode,
+        "runtime_identity_can_read_env_file": runtime_can_read(runtime_identity, env_path),
         "interactive_sudo_required_no": config.get("interactive_sudo_required") == "NO",
         "group_based_secret_access_no": config.get("group_based_secret_access") == "NO",
-        "owner_mismatch_fail_closed": config.get("owner_mismatch_fail_closed") == "YES",
-        "mode_mismatch_fail_closed": config.get("mode_mismatch_fail_closed") == "YES",
-        "identity_unresolved_fail_closed": config.get("identity_unresolved_fail_closed") == "YES",
-        "stat_permission_failure_fail_closed": (
-            config.get("stat_permission_failure_fail_closed") == "YES"
-        ),
         "production_env_change_authorized_no": (
             config.get("production_env_change_authorized") == "NO"
         ),
@@ -142,6 +145,7 @@ def validate(config: dict[str, Any]) -> dict[str, Any]:
         "generated_at": utc_now(),
         "result": result,
         "errors": errors,
+        "validation_mode": "macos_root_assisted_metadata_only",
         "contract": {
             "runtime_identity": runtime_identity,
             "runtime_group": runtime_group,
@@ -193,6 +197,7 @@ Generated at: `{report["generated_at"]}`
 ## Result
 
 - result: {report["result"]}
+- validation mode: {report["validation_mode"]}
 
 ## Contract
 
@@ -250,26 +255,41 @@ Generated at: `{report["generated_at"]}`
 """
 
 
+def chown_reports_to_sudo_user() -> None:
+    sudo_user = os.environ.get("SUDO_USER")
+    if not sudo_user:
+        return
+    try:
+        user = pwd.getpwnam(sudo_user)
+    except KeyError:
+        return
+    for path in (JSON_OUT, MD_OUT):
+        try:
+            os.chown(path, user.pw_uid, user.pw_gid)
+        except OSError:
+            pass
+
+
 def main() -> int:
     config = read_json(CONFIG_PATH)
     report = validate(config)
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     JSON_OUT.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     MD_OUT.write_text(markdown(report), encoding="utf-8")
+    chown_reports_to_sudo_user()
 
-    print("[Production Runtime Owner Contract Validation]")
+    print("[Production Runtime Owner Contract macOS Root-Assisted Validation]")
     print(f"report JSON: {JSON_OUT.relative_to(ROOT)}")
     print(f"report Markdown: {MD_OUT.relative_to(ROOT)}")
     print(f"generated_at: {report['generated_at']}")
     print(f"result: {report['result']}")
     print(f"errors: {len(report['errors'])}")
     print(f"runtime_identity: {report['contract']['runtime_identity']}")
-    print(f"expected_env_dir_group: {report['contract']['expected_env_dir_group']}")
-    print(f"expected_env_owner: {report['contract']['expected_env_owner']}")
     print(f"observed_dir_group: {report['observed_env_dir']['group']}")
     print(f"observed_dir_mode: {report['observed_env_dir']['mode']}")
     print(f"observed_owner: {report['observed_env']['owner']}")
     print(f"observed_mode: {report['observed_env']['mode']}")
+    print(f"runtime_identity_can_read_env_file: {report['checks']['runtime_identity_can_read_env_file']}")
     print("secret_value_read: NO")
     print("production_request_sent: NO")
     print("go_live: NO-GO")

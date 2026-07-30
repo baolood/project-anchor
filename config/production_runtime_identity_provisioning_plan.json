@@ -1,11 +1,15 @@
 {
   "plan_name": "production_runtime_identity_provisioning",
   "platform": "macos",
-  "target_runtime_identity": "project-anchor-runtime",
-  "target_runtime_group": "project-anchor-runtime",
+  "target_runtime_identity": "project_anchor_runtime",
+  "target_runtime_group": "project_anchor_runtime",
+  "target_env_dir": "/etc/project-anchor",
+  "target_env_dir_owner": "root",
+  "target_env_dir_group": "project_anchor_runtime",
+  "target_env_dir_mode": "710",
   "target_env_path": "/etc/project-anchor/production.env",
-  "target_env_owner": "project-anchor-runtime",
-  "target_env_group": "project-anchor-runtime",
+  "target_env_owner": "project_anchor_runtime",
+  "target_env_group": "project_anchor_runtime",
   "target_env_mode": "600",
   "execution_authorized": "NO",
   "dry_validation_only": "YES",
@@ -18,20 +22,32 @@
     {
       "name": "create_runtime_group",
       "operation": "create_group_if_absent",
-      "target": "project-anchor-runtime",
-      "command_template": "sudo dscl . -create /Groups/project-anchor-runtime"
+      "target": "project_anchor_runtime",
+      "command_template": "sudo dscl . -create /Groups/project_anchor_runtime"
     },
     {
       "name": "create_runtime_identity",
       "operation": "create_user_if_absent",
-      "target": "project-anchor-runtime",
-      "command_template": "sudo dscl . -create /Users/project-anchor-runtime"
+      "target": "project_anchor_runtime",
+      "command_template": "sudo dscl . -create /Users/project_anchor_runtime"
     },
     {
       "name": "align_production_env_owner",
       "operation": "chown",
       "target": "/etc/project-anchor/production.env",
-      "command_template": "sudo chown project-anchor-runtime:project-anchor-runtime /etc/project-anchor/production.env"
+      "command_template": "sudo chown project_anchor_runtime:project_anchor_runtime /etc/project-anchor/production.env"
+    },
+    {
+      "name": "align_production_env_dir_group",
+      "operation": "chgrp",
+      "target": "/etc/project-anchor",
+      "command_template": "sudo chgrp project_anchor_runtime /etc/project-anchor"
+    },
+    {
+      "name": "enforce_production_env_dir_mode",
+      "operation": "chmod",
+      "target": "/etc/project-anchor",
+      "command_template": "sudo chmod 710 /etc/project-anchor"
     },
     {
       "name": "enforce_production_env_mode",
@@ -52,6 +68,18 @@
       "operation": "chown",
       "target": "/etc/project-anchor/production.env",
       "command_template": "sudo chown root:wheel /etc/project-anchor/production.env"
+    },
+    {
+      "name": "restore_root_wheel_dir_group_if_required",
+      "operation": "chgrp",
+      "target": "/etc/project-anchor",
+      "command_template": "sudo chgrp wheel /etc/project-anchor"
+    },
+    {
+      "name": "restore_dir_mode_700",
+      "operation": "chmod",
+      "target": "/etc/project-anchor",
+      "command_template": "sudo chmod 700 /etc/project-anchor"
     },
     {
       "name": "restore_mode_600",
