@@ -178,6 +178,7 @@ def build_result(
 def markdown(result: dict[str, Any]) -> str:
     checks = "\n".join(f"- {key}: {value}" for key, value in result["checks"].items())
     boundary = "\n".join(f"- {key}: {value}" for key, value in result["boundary"].items())
+    failure_code = result["failure_code"] or "none"
     return f"""# Post Production Alerting Readiness
 
 Generated at: `{result["generated_at"]}`
@@ -186,7 +187,7 @@ Generated at: `{result["generated_at"]}`
 
 - result: {result["result"]}
 - status: {result["status"]}
-- failure code: {result["failure_code"]}
+- failure code: {failure_code}
 - inspect env requested: {result["inspect_env_requested"]}
 
 ## Checks

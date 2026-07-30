@@ -13,6 +13,12 @@
     "controlled_request_error": null,
     "controlled_request_evidence_resolved": "PASS",
     "go_live_blockers_explicit": "PASS",
+    "post_production_alerting_readiness_resolved": "PASS",
+    "post_production_alerting_secret_disclosure": "PASS",
+    "post_production_monitoring_run_resolved": "PASS",
+    "post_production_telegram_secret_disclosed": "PASS",
+    "post_production_telegram_sender_fail_closed_or_delivered": "PASS",
+    "post_production_telegram_sender_result_resolved": "PASS",
     "production_command_creation_candidate_available": "PASS",
     "production_execution_authorization_dry_gate_resolved": "PASS",
     "production_execution_authorized_to_execute": "FAIL",
@@ -45,7 +51,7 @@
     "production_unsigned_canonical_payload_sendable": "FAIL",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-07-22T02:05:04Z",
+  "generated_at": "2026-07-30T16:39:35Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -63,7 +69,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-07-22T02:05:01.175094+00:00"
+    "worker_heartbeat_at": "2026-07-30T16:39:10.047325+00:00"
   },
   "latest_canary": {
     "attempt": 1,
@@ -114,6 +120,115 @@
     "symbol": "BTCUSDT"
   },
   "overall_status": "WARN",
+  "post_production_alerting_readiness": {
+    "boundary": {
+      "alerting_env_content_read": "YES",
+      "canary_rerun": "NO",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "production_env_read": "NO",
+      "production_request_sent": "NO",
+      "second_production_request_sent": "NO",
+      "telegram_bot_token_value_disclosed": "NO",
+      "telegram_chat_id_value_disclosed": "NO",
+      "telegram_http_attempted": "NO",
+      "telegram_message_sent": "NO"
+    },
+    "checks": {
+      "exists": "YES",
+      "expected_group": "project_anchor_runtime",
+      "expected_mode": "640",
+      "expected_owner": "root",
+      "group": "project_anchor_runtime",
+      "group_match": "YES",
+      "mode": "640",
+      "mode_match": "YES",
+      "owner": "root",
+      "owner_match": "YES",
+      "path": "/etc/project-anchor/alerting.env",
+      "telegram_bot_token_present": "YES",
+      "telegram_chat_id_present": "YES",
+      "telegram_notify_enabled_present": "YES",
+      "telegram_notify_enabled_valid": "YES"
+    },
+    "failure_code": "",
+    "inspect_env_requested": true,
+    "result": "PASS",
+    "status": "POST_PRODUCTION_ALERTING_READY"
+  },
+  "post_production_monitoring_run": {
+    "boundary": {
+      "canary_rerun": "NO",
+      "credential_file_read": "NO",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "new_production_request_sent": "NO",
+      "production_http_network_attempted": "NO",
+      "production_signing_executed": "NO",
+      "runtime_modified": "NO",
+      "second_production_request_sent": "NO",
+      "secret_value_disclosed": "NO"
+    },
+    "checks": [
+      {
+        "evidence": "post-production monitoring snapshot returned PASS",
+        "name": "snapshot_result_pass",
+        "result": "PASS"
+      },
+      {
+        "evidence": "monitoring is ready while continuous trading remains disabled",
+        "name": "monitoring_status_safe",
+        "result": "PASS"
+      },
+      {
+        "evidence": "exactly one filled BTCUSDT order remains recorded in the authorized window",
+        "name": "exactly_one_production_order_still_recorded",
+        "result": "PASS"
+      },
+      {
+        "evidence": "continuous runtime and automatic trading remain disabled",
+        "name": "continuous_runtime_disabled",
+        "result": "PASS"
+      },
+      {
+        "evidence": "runner kept credential/signing/network/request/runtime boundaries closed",
+        "name": "runner_did_not_touch_runtime_boundaries",
+        "result": "PASS"
+      },
+      {
+        "evidence": "go-live and live trading remain NO-GO",
+        "name": "go_live_and_live_trading_still_no_go",
+        "result": "PASS"
+      }
+    ],
+    "generated_at": "2026-07-30T15:59:19Z",
+    "result": "PASS",
+    "snapshot_result": "PASS",
+    "snapshot_status": "MONITORING_READY_CONTINUOUS_TRADING_DISABLED",
+    "status": "POST_PRODUCTION_MONITORING_RUN_READY"
+  },
+  "post_production_telegram_send_result": {
+    "boundary": {
+      "alerting_env_read": "NO",
+      "canary_rerun": "NO",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "production_env_read": "NO",
+      "production_request_sent": "NO",
+      "second_production_request_sent": "NO",
+      "secret_value_disclosed": "NO",
+      "telegram_bot_token_read": "NO",
+      "telegram_chat_id_read": "NO",
+      "telegram_http_attempted": "NO"
+    },
+    "execute_requested": true,
+    "failure_code": "PAYLOAD_NOT_READY_TO_SEND",
+    "result": "BLOCKED",
+    "send_attempted": "NO",
+    "send_result": "NOT_ATTEMPTED",
+    "source_payload_result": "SUPPRESSED",
+    "status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED"
+  },
   "production_execution_authorization_dry_gate": {
     "authorized_to_execute": false,
     "boundary": {
@@ -158,11 +273,15 @@
       "secret_read": "NO"
     },
     "evidence": {
-      "max_notional": "4",
+      "max_notional": "10",
       "max_order_count": "1",
+      "production_api_configuration": "PASS",
       "production_credential_readiness": "PASS",
+      "production_execution_host_contract": "PASS",
       "production_http_network_readiness": "PASS",
       "production_market": "binance_spot",
+      "production_runtime_identity_provisioning_plan": "PASS",
+      "production_runtime_owner_contract": "PASS",
       "production_sides": "BUY_ONLY",
       "production_signing_readiness": "PASS",
       "production_symbols": "BTCUSDT",
@@ -286,10 +405,10 @@
     "next_gate": "WAITING_FOR_EXPLICIT_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_AUTHORIZATION",
     "plan_valid": true,
     "planned_request": {
-      "idempotency_key_template": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
+      "idempotency_key_template": "production:ops_manual:BTCUSDT:BUY:10:first-bounded-production-request:v1",
       "idempotency_policy": "required_unique_key_per_authorized_window",
       "market": "binance_spot",
-      "max_notional": "4",
+      "max_notional": "10",
       "max_order_count": "1",
       "order_type": "market",
       "sendable": false,
@@ -298,10 +417,10 @@
     },
     "planned_window": {
       "duration_minutes": 60,
-      "expires_at": "2026-07-21T11:16:12Z",
-      "monitor_until": "2026-07-21T11:31:12Z",
+      "expires_at": "2026-07-30T14:52:57Z",
+      "monitor_until": "2026-07-30T15:07:57Z",
       "monitoring_window": "15_minutes_after_execution",
-      "not_before": "2026-07-21T10:16:12Z",
+      "not_before": "2026-07-30T13:52:57Z",
       "window_type": "fresh_bounded_authorization_window"
     },
     "result": "PASS",

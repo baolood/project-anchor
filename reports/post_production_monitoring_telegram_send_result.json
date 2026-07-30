@@ -12,9 +12,9 @@
     "telegram_chat_id_read": "NO",
     "telegram_http_attempted": "NO"
   },
-  "execute_requested": false,
+  "execute_requested": true,
   "failure_code": "PAYLOAD_NOT_READY_TO_SEND",
-  "generated_at": "2026-07-30T16:11:35Z",
+  "generated_at": "2026-07-30T16:32:37Z",
   "result": "BLOCKED",
   "send_attempted": "NO",
   "send_result": "NOT_ATTEMPTED",

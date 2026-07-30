@@ -1,6 +1,6 @@
 {
   "boundary": {
-    "alerting_env_content_read": "NO",
+    "alerting_env_content_read": "YES",
     "canary_rerun": "NO",
     "go_live": "NO-GO",
     "live_trading": "NO-GO",
@@ -13,25 +13,25 @@
     "telegram_message_sent": "NO"
   },
   "checks": {
-    "exists": "NO",
+    "exists": "YES",
     "expected_group": "project_anchor_runtime",
     "expected_mode": "640",
     "expected_owner": "root",
-    "group": "",
-    "group_match": "NO",
-    "mode": "",
-    "mode_match": "NO",
-    "owner": "",
-    "owner_match": "NO",
+    "group": "project_anchor_runtime",
+    "group_match": "YES",
+    "mode": "640",
+    "mode_match": "YES",
+    "owner": "root",
+    "owner_match": "YES",
     "path": "/etc/project-anchor/alerting.env",
-    "telegram_bot_token_present": "NOT_INSPECTED",
-    "telegram_chat_id_present": "NOT_INSPECTED",
-    "telegram_notify_enabled_present": "NOT_INSPECTED",
-    "telegram_notify_enabled_valid": "NOT_INSPECTED"
+    "telegram_bot_token_present": "YES",
+    "telegram_chat_id_present": "YES",
+    "telegram_notify_enabled_present": "YES",
+    "telegram_notify_enabled_valid": "YES"
   },
-  "failure_code": "ALERTING_ENV_FILE_MISSING_OR_UNREADABLE_METADATA",
-  "generated_at": "2026-07-30T16:18:22Z",
-  "inspect_env_requested": false,
-  "result": "BLOCKED",
-  "status": "POST_PRODUCTION_ALERTING_READINESS_BLOCKED"
+  "failure_code": "",
+  "generated_at": "2026-07-30T16:24:04Z",
+  "inspect_env_requested": true,
+  "result": "PASS",
+  "status": "POST_PRODUCTION_ALERTING_READY"
 }
