@@ -1,0 +1,63 @@
+{
+  "plan_name": "production_runtime_identity_provisioning",
+  "platform": "macos",
+  "target_runtime_identity": "project-anchor-runtime",
+  "target_runtime_group": "project-anchor-runtime",
+  "target_env_path": "/etc/project-anchor/production.env",
+  "target_env_owner": "project-anchor-runtime",
+  "target_env_group": "project-anchor-runtime",
+  "target_env_mode": "600",
+  "execution_authorized": "NO",
+  "dry_validation_only": "YES",
+  "interactive_sudo_send": "NO",
+  "secret_value_read": "NO",
+  "production_request_authorized": "NO",
+  "go_live": "NO-GO",
+  "live_trading": "NO-GO",
+  "provisioning_steps": [
+    {
+      "name": "create_runtime_group",
+      "operation": "create_group_if_absent",
+      "target": "project-anchor-runtime",
+      "command_template": "sudo dscl . -create /Groups/project-anchor-runtime"
+    },
+    {
+      "name": "create_runtime_identity",
+      "operation": "create_user_if_absent",
+      "target": "project-anchor-runtime",
+      "command_template": "sudo dscl . -create /Users/project-anchor-runtime"
+    },
+    {
+      "name": "align_production_env_owner",
+      "operation": "chown",
+      "target": "/etc/project-anchor/production.env",
+      "command_template": "sudo chown project-anchor-runtime:project-anchor-runtime /etc/project-anchor/production.env"
+    },
+    {
+      "name": "enforce_production_env_mode",
+      "operation": "chmod",
+      "target": "/etc/project-anchor/production.env",
+      "command_template": "sudo chmod 600 /etc/project-anchor/production.env"
+    },
+    {
+      "name": "validate_runtime_owner_contract",
+      "operation": "read_only_validate",
+      "target": "reports/production_runtime_owner_contract_validation.json",
+      "command_template": "python3 scripts/validate_production_runtime_owner_contract.py"
+    }
+  ],
+  "rollback_steps": [
+    {
+      "name": "restore_root_wheel_owner_if_required",
+      "operation": "chown",
+      "target": "/etc/project-anchor/production.env",
+      "command_template": "sudo chown root:wheel /etc/project-anchor/production.env"
+    },
+    {
+      "name": "restore_mode_600",
+      "operation": "chmod",
+      "target": "/etc/project-anchor/production.env",
+      "command_template": "sudo chmod 600 /etc/project-anchor/production.env"
+    }
+  ]
+}

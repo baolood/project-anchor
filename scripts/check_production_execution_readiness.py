@@ -21,6 +21,9 @@ RISK_LIMITS_REPORT = ROOT / "reports" / "production_risk_limits_validation.json"
 PRODUCTION_CREDENTIAL_READINESS_REPORT = ROOT / "reports" / "production_credential_readiness_validation.json"
 PRODUCTION_API_CONFIGURATION_REPORT = ROOT / "reports" / "production_api_configuration_validation.json"
 PRODUCTION_RUNTIME_OWNER_CONTRACT_REPORT = ROOT / "reports" / "production_runtime_owner_contract_validation.json"
+PRODUCTION_RUNTIME_IDENTITY_PROVISIONING_PLAN_REPORT = (
+    ROOT / "reports" / "production_runtime_identity_provisioning_plan_validation.json"
+)
 PRODUCTION_SIGNING_READINESS_REPORT = ROOT / "reports" / "production_signing_readiness_validation.json"
 PRODUCTION_HTTP_NETWORK_READINESS_REPORT = ROOT / "reports" / "production_http_network_readiness_validation.json"
 REPORTS_DIR = ROOT / "reports"
@@ -52,6 +55,9 @@ def build_report() -> tuple[dict[str, Any], int]:
     credential_report, credential_report_error = read_json(PRODUCTION_CREDENTIAL_READINESS_REPORT)
     api_configuration_report, api_configuration_report_error = read_json(PRODUCTION_API_CONFIGURATION_REPORT)
     runtime_owner_report, runtime_owner_report_error = read_json(PRODUCTION_RUNTIME_OWNER_CONTRACT_REPORT)
+    runtime_identity_plan_report, runtime_identity_plan_report_error = read_json(
+        PRODUCTION_RUNTIME_IDENTITY_PROVISIONING_PLAN_REPORT
+    )
     signing_report, signing_report_error = read_json(PRODUCTION_SIGNING_READINESS_REPORT)
     http_network_report, http_network_report_error = read_json(PRODUCTION_HTTP_NETWORK_READINESS_REPORT)
 
@@ -67,6 +73,8 @@ def build_report() -> tuple[dict[str, Any], int]:
         errors.append(api_configuration_report_error)
     if runtime_owner_report_error:
         errors.append(runtime_owner_report_error)
+    if runtime_identity_plan_report_error:
+        errors.append(runtime_identity_plan_report_error)
     if signing_report_error:
         errors.append(signing_report_error)
     if http_network_report_error:
@@ -77,6 +85,7 @@ def build_report() -> tuple[dict[str, Any], int]:
     credential_report = credential_report or {}
     api_configuration_report = api_configuration_report or {}
     runtime_owner_report = runtime_owner_report or {}
+    runtime_identity_plan_report = runtime_identity_plan_report or {}
     signing_report = signing_report or {}
     http_network_report = http_network_report or {}
 
@@ -99,6 +108,12 @@ def build_report() -> tuple[dict[str, Any], int]:
     )
     if not runtime_owner_contract_pass:
         blockers.append("production runtime owner contract validation is not PASS")
+    runtime_identity_provisioning_plan_pass = (
+        runtime_identity_plan_report.get("result") == "PASS"
+        and not runtime_identity_plan_report.get("errors")
+    )
+    if not runtime_identity_provisioning_plan_pass:
+        blockers.append("production runtime identity provisioning plan validation is not PASS")
     signing_readiness_pass = signing_report.get("result") == "PASS" and not signing_report.get("errors")
     if not signing_readiness_pass:
         blockers.append("production signing readiness validation is not PASS")
@@ -143,6 +158,9 @@ def build_report() -> tuple[dict[str, Any], int]:
             "production_runtime_owner_contract": str(
                 PRODUCTION_RUNTIME_OWNER_CONTRACT_REPORT.relative_to(ROOT)
             ),
+            "production_runtime_identity_provisioning_plan": str(
+                PRODUCTION_RUNTIME_IDENTITY_PROVISIONING_PLAN_REPORT.relative_to(ROOT)
+            ),
             "production_signing_readiness": str(PRODUCTION_SIGNING_READINESS_REPORT.relative_to(ROOT)),
             "production_http_network_readiness": str(
                 PRODUCTION_HTTP_NETWORK_READINESS_REPORT.relative_to(ROOT)
@@ -153,6 +171,9 @@ def build_report() -> tuple[dict[str, Any], int]:
             "production_credential_readiness": "PASS" if credential_readiness_pass else "FAIL",
             "production_api_configuration": "PASS" if api_configuration_pass else "FAIL",
             "production_runtime_owner_contract": "PASS" if runtime_owner_contract_pass else "FAIL",
+            "production_runtime_identity_provisioning_plan": (
+                "PASS" if runtime_identity_provisioning_plan_pass else "FAIL"
+            ),
             "production_signing_readiness": "PASS" if signing_readiness_pass else "FAIL",
             "production_http_network_readiness": "PASS" if http_network_readiness_pass else "FAIL",
             "production_market": config.get("AUTHORIZED_PRODUCTION_MARKET"),
@@ -237,6 +258,10 @@ def main() -> int:
     print(
         "production_runtime_owner_contract: "
         f"{report['evidence']['production_runtime_owner_contract']}"
+    )
+    print(
+        "production_runtime_identity_provisioning_plan: "
+        f"{report['evidence']['production_runtime_identity_provisioning_plan']}"
     )
     print(f"production_credential_access: {report['gates']['production_credential_access']}")
     print(f"production_signing: {report['gates']['production_signing']}")

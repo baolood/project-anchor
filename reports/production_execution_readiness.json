@@ -26,6 +26,7 @@
     "production_credential_readiness": "PASS",
     "production_http_network_readiness": "PASS",
     "production_market": "binance_spot",
+    "production_runtime_identity_provisioning_plan": "PASS",
     "production_runtime_owner_contract": "FAIL",
     "production_sides": "BUY_ONLY",
     "production_signing_readiness": "PASS",
@@ -39,11 +40,12 @@
     "production_http_network": "NO",
     "production_signing": "NO"
   },
-  "generated_at": "2026-07-30T09:19:22Z",
+  "generated_at": "2026-07-30T09:30:24Z",
   "inputs": {
     "production_api_configuration": "reports/production_api_configuration_validation.json",
     "production_credential_readiness": "reports/production_credential_readiness_validation.json",
     "production_http_network_readiness": "reports/production_http_network_readiness_validation.json",
+    "production_runtime_identity_provisioning_plan": "reports/production_runtime_identity_provisioning_plan_validation.json",
     "production_runtime_owner_contract": "reports/production_runtime_owner_contract_validation.json",
     "production_signing_readiness": "reports/production_signing_readiness_validation.json",
     "risk_limits_config": "config/production_risk_limits.template.json",
