@@ -1,5 +1,6 @@
 import os
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -14,6 +15,8 @@ class PostProductionMonitoringOnceScriptTest(unittest.TestCase):
 
         self.assertIn("set -euo pipefail", text)
         self.assertIn("scripts/run_post_production_monitoring.py", text)
+        self.assertIn("POST_PRODUCTION_MONITORING_OUTPUT_DIR", text)
+        self.assertIn("/var/lib/project-anchor/reports", text)
         self.assertIn("credential_file_read", text)
         self.assertIn("new_production_request_sent", text)
         self.assertIn("second_production_request_sent", text)
@@ -24,15 +27,17 @@ class PostProductionMonitoringOnceScriptTest(unittest.TestCase):
 
     def test_manual_command_passes_without_touching_network_or_credentials(self):
         env = os.environ.copy()
-        result = subprocess.run(
-            ["bash", str(SCRIPT)],
-            cwd=PROJECT_ROOT,
-            env=env,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=False,
-        )
+        with tempfile.TemporaryDirectory() as tmp:
+            env["POST_PRODUCTION_MONITORING_OUTPUT_DIR"] = tmp
+            result = subprocess.run(
+                ["bash", str(SCRIPT)],
+                cwd=PROJECT_ROOT,
+                env=env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("POST_PRODUCTION_MONITORING_ONCE_RESULT=PASS", result.stdout)

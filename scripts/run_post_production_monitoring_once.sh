@@ -2,11 +2,13 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-RUN_JSON="$ROOT/reports/post_production_monitoring_run.json"
+OUTPUT_DIR="${POST_PRODUCTION_MONITORING_OUTPUT_DIR:-/var/lib/project-anchor/reports}"
+RUN_JSON="$OUTPUT_DIR/post_production_monitoring_run.json"
 
 cd "$ROOT"
 
-python3 scripts/run_post_production_monitoring.py
+mkdir -p "$OUTPUT_DIR"
+POST_PRODUCTION_MONITORING_OUTPUT_DIR="$OUTPUT_DIR" python3 scripts/run_post_production_monitoring.py
 
 python3 - "$RUN_JSON" <<'PY'
 import json

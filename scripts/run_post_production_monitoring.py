@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -18,9 +19,12 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORTS_DIR = ROOT / "reports"
+OUTPUT_DIR = Path(os.environ.get("POST_PRODUCTION_MONITORING_OUTPUT_DIR", str(REPORTS_DIR))).expanduser()
 SNAPSHOT_SCRIPT = ROOT / "scripts" / "generate_post_production_monitoring_snapshot.py"
-RUN_JSON_OUT = REPORTS_DIR / "post_production_monitoring_run.json"
-RUN_MD_OUT = REPORTS_DIR / "post_production_monitoring_run.md"
+RUN_JSON_OUT = OUTPUT_DIR / "post_production_monitoring_run.json"
+RUN_MD_OUT = OUTPUT_DIR / "post_production_monitoring_run.md"
+SNAPSHOT_JSON_OUT = OUTPUT_DIR / "post_production_monitoring_snapshot.json"
+SNAPSHOT_MD_OUT = OUTPUT_DIR / "post_production_monitoring_snapshot.md"
 
 
 def utc_now() -> str:
@@ -104,8 +108,8 @@ def build_run_report(snapshot_report: dict[str, Any], snapshot_exit_code: int) -
         "snapshot_generated_at": snapshot_report.get("generated_at"),
         "inputs": {
             "snapshot_script": str(SNAPSHOT_SCRIPT.relative_to(ROOT)),
-            "snapshot_json": "reports/post_production_monitoring_snapshot.json",
-            "snapshot_markdown": "reports/post_production_monitoring_snapshot.md",
+            "snapshot_json": str(SNAPSHOT_JSON_OUT),
+            "snapshot_markdown": str(SNAPSHOT_MD_OUT),
         },
         "boundary": {
             "credential_file_read": "NO",
@@ -155,22 +159,23 @@ Generated at: `{report["generated_at"]}`
 def main() -> int:
     snapshot_module = load_snapshot_module()
     snapshot_report, snapshot_exit_code = snapshot_module.build_report()
-    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    snapshot_module.JSON_OUT.write_text(
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    SNAPSHOT_JSON_OUT.write_text(
         json.dumps(snapshot_report, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    snapshot_module.MD_OUT.write_text(snapshot_module.markdown(snapshot_report), encoding="utf-8")
+    SNAPSHOT_MD_OUT.write_text(snapshot_module.markdown(snapshot_report), encoding="utf-8")
 
     run_report, exit_code = build_run_report(snapshot_report, snapshot_exit_code)
     RUN_JSON_OUT.write_text(json.dumps(run_report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     RUN_MD_OUT.write_text(markdown(run_report), encoding="utf-8")
 
     print("[Post Production Monitoring Run]")
-    print(f"run JSON: {RUN_JSON_OUT.relative_to(ROOT)}")
-    print(f"run Markdown: {RUN_MD_OUT.relative_to(ROOT)}")
-    print(f"snapshot JSON: {snapshot_module.JSON_OUT.relative_to(ROOT)}")
-    print(f"snapshot Markdown: {snapshot_module.MD_OUT.relative_to(ROOT)}")
+    print(f"output dir: {OUTPUT_DIR}")
+    print(f"run JSON: {RUN_JSON_OUT}")
+    print(f"run Markdown: {RUN_MD_OUT}")
+    print(f"snapshot JSON: {SNAPSHOT_JSON_OUT}")
+    print(f"snapshot Markdown: {SNAPSHOT_MD_OUT}")
     print(f"result: {run_report['result']}")
     print(f"status: {run_report['status']}")
     print(f"new_production_request_sent: {run_report['boundary']['new_production_request_sent']}")
