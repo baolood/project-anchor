@@ -7,7 +7,7 @@
     "go_live": "NO-GO",
     "live_trading": "NO-GO",
     "production_http_network_attempted": "YES",
-    "production_request_accepted": "NO",
+    "production_request_accepted": "YES",
     "production_request_attempted": "YES",
     "production_signing_executed": "YES",
     "secret_hash_disclosed": "NO",
@@ -45,8 +45,8 @@
     "observed_platform": "Linux"
   },
   "execution_requested": true,
-  "failure_code": "PRODUCTION_HTTP_REQUEST_REJECTED",
-  "generated_at": "2026-07-30T13:37:45Z",
+  "failure_code": null,
+  "generated_at": "2026-07-30T13:52:57Z",
   "readiness_decision": "READY_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_WINDOW_OPEN",
   "readiness_result": "PASS",
   "request": {
@@ -68,18 +68,18 @@
     "symbol": "BTCUSDT",
     "type": "MARKET"
   },
-  "result": "FAIL",
-  "success": false,
+  "result": "PASS",
+  "success": true,
   "terminal": {
-    "exchange_error_code": -2010,
-    "exchange_error_code_present": true,
-    "exchange_error_message_present": true,
-    "exchange_error_msg": "Account has insufficient balance for requested action.",
-    "external_order_id_present": false,
+    "exchange_error_code": null,
+    "exchange_error_code_present": null,
+    "exchange_error_message_present": null,
+    "exchange_error_msg": null,
+    "external_order_id_present": true,
     "external_request_started": true,
-    "external_status": null,
-    "http_status": 400,
-    "terminal_type": "PRODUCTION_HTTP_REQUEST_REJECTED",
+    "external_status": "FILLED",
+    "http_status": 200,
+    "terminal_type": "PRODUCTION_HTTP_RESPONSE",
     "transport_error_type": null
   }
 }
