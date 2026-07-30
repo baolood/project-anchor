@@ -46,13 +46,13 @@
   },
   "execution_requested": true,
   "failure_code": "PRODUCTION_HTTP_REQUEST_REJECTED",
-  "generated_at": "2026-07-30T13:17:35Z",
+  "generated_at": "2026-07-30T13:37:45Z",
   "readiness_decision": "READY_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_WINDOW_OPEN",
   "readiness_result": "PASS",
   "request": {
-    "idempotency_key": "production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1",
+    "idempotency_key": "production:ops_manual:BTCUSDT:BUY:10:first-bounded-production-request:v1",
     "market": "binance_spot",
-    "max_notional": 4,
+    "max_notional": "10",
     "order_type": "market",
     "side": "BUY",
     "symbol": "BTCUSDT"
@@ -60,7 +60,7 @@
   "requested_payload_shape": {
     "api_key_present": true,
     "method": "POST",
-    "quoteOrderQty": "4",
+    "quoteOrderQty": "10",
     "request_path": "/api/v3/order",
     "sendable": true,
     "side": "BUY",
@@ -71,10 +71,10 @@
   "result": "FAIL",
   "success": false,
   "terminal": {
-    "exchange_error_code": -1013,
+    "exchange_error_code": -2010,
     "exchange_error_code_present": true,
     "exchange_error_message_present": true,
-    "exchange_error_msg": "Filter failure: NOTIONAL",
+    "exchange_error_msg": "Account has insufficient balance for requested action.",
     "external_order_id_present": false,
     "external_request_started": true,
     "external_status": null,

@@ -1,6 +1,6 @@
 # Production Exactly-One Send Result
 
-Generated at: `2026-07-30T13:17:35Z`
+Generated at: `2026-07-30T13:37:45Z`
 
 ## Result
 
@@ -13,11 +13,11 @@ Generated at: `2026-07-30T13:17:35Z`
 
 ## Request
 
-- idempotency key: `production:ops_manual:BTCUSDT:BUY:4:first-bounded-production-request:v1`
+- idempotency key: `production:ops_manual:BTCUSDT:BUY:10:first-bounded-production-request:v1`
 - market: binance_spot
 - symbol: BTCUSDT
 - side: BUY
-- max notional: 4
+- max notional: 10
 - order type: market
 
 ## Execution Host Contract
@@ -48,8 +48,8 @@ Generated at: `2026-07-30T13:17:35Z`
 - external order id present: false
 - exchange error code present: True
 - exchange error message present: True
-- exchange error code: -1013
-- exchange error message: Filter failure: NOTIONAL
+- exchange error code: -2010
+- exchange error message: Account has insufficient balance for requested action.
 - transport error type: None
 
 ## Boundary
