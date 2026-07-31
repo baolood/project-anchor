@@ -1,0 +1,24 @@
+{
+  "boundary": {
+    "canary_rerun": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_request_sent": "NO",
+    "second_production_request_sent": "NO",
+    "secret_disclosed": "NO",
+    "secret_read": "NO",
+    "telegram_send_triggered": "NO"
+  },
+  "checks": {
+    "forbidden_fragments_absent": "PASS",
+    "go_live_no_go": "PASS",
+    "html_generated": "PASS",
+    "live_trading_no_go": "PASS",
+    "no_execution_controls": "PASS",
+    "sanitized_payload_embedded": "PASS",
+    "telegram_status_present": "PASS"
+  },
+  "forbidden_hits": [],
+  "generated_at": "2026-07-31T09:47:58Z",
+  "result": "PASS"
+}
