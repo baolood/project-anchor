@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-31T01:45:39Z`
+Generated at: `2026-07-31T02:13:32Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-31T01:45:39Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-31T01:45:31.247652+00:00`
+- worker heartbeat at: `2026-07-31T02:13:17.844639+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -155,11 +155,13 @@ Generated at: `2026-07-31T01:45:39Z`
 - DNS result: PASS
 - HTTPS healthz status: 200
 - HTTPS healthz result: PASS
-- protected URL status: 403
+- protected URL status: 401
 - protected result: PASS
+- Basic Auth challenge result: PASS
+- Basic Auth realm present: PASS
+- authenticated ops access attempted: NO
 - TLS certificate not after: `Oct 29 00:16:07 2026 GMT`
 - TLS result: PASS
-- authenticated ops access attempted: NO
 
 ### Production Gates
 

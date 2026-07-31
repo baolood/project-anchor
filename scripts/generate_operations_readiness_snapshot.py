@@ -94,6 +94,22 @@ def http_status(url: str, timeout: float = 5.0) -> tuple[int | None, str | None]
         return None, f"{type(exc).__name__}:{exc}"
 
 
+def http_probe(url: str, timeout: float = 5.0) -> tuple[int | None, dict[str, str], str | None]:
+    request = Request(url, method="GET")
+    try:
+        with urlopen(request, timeout=timeout) as response:
+            response.read(64)
+            return int(response.status), dict(response.headers.items()), None
+    except HTTPError as exc:
+        return int(exc.code), dict(exc.headers.items()), None
+    except URLError as exc:
+        return None, {}, f"URL_ERROR:{exc.reason}"
+    except TimeoutError:
+        return None, {}, "TIMEOUT"
+    except Exception as exc:  # noqa: BLE001 - snapshot should fail closed with evidence.
+        return None, {}, f"{type(exc).__name__}:{exc}"
+
+
 def tls_not_after(hostname: str, port: int = 443, timeout: float = 5.0) -> tuple[str | None, str | None]:
     try:
         context = ssl.create_default_context()
@@ -115,14 +131,22 @@ def ops_domain_ingress_snapshot() -> dict[str, Any]:
         dns_error = f"{type(exc).__name__}:{exc}"
 
     health_status, health_error = http_status(OPS_HEALTHZ_URL)
-    protected_status, protected_error = http_status(OPS_PROTECTED_URL)
+    protected_status, protected_headers, protected_error = http_probe(OPS_PROTECTED_URL)
     cert_not_after, cert_error = tls_not_after(OPS_DOMAIN)
 
     dns_pass = OPS_EXPECTED_A in resolved
     health_pass = health_status == 200
     protected_pass = protected_status in {401, 403}
+    authenticate_header = protected_headers.get("WWW-Authenticate", "")
+    basic_auth_challenge_pass = (
+        protected_status == 401 and "basic" in authenticate_header.lower()
+    )
     tls_pass = cert_not_after is not None and cert_error is None
-    result = "PASS" if dns_pass and health_pass and protected_pass and tls_pass else "WARN"
+    result = (
+        "PASS"
+        if dns_pass and health_pass and protected_pass and basic_auth_challenge_pass and tls_pass
+        else "WARN"
+    )
 
     return {
         "result": result,
@@ -140,6 +164,11 @@ def ops_domain_ingress_snapshot() -> dict[str, Any]:
         "protected_error": protected_error,
         "protected_result": pass_fail(protected_pass),
         "protected_expected_statuses": [401, 403],
+        "ops_basic_auth_challenge_result": pass_fail(basic_auth_challenge_pass),
+        "ops_basic_auth_realm_present": pass_fail(
+            "project anchor ops" in authenticate_header.lower()
+        ),
+        "ops_basic_auth_status": protected_status,
         "tls_certificate_not_after": cert_not_after,
         "tls_error": cert_error,
         "tls_result": pass_fail(tls_pass),
@@ -944,6 +973,12 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
                 "protected_result", "FAIL"
             ),
             "ops_domain_tls_result": ops_domain_ingress.get("tls_result", "FAIL"),
+            "ops_basic_auth_challenge_result": ops_domain_ingress.get(
+                "ops_basic_auth_challenge_result", "FAIL"
+            ),
+            "ops_basic_auth_realm_present": ops_domain_ingress.get(
+                "ops_basic_auth_realm_present", "FAIL"
+            ),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -1146,9 +1181,11 @@ Generated at: `{snapshot["generated_at"]}`
 - HTTPS healthz result: {ops_domain.get("https_healthz_result")}
 - protected URL status: {ops_domain.get("protected_status")}
 - protected result: {ops_domain.get("protected_result")}
+- Basic Auth challenge result: {ops_domain.get("ops_basic_auth_challenge_result")}
+- Basic Auth realm present: {ops_domain.get("ops_basic_auth_realm_present")}
+- authenticated ops access attempted: {ops_domain.get("boundary", {}).get("authenticated_ops_access_attempted")}
 - TLS certificate not after: `{ops_domain.get("tls_certificate_not_after")}`
 - TLS result: {ops_domain.get("tls_result")}
-- authenticated ops access attempted: {ops_domain.get("boundary", {}).get("authenticated_ops_access_attempted")}
 
 ### Production Gates
 
@@ -1348,6 +1385,10 @@ def main() -> int:
         f"{snapshot['ops_domain_ingress'].get('protected_result')}"
     )
     print(f"ops_domain_tls: {snapshot['ops_domain_ingress'].get('tls_result')}")
+    print(
+        "ops_basic_auth_challenge: "
+        f"{snapshot['ops_domain_ingress'].get('ops_basic_auth_challenge_result')}"
+    )
     print("secret_read: NO")
     print("new_external_request_sent: NO")
     print("canary_rerun: NO")
