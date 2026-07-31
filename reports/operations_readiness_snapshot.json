@@ -13,6 +13,11 @@
     "controlled_request_error": null,
     "controlled_request_evidence_resolved": "PASS",
     "go_live_blockers_explicit": "PASS",
+    "ops_domain_dns_result": "PASS",
+    "ops_domain_https_healthz_result": "PASS",
+    "ops_domain_ingress_resolved": "PASS",
+    "ops_domain_protected_result": "PASS",
+    "ops_domain_tls_result": "PASS",
     "post_production_alerting_readiness_resolved": "PASS",
     "post_production_alerting_secret_disclosure": "PASS",
     "post_production_monitoring_run_resolved": "PASS",
@@ -51,7 +56,7 @@
     "production_unsigned_canonical_payload_sendable": "FAIL",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-07-30T16:39:35Z",
+  "generated_at": "2026-07-31T01:45:39Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -69,7 +74,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-07-30T16:39:10.047325+00:00"
+    "worker_heartbeat_at": "2026-07-31T01:45:31.247652+00:00"
   },
   "latest_canary": {
     "attempt": 1,
@@ -118,6 +123,41 @@
     "side": "BUY",
     "status": "DONE",
     "symbol": "BTCUSDT"
+  },
+  "ops_domain_ingress": {
+    "boundary": {
+      "authenticated_ops_access_attempted": "NO",
+      "canary_rerun": "NO",
+      "credential_file_read": "NO",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "production_request_sent": "NO",
+      "second_production_request_sent": "NO",
+      "secret_value_disclosed": "NO"
+    },
+    "dns_error": null,
+    "dns_result": "PASS",
+    "domain": "ops.anchor-infra.com",
+    "expected_a": "45.76.190.109",
+    "https_healthz_error": null,
+    "https_healthz_result": "PASS",
+    "https_healthz_status": 200,
+    "https_healthz_url": "https://ops.anchor-infra.com/healthz",
+    "protected_error": null,
+    "protected_expected_statuses": [
+      401,
+      403
+    ],
+    "protected_result": "PASS",
+    "protected_status": 403,
+    "protected_url": "https://ops.anchor-infra.com/ops",
+    "resolved_a_records": [
+      "45.76.190.109"
+    ],
+    "result": "PASS",
+    "tls_certificate_not_after": "Oct 29 00:16:07 2026 GMT",
+    "tls_error": null,
+    "tls_result": "PASS"
   },
   "overall_status": "WARN",
   "post_production_alerting_readiness": {

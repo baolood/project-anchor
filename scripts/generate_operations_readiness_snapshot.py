@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import json
 import os
+import socket
+import ssl
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -50,6 +52,10 @@ POST_PRODUCTION_TELEGRAM_SEND_RESULT_REPORT = (
 )
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
+OPS_DOMAIN = os.getenv("OPS_DOMAIN", "ops.anchor-infra.com")
+OPS_EXPECTED_A = os.getenv("OPS_EXPECTED_A", "45.76.190.109")
+OPS_HEALTHZ_URL = os.getenv("OPS_HEALTHZ_URL", f"https://{OPS_DOMAIN}/healthz")
+OPS_PROTECTED_URL = os.getenv("OPS_PROTECTED_URL", f"https://{OPS_DOMAIN}/ops")
 CONTROLLED_COMMAND_ID = os.getenv(
     "CONTROLLED_COMMAND_ID", "order-a06eed8f-cd60-4a4f-b3e9-84c540b98e6f"
 )
@@ -70,6 +76,84 @@ GO_LIVE_BLOCKERS = [
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def http_status(url: str, timeout: float = 5.0) -> tuple[int | None, str | None]:
+    request = Request(url, method="GET")
+    try:
+        with urlopen(request, timeout=timeout) as response:
+            response.read(64)
+            return int(response.status), None
+    except HTTPError as exc:
+        return int(exc.code), None
+    except URLError as exc:
+        return None, f"URL_ERROR:{exc.reason}"
+    except TimeoutError:
+        return None, "TIMEOUT"
+    except Exception as exc:  # noqa: BLE001 - snapshot should fail closed with evidence.
+        return None, f"{type(exc).__name__}:{exc}"
+
+
+def tls_not_after(hostname: str, port: int = 443, timeout: float = 5.0) -> tuple[str | None, str | None]:
+    try:
+        context = ssl.create_default_context()
+        with socket.create_connection((hostname, port), timeout=timeout) as raw_socket:
+            with context.wrap_socket(raw_socket, server_hostname=hostname) as tls_socket:
+                cert = tls_socket.getpeercert()
+    except Exception as exc:  # noqa: BLE001 - snapshot should fail closed with evidence.
+        return None, f"{type(exc).__name__}:{exc}"
+    not_after = cert.get("notAfter") if isinstance(cert, dict) else None
+    return str(not_after) if not_after else None, None if not_after else "CERT_NOT_AFTER_MISSING"
+
+
+def ops_domain_ingress_snapshot() -> dict[str, Any]:
+    try:
+        resolved = sorted({item[4][0] for item in socket.getaddrinfo(OPS_DOMAIN, 443, type=socket.SOCK_STREAM)})
+        dns_error = None
+    except Exception as exc:  # noqa: BLE001 - snapshot should fail closed with evidence.
+        resolved = []
+        dns_error = f"{type(exc).__name__}:{exc}"
+
+    health_status, health_error = http_status(OPS_HEALTHZ_URL)
+    protected_status, protected_error = http_status(OPS_PROTECTED_URL)
+    cert_not_after, cert_error = tls_not_after(OPS_DOMAIN)
+
+    dns_pass = OPS_EXPECTED_A in resolved
+    health_pass = health_status == 200
+    protected_pass = protected_status in {401, 403}
+    tls_pass = cert_not_after is not None and cert_error is None
+    result = "PASS" if dns_pass and health_pass and protected_pass and tls_pass else "WARN"
+
+    return {
+        "result": result,
+        "domain": OPS_DOMAIN,
+        "expected_a": OPS_EXPECTED_A,
+        "resolved_a_records": resolved,
+        "dns_error": dns_error,
+        "dns_result": pass_fail(dns_pass),
+        "https_healthz_url": OPS_HEALTHZ_URL,
+        "https_healthz_status": health_status,
+        "https_healthz_error": health_error,
+        "https_healthz_result": pass_fail(health_pass),
+        "protected_url": OPS_PROTECTED_URL,
+        "protected_status": protected_status,
+        "protected_error": protected_error,
+        "protected_result": pass_fail(protected_pass),
+        "protected_expected_statuses": [401, 403],
+        "tls_certificate_not_after": cert_not_after,
+        "tls_error": cert_error,
+        "tls_result": pass_fail(tls_pass),
+        "boundary": {
+            "credential_file_read": "NO",
+            "secret_value_disclosed": "NO",
+            "authenticated_ops_access_attempted": "NO",
+            "production_request_sent": "NO",
+            "second_production_request_sent": "NO",
+            "canary_rerun": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
 
 
 def get_json(path: str, timeout: float = 5.0) -> tuple[bool, Any, str | None]:
@@ -648,6 +732,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     post_production_monitoring_run = load_post_production_monitoring_run()
     post_production_alerting_readiness = load_post_production_alerting_readiness()
     post_production_telegram_send_result = load_post_production_telegram_send_result()
+    ops_domain_ingress = ops_domain_ingress_snapshot()
     production_execution_ready = production_execution_readiness.get("result") == "PASS"
 
     hard_failures = [
@@ -711,6 +796,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         "post_production_monitoring_run": post_production_monitoring_run,
         "post_production_alerting_readiness": post_production_alerting_readiness,
         "post_production_telegram_send_result": post_production_telegram_send_result,
+        "ops_domain_ingress": ops_domain_ingress,
         "go_live": {
             "verdict": "NO-GO",
             "blocking_gates": GO_LIVE_BLOCKERS,
@@ -847,6 +933,17 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
                 )
                 != "YES"
             ),
+            "ops_domain_ingress_resolved": pass_fail(
+                ops_domain_ingress.get("result") == "PASS"
+            ),
+            "ops_domain_dns_result": ops_domain_ingress.get("dns_result", "FAIL"),
+            "ops_domain_https_healthz_result": ops_domain_ingress.get(
+                "https_healthz_result", "FAIL"
+            ),
+            "ops_domain_protected_result": ops_domain_ingress.get(
+                "protected_result", "FAIL"
+            ),
+            "ops_domain_tls_result": ops_domain_ingress.get("tls_result", "FAIL"),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -877,6 +974,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     post_monitoring = snapshot["post_production_monitoring_run"]
     post_alerting = snapshot["post_production_alerting_readiness"]
     post_telegram = snapshot["post_production_telegram_send_result"]
+    ops_domain = snapshot["ops_domain_ingress"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
     production_blockers = "\n".join(
         f"- {item}" for item in production_readiness.get("blockers", [])
@@ -1036,6 +1134,21 @@ Generated at: `{snapshot["generated_at"]}`
 - failure code: {post_telegram_failure_code}
 - alerting env read: {post_telegram.get("boundary", {}).get("alerting_env_read")}
 - Telegram HTTP attempted: {post_telegram.get("boundary", {}).get("telegram_http_attempted")}
+
+## Ops Domain Ingress
+
+- result: {ops_domain.get("result")}
+- domain: `{ops_domain.get("domain")}`
+- expected A: `{ops_domain.get("expected_a")}`
+- resolved A records: {", ".join(ops_domain.get("resolved_a_records") or []) or "none"}
+- DNS result: {ops_domain.get("dns_result")}
+- HTTPS healthz status: {ops_domain.get("https_healthz_status")}
+- HTTPS healthz result: {ops_domain.get("https_healthz_result")}
+- protected URL status: {ops_domain.get("protected_status")}
+- protected result: {ops_domain.get("protected_result")}
+- TLS certificate not after: `{ops_domain.get("tls_certificate_not_after")}`
+- TLS result: {ops_domain.get("tls_result")}
+- authenticated ops access attempted: {ops_domain.get("boundary", {}).get("authenticated_ops_access_attempted")}
 
 ### Production Gates
 
@@ -1224,6 +1337,17 @@ def main() -> int:
         "post_production_telegram_http_attempted: "
         f"{snapshot['post_production_telegram_send_result'].get('boundary', {}).get('telegram_http_attempted')}"
     )
+    print(f"ops_domain_ingress: {snapshot['ops_domain_ingress'].get('result')}")
+    print(f"ops_domain_dns: {snapshot['ops_domain_ingress'].get('dns_result')}")
+    print(
+        "ops_domain_https_healthz: "
+        f"{snapshot['ops_domain_ingress'].get('https_healthz_result')}"
+    )
+    print(
+        "ops_domain_protected: "
+        f"{snapshot['ops_domain_ingress'].get('protected_result')}"
+    )
+    print(f"ops_domain_tls: {snapshot['ops_domain_ingress'].get('tls_result')}")
     print("secret_read: NO")
     print("new_external_request_sent: NO")
     print("canary_rerun: NO")
