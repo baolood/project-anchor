@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-31T02:21:15Z`
+Generated at: `2026-07-31T03:45:41Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-31T02:21:15Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-31T02:20:52.254020+00:00`
+- worker heartbeat at: `2026-07-31T03:45:14.746657+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -136,15 +136,15 @@ Generated at: `2026-07-31T02:21:15Z`
 
 ## Post-Production Telegram Sender
 
-- result: BLOCKED
-- status: POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED
-- source payload result: SUPPRESSED
+- result: PASS
+- status: POST_PRODUCTION_MONITORING_TELEGRAM_SEND_DELIVERED
+- source payload result: READY_TO_SEND
 - execute requested: true
-- send attempted: NO
-- send result: NOT_ATTEMPTED
-- failure code: PAYLOAD_NOT_READY_TO_SEND
-- alerting env read: NO
-- Telegram HTTP attempted: NO
+- send attempted: YES
+- send result: DELIVERED
+- failure code: none
+- alerting env read: YES
+- Telegram HTTP attempted: YES
 
 ## Ops Domain Ingress
 

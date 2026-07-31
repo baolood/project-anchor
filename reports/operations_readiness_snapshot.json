@@ -62,7 +62,7 @@
     "production_unsigned_canonical_payload_sendable": "FAIL",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-07-31T02:21:15Z",
+  "generated_at": "2026-07-31T03:45:41Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -80,7 +80,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-07-31T02:20:52.254020+00:00"
+    "worker_heartbeat_at": "2026-07-31T03:45:14.746657+00:00"
   },
   "latest_canary": {
     "attempt": 1,
@@ -284,7 +284,7 @@
   },
   "post_production_telegram_send_result": {
     "boundary": {
-      "alerting_env_read": "NO",
+      "alerting_env_read": "YES",
       "canary_rerun": "NO",
       "go_live": "NO-GO",
       "live_trading": "NO-GO",
@@ -292,17 +292,17 @@
       "production_request_sent": "NO",
       "second_production_request_sent": "NO",
       "secret_value_disclosed": "NO",
-      "telegram_bot_token_read": "NO",
-      "telegram_chat_id_read": "NO",
-      "telegram_http_attempted": "NO"
+      "telegram_bot_token_read": "YES",
+      "telegram_chat_id_read": "YES",
+      "telegram_http_attempted": "YES"
     },
     "execute_requested": true,
-    "failure_code": "PAYLOAD_NOT_READY_TO_SEND",
-    "result": "BLOCKED",
-    "send_attempted": "NO",
-    "send_result": "NOT_ATTEMPTED",
-    "source_payload_result": "SUPPRESSED",
-    "status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED"
+    "failure_code": "",
+    "result": "PASS",
+    "send_attempted": "YES",
+    "send_result": "DELIVERED",
+    "source_payload_result": "READY_TO_SEND",
+    "status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_DELIVERED"
   },
   "production_execution_authorization_dry_gate": {
     "authorized_to_execute": false,

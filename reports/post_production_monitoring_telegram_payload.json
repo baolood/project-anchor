@@ -13,12 +13,12 @@
     "telegram_http_attempted": "NO"
   },
   "channel": "telegram",
-  "generated_at": "2026-07-30T16:05:11Z",
-  "message": "[Project Anchor] Post-production monitoring alert\nnotification=SUPPRESSED\nalert=CLEAR\nstatus=POST_PRODUCTION_MONITORING_ALERT_CLEAR\nreason=alert is clear or already active\nfailed_checks=0\nnew_production_request_sent=NO\ngo_live=NO-GO\nlive_trading=NO-GO",
-  "result": "SUPPRESSED",
+  "generated_at": "2026-07-31T03:43:58Z",
+  "message": "[Project Anchor] Telegram delivery restored\nresult=PASS\npurpose=post-production monitoring channel verification\nnew_production_request_sent=NO\nsecond_production_request_sent=NO\ncanary_rerun=NO\ngo_live=NO-GO\nlive_trading=NO-GO",
+  "result": "READY_TO_SEND",
   "send_attempted": "NO",
-  "send_authorized": "NO",
-  "source_notification_result": "SUPPRESSED",
-  "source_notification_status": "POST_PRODUCTION_MONITORING_NOTIFICATION_SUPPRESSED",
-  "status": "POST_PRODUCTION_MONITORING_TELEGRAM_PAYLOAD_SUPPRESSED"
+  "send_authorized": "YES_FOR_CHANNEL_RESTORATION_TEST_ONLY",
+  "source_notification_result": "CHANNEL_RESTORATION_TEST",
+  "source_notification_status": "TELEGRAM_DELIVERY_RESTORATION_VERIFICATION",
+  "status": "POST_PRODUCTION_MONITORING_TELEGRAM_PAYLOAD_READY"
 }
