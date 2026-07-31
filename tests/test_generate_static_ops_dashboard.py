@@ -58,11 +58,20 @@ class StaticOpsDashboardTest(unittest.TestCase):
             write_json(
                 reports / "post_production_monitoring_telegram_send_result.json",
                 {
-                    "result": "PASS",
-                    "status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_DELIVERED",
+                    "result": "BLOCKED",
+                    "status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED",
                     "send_attempted": "YES",
-                    "send_result": "DELIVERED",
+                    "send_result": "NOT_ATTEMPTED",
                     "Authorization": "do-not-render",
+                },
+            )
+            write_json(
+                reports / "post_production_telegram_channel_evidence.json",
+                {
+                    "result": "PASS",
+                    "status": "POST_PRODUCTION_TELEGRAM_CHANNEL_DELIVERY_CONFIRMED",
+                    "delivery_observed": "YES",
+                    "evidence_source": "operator_observed_telegram_message",
                 },
             )
             write_json(
@@ -83,7 +92,8 @@ class StaticOpsDashboardTest(unittest.TestCase):
             validation = module.validate_html(html, summary)
 
         self.assertEqual(summary["production_send"]["external_status"], "FILLED")
-        self.assertEqual(summary["telegram"]["send_result"], "DELIVERED")
+        self.assertEqual(summary["telegram"]["send_result"], "YES")
+        self.assertEqual(summary["telegram"]["status"], "POST_PRODUCTION_TELEGRAM_CHANNEL_DELIVERY_CONFIRMED")
         self.assertEqual(validation["result"], "PASS")
         self.assertNotIn("do-not-render", html)
         self.assertNotIn("TELEGRAM_BOT_TOKEN", html)
