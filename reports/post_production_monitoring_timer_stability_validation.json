@@ -1,0 +1,89 @@
+{
+  "boundary": {
+    "alerting_env_read": "NO",
+    "canary_rerun": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "new_production_request_sent": "NO",
+    "production_http_network_attempted": "NO",
+    "production_signing_executed": "NO",
+    "runtime_modified": "NO",
+    "second_production_request_sent": "NO",
+    "secret_value_disclosed": "NO"
+  },
+  "checks": {
+    "go_live_stayed_no_go": "PASS",
+    "journal_readable": "PASS",
+    "latest_run_finished": "PASS",
+    "latest_run_passed": "PASS",
+    "live_trading_stayed_no_go": "PASS",
+    "minimum_successful_runs_observed": "PASS",
+    "no_new_production_request_in_observed_runs": "PASS",
+    "no_second_production_request_in_observed_runs": "PASS",
+    "runtime_timer_validation_pass": "PASS"
+  },
+  "errors": [],
+  "generated_at": "2026-07-31T05:03:31Z",
+  "latest_consecutive_success_count": 6,
+  "latest_consecutive_successes": [
+    {
+      "finished": true,
+      "finished_at": "Jul 31 04:24:19",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "monitoring_result": "PASS",
+      "new_production_request_sent": "NO",
+      "run_status": "POST_PRODUCTION_MONITORING_RUN_READY",
+      "second_production_request_sent": "NO",
+      "started_at": "Jul 31 04:24:18",
+      "telegram_send_attempted": "NO",
+      "telegram_send_status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED"
+    },
+    {
+      "finished": true,
+      "finished_at": "Jul 31 04:39:21",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "monitoring_result": "PASS",
+      "new_production_request_sent": "NO",
+      "run_status": "POST_PRODUCTION_MONITORING_RUN_READY",
+      "second_production_request_sent": "NO",
+      "started_at": "Jul 31 04:39:21",
+      "telegram_send_attempted": "NO",
+      "telegram_send_status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED"
+    },
+    {
+      "finished": true,
+      "finished_at": "Jul 31 04:54:29",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "monitoring_result": "PASS",
+      "new_production_request_sent": "NO",
+      "run_status": "POST_PRODUCTION_MONITORING_RUN_READY",
+      "second_production_request_sent": "NO",
+      "started_at": "Jul 31 04:54:29",
+      "telegram_send_attempted": "NO",
+      "telegram_send_status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED"
+    }
+  ],
+  "latest_run": {
+    "finished": true,
+    "finished_at": "Jul 31 04:54:29",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "monitoring_result": "PASS",
+    "new_production_request_sent": "NO",
+    "run_status": "POST_PRODUCTION_MONITORING_RUN_READY",
+    "second_production_request_sent": "NO",
+    "started_at": "Jul 31 04:54:29",
+    "telegram_send_attempted": "NO",
+    "telegram_send_status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED"
+  },
+  "min_successful_runs": 3,
+  "observed_run_count": 6,
+  "result": "PASS",
+  "runtime_timer_validation_result": "PASS",
+  "service": "project-anchor-post-production-monitoring.service",
+  "since": "90 minutes ago",
+  "status": "POST_PRODUCTION_MONITORING_TIMER_STABILITY_VALID"
+}

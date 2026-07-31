@@ -22,6 +22,7 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
             readiness_path = tmp_path / "post_production_alerting_readiness.json"
             telegram_path = tmp_path / "post_production_monitoring_telegram_send_result.json"
             timer_path = tmp_path / "post_production_monitoring_timer_runtime_validation.json"
+            stability_path = tmp_path / "post_production_monitoring_timer_stability_validation.json"
             monitoring_path.write_text(
                 json.dumps(
                     {
@@ -93,25 +94,53 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
+            stability_path.write_text(
+                json.dumps(
+                    {
+                        "result": "PASS",
+                        "status": "POST_PRODUCTION_MONITORING_TIMER_STABILITY_VALID",
+                        "observed_run_count": 6,
+                        "latest_consecutive_success_count": 6,
+                        "min_successful_runs": 3,
+                        "latest_run": {
+                            "started_at": "Jul 31 04:39:21",
+                            "finished_at": "Jul 31 04:39:21",
+                            "run_status": "POST_PRODUCTION_MONITORING_RUN_READY",
+                        },
+                        "checks": {"minimum_successful_runs_observed": "PASS"},
+                        "boundary": {
+                            "secret_value_disclosed": "NO",
+                            "new_production_request_sent": "NO",
+                            "go_live": "NO-GO",
+                            "live_trading": "NO-GO",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
 
             old_monitoring = module.POST_PRODUCTION_MONITORING_RUN_REPORT
             old_readiness = module.POST_PRODUCTION_ALERTING_READINESS_REPORT
             old_telegram = module.POST_PRODUCTION_TELEGRAM_SEND_RESULT_REPORT
             old_timer = module.POST_PRODUCTION_MONITORING_TIMER_RUNTIME_REPORT
+            old_stability = module.POST_PRODUCTION_MONITORING_TIMER_STABILITY_REPORT
             module.POST_PRODUCTION_MONITORING_RUN_REPORT = monitoring_path
             module.POST_PRODUCTION_ALERTING_READINESS_REPORT = readiness_path
             module.POST_PRODUCTION_TELEGRAM_SEND_RESULT_REPORT = telegram_path
             module.POST_PRODUCTION_MONITORING_TIMER_RUNTIME_REPORT = timer_path
+            module.POST_PRODUCTION_MONITORING_TIMER_STABILITY_REPORT = stability_path
             try:
                 monitoring = module.load_post_production_monitoring_run()
                 readiness = module.load_post_production_alerting_readiness()
                 telegram = module.load_post_production_telegram_send_result()
                 timer = module.load_post_production_monitoring_timer_runtime()
+                stability = module.load_post_production_monitoring_timer_stability()
             finally:
                 module.POST_PRODUCTION_MONITORING_RUN_REPORT = old_monitoring
                 module.POST_PRODUCTION_ALERTING_READINESS_REPORT = old_readiness
                 module.POST_PRODUCTION_TELEGRAM_SEND_RESULT_REPORT = old_telegram
                 module.POST_PRODUCTION_MONITORING_TIMER_RUNTIME_REPORT = old_timer
+                module.POST_PRODUCTION_MONITORING_TIMER_STABILITY_REPORT = old_stability
 
         self.assertEqual(monitoring["result"], "PASS")
         self.assertEqual(readiness["result"], "PASS")
@@ -124,6 +153,10 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
         self.assertEqual(timer["timer"]["active_state"], "active")
         self.assertEqual(timer["timer"]["unit_file_state"], "enabled")
         self.assertEqual(timer["boundary"]["new_production_request_sent"], "NO")
+        self.assertEqual(stability["result"], "PASS")
+        self.assertEqual(stability["observed_run_count"], 6)
+        self.assertEqual(stability["latest_consecutive_success_count"], 6)
+        self.assertEqual(stability["boundary"]["new_production_request_sent"], "NO")
         self.assertNotIn("secret", json.dumps(readiness).lower())
 
     def test_ops_domain_ingress_snapshot_records_https_and_protection(self):
