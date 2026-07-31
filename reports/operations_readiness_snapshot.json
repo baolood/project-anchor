@@ -7,9 +7,79 @@
     "runtime_modified": "NO",
     "secret_read": "NO"
   },
+  "cloud_operations_evidence_layout_audit": {
+    "boundary": {
+      "canary_rerun": "NO",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "new_production_request_sent": "NO",
+      "production_env_read": "NO",
+      "production_http_network_attempted": "NO",
+      "production_signing_executed": "NO",
+      "second_production_request_sent": "NO",
+      "secret_value_disclosed": "NO"
+    },
+    "checks": {
+      "decision_records_single_production_request": "PASS",
+      "exactly_one_matching_order": "PASS",
+      "go_live_no_go": "PASS",
+      "live_trading_no_go": "PASS",
+      "monitoring_run_pass": "PASS",
+      "no_new_request_from_monitoring": "PASS",
+      "no_second_request_from_monitoring": "PASS",
+      "operations_decision_pass": "PASS",
+      "production_send_pass": "PASS",
+      "production_terminal_filled": "PASS",
+      "readonly_reconciliation_pass": "PASS",
+      "runtime_monitoring_reports_present": "PASS",
+      "source_production_evidence_present": "PASS",
+      "telegram_sender_fail_closed_or_delivered": "PASS",
+      "timer_runtime_pass": "PASS",
+      "timer_stability_pass": "PASS"
+    },
+    "layout": {
+      "runtime_reports_role": "timer output and current monitoring status",
+      "single_directory_layout_required": "NO",
+      "source_reports_role": "repository historical production send and reconciliation evidence"
+    },
+    "result": "PASS",
+    "runtime_files": {
+      "post_production_monitoring_run.json": true,
+      "post_production_monitoring_telegram_send_result.json": true,
+      "post_production_monitoring_timer_runtime_validation.json": true,
+      "post_production_monitoring_timer_stability_validation.json": true
+    },
+    "runtime_reports_dir": "/var/lib/project-anchor/reports",
+    "source_files": {
+      "post_production_operations_decision.json": true,
+      "post_production_send_reconciliation.json": true,
+      "production_exactly_one_send_result.json": true,
+      "production_post_send_readonly_reconciliation.json": true
+    },
+    "source_reports_dir": "/root/project-anchor/reports",
+    "status": "CLOUD_OPERATIONS_EVIDENCE_LAYOUT_VALID",
+    "summary": {
+      "matching_filled_order_count": 1,
+      "monitoring_generated_at": "2026-07-31T05:24:41Z",
+      "monitoring_result": "PASS",
+      "operations_decision": "FIRST_PRODUCTION_VALIDATION_COMPLETE_CONTINUOUS_TRADING_DISABLED",
+      "production_order_status": "FILLED",
+      "production_send_result": "PASS",
+      "symbol_order_count_in_window": 1,
+      "telegram_sender_result": "BLOCKED",
+      "timer_consecutive_successes": 6,
+      "timer_runtime_result": "PASS",
+      "timer_stability_result": "PASS"
+    }
+  },
   "evidence_resolution": {
     "canary_error": null,
     "canary_evidence_resolved": "PASS",
+    "cloud_operations_evidence_layout_audit_resolved": "PASS",
+    "cloud_operations_evidence_layout_no_new_request": "PASS",
+    "cloud_operations_evidence_layout_runtime_reports_present": "PASS",
+    "cloud_operations_evidence_layout_secret_disclosed": "PASS",
+    "cloud_operations_evidence_layout_source_evidence_present": "PASS",
     "controlled_request_error": null,
     "controlled_request_evidence_resolved": "PASS",
     "go_live_blockers_explicit": "PASS",
@@ -69,7 +139,7 @@
     "production_unsigned_canonical_payload_sendable": "FAIL",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-07-31T05:05:13Z",
+  "generated_at": "2026-07-31T05:38:41Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -87,7 +157,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-07-31T05:05:03.449914+00:00"
+    "worker_heartbeat_at": "2026-07-31T05:38:22.819265+00:00"
   },
   "latest_canary": {
     "attempt": 1,
