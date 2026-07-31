@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-31T03:45:41Z`
+Generated at: `2026-07-31T04:26:37Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-31T03:45:41Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-31T03:45:14.746657+00:00`
+- worker heartbeat at: `2026-07-31T04:26:09.713197+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -123,7 +123,7 @@ Generated at: `2026-07-31T03:45:41Z`
 - status: POST_PRODUCTION_MONITORING_RUN_READY
 - snapshot result: PASS
 - snapshot status: MONITORING_READY_CONTINUOUS_TRADING_DISABLED
-- generated at: `2026-07-30T15:59:19Z`
+- generated at: `2026-07-31T04:09:17Z`
 
 ## Post-Production Alerting Readiness
 
@@ -136,15 +136,28 @@ Generated at: `2026-07-31T03:45:41Z`
 
 ## Post-Production Telegram Sender
 
-- result: PASS
-- status: POST_PRODUCTION_MONITORING_TELEGRAM_SEND_DELIVERED
-- source payload result: READY_TO_SEND
+- result: BLOCKED
+- status: POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED
+- source payload result: SUPPRESSED
 - execute requested: true
-- send attempted: YES
-- send result: DELIVERED
-- failure code: none
-- alerting env read: YES
-- Telegram HTTP attempted: YES
+- send attempted: NO
+- send result: NOT_ATTEMPTED
+- failure code: PAYLOAD_NOT_READY_TO_SEND
+- alerting env read: NO
+- Telegram HTTP attempted: NO
+
+## Post-Production Monitoring Timer
+
+- result: PASS
+- status: POST_PRODUCTION_MONITORING_TIMER_RUNTIME_VALID
+- timer active state: active
+- timer unit state: enabled
+- last trigger: `Fri 2026-07-31 04:09:17 UTC`
+- service result: success
+- latest monitoring result: PASS
+- latest Telegram sender result: BLOCKED
+- secret disclosed: NO
+- new production request sent: NO
 
 ## Ops Domain Ingress
 
