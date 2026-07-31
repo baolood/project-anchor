@@ -50,6 +50,9 @@ POST_PRODUCTION_ALERTING_READINESS_REPORT = REPORTS_DIR / "post_production_alert
 POST_PRODUCTION_TELEGRAM_SEND_RESULT_REPORT = (
     REPORTS_DIR / "post_production_monitoring_telegram_send_result.json"
 )
+POST_PRODUCTION_MONITORING_TIMER_RUNTIME_REPORT = (
+    REPORTS_DIR / "post_production_monitoring_timer_runtime_validation.json"
+)
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 OPS_DOMAIN = os.getenv("OPS_DOMAIN", "ops.anchor-infra.com")
@@ -744,6 +747,52 @@ def load_post_production_telegram_send_result() -> dict[str, Any]:
     }
 
 
+def load_post_production_monitoring_timer_runtime() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "status": "POST_PRODUCTION_MONITORING_TIMER_RUNTIME_UNREADABLE",
+        "timer": {},
+        "service": {},
+        "monitoring_report": {},
+        "telegram_sender_report": {},
+        "checks": {},
+        "boundary": {
+            "alerting_env_read": "NO",
+            "secret_value_disclosed": "NO",
+            "production_signing_executed": "NO",
+            "production_http_network_attempted": "NO",
+            "new_production_request_sent": "NO",
+            "second_production_request_sent": "NO",
+            "canary_rerun": "NO",
+            "runtime_modified": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(POST_PRODUCTION_MONITORING_TIMER_RUNTIME_REPORT.read_text(encoding="utf-8"))
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "status": data.get("status", "UNKNOWN"),
+        "timer": data.get("timer") if isinstance(data.get("timer"), dict) else {},
+        "service": data.get("service") if isinstance(data.get("service"), dict) else {},
+        "monitoring_report": (
+            data.get("monitoring_report") if isinstance(data.get("monitoring_report"), dict) else {}
+        ),
+        "telegram_sender_report": (
+            data.get("telegram_sender_report")
+            if isinstance(data.get("telegram_sender_report"), dict)
+            else {}
+        ),
+        "checks": data.get("checks") if isinstance(data.get("checks"), dict) else {},
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -795,6 +844,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     post_production_monitoring_run = load_post_production_monitoring_run()
     post_production_alerting_readiness = load_post_production_alerting_readiness()
     post_production_telegram_send_result = load_post_production_telegram_send_result()
+    post_production_monitoring_timer_runtime = (
+        load_post_production_monitoring_timer_runtime()
+    )
     ops_domain_ingress = ops_domain_ingress_snapshot()
     ops_dashboard = ops_dashboard_snapshot(ops_domain_ingress)
     production_execution_ready = production_execution_readiness.get("result") == "PASS"
@@ -860,6 +912,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         "post_production_monitoring_run": post_production_monitoring_run,
         "post_production_alerting_readiness": post_production_alerting_readiness,
         "post_production_telegram_send_result": post_production_telegram_send_result,
+        "post_production_monitoring_timer_runtime": (
+            post_production_monitoring_timer_runtime
+        ),
         "ops_domain_ingress": ops_domain_ingress,
         "ops_dashboard": ops_dashboard,
         "go_live": {
@@ -998,6 +1053,27 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
                 )
                 != "YES"
             ),
+            "post_production_monitoring_timer_runtime_resolved": pass_fail(
+                post_production_monitoring_timer_runtime.get("result") == "PASS"
+            ),
+            "post_production_monitoring_timer_enabled": pass_fail(
+                post_production_monitoring_timer_runtime.get("timer", {}).get(
+                    "unit_file_state"
+                )
+                == "enabled"
+            ),
+            "post_production_monitoring_timer_active": pass_fail(
+                post_production_monitoring_timer_runtime.get("timer", {}).get(
+                    "active_state"
+                )
+                == "active"
+            ),
+            "post_production_monitoring_timer_secret_disclosed": pass_fail(
+                post_production_monitoring_timer_runtime.get("boundary", {}).get(
+                    "secret_value_disclosed"
+                )
+                != "YES"
+            ),
             "ops_domain_ingress_resolved": pass_fail(
                 ops_domain_ingress.get("result") == "PASS"
             ),
@@ -1055,6 +1131,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     post_monitoring = snapshot["post_production_monitoring_run"]
     post_alerting = snapshot["post_production_alerting_readiness"]
     post_telegram = snapshot["post_production_telegram_send_result"]
+    post_timer = snapshot["post_production_monitoring_timer_runtime"]
     ops_domain = snapshot["ops_domain_ingress"]
     ops_dashboard = snapshot["ops_dashboard"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
@@ -1216,6 +1293,19 @@ Generated at: `{snapshot["generated_at"]}`
 - failure code: {post_telegram_failure_code}
 - alerting env read: {post_telegram.get("boundary", {}).get("alerting_env_read")}
 - Telegram HTTP attempted: {post_telegram.get("boundary", {}).get("telegram_http_attempted")}
+
+## Post-Production Monitoring Timer
+
+- result: {post_timer.get("result")}
+- status: {post_timer.get("status")}
+- timer active state: {post_timer.get("timer", {}).get("active_state")}
+- timer unit state: {post_timer.get("timer", {}).get("unit_file_state")}
+- last trigger: `{post_timer.get("timer", {}).get("last_trigger")}`
+- service result: {post_timer.get("service", {}).get("result")}
+- latest monitoring result: {post_timer.get("monitoring_report", {}).get("result")}
+- latest Telegram sender result: {post_timer.get("telegram_sender_report", {}).get("result")}
+- secret disclosed: {post_timer.get("boundary", {}).get("secret_value_disclosed")}
+- new production request sent: {post_timer.get("boundary", {}).get("new_production_request_sent")}
 
 ## Ops Domain Ingress
 
@@ -1435,6 +1525,18 @@ def main() -> int:
     print(
         "post_production_telegram_http_attempted: "
         f"{snapshot['post_production_telegram_send_result'].get('boundary', {}).get('telegram_http_attempted')}"
+    )
+    print(
+        "post_production_monitoring_timer_runtime: "
+        f"{snapshot['post_production_monitoring_timer_runtime'].get('result')}"
+    )
+    print(
+        "post_production_monitoring_timer_active: "
+        f"{snapshot['post_production_monitoring_timer_runtime'].get('timer', {}).get('active_state')}"
+    )
+    print(
+        "post_production_monitoring_timer_enabled: "
+        f"{snapshot['post_production_monitoring_timer_runtime'].get('timer', {}).get('unit_file_state')}"
     )
     print(f"ops_domain_ingress: {snapshot['ops_domain_ingress'].get('result')}")
     print(f"ops_domain_dns: {snapshot['ops_domain_ingress'].get('dns_result')}")

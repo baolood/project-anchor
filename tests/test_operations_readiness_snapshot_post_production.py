@@ -21,6 +21,7 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
             monitoring_path = tmp_path / "post_production_monitoring_run.json"
             readiness_path = tmp_path / "post_production_alerting_readiness.json"
             telegram_path = tmp_path / "post_production_monitoring_telegram_send_result.json"
+            timer_path = tmp_path / "post_production_monitoring_timer_runtime_validation.json"
             monitoring_path.write_text(
                 json.dumps(
                     {
@@ -68,21 +69,49 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
+            timer_path.write_text(
+                json.dumps(
+                    {
+                        "result": "PASS",
+                        "status": "POST_PRODUCTION_MONITORING_TIMER_RUNTIME_VALID",
+                        "timer": {
+                            "active_state": "active",
+                            "unit_file_state": "enabled",
+                            "last_trigger": "Fri 2026-07-31 04:09:17 UTC",
+                        },
+                        "service": {"result": "success"},
+                        "monitoring_report": {"result": "PASS"},
+                        "telegram_sender_report": {"result": "BLOCKED"},
+                        "checks": {"timer_active": "PASS"},
+                        "boundary": {
+                            "secret_value_disclosed": "NO",
+                            "new_production_request_sent": "NO",
+                            "go_live": "NO-GO",
+                            "live_trading": "NO-GO",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
 
             old_monitoring = module.POST_PRODUCTION_MONITORING_RUN_REPORT
             old_readiness = module.POST_PRODUCTION_ALERTING_READINESS_REPORT
             old_telegram = module.POST_PRODUCTION_TELEGRAM_SEND_RESULT_REPORT
+            old_timer = module.POST_PRODUCTION_MONITORING_TIMER_RUNTIME_REPORT
             module.POST_PRODUCTION_MONITORING_RUN_REPORT = monitoring_path
             module.POST_PRODUCTION_ALERTING_READINESS_REPORT = readiness_path
             module.POST_PRODUCTION_TELEGRAM_SEND_RESULT_REPORT = telegram_path
+            module.POST_PRODUCTION_MONITORING_TIMER_RUNTIME_REPORT = timer_path
             try:
                 monitoring = module.load_post_production_monitoring_run()
                 readiness = module.load_post_production_alerting_readiness()
                 telegram = module.load_post_production_telegram_send_result()
+                timer = module.load_post_production_monitoring_timer_runtime()
             finally:
                 module.POST_PRODUCTION_MONITORING_RUN_REPORT = old_monitoring
                 module.POST_PRODUCTION_ALERTING_READINESS_REPORT = old_readiness
                 module.POST_PRODUCTION_TELEGRAM_SEND_RESULT_REPORT = old_telegram
+                module.POST_PRODUCTION_MONITORING_TIMER_RUNTIME_REPORT = old_timer
 
         self.assertEqual(monitoring["result"], "PASS")
         self.assertEqual(readiness["result"], "PASS")
@@ -91,6 +120,10 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
         self.assertEqual(telegram["result"], "BLOCKED")
         self.assertEqual(telegram["send_attempted"], "NO")
         self.assertEqual(telegram["boundary"]["telegram_http_attempted"], "NO")
+        self.assertEqual(timer["result"], "PASS")
+        self.assertEqual(timer["timer"]["active_state"], "active")
+        self.assertEqual(timer["timer"]["unit_file_state"], "enabled")
+        self.assertEqual(timer["boundary"]["new_production_request_sent"], "NO")
         self.assertNotIn("secret", json.dumps(readiness).lower())
 
     def test_ops_domain_ingress_snapshot_records_https_and_protection(self):

@@ -1,6 +1,6 @@
 {
   "boundary": {
-    "alerting_env_read": "YES",
+    "alerting_env_read": "NO",
     "canary_rerun": "NO",
     "go_live": "NO-GO",
     "live_trading": "NO-GO",
@@ -8,16 +8,16 @@
     "production_request_sent": "NO",
     "second_production_request_sent": "NO",
     "secret_value_disclosed": "NO",
-    "telegram_bot_token_read": "YES",
-    "telegram_chat_id_read": "YES",
-    "telegram_http_attempted": "YES"
+    "telegram_bot_token_read": "NO",
+    "telegram_chat_id_read": "NO",
+    "telegram_http_attempted": "NO"
   },
   "execute_requested": true,
-  "failure_code": "",
-  "generated_at": "2026-07-31T03:43:58Z",
-  "result": "PASS",
-  "send_attempted": "YES",
-  "send_result": "DELIVERED",
-  "source_payload_result": "READY_TO_SEND",
-  "status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_DELIVERED"
+  "failure_code": "PAYLOAD_NOT_READY_TO_SEND",
+  "generated_at": "2026-07-31T04:24:19Z",
+  "result": "BLOCKED",
+  "send_attempted": "NO",
+  "send_result": "NOT_ATTEMPTED",
+  "source_payload_result": "SUPPRESSED",
+  "status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED"
 }

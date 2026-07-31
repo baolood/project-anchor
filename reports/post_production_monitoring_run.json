@@ -43,20 +43,20 @@
       "result": "PASS"
     }
   ],
-  "generated_at": "2026-07-30T15:59:19Z",
+  "generated_at": "2026-07-31T04:09:17Z",
   "inputs": {
-    "alert_json": "reports/post_production_monitoring_alert.json",
-    "alert_markdown": "reports/post_production_monitoring_alert.md",
-    "alert_notification_json": "reports/post_production_monitoring_alert_notification.json",
-    "alert_notification_markdown": "reports/post_production_monitoring_alert_notification.md",
-    "alert_state_json": "reports/post_production_monitoring_alert_state.json",
-    "snapshot_json": "reports/post_production_monitoring_snapshot.json",
-    "snapshot_markdown": "reports/post_production_monitoring_snapshot.md",
+    "alert_json": "/var/lib/project-anchor/reports/post_production_monitoring_alert.json",
+    "alert_markdown": "/var/lib/project-anchor/reports/post_production_monitoring_alert.md",
+    "alert_notification_json": "/var/lib/project-anchor/reports/post_production_monitoring_alert_notification.json",
+    "alert_notification_markdown": "/var/lib/project-anchor/reports/post_production_monitoring_alert_notification.md",
+    "alert_state_json": "/var/lib/project-anchor/reports/post_production_monitoring_alert_state.json",
+    "snapshot_json": "/var/lib/project-anchor/reports/post_production_monitoring_snapshot.json",
+    "snapshot_markdown": "/var/lib/project-anchor/reports/post_production_monitoring_snapshot.md",
     "snapshot_script": "scripts/generate_post_production_monitoring_snapshot.py"
   },
   "next_gate": "POST_PRODUCTION_MONITORING_SURFACE_OR_OPERATOR_FREEZE",
   "result": "PASS",
-  "snapshot_generated_at": "2026-07-30T15:59:19Z",
+  "snapshot_generated_at": "2026-07-31T04:09:17Z",
   "snapshot_result": "PASS",
   "snapshot_status": "MONITORING_READY_CONTINUOUS_TRADING_DISABLED",
   "status": "POST_PRODUCTION_MONITORING_RUN_READY"
