@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-31T05:38:41Z`
+Generated at: `2026-07-31T06:21:53Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-31T05:38:41Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-31T05:38:22.819265+00:00`
+- worker heartbeat at: `2026-07-31T06:21:48.905597+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -188,6 +188,22 @@ Generated at: `2026-07-31T05:38:41Z`
 - new production request sent: NO
 - second production request sent: NO
 - secret disclosed: NO
+- go-live: NO-GO
+- live trading: NO-GO
+
+## Post-Production Alert Policy Validation
+
+- result: PASS
+- status: POST_PRODUCTION_ALERT_POLICY_VALID
+- clear state Telegram send: SUPPRESSED
+- first ACTIVE transition Telegram payload: READY_TO_SEND
+- repeated ACTIVE Telegram send: SUPPRESSED
+- recovered then ACTIVE Telegram payload: READY_TO_SEND
+- Telegram delivery requires execute flag: YES
+- alerting env read: NO
+- Telegram HTTP attempted: NO
+- secret disclosed: NO
+- production request sent: NO
 - go-live: NO-GO
 - live trading: NO-GO
 

@@ -1,0 +1,157 @@
+{
+  "boundary": {
+    "alerting_env_read": "NO",
+    "canary_rerun": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_env_read": "NO",
+    "production_request_sent": "NO",
+    "second_production_request_sent": "NO",
+    "secret_value_disclosed": "NO",
+    "telegram_http_attempted": "NO"
+  },
+  "cases": [
+    {
+      "checks": {
+        "alerting_env_not_read": "PASS",
+        "failure_code_expected": "PASS",
+        "go_live_no_go": "PASS",
+        "live_trading_no_go": "PASS",
+        "notification_policy": "PASS",
+        "payload_policy": "PASS",
+        "production_request_not_sent": "PASS",
+        "send_not_attempted_without_execute": "PASS",
+        "telegram_http_not_attempted": "PASS"
+      },
+      "expected": {
+        "notification_result": "SUPPRESSED",
+        "payload_result": "SUPPRESSED",
+        "send_failure_code": "PAYLOAD_NOT_READY_TO_SEND"
+      },
+      "input": {
+        "previous_alert_result": null,
+        "run_result": "PASS"
+      },
+      "name": "clear_state_stays_silent",
+      "observed": {
+        "alert_result": "CLEAR",
+        "notification_result": "SUPPRESSED",
+        "payload_result": "SUPPRESSED",
+        "send_exit_code": 1,
+        "send_failure_code": "PAYLOAD_NOT_READY_TO_SEND",
+        "send_result": "BLOCKED",
+        "send_status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED"
+      },
+      "result": "PASS"
+    },
+    {
+      "checks": {
+        "alerting_env_not_read": "PASS",
+        "failure_code_expected": "PASS",
+        "go_live_no_go": "PASS",
+        "live_trading_no_go": "PASS",
+        "notification_policy": "PASS",
+        "payload_policy": "PASS",
+        "production_request_not_sent": "PASS",
+        "send_not_attempted_without_execute": "PASS",
+        "telegram_http_not_attempted": "PASS"
+      },
+      "expected": {
+        "notification_result": "EMITTED",
+        "payload_result": "READY_TO_SEND",
+        "send_failure_code": "EXECUTE_FLAG_REQUIRED"
+      },
+      "input": {
+        "previous_alert_result": null,
+        "run_result": "BLOCKED"
+      },
+      "name": "active_transition_prepares_single_notification",
+      "observed": {
+        "alert_result": "ACTIVE",
+        "notification_result": "EMITTED",
+        "payload_result": "READY_TO_SEND",
+        "send_exit_code": 1,
+        "send_failure_code": "EXECUTE_FLAG_REQUIRED",
+        "send_result": "BLOCKED",
+        "send_status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_BLOCKED"
+      },
+      "result": "PASS"
+    },
+    {
+      "checks": {
+        "alerting_env_not_read": "PASS",
+        "failure_code_expected": "PASS",
+        "go_live_no_go": "PASS",
+        "live_trading_no_go": "PASS",
+        "notification_policy": "PASS",
+        "payload_policy": "PASS",
+        "production_request_not_sent": "PASS",
+        "send_not_attempted_without_execute": "PASS",
+        "telegram_http_not_attempted": "PASS"
+      },
+      "expected": {
+        "notification_result": "SUPPRESSED",
+        "payload_result": "SUPPRESSED",
+        "send_failure_code": "PAYLOAD_NOT_READY_TO_SEND"
+      },
+      "input": {
+        "previous_alert_result": "ACTIVE",
+        "run_result": "BLOCKED"
+      },
+      "name": "repeated_active_is_suppressed",
+      "observed": {
+        "alert_result": "ACTIVE",
+        "notification_result": "SUPPRESSED",
+        "payload_result": "SUPPRESSED",
+        "send_exit_code": 1,
+        "send_failure_code": "PAYLOAD_NOT_READY_TO_SEND",
+        "send_result": "BLOCKED",
+        "send_status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED"
+      },
+      "result": "PASS"
+    },
+    {
+      "checks": {
+        "alerting_env_not_read": "PASS",
+        "failure_code_expected": "PASS",
+        "go_live_no_go": "PASS",
+        "live_trading_no_go": "PASS",
+        "notification_policy": "PASS",
+        "payload_policy": "PASS",
+        "production_request_not_sent": "PASS",
+        "send_not_attempted_without_execute": "PASS",
+        "telegram_http_not_attempted": "PASS"
+      },
+      "expected": {
+        "notification_result": "EMITTED",
+        "payload_result": "READY_TO_SEND",
+        "send_failure_code": "EXECUTE_FLAG_REQUIRED"
+      },
+      "input": {
+        "previous_alert_result": "CLEAR",
+        "run_result": "BLOCKED"
+      },
+      "name": "recovered_then_active_notifies_again",
+      "observed": {
+        "alert_result": "ACTIVE",
+        "notification_result": "EMITTED",
+        "payload_result": "READY_TO_SEND",
+        "send_exit_code": 1,
+        "send_failure_code": "EXECUTE_FLAG_REQUIRED",
+        "send_result": "BLOCKED",
+        "send_status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_BLOCKED"
+      },
+      "result": "PASS"
+    }
+  ],
+  "generated_at": "2026-07-31T06:18:59Z",
+  "policy": {
+    "clear_state_telegram_send": "SUPPRESSED",
+    "first_active_transition_telegram_payload": "READY_TO_SEND",
+    "recovered_then_active_telegram_payload": "READY_TO_SEND",
+    "repeated_active_telegram_send": "SUPPRESSED",
+    "telegram_delivery_requires_execute_flag": "YES"
+  },
+  "result": "PASS",
+  "status": "POST_PRODUCTION_ALERT_POLICY_VALID"
+}
