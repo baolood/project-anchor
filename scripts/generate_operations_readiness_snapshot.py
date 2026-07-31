@@ -59,6 +59,9 @@ POST_PRODUCTION_MONITORING_TIMER_STABILITY_REPORT = (
 CLOUD_OPERATIONS_EVIDENCE_LAYOUT_AUDIT_REPORT = (
     REPORTS_DIR / "cloud_operations_evidence_layout_audit.json"
 )
+POST_PRODUCTION_ALERT_POLICY_VALIDATION_REPORT = (
+    REPORTS_DIR / "post_production_alert_policy_validation.json"
+)
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 OPS_DOMAIN = os.getenv("OPS_DOMAIN", "ops.anchor-infra.com")
@@ -882,6 +885,39 @@ def load_cloud_operations_evidence_layout_audit() -> dict[str, Any]:
     }
 
 
+def load_post_production_alert_policy_validation() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "status": "POST_PRODUCTION_ALERT_POLICY_VALIDATION_UNREADABLE",
+        "policy": {},
+        "cases": [],
+        "boundary": {
+            "alerting_env_read": "NO",
+            "telegram_http_attempted": "NO",
+            "secret_value_disclosed": "NO",
+            "production_env_read": "NO",
+            "production_request_sent": "NO",
+            "second_production_request_sent": "NO",
+            "canary_rerun": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(POST_PRODUCTION_ALERT_POLICY_VALIDATION_REPORT.read_text(encoding="utf-8"))
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "status": data.get("status", "UNKNOWN"),
+        "policy": data.get("policy") if isinstance(data.get("policy"), dict) else {},
+        "cases": data.get("cases") if isinstance(data.get("cases"), list) else [],
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -941,6 +977,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     )
     cloud_operations_evidence_layout_audit = (
         load_cloud_operations_evidence_layout_audit()
+    )
+    post_production_alert_policy_validation = (
+        load_post_production_alert_policy_validation()
     )
     ops_domain_ingress = ops_domain_ingress_snapshot()
     ops_dashboard = ops_dashboard_snapshot(ops_domain_ingress)
@@ -1014,6 +1053,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             post_production_monitoring_timer_stability
         ),
         "cloud_operations_evidence_layout_audit": cloud_operations_evidence_layout_audit,
+        "post_production_alert_policy_validation": post_production_alert_policy_validation,
         "ops_domain_ingress": ops_domain_ingress,
         "ops_dashboard": ops_dashboard,
         "go_live": {
@@ -1221,6 +1261,39 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
                 )
                 != "YES"
             ),
+            "post_production_alert_policy_validation_resolved": pass_fail(
+                post_production_alert_policy_validation.get("result") == "PASS"
+            ),
+            "post_production_alert_policy_clear_suppressed": pass_fail(
+                post_production_alert_policy_validation.get("policy", {}).get(
+                    "clear_state_telegram_send"
+                )
+                == "SUPPRESSED"
+            ),
+            "post_production_alert_policy_repeated_active_suppressed": pass_fail(
+                post_production_alert_policy_validation.get("policy", {}).get(
+                    "repeated_active_telegram_send"
+                )
+                == "SUPPRESSED"
+            ),
+            "post_production_alert_policy_first_active_ready": pass_fail(
+                post_production_alert_policy_validation.get("policy", {}).get(
+                    "first_active_transition_telegram_payload"
+                )
+                == "READY_TO_SEND"
+            ),
+            "post_production_alert_policy_telegram_http_not_attempted": pass_fail(
+                post_production_alert_policy_validation.get("boundary", {}).get(
+                    "telegram_http_attempted"
+                )
+                == "NO"
+            ),
+            "post_production_alert_policy_secret_disclosed": pass_fail(
+                post_production_alert_policy_validation.get("boundary", {}).get(
+                    "secret_value_disclosed"
+                )
+                != "YES"
+            ),
             "ops_domain_ingress_resolved": pass_fail(
                 ops_domain_ingress.get("result") == "PASS"
             ),
@@ -1281,6 +1354,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     post_timer = snapshot["post_production_monitoring_timer_runtime"]
     post_timer_stability = snapshot["post_production_monitoring_timer_stability"]
     cloud_layout = snapshot["cloud_operations_evidence_layout_audit"]
+    alert_policy = snapshot["post_production_alert_policy_validation"]
     ops_domain = snapshot["ops_domain_ingress"]
     ops_dashboard = snapshot["ops_dashboard"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
@@ -1487,6 +1561,22 @@ Generated at: `{snapshot["generated_at"]}`
 - secret disclosed: {cloud_layout.get("boundary", {}).get("secret_value_disclosed")}
 - go-live: {cloud_layout.get("boundary", {}).get("go_live")}
 - live trading: {cloud_layout.get("boundary", {}).get("live_trading")}
+
+## Post-Production Alert Policy Validation
+
+- result: {alert_policy.get("result")}
+- status: {alert_policy.get("status")}
+- clear state Telegram send: {alert_policy.get("policy", {}).get("clear_state_telegram_send")}
+- first ACTIVE transition Telegram payload: {alert_policy.get("policy", {}).get("first_active_transition_telegram_payload")}
+- repeated ACTIVE Telegram send: {alert_policy.get("policy", {}).get("repeated_active_telegram_send")}
+- recovered then ACTIVE Telegram payload: {alert_policy.get("policy", {}).get("recovered_then_active_telegram_payload")}
+- Telegram delivery requires execute flag: {alert_policy.get("policy", {}).get("telegram_delivery_requires_execute_flag")}
+- alerting env read: {alert_policy.get("boundary", {}).get("alerting_env_read")}
+- Telegram HTTP attempted: {alert_policy.get("boundary", {}).get("telegram_http_attempted")}
+- secret disclosed: {alert_policy.get("boundary", {}).get("secret_value_disclosed")}
+- production request sent: {alert_policy.get("boundary", {}).get("production_request_sent")}
+- go-live: {alert_policy.get("boundary", {}).get("go_live")}
+- live trading: {alert_policy.get("boundary", {}).get("live_trading")}
 
 ## Ops Domain Ingress
 
@@ -1742,6 +1832,18 @@ def main() -> int:
     print(
         "cloud_operations_source_evidence_present: "
         f"{snapshot['cloud_operations_evidence_layout_audit'].get('checks', {}).get('source_production_evidence_present')}"
+    )
+    print(
+        "post_production_alert_policy_validation: "
+        f"{snapshot['post_production_alert_policy_validation'].get('result')}"
+    )
+    print(
+        "post_production_alert_policy_clear_state_send: "
+        f"{snapshot['post_production_alert_policy_validation'].get('policy', {}).get('clear_state_telegram_send')}"
+    )
+    print(
+        "post_production_alert_policy_repeated_active_send: "
+        f"{snapshot['post_production_alert_policy_validation'].get('policy', {}).get('repeated_active_telegram_send')}"
     )
     print(f"ops_domain_ingress: {snapshot['ops_domain_ingress'].get('result')}")
     print(f"ops_domain_dns: {snapshot['ops_domain_ingress'].get('dns_result')}")

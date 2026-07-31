@@ -282,6 +282,52 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
         self.assertEqual(audit["boundary"]["new_production_request_sent"], "NO")
         self.assertEqual(audit["boundary"]["secret_value_disclosed"], "NO")
 
+    def test_post_production_alert_policy_loader_preserves_noise_control(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            policy_path = Path(tmp) / "post_production_alert_policy_validation.json"
+            policy_path.write_text(
+                json.dumps(
+                    {
+                        "result": "PASS",
+                        "status": "POST_PRODUCTION_ALERT_POLICY_VALID",
+                        "policy": {
+                            "clear_state_telegram_send": "SUPPRESSED",
+                            "first_active_transition_telegram_payload": "READY_TO_SEND",
+                            "repeated_active_telegram_send": "SUPPRESSED",
+                            "recovered_then_active_telegram_payload": "READY_TO_SEND",
+                            "telegram_delivery_requires_execute_flag": "YES",
+                        },
+                        "cases": [{"name": "clear_state_stays_silent", "result": "PASS"}],
+                        "boundary": {
+                            "alerting_env_read": "NO",
+                            "telegram_http_attempted": "NO",
+                            "secret_value_disclosed": "NO",
+                            "production_request_sent": "NO",
+                            "go_live": "NO-GO",
+                            "live_trading": "NO-GO",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            old_policy = module.POST_PRODUCTION_ALERT_POLICY_VALIDATION_REPORT
+            module.POST_PRODUCTION_ALERT_POLICY_VALIDATION_REPORT = policy_path
+            try:
+                policy = module.load_post_production_alert_policy_validation()
+            finally:
+                module.POST_PRODUCTION_ALERT_POLICY_VALIDATION_REPORT = old_policy
+
+        self.assertEqual(policy["result"], "PASS")
+        self.assertEqual(policy["policy"]["clear_state_telegram_send"], "SUPPRESSED")
+        self.assertEqual(policy["policy"]["repeated_active_telegram_send"], "SUPPRESSED")
+        self.assertEqual(
+            policy["policy"]["first_active_transition_telegram_payload"],
+            "READY_TO_SEND",
+        )
+        self.assertEqual(policy["boundary"]["telegram_http_attempted"], "NO")
+        self.assertEqual(policy["boundary"]["secret_value_disclosed"], "NO")
+
 
 
 if __name__ == "__main__":
