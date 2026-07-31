@@ -29,8 +29,11 @@
     "post_production_monitoring_run_resolved": "PASS",
     "post_production_monitoring_timer_active": "PASS",
     "post_production_monitoring_timer_enabled": "PASS",
+    "post_production_monitoring_timer_minimum_successes_observed": "PASS",
     "post_production_monitoring_timer_runtime_resolved": "PASS",
     "post_production_monitoring_timer_secret_disclosed": "PASS",
+    "post_production_monitoring_timer_stability_resolved": "PASS",
+    "post_production_monitoring_timer_stability_secret_disclosed": "PASS",
     "post_production_telegram_secret_disclosed": "PASS",
     "post_production_telegram_sender_fail_closed_or_delivered": "PASS",
     "post_production_telegram_sender_result_resolved": "PASS",
@@ -66,7 +69,7 @@
     "production_unsigned_canonical_payload_sendable": "FAIL",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-07-31T04:26:37Z",
+  "generated_at": "2026-07-31T05:05:13Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -84,7 +87,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-07-31T04:26:09.713197+00:00"
+    "worker_heartbeat_at": "2026-07-31T05:05:03.449914+00:00"
   },
   "latest_canary": {
     "attempt": 1,
@@ -346,6 +349,49 @@
       "result": "success",
       "unit_file_state": "enabled"
     }
+  },
+  "post_production_monitoring_timer_stability": {
+    "boundary": {
+      "alerting_env_read": "NO",
+      "canary_rerun": "NO",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "new_production_request_sent": "NO",
+      "production_http_network_attempted": "NO",
+      "production_signing_executed": "NO",
+      "runtime_modified": "NO",
+      "second_production_request_sent": "NO",
+      "secret_value_disclosed": "NO"
+    },
+    "checks": {
+      "go_live_stayed_no_go": "PASS",
+      "journal_readable": "PASS",
+      "latest_run_finished": "PASS",
+      "latest_run_passed": "PASS",
+      "live_trading_stayed_no_go": "PASS",
+      "minimum_successful_runs_observed": "PASS",
+      "no_new_production_request_in_observed_runs": "PASS",
+      "no_second_production_request_in_observed_runs": "PASS",
+      "runtime_timer_validation_pass": "PASS"
+    },
+    "latest_consecutive_success_count": 6,
+    "latest_run": {
+      "finished": true,
+      "finished_at": "Jul 31 04:54:29",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "monitoring_result": "PASS",
+      "new_production_request_sent": "NO",
+      "run_status": "POST_PRODUCTION_MONITORING_RUN_READY",
+      "second_production_request_sent": "NO",
+      "started_at": "Jul 31 04:54:29",
+      "telegram_send_attempted": "NO",
+      "telegram_send_status": "POST_PRODUCTION_MONITORING_TELEGRAM_SEND_SUPPRESSED"
+    },
+    "min_successful_runs": 3,
+    "observed_run_count": 6,
+    "result": "PASS",
+    "status": "POST_PRODUCTION_MONITORING_TIMER_STABILITY_VALID"
   },
   "post_production_telegram_send_result": {
     "boundary": {

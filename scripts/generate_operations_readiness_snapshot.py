@@ -53,6 +53,9 @@ POST_PRODUCTION_TELEGRAM_SEND_RESULT_REPORT = (
 POST_PRODUCTION_MONITORING_TIMER_RUNTIME_REPORT = (
     REPORTS_DIR / "post_production_monitoring_timer_runtime_validation.json"
 )
+POST_PRODUCTION_MONITORING_TIMER_STABILITY_REPORT = (
+    REPORTS_DIR / "post_production_monitoring_timer_stability_validation.json"
+)
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 OPS_DOMAIN = os.getenv("OPS_DOMAIN", "ops.anchor-infra.com")
@@ -793,6 +796,48 @@ def load_post_production_monitoring_timer_runtime() -> dict[str, Any]:
     }
 
 
+def load_post_production_monitoring_timer_stability() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "status": "POST_PRODUCTION_MONITORING_TIMER_STABILITY_UNREADABLE",
+        "observed_run_count": 0,
+        "latest_consecutive_success_count": 0,
+        "min_successful_runs": 3,
+        "latest_run": {},
+        "checks": {},
+        "boundary": {
+            "alerting_env_read": "NO",
+            "secret_value_disclosed": "NO",
+            "production_signing_executed": "NO",
+            "production_http_network_attempted": "NO",
+            "new_production_request_sent": "NO",
+            "second_production_request_sent": "NO",
+            "canary_rerun": "NO",
+            "runtime_modified": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(POST_PRODUCTION_MONITORING_TIMER_STABILITY_REPORT.read_text(encoding="utf-8"))
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "status": data.get("status", "UNKNOWN"),
+        "observed_run_count": data.get("observed_run_count", 0),
+        "latest_consecutive_success_count": data.get(
+            "latest_consecutive_success_count", 0
+        ),
+        "min_successful_runs": data.get("min_successful_runs", 3),
+        "latest_run": data.get("latest_run") if isinstance(data.get("latest_run"), dict) else {},
+        "checks": data.get("checks") if isinstance(data.get("checks"), dict) else {},
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -846,6 +891,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     post_production_telegram_send_result = load_post_production_telegram_send_result()
     post_production_monitoring_timer_runtime = (
         load_post_production_monitoring_timer_runtime()
+    )
+    post_production_monitoring_timer_stability = (
+        load_post_production_monitoring_timer_stability()
     )
     ops_domain_ingress = ops_domain_ingress_snapshot()
     ops_dashboard = ops_dashboard_snapshot(ops_domain_ingress)
@@ -914,6 +962,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         "post_production_telegram_send_result": post_production_telegram_send_result,
         "post_production_monitoring_timer_runtime": (
             post_production_monitoring_timer_runtime
+        ),
+        "post_production_monitoring_timer_stability": (
+            post_production_monitoring_timer_stability
         ),
         "ops_domain_ingress": ops_domain_ingress,
         "ops_dashboard": ops_dashboard,
@@ -1074,6 +1125,29 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
                 )
                 != "YES"
             ),
+            "post_production_monitoring_timer_stability_resolved": pass_fail(
+                post_production_monitoring_timer_stability.get("result") == "PASS"
+            ),
+            "post_production_monitoring_timer_minimum_successes_observed": pass_fail(
+                int(
+                    post_production_monitoring_timer_stability.get(
+                        "latest_consecutive_success_count", 0
+                    )
+                    or 0
+                )
+                >= int(
+                    post_production_monitoring_timer_stability.get(
+                        "min_successful_runs", 3
+                    )
+                    or 3
+                )
+            ),
+            "post_production_monitoring_timer_stability_secret_disclosed": pass_fail(
+                post_production_monitoring_timer_stability.get("boundary", {}).get(
+                    "secret_value_disclosed"
+                )
+                != "YES"
+            ),
             "ops_domain_ingress_resolved": pass_fail(
                 ops_domain_ingress.get("result") == "PASS"
             ),
@@ -1132,6 +1206,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     post_alerting = snapshot["post_production_alerting_readiness"]
     post_telegram = snapshot["post_production_telegram_send_result"]
     post_timer = snapshot["post_production_monitoring_timer_runtime"]
+    post_timer_stability = snapshot["post_production_monitoring_timer_stability"]
     ops_domain = snapshot["ops_domain_ingress"]
     ops_dashboard = snapshot["ops_dashboard"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
@@ -1306,6 +1381,20 @@ Generated at: `{snapshot["generated_at"]}`
 - latest Telegram sender result: {post_timer.get("telegram_sender_report", {}).get("result")}
 - secret disclosed: {post_timer.get("boundary", {}).get("secret_value_disclosed")}
 - new production request sent: {post_timer.get("boundary", {}).get("new_production_request_sent")}
+
+## Post-Production Monitoring Timer Stability
+
+- result: {post_timer_stability.get("result")}
+- status: {post_timer_stability.get("status")}
+- observed runs: {post_timer_stability.get("observed_run_count")}
+- latest consecutive successes: {post_timer_stability.get("latest_consecutive_success_count")}
+- required consecutive successes: {post_timer_stability.get("min_successful_runs")}
+- latest run status: {post_timer_stability.get("latest_run", {}).get("run_status")}
+- latest run started at: `{post_timer_stability.get("latest_run", {}).get("started_at")}`
+- latest run finished at: `{post_timer_stability.get("latest_run", {}).get("finished_at")}`
+- new production request sent: {post_timer_stability.get("boundary", {}).get("new_production_request_sent")}
+- go-live: {post_timer_stability.get("boundary", {}).get("go_live")}
+- live trading: {post_timer_stability.get("boundary", {}).get("live_trading")}
 
 ## Ops Domain Ingress
 
@@ -1537,6 +1626,18 @@ def main() -> int:
     print(
         "post_production_monitoring_timer_enabled: "
         f"{snapshot['post_production_monitoring_timer_runtime'].get('timer', {}).get('unit_file_state')}"
+    )
+    print(
+        "post_production_monitoring_timer_stability: "
+        f"{snapshot['post_production_monitoring_timer_stability'].get('result')}"
+    )
+    print(
+        "post_production_monitoring_timer_observed_runs: "
+        f"{snapshot['post_production_monitoring_timer_stability'].get('observed_run_count')}"
+    )
+    print(
+        "post_production_monitoring_timer_consecutive_successes: "
+        f"{snapshot['post_production_monitoring_timer_stability'].get('latest_consecutive_success_count')}"
     )
     print(f"ops_domain_ingress: {snapshot['ops_domain_ingress'].get('result')}")
     print(f"ops_domain_dns: {snapshot['ops_domain_ingress'].get('dns_result')}")
