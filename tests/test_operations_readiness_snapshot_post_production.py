@@ -93,6 +93,49 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
         self.assertEqual(telegram["boundary"]["telegram_http_attempted"], "NO")
         self.assertNotIn("secret", json.dumps(readiness).lower())
 
+    def test_ops_domain_ingress_snapshot_records_https_and_protection(self):
+        old_domain = module.OPS_DOMAIN
+        old_expected = module.OPS_EXPECTED_A
+        old_health_url = module.OPS_HEALTHZ_URL
+        old_protected_url = module.OPS_PROTECTED_URL
+        old_getaddrinfo = module.socket.getaddrinfo
+        old_http_status = module.http_status
+        old_tls_not_after = module.tls_not_after
+        module.OPS_DOMAIN = "ops.anchor-infra.com"
+        module.OPS_EXPECTED_A = "45.76.190.109"
+        module.OPS_HEALTHZ_URL = "https://ops.anchor-infra.com/healthz"
+        module.OPS_PROTECTED_URL = "https://ops.anchor-infra.com/ops"
+        module.socket.getaddrinfo = lambda *args, **kwargs: [
+            (None, None, None, None, ("45.76.190.109", 443))
+        ]
+        module.http_status = lambda url, timeout=5.0: (
+            (200, None) if url.endswith("/healthz") else (403, None)
+        )
+        module.tls_not_after = lambda hostname, port=443, timeout=5.0: (
+            "Oct 29 00:16:07 2026 GMT",
+            None,
+        )
+        try:
+            snapshot = module.ops_domain_ingress_snapshot()
+        finally:
+            module.OPS_DOMAIN = old_domain
+            module.OPS_EXPECTED_A = old_expected
+            module.OPS_HEALTHZ_URL = old_health_url
+            module.OPS_PROTECTED_URL = old_protected_url
+            module.socket.getaddrinfo = old_getaddrinfo
+            module.http_status = old_http_status
+            module.tls_not_after = old_tls_not_after
+
+        self.assertEqual(snapshot["result"], "PASS")
+        self.assertEqual(snapshot["dns_result"], "PASS")
+        self.assertEqual(snapshot["https_healthz_result"], "PASS")
+        self.assertEqual(snapshot["protected_result"], "PASS")
+        self.assertEqual(snapshot["tls_result"], "PASS")
+        self.assertEqual(snapshot["protected_status"], 403)
+        self.assertEqual(snapshot["boundary"]["authenticated_ops_access_attempted"], "NO")
+        self.assertEqual(snapshot["boundary"]["production_request_sent"], "NO")
+
+
 
 if __name__ == "__main__":
     unittest.main()

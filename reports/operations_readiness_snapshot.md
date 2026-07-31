@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-30T16:39:35Z`
+Generated at: `2026-07-31T01:45:39Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-30T16:39:35Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-30T16:39:10.047325+00:00`
+- worker heartbeat at: `2026-07-31T01:45:31.247652+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -145,6 +145,21 @@ Generated at: `2026-07-30T16:39:35Z`
 - failure code: PAYLOAD_NOT_READY_TO_SEND
 - alerting env read: NO
 - Telegram HTTP attempted: NO
+
+## Ops Domain Ingress
+
+- result: PASS
+- domain: `ops.anchor-infra.com`
+- expected A: `45.76.190.109`
+- resolved A records: 45.76.190.109
+- DNS result: PASS
+- HTTPS healthz status: 200
+- HTTPS healthz result: PASS
+- protected URL status: 403
+- protected result: PASS
+- TLS certificate not after: `Oct 29 00:16:07 2026 GMT`
+- TLS result: PASS
+- authenticated ops access attempted: NO
 
 ### Production Gates
 
