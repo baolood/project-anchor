@@ -229,6 +229,59 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
         self.assertEqual(dashboard["boundary"]["basic_auth_secret_read"], "NO")
         self.assertEqual(dashboard["boundary"]["production_request_sent"], "NO")
 
+    def test_cloud_operations_evidence_layout_loader_preserves_split_evidence_status(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            audit_path = Path(tmp) / "cloud_operations_evidence_layout_audit.json"
+            audit_path.write_text(
+                json.dumps(
+                    {
+                        "result": "PASS",
+                        "status": "CLOUD_OPERATIONS_EVIDENCE_LAYOUT_VALID",
+                        "runtime_reports_dir": "/var/lib/project-anchor/reports",
+                        "source_reports_dir": "/root/project-anchor/reports",
+                        "layout": {
+                            "runtime_reports_role": "timer output and current monitoring status",
+                            "source_reports_role": "repository historical production send and reconciliation evidence",
+                            "single_directory_layout_required": "NO",
+                        },
+                        "runtime_files": {"post_production_monitoring_run.json": True},
+                        "source_files": {"production_exactly_one_send_result.json": True},
+                        "summary": {
+                            "production_send_result": "PASS",
+                            "production_order_status": "FILLED",
+                            "matching_filled_order_count": 1,
+                        },
+                        "checks": {
+                            "runtime_monitoring_reports_present": "PASS",
+                            "source_production_evidence_present": "PASS",
+                        },
+                        "boundary": {
+                            "secret_value_disclosed": "NO",
+                            "new_production_request_sent": "NO",
+                            "second_production_request_sent": "NO",
+                            "go_live": "NO-GO",
+                            "live_trading": "NO-GO",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            old_audit = module.CLOUD_OPERATIONS_EVIDENCE_LAYOUT_AUDIT_REPORT
+            module.CLOUD_OPERATIONS_EVIDENCE_LAYOUT_AUDIT_REPORT = audit_path
+            try:
+                audit = module.load_cloud_operations_evidence_layout_audit()
+            finally:
+                module.CLOUD_OPERATIONS_EVIDENCE_LAYOUT_AUDIT_REPORT = old_audit
+
+        self.assertEqual(audit["result"], "PASS")
+        self.assertEqual(audit["layout"]["single_directory_layout_required"], "NO")
+        self.assertEqual(audit["checks"]["runtime_monitoring_reports_present"], "PASS")
+        self.assertEqual(audit["checks"]["source_production_evidence_present"], "PASS")
+        self.assertEqual(audit["summary"]["production_order_status"], "FILLED")
+        self.assertEqual(audit["boundary"]["new_production_request_sent"], "NO")
+        self.assertEqual(audit["boundary"]["secret_value_disclosed"], "NO")
+
 
 
 if __name__ == "__main__":

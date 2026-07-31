@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-31T05:05:13Z`
+Generated at: `2026-07-31T05:38:41Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-31T05:05:13Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-31T05:05:03.449914+00:00`
+- worker heartbeat at: `2026-07-31T05:38:22.819265+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -170,6 +170,24 @@ Generated at: `2026-07-31T05:05:13Z`
 - latest run started at: `Jul 31 04:54:29`
 - latest run finished at: `Jul 31 04:54:29`
 - new production request sent: NO
+- go-live: NO-GO
+- live trading: NO-GO
+
+## Cloud Operations Evidence Layout Audit
+
+- result: PASS
+- status: CLOUD_OPERATIONS_EVIDENCE_LAYOUT_VALID
+- runtime reports dir: `/var/lib/project-anchor/reports`
+- source reports dir: `/root/project-anchor/reports`
+- single directory layout required: NO
+- runtime monitoring reports present: PASS
+- source production evidence present: PASS
+- production send result: PASS
+- production order status: FILLED
+- matching filled order count: 1
+- new production request sent: NO
+- second production request sent: NO
+- secret disclosed: NO
 - go-live: NO-GO
 - live trading: NO-GO
 

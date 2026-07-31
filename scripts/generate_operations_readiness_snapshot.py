@@ -56,6 +56,9 @@ POST_PRODUCTION_MONITORING_TIMER_RUNTIME_REPORT = (
 POST_PRODUCTION_MONITORING_TIMER_STABILITY_REPORT = (
     REPORTS_DIR / "post_production_monitoring_timer_stability_validation.json"
 )
+CLOUD_OPERATIONS_EVIDENCE_LAYOUT_AUDIT_REPORT = (
+    REPORTS_DIR / "cloud_operations_evidence_layout_audit.json"
+)
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 OPS_DOMAIN = os.getenv("OPS_DOMAIN", "ops.anchor-infra.com")
@@ -838,6 +841,47 @@ def load_post_production_monitoring_timer_stability() -> dict[str, Any]:
     }
 
 
+def load_cloud_operations_evidence_layout_audit() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "status": "CLOUD_OPERATIONS_EVIDENCE_LAYOUT_AUDIT_UNREADABLE",
+        "runtime_reports_dir": None,
+        "source_reports_dir": None,
+        "layout": {},
+        "summary": {},
+        "checks": {},
+        "boundary": {
+            "production_env_read": "NO",
+            "secret_value_disclosed": "NO",
+            "production_signing_executed": "NO",
+            "production_http_network_attempted": "NO",
+            "new_production_request_sent": "NO",
+            "second_production_request_sent": "NO",
+            "canary_rerun": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(CLOUD_OPERATIONS_EVIDENCE_LAYOUT_AUDIT_REPORT.read_text(encoding="utf-8"))
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "status": data.get("status", "UNKNOWN"),
+        "runtime_reports_dir": data.get("runtime_reports_dir"),
+        "source_reports_dir": data.get("source_reports_dir"),
+        "layout": data.get("layout") if isinstance(data.get("layout"), dict) else {},
+        "runtime_files": data.get("runtime_files") if isinstance(data.get("runtime_files"), dict) else {},
+        "source_files": data.get("source_files") if isinstance(data.get("source_files"), dict) else {},
+        "summary": data.get("summary") if isinstance(data.get("summary"), dict) else {},
+        "checks": data.get("checks") if isinstance(data.get("checks"), dict) else {},
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -894,6 +938,9 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     )
     post_production_monitoring_timer_stability = (
         load_post_production_monitoring_timer_stability()
+    )
+    cloud_operations_evidence_layout_audit = (
+        load_cloud_operations_evidence_layout_audit()
     )
     ops_domain_ingress = ops_domain_ingress_snapshot()
     ops_dashboard = ops_dashboard_snapshot(ops_domain_ingress)
@@ -966,6 +1013,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         "post_production_monitoring_timer_stability": (
             post_production_monitoring_timer_stability
         ),
+        "cloud_operations_evidence_layout_audit": cloud_operations_evidence_layout_audit,
         "ops_domain_ingress": ops_domain_ingress,
         "ops_dashboard": ops_dashboard,
         "go_live": {
@@ -1148,6 +1196,31 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
                 )
                 != "YES"
             ),
+            "cloud_operations_evidence_layout_audit_resolved": pass_fail(
+                cloud_operations_evidence_layout_audit.get("result") == "PASS"
+            ),
+            "cloud_operations_evidence_layout_source_evidence_present": (
+                cloud_operations_evidence_layout_audit.get("checks", {}).get(
+                    "source_production_evidence_present", "FAIL"
+                )
+            ),
+            "cloud_operations_evidence_layout_runtime_reports_present": (
+                cloud_operations_evidence_layout_audit.get("checks", {}).get(
+                    "runtime_monitoring_reports_present", "FAIL"
+                )
+            ),
+            "cloud_operations_evidence_layout_no_new_request": pass_fail(
+                cloud_operations_evidence_layout_audit.get("boundary", {}).get(
+                    "new_production_request_sent"
+                )
+                == "NO"
+            ),
+            "cloud_operations_evidence_layout_secret_disclosed": pass_fail(
+                cloud_operations_evidence_layout_audit.get("boundary", {}).get(
+                    "secret_value_disclosed"
+                )
+                != "YES"
+            ),
             "ops_domain_ingress_resolved": pass_fail(
                 ops_domain_ingress.get("result") == "PASS"
             ),
@@ -1207,6 +1280,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     post_telegram = snapshot["post_production_telegram_send_result"]
     post_timer = snapshot["post_production_monitoring_timer_runtime"]
     post_timer_stability = snapshot["post_production_monitoring_timer_stability"]
+    cloud_layout = snapshot["cloud_operations_evidence_layout_audit"]
     ops_domain = snapshot["ops_domain_ingress"]
     ops_dashboard = snapshot["ops_dashboard"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
@@ -1395,6 +1469,24 @@ Generated at: `{snapshot["generated_at"]}`
 - new production request sent: {post_timer_stability.get("boundary", {}).get("new_production_request_sent")}
 - go-live: {post_timer_stability.get("boundary", {}).get("go_live")}
 - live trading: {post_timer_stability.get("boundary", {}).get("live_trading")}
+
+## Cloud Operations Evidence Layout Audit
+
+- result: {cloud_layout.get("result")}
+- status: {cloud_layout.get("status")}
+- runtime reports dir: `{cloud_layout.get("runtime_reports_dir")}`
+- source reports dir: `{cloud_layout.get("source_reports_dir")}`
+- single directory layout required: {cloud_layout.get("layout", {}).get("single_directory_layout_required")}
+- runtime monitoring reports present: {cloud_layout.get("checks", {}).get("runtime_monitoring_reports_present")}
+- source production evidence present: {cloud_layout.get("checks", {}).get("source_production_evidence_present")}
+- production send result: {cloud_layout.get("summary", {}).get("production_send_result")}
+- production order status: {cloud_layout.get("summary", {}).get("production_order_status")}
+- matching filled order count: {cloud_layout.get("summary", {}).get("matching_filled_order_count")}
+- new production request sent: {cloud_layout.get("boundary", {}).get("new_production_request_sent")}
+- second production request sent: {cloud_layout.get("boundary", {}).get("second_production_request_sent")}
+- secret disclosed: {cloud_layout.get("boundary", {}).get("secret_value_disclosed")}
+- go-live: {cloud_layout.get("boundary", {}).get("go_live")}
+- live trading: {cloud_layout.get("boundary", {}).get("live_trading")}
 
 ## Ops Domain Ingress
 
@@ -1638,6 +1730,18 @@ def main() -> int:
     print(
         "post_production_monitoring_timer_consecutive_successes: "
         f"{snapshot['post_production_monitoring_timer_stability'].get('latest_consecutive_success_count')}"
+    )
+    print(
+        "cloud_operations_evidence_layout_audit: "
+        f"{snapshot['cloud_operations_evidence_layout_audit'].get('result')}"
+    )
+    print(
+        "cloud_operations_evidence_layout_status: "
+        f"{snapshot['cloud_operations_evidence_layout_audit'].get('status')}"
+    )
+    print(
+        "cloud_operations_source_evidence_present: "
+        f"{snapshot['cloud_operations_evidence_layout_audit'].get('checks', {}).get('source_production_evidence_present')}"
     )
     print(f"ops_domain_ingress: {snapshot['ops_domain_ingress'].get('result')}")
     print(f"ops_domain_dns: {snapshot['ops_domain_ingress'].get('dns_result')}")
