@@ -1,0 +1,22 @@
+{
+  "boundary": {
+    "alerting_env_read": "NO",
+    "canary_rerun": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_env_read": "NO",
+    "production_request_sent": "NO",
+    "second_production_request_sent": "NO",
+    "secret_value_disclosed": "NO",
+    "telegram_bot_token_read": "NO",
+    "telegram_chat_id_read": "NO"
+  },
+  "channel": "telegram",
+  "delivery_observed": "YES",
+  "evidence_source": "operator_observed_telegram_token_refresh_test",
+  "generated_at": "2026-07-31T10:22:38Z",
+  "message_sent": "YES",
+  "result": "PASS",
+  "secret_disclosed": "NO",
+  "status": "POST_PRODUCTION_TELEGRAM_CHANNEL_DELIVERY_CONFIRMED"
+}

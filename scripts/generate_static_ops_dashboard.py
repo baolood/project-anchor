@@ -23,6 +23,7 @@ REPORT_NAMES = {
     "monitoring": "post_production_monitoring_run.json",
     "alerting": "post_production_alerting_readiness.json",
     "telegram": "post_production_monitoring_telegram_send_result.json",
+    "telegram_channel": "post_production_telegram_channel_evidence.json",
     "timer_runtime": "post_production_monitoring_timer_runtime_validation.json",
     "timer_stability": "post_production_monitoring_timer_stability_validation.json",
     "operations": "post_production_operations_decision.json",
@@ -70,6 +71,7 @@ def sanitize_summary(reports_dir: Path) -> dict[str, Any]:
     monitoring = pick_report(reports_dir, "monitoring")
     alerting = pick_report(reports_dir, "alerting")
     telegram = pick_report(reports_dir, "telegram")
+    telegram_channel = pick_report(reports_dir, "telegram_channel")
     timer_runtime = pick_report(reports_dir, "timer_runtime")
     timer_stability = pick_report(reports_dir, "timer_stability")
     operations = pick_report(reports_dir, "operations")
@@ -105,11 +107,12 @@ def sanitize_summary(reports_dir: Path) -> dict[str, Any]:
             "failure_code": alerting.get("failure_code"),
         },
         "telegram": {
-            "result": telegram.get("result"),
-            "status": telegram.get("status"),
+            "result": telegram_channel.get("result") or telegram.get("result"),
+            "status": telegram_channel.get("status") or telegram.get("status"),
             "failure_code": telegram.get("failure_code"),
             "send_attempted": telegram.get("send_attempted"),
-            "send_result": telegram.get("send_result"),
+            "send_result": telegram_channel.get("delivery_observed") or telegram.get("send_result"),
+            "evidence_source": telegram_channel.get("evidence_source"),
         },
         "timer": {
             "runtime_result": timer_runtime.get("result"),
