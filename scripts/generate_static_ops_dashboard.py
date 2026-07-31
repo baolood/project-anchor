@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import html
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -139,7 +138,12 @@ def sanitize_summary(reports_dir: Path) -> dict[str, Any]:
 
 
 def render_html(summary: dict[str, Any]) -> str:
-    payload = html.escape(json.dumps(summary, indent=2, sort_keys=True))
+    payload = (
+        json.dumps(summary, indent=2, sort_keys=True)
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+    )
     return f"""<!doctype html>
 <html lang="en">
   <head>

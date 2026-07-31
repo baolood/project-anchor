@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -100,6 +101,14 @@ class StaticOpsDashboardTest(unittest.TestCase):
         self.assertNotIn("Authorization", html)
         self.assertIn("external_order_id_present", html)
         self.assertNotIn('"external_order_id"', html)
+        embedded = re.search(
+            r'<script id="projectAnchorReports" type="application/json">(.*?)</script>',
+            html,
+            re.S,
+        )
+        self.assertIsNotNone(embedded)
+        self.assertNotIn("&quot;", embedded.group(1))
+        self.assertEqual(json.loads(embedded.group(1))["telegram"]["send_result"], "YES")
         self.assertEqual(validation["boundary"]["production_request_sent"], "NO")
         self.assertEqual(validation["boundary"]["go_live"], "NO-GO")
 
