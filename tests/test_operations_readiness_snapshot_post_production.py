@@ -100,6 +100,7 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
         old_protected_url = module.OPS_PROTECTED_URL
         old_getaddrinfo = module.socket.getaddrinfo
         old_http_status = module.http_status
+        old_http_probe = module.http_probe
         old_tls_not_after = module.tls_not_after
         module.OPS_DOMAIN = "ops.anchor-infra.com"
         module.OPS_EXPECTED_A = "45.76.190.109"
@@ -108,8 +109,11 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
         module.socket.getaddrinfo = lambda *args, **kwargs: [
             (None, None, None, None, ("45.76.190.109", 443))
         ]
-        module.http_status = lambda url, timeout=5.0: (
-            (200, None) if url.endswith("/healthz") else (403, None)
+        module.http_status = lambda url, timeout=5.0: (200, None)
+        module.http_probe = lambda url, timeout=5.0: (
+            401,
+            {"WWW-Authenticate": "Basic realm=\"Project Anchor Ops\""},
+            None,
         )
         module.tls_not_after = lambda hostname, port=443, timeout=5.0: (
             "Oct 29 00:16:07 2026 GMT",
@@ -124,6 +128,7 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
             module.OPS_PROTECTED_URL = old_protected_url
             module.socket.getaddrinfo = old_getaddrinfo
             module.http_status = old_http_status
+            module.http_probe = old_http_probe
             module.tls_not_after = old_tls_not_after
 
         self.assertEqual(snapshot["result"], "PASS")
@@ -131,9 +136,32 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
         self.assertEqual(snapshot["https_healthz_result"], "PASS")
         self.assertEqual(snapshot["protected_result"], "PASS")
         self.assertEqual(snapshot["tls_result"], "PASS")
-        self.assertEqual(snapshot["protected_status"], 403)
+        self.assertEqual(snapshot["protected_status"], 401)
+        self.assertEqual(snapshot["ops_basic_auth_challenge_result"], "PASS")
+        self.assertEqual(snapshot["ops_basic_auth_realm_present"], "PASS")
         self.assertEqual(snapshot["boundary"]["authenticated_ops_access_attempted"], "NO")
         self.assertEqual(snapshot["boundary"]["production_request_sent"], "NO")
+
+    def test_ops_dashboard_snapshot_records_read_only_basic_auth_boundary(self):
+        ingress = {
+            "protected_result": "PASS",
+            "ops_basic_auth_challenge_result": "PASS",
+            "ops_basic_auth_realm_present": "PASS",
+        }
+
+        dashboard = module.ops_dashboard_snapshot(ingress)
+
+        self.assertEqual(dashboard["result"], "PASS")
+        self.assertEqual(dashboard["published_entrypoint"], "/ops")
+        self.assertEqual(dashboard["entrypoint_requires_basic_auth"], "PASS")
+        self.assertEqual(dashboard["unauthenticated_access_blocked"], "PASS")
+        self.assertEqual(dashboard["authenticated_content_probe"], "NOT_ATTEMPTED_BY_SNAPSHOT")
+        self.assertEqual(dashboard["production_send_control_expected"], "NO")
+        self.assertEqual(dashboard["canary_rerun_control_expected"], "NO")
+        self.assertEqual(dashboard["go_live_control_expected"], "NO")
+        self.assertEqual(dashboard["live_trading_control_expected"], "NO")
+        self.assertEqual(dashboard["boundary"]["basic_auth_secret_read"], "NO")
+        self.assertEqual(dashboard["boundary"]["production_request_sent"], "NO")
 
 
 

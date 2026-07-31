@@ -13,6 +13,12 @@
     "controlled_request_error": null,
     "controlled_request_evidence_resolved": "PASS",
     "go_live_blockers_explicit": "PASS",
+    "ops_basic_auth_challenge_result": "PASS",
+    "ops_basic_auth_realm_present": "PASS",
+    "ops_dashboard_entrypoint_requires_basic_auth": "PASS",
+    "ops_dashboard_resolved": "PASS",
+    "ops_dashboard_secret_read": "PASS",
+    "ops_dashboard_unauthenticated_access_blocked": "PASS",
     "ops_domain_dns_result": "PASS",
     "ops_domain_https_healthz_result": "PASS",
     "ops_domain_ingress_resolved": "PASS",
@@ -56,7 +62,7 @@
     "production_unsigned_canonical_payload_sendable": "FAIL",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-07-31T01:45:39Z",
+  "generated_at": "2026-07-31T02:21:15Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -74,7 +80,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-07-31T01:45:31.247652+00:00"
+    "worker_heartbeat_at": "2026-07-31T02:20:52.254020+00:00"
   },
   "latest_canary": {
     "attempt": 1,
@@ -124,6 +130,32 @@
     "status": "DONE",
     "symbol": "BTCUSDT"
   },
+  "ops_dashboard": {
+    "authenticated_content_probe": "NOT_ATTEMPTED_BY_SNAPSHOT",
+    "authenticated_content_probe_reason": "snapshot does not read Basic Auth credentials",
+    "basic_auth_realm_present": "PASS",
+    "boundary": {
+      "basic_auth_secret_read": "NO",
+      "canary_rerun": "NO",
+      "credential_file_read": "NO",
+      "go_live": "NO-GO",
+      "live_trading": "NO-GO",
+      "production_request_sent": "NO",
+      "second_production_request_sent": "NO",
+      "secret_value_disclosed": "NO"
+    },
+    "canary_rerun_control_expected": "NO",
+    "entrypoint_requires_basic_auth": "PASS",
+    "execution_controls_expected": "NO",
+    "go_live_control_expected": "NO",
+    "live_trading_control_expected": "NO",
+    "production_send_control_expected": "NO",
+    "published_entrypoint": "/ops",
+    "read_only_dashboard_expected": true,
+    "result": "PASS",
+    "unauthenticated_access_blocked": "PASS",
+    "url": "https://ops.anchor-infra.com/ops"
+  },
   "ops_domain_ingress": {
     "boundary": {
       "authenticated_ops_access_attempted": "NO",
@@ -143,13 +175,16 @@
     "https_healthz_result": "PASS",
     "https_healthz_status": 200,
     "https_healthz_url": "https://ops.anchor-infra.com/healthz",
+    "ops_basic_auth_challenge_result": "PASS",
+    "ops_basic_auth_realm_present": "PASS",
+    "ops_basic_auth_status": 401,
     "protected_error": null,
     "protected_expected_statuses": [
       401,
       403
     ],
     "protected_result": "PASS",
-    "protected_status": 403,
+    "protected_status": 401,
     "protected_url": "https://ops.anchor-infra.com/ops",
     "resolved_a_records": [
       "45.76.190.109"

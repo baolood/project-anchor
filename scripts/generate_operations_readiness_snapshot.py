@@ -56,6 +56,7 @@ OPS_DOMAIN = os.getenv("OPS_DOMAIN", "ops.anchor-infra.com")
 OPS_EXPECTED_A = os.getenv("OPS_EXPECTED_A", "45.76.190.109")
 OPS_HEALTHZ_URL = os.getenv("OPS_HEALTHZ_URL", f"https://{OPS_DOMAIN}/healthz")
 OPS_PROTECTED_URL = os.getenv("OPS_PROTECTED_URL", f"https://{OPS_DOMAIN}/ops")
+OPS_DASHBOARD_URL = os.getenv("OPS_DASHBOARD_URL", f"https://{OPS_DOMAIN}/ops")
 CONTROLLED_COMMAND_ID = os.getenv(
     "CONTROLLED_COMMAND_ID", "order-a06eed8f-cd60-4a4f-b3e9-84c540b98e6f"
 )
@@ -94,6 +95,22 @@ def http_status(url: str, timeout: float = 5.0) -> tuple[int | None, str | None]
         return None, f"{type(exc).__name__}:{exc}"
 
 
+def http_probe(url: str, timeout: float = 5.0) -> tuple[int | None, dict[str, str], str | None]:
+    request = Request(url, method="GET")
+    try:
+        with urlopen(request, timeout=timeout) as response:
+            response.read(64)
+            return int(response.status), dict(response.headers.items()), None
+    except HTTPError as exc:
+        return int(exc.code), dict(exc.headers.items()), None
+    except URLError as exc:
+        return None, {}, f"URL_ERROR:{exc.reason}"
+    except TimeoutError:
+        return None, {}, "TIMEOUT"
+    except Exception as exc:  # noqa: BLE001 - snapshot should fail closed with evidence.
+        return None, {}, f"{type(exc).__name__}:{exc}"
+
+
 def tls_not_after(hostname: str, port: int = 443, timeout: float = 5.0) -> tuple[str | None, str | None]:
     try:
         context = ssl.create_default_context()
@@ -115,14 +132,22 @@ def ops_domain_ingress_snapshot() -> dict[str, Any]:
         dns_error = f"{type(exc).__name__}:{exc}"
 
     health_status, health_error = http_status(OPS_HEALTHZ_URL)
-    protected_status, protected_error = http_status(OPS_PROTECTED_URL)
+    protected_status, protected_headers, protected_error = http_probe(OPS_PROTECTED_URL)
     cert_not_after, cert_error = tls_not_after(OPS_DOMAIN)
 
     dns_pass = OPS_EXPECTED_A in resolved
     health_pass = health_status == 200
     protected_pass = protected_status in {401, 403}
+    authenticate_header = protected_headers.get("WWW-Authenticate", "")
+    basic_auth_challenge_pass = (
+        protected_status == 401 and "basic" in authenticate_header.lower()
+    )
     tls_pass = cert_not_after is not None and cert_error is None
-    result = "PASS" if dns_pass and health_pass and protected_pass and tls_pass else "WARN"
+    result = (
+        "PASS"
+        if dns_pass and health_pass and protected_pass and basic_auth_challenge_pass and tls_pass
+        else "WARN"
+    )
 
     return {
         "result": result,
@@ -140,6 +165,11 @@ def ops_domain_ingress_snapshot() -> dict[str, Any]:
         "protected_error": protected_error,
         "protected_result": pass_fail(protected_pass),
         "protected_expected_statuses": [401, 403],
+        "ops_basic_auth_challenge_result": pass_fail(basic_auth_challenge_pass),
+        "ops_basic_auth_realm_present": pass_fail(
+            "project anchor ops" in authenticate_header.lower()
+        ),
+        "ops_basic_auth_status": protected_status,
         "tls_certificate_not_after": cert_not_after,
         "tls_error": cert_error,
         "tls_result": pass_fail(tls_pass),
@@ -147,6 +177,39 @@ def ops_domain_ingress_snapshot() -> dict[str, Any]:
             "credential_file_read": "NO",
             "secret_value_disclosed": "NO",
             "authenticated_ops_access_attempted": "NO",
+            "production_request_sent": "NO",
+            "second_production_request_sent": "NO",
+            "canary_rerun": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+
+
+def ops_dashboard_snapshot(ops_domain_ingress: dict[str, Any]) -> dict[str, Any]:
+    auth_challenge_pass = ops_domain_ingress.get("ops_basic_auth_challenge_result") == "PASS"
+    realm_present = ops_domain_ingress.get("ops_basic_auth_realm_present") == "PASS"
+    protected_pass = ops_domain_ingress.get("protected_result") == "PASS"
+    result = "PASS" if auth_challenge_pass and realm_present and protected_pass else "WARN"
+    return {
+        "result": result,
+        "url": OPS_DASHBOARD_URL,
+        "published_entrypoint": "/ops",
+        "read_only_dashboard_expected": True,
+        "entrypoint_requires_basic_auth": pass_fail(auth_challenge_pass),
+        "basic_auth_realm_present": pass_fail(realm_present),
+        "unauthenticated_access_blocked": pass_fail(protected_pass),
+        "authenticated_content_probe": "NOT_ATTEMPTED_BY_SNAPSHOT",
+        "authenticated_content_probe_reason": "snapshot does not read Basic Auth credentials",
+        "execution_controls_expected": "NO",
+        "production_send_control_expected": "NO",
+        "canary_rerun_control_expected": "NO",
+        "go_live_control_expected": "NO",
+        "live_trading_control_expected": "NO",
+        "boundary": {
+            "basic_auth_secret_read": "NO",
+            "credential_file_read": "NO",
+            "secret_value_disclosed": "NO",
             "production_request_sent": "NO",
             "second_production_request_sent": "NO",
             "canary_rerun": "NO",
@@ -733,6 +796,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     post_production_alerting_readiness = load_post_production_alerting_readiness()
     post_production_telegram_send_result = load_post_production_telegram_send_result()
     ops_domain_ingress = ops_domain_ingress_snapshot()
+    ops_dashboard = ops_dashboard_snapshot(ops_domain_ingress)
     production_execution_ready = production_execution_readiness.get("result") == "PASS"
 
     hard_failures = [
@@ -797,6 +861,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         "post_production_alerting_readiness": post_production_alerting_readiness,
         "post_production_telegram_send_result": post_production_telegram_send_result,
         "ops_domain_ingress": ops_domain_ingress,
+        "ops_dashboard": ops_dashboard,
         "go_live": {
             "verdict": "NO-GO",
             "blocking_gates": GO_LIVE_BLOCKERS,
@@ -944,6 +1009,22 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
                 "protected_result", "FAIL"
             ),
             "ops_domain_tls_result": ops_domain_ingress.get("tls_result", "FAIL"),
+            "ops_basic_auth_challenge_result": ops_domain_ingress.get(
+                "ops_basic_auth_challenge_result", "FAIL"
+            ),
+            "ops_basic_auth_realm_present": ops_domain_ingress.get(
+                "ops_basic_auth_realm_present", "FAIL"
+            ),
+            "ops_dashboard_resolved": pass_fail(ops_dashboard.get("result") == "PASS"),
+            "ops_dashboard_entrypoint_requires_basic_auth": ops_dashboard.get(
+                "entrypoint_requires_basic_auth", "FAIL"
+            ),
+            "ops_dashboard_unauthenticated_access_blocked": ops_dashboard.get(
+                "unauthenticated_access_blocked", "FAIL"
+            ),
+            "ops_dashboard_secret_read": pass_fail(
+                ops_dashboard.get("boundary", {}).get("basic_auth_secret_read") != "YES"
+            ),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -975,6 +1056,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     post_alerting = snapshot["post_production_alerting_readiness"]
     post_telegram = snapshot["post_production_telegram_send_result"]
     ops_domain = snapshot["ops_domain_ingress"]
+    ops_dashboard = snapshot["ops_dashboard"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
     production_blockers = "\n".join(
         f"- {item}" for item in production_readiness.get("blockers", [])
@@ -1146,9 +1228,26 @@ Generated at: `{snapshot["generated_at"]}`
 - HTTPS healthz result: {ops_domain.get("https_healthz_result")}
 - protected URL status: {ops_domain.get("protected_status")}
 - protected result: {ops_domain.get("protected_result")}
+- Basic Auth challenge result: {ops_domain.get("ops_basic_auth_challenge_result")}
+- Basic Auth realm present: {ops_domain.get("ops_basic_auth_realm_present")}
+- authenticated ops access attempted: {ops_domain.get("boundary", {}).get("authenticated_ops_access_attempted")}
 - TLS certificate not after: `{ops_domain.get("tls_certificate_not_after")}`
 - TLS result: {ops_domain.get("tls_result")}
-- authenticated ops access attempted: {ops_domain.get("boundary", {}).get("authenticated_ops_access_attempted")}
+
+## Ops Dashboard
+
+- result: {ops_dashboard.get("result")}
+- URL: `{ops_dashboard.get("url")}`
+- published entrypoint: `{ops_dashboard.get("published_entrypoint")}`
+- read-only dashboard expected: {ops_dashboard.get("read_only_dashboard_expected")}
+- entrypoint requires Basic Auth: {ops_dashboard.get("entrypoint_requires_basic_auth")}
+- unauthenticated access blocked: {ops_dashboard.get("unauthenticated_access_blocked")}
+- authenticated content probe: {ops_dashboard.get("authenticated_content_probe")}
+- authenticated content probe reason: {ops_dashboard.get("authenticated_content_probe_reason")}
+- production send control expected: {ops_dashboard.get("production_send_control_expected")}
+- canary rerun control expected: {ops_dashboard.get("canary_rerun_control_expected")}
+- go-live control expected: {ops_dashboard.get("go_live_control_expected")}
+- live trading control expected: {ops_dashboard.get("live_trading_control_expected")}
 
 ### Production Gates
 
@@ -1348,6 +1447,19 @@ def main() -> int:
         f"{snapshot['ops_domain_ingress'].get('protected_result')}"
     )
     print(f"ops_domain_tls: {snapshot['ops_domain_ingress'].get('tls_result')}")
+    print(
+        "ops_basic_auth_challenge: "
+        f"{snapshot['ops_domain_ingress'].get('ops_basic_auth_challenge_result')}"
+    )
+    print(f"ops_dashboard: {snapshot['ops_dashboard'].get('result')}")
+    print(
+        "ops_dashboard_auth_required: "
+        f"{snapshot['ops_dashboard'].get('entrypoint_requires_basic_auth')}"
+    )
+    print(
+        "ops_dashboard_authenticated_content_probe: "
+        f"{snapshot['ops_dashboard'].get('authenticated_content_probe')}"
+    )
     print("secret_read: NO")
     print("new_external_request_sent: NO")
     print("canary_rerun: NO")
