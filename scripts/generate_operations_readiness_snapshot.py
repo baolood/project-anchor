@@ -56,6 +56,7 @@ OPS_DOMAIN = os.getenv("OPS_DOMAIN", "ops.anchor-infra.com")
 OPS_EXPECTED_A = os.getenv("OPS_EXPECTED_A", "45.76.190.109")
 OPS_HEALTHZ_URL = os.getenv("OPS_HEALTHZ_URL", f"https://{OPS_DOMAIN}/healthz")
 OPS_PROTECTED_URL = os.getenv("OPS_PROTECTED_URL", f"https://{OPS_DOMAIN}/ops")
+OPS_DASHBOARD_URL = os.getenv("OPS_DASHBOARD_URL", f"https://{OPS_DOMAIN}/ops")
 CONTROLLED_COMMAND_ID = os.getenv(
     "CONTROLLED_COMMAND_ID", "order-a06eed8f-cd60-4a4f-b3e9-84c540b98e6f"
 )
@@ -176,6 +177,39 @@ def ops_domain_ingress_snapshot() -> dict[str, Any]:
             "credential_file_read": "NO",
             "secret_value_disclosed": "NO",
             "authenticated_ops_access_attempted": "NO",
+            "production_request_sent": "NO",
+            "second_production_request_sent": "NO",
+            "canary_rerun": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+
+
+def ops_dashboard_snapshot(ops_domain_ingress: dict[str, Any]) -> dict[str, Any]:
+    auth_challenge_pass = ops_domain_ingress.get("ops_basic_auth_challenge_result") == "PASS"
+    realm_present = ops_domain_ingress.get("ops_basic_auth_realm_present") == "PASS"
+    protected_pass = ops_domain_ingress.get("protected_result") == "PASS"
+    result = "PASS" if auth_challenge_pass and realm_present and protected_pass else "WARN"
+    return {
+        "result": result,
+        "url": OPS_DASHBOARD_URL,
+        "published_entrypoint": "/ops",
+        "read_only_dashboard_expected": True,
+        "entrypoint_requires_basic_auth": pass_fail(auth_challenge_pass),
+        "basic_auth_realm_present": pass_fail(realm_present),
+        "unauthenticated_access_blocked": pass_fail(protected_pass),
+        "authenticated_content_probe": "NOT_ATTEMPTED_BY_SNAPSHOT",
+        "authenticated_content_probe_reason": "snapshot does not read Basic Auth credentials",
+        "execution_controls_expected": "NO",
+        "production_send_control_expected": "NO",
+        "canary_rerun_control_expected": "NO",
+        "go_live_control_expected": "NO",
+        "live_trading_control_expected": "NO",
+        "boundary": {
+            "basic_auth_secret_read": "NO",
+            "credential_file_read": "NO",
+            "secret_value_disclosed": "NO",
             "production_request_sent": "NO",
             "second_production_request_sent": "NO",
             "canary_rerun": "NO",
@@ -762,6 +796,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     post_production_alerting_readiness = load_post_production_alerting_readiness()
     post_production_telegram_send_result = load_post_production_telegram_send_result()
     ops_domain_ingress = ops_domain_ingress_snapshot()
+    ops_dashboard = ops_dashboard_snapshot(ops_domain_ingress)
     production_execution_ready = production_execution_readiness.get("result") == "PASS"
 
     hard_failures = [
@@ -826,6 +861,7 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         "post_production_alerting_readiness": post_production_alerting_readiness,
         "post_production_telegram_send_result": post_production_telegram_send_result,
         "ops_domain_ingress": ops_domain_ingress,
+        "ops_dashboard": ops_dashboard,
         "go_live": {
             "verdict": "NO-GO",
             "blocking_gates": GO_LIVE_BLOCKERS,
@@ -979,6 +1015,16 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "ops_basic_auth_realm_present": ops_domain_ingress.get(
                 "ops_basic_auth_realm_present", "FAIL"
             ),
+            "ops_dashboard_resolved": pass_fail(ops_dashboard.get("result") == "PASS"),
+            "ops_dashboard_entrypoint_requires_basic_auth": ops_dashboard.get(
+                "entrypoint_requires_basic_auth", "FAIL"
+            ),
+            "ops_dashboard_unauthenticated_access_blocked": ops_dashboard.get(
+                "unauthenticated_access_blocked", "FAIL"
+            ),
+            "ops_dashboard_secret_read": pass_fail(
+                ops_dashboard.get("boundary", {}).get("basic_auth_secret_read") != "YES"
+            ),
             "go_live_blockers_explicit": pass_fail(bool(GO_LIVE_BLOCKERS)),
         },
         "boundary": {
@@ -1010,6 +1056,7 @@ def markdown(snapshot: dict[str, Any]) -> str:
     post_alerting = snapshot["post_production_alerting_readiness"]
     post_telegram = snapshot["post_production_telegram_send_result"]
     ops_domain = snapshot["ops_domain_ingress"]
+    ops_dashboard = snapshot["ops_dashboard"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
     production_blockers = "\n".join(
         f"- {item}" for item in production_readiness.get("blockers", [])
@@ -1186,6 +1233,21 @@ Generated at: `{snapshot["generated_at"]}`
 - authenticated ops access attempted: {ops_domain.get("boundary", {}).get("authenticated_ops_access_attempted")}
 - TLS certificate not after: `{ops_domain.get("tls_certificate_not_after")}`
 - TLS result: {ops_domain.get("tls_result")}
+
+## Ops Dashboard
+
+- result: {ops_dashboard.get("result")}
+- URL: `{ops_dashboard.get("url")}`
+- published entrypoint: `{ops_dashboard.get("published_entrypoint")}`
+- read-only dashboard expected: {ops_dashboard.get("read_only_dashboard_expected")}
+- entrypoint requires Basic Auth: {ops_dashboard.get("entrypoint_requires_basic_auth")}
+- unauthenticated access blocked: {ops_dashboard.get("unauthenticated_access_blocked")}
+- authenticated content probe: {ops_dashboard.get("authenticated_content_probe")}
+- authenticated content probe reason: {ops_dashboard.get("authenticated_content_probe_reason")}
+- production send control expected: {ops_dashboard.get("production_send_control_expected")}
+- canary rerun control expected: {ops_dashboard.get("canary_rerun_control_expected")}
+- go-live control expected: {ops_dashboard.get("go_live_control_expected")}
+- live trading control expected: {ops_dashboard.get("live_trading_control_expected")}
 
 ### Production Gates
 
@@ -1388,6 +1450,15 @@ def main() -> int:
     print(
         "ops_basic_auth_challenge: "
         f"{snapshot['ops_domain_ingress'].get('ops_basic_auth_challenge_result')}"
+    )
+    print(f"ops_dashboard: {snapshot['ops_dashboard'].get('result')}")
+    print(
+        "ops_dashboard_auth_required: "
+        f"{snapshot['ops_dashboard'].get('entrypoint_requires_basic_auth')}"
+    )
+    print(
+        "ops_dashboard_authenticated_content_probe: "
+        f"{snapshot['ops_dashboard'].get('authenticated_content_probe')}"
     )
     print("secret_read: NO")
     print("new_external_request_sent: NO")

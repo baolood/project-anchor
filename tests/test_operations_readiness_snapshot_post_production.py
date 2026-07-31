@@ -142,6 +142,27 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
         self.assertEqual(snapshot["boundary"]["authenticated_ops_access_attempted"], "NO")
         self.assertEqual(snapshot["boundary"]["production_request_sent"], "NO")
 
+    def test_ops_dashboard_snapshot_records_read_only_basic_auth_boundary(self):
+        ingress = {
+            "protected_result": "PASS",
+            "ops_basic_auth_challenge_result": "PASS",
+            "ops_basic_auth_realm_present": "PASS",
+        }
+
+        dashboard = module.ops_dashboard_snapshot(ingress)
+
+        self.assertEqual(dashboard["result"], "PASS")
+        self.assertEqual(dashboard["published_entrypoint"], "/ops")
+        self.assertEqual(dashboard["entrypoint_requires_basic_auth"], "PASS")
+        self.assertEqual(dashboard["unauthenticated_access_blocked"], "PASS")
+        self.assertEqual(dashboard["authenticated_content_probe"], "NOT_ATTEMPTED_BY_SNAPSHOT")
+        self.assertEqual(dashboard["production_send_control_expected"], "NO")
+        self.assertEqual(dashboard["canary_rerun_control_expected"], "NO")
+        self.assertEqual(dashboard["go_live_control_expected"], "NO")
+        self.assertEqual(dashboard["live_trading_control_expected"], "NO")
+        self.assertEqual(dashboard["boundary"]["basic_auth_secret_read"], "NO")
+        self.assertEqual(dashboard["boundary"]["production_request_sent"], "NO")
+
 
 
 if __name__ == "__main__":

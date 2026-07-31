@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-31T02:13:32Z`
+Generated at: `2026-07-31T02:21:15Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-31T02:13:32Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-31T02:13:17.844639+00:00`
+- worker heartbeat at: `2026-07-31T02:20:52.254020+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -162,6 +162,21 @@ Generated at: `2026-07-31T02:13:32Z`
 - authenticated ops access attempted: NO
 - TLS certificate not after: `Oct 29 00:16:07 2026 GMT`
 - TLS result: PASS
+
+## Ops Dashboard
+
+- result: PASS
+- URL: `https://ops.anchor-infra.com/ops`
+- published entrypoint: `/ops`
+- read-only dashboard expected: True
+- entrypoint requires Basic Auth: PASS
+- unauthenticated access blocked: PASS
+- authenticated content probe: NOT_ATTEMPTED_BY_SNAPSHOT
+- authenticated content probe reason: snapshot does not read Basic Auth credentials
+- production send control expected: NO
+- canary rerun control expected: NO
+- go-live control expected: NO
+- live trading control expected: NO
 
 ### Production Gates
 
