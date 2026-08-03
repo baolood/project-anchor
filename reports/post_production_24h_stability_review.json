@@ -1,0 +1,58 @@
+{
+  "boundary": {
+    "alerting_env_read": "NO",
+    "canary_rerun": "NO",
+    "credential_file_read": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "new_production_request_sent": "NO",
+    "production_http_network_attempted": "NO",
+    "production_signing_executed": "NO",
+    "runtime_modified": "NO",
+    "second_production_request_sent": "NO",
+    "secret_value_disclosed": "NO"
+  },
+  "checks": {
+    "alert_clear": "PASS",
+    "go_live_no_go": "PASS",
+    "journal_readable": "PASS",
+    "live_trading_no_go": "PASS",
+    "minimum_24h_successes_observed": "PASS",
+    "monitoring_run_pass": "PASS",
+    "monitoring_snapshot_pass": "PASS",
+    "no_canary_rerun": "PASS",
+    "no_new_production_request": "PASS",
+    "no_second_production_request": "PASS",
+    "timer_active": "PASS",
+    "timer_enabled": "PASS",
+    "timer_runtime_validation_pass": "PASS",
+    "timer_stability_validation_pass": "PASS"
+  },
+  "errors": [],
+  "evidence": {
+    "alert_result": "CLEAR",
+    "alert_status": "POST_PRODUCTION_MONITORING_ALERT_CLEAR",
+    "monitoring_generated_at": "2026-08-03T02:51:41Z",
+    "monitoring_result": "PASS",
+    "monitoring_status": "POST_PRODUCTION_MONITORING_RUN_READY",
+    "snapshot_generated_at": "2026-08-03T02:51:41Z",
+    "snapshot_result": "PASS",
+    "telegram_notification_result": "SUPPRESSED",
+    "telegram_notification_status": "POST_PRODUCTION_MONITORING_NOTIFICATION_SUPPRESSED",
+    "timer_active": "active",
+    "timer_enabled": "enabled",
+    "timer_runtime_result": "PASS",
+    "timer_stability_result": "PASS",
+    "timer_stability_successes": 6,
+    "worker_heartbeat_at": "not_reported_by_snapshot"
+  },
+  "generated_at": "2026-08-03T02:57:06Z",
+  "next_single_task": "continue_48_to_72h_read_only_observation_or_operator_freeze_decision",
+  "result": "PASS",
+  "review_window": {
+    "minimum_successful_runs_required": 12,
+    "observed_successful_runs": 95,
+    "since": "24 hours ago"
+  },
+  "status": "POST_PRODUCTION_24H_STABILITY_REVIEW_PASS"
+}
