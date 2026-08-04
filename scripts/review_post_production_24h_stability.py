@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Review post-production 24h stability from sanitized monitoring evidence."""
+"""Review post-production stability from sanitized monitoring evidence."""
 
 from __future__ import annotations
 
@@ -41,6 +41,17 @@ def nested(data: dict[str, Any], *keys: str, default: Any = None) -> Any:
 
 def pass_fail(condition: bool) -> str:
     return "PASS" if condition else "FAIL"
+
+
+def next_single_task(window_label: str) -> str:
+    normalized = window_label.strip().lower()
+    if normalized == "24h":
+        return "continue_to_48h_read_only_observation"
+    if normalized == "48h":
+        return "continue_to_72h_read_only_observation"
+    if normalized == "72h":
+        return "operator_stability_review_or_freeze_decision"
+    return "continue_read_only_observation_or_operator_freeze_decision"
 
 
 def systemctl_active(unit: str) -> str:
@@ -87,7 +98,12 @@ def journal_success_count(since: str) -> tuple[int | None, str | None]:
     return result.stdout.count("POST_PRODUCTION_MONITORING_ONCE_RESULT=PASS"), None
 
 
-def build_review(report_dir: Path, since: str, min_successes: int) -> dict[str, Any]:
+def build_review(
+    report_dir: Path,
+    since: str,
+    min_successes: int,
+    window_label: str = "24h",
+) -> dict[str, Any]:
     run = load_json(report_dir / "post_production_monitoring_run.json")
     snapshot = load_json(report_dir / "post_production_monitoring_snapshot.json")
     alert = load_json(report_dir / "post_production_monitoring_alert.json")
@@ -109,7 +125,7 @@ def build_review(report_dir: Path, since: str, min_successes: int) -> dict[str, 
         "timer_enabled": pass_fail(timer_enabled == "enabled"),
         "timer_runtime_validation_pass": pass_fail(timer_runtime.get("result") == "PASS"),
         "timer_stability_validation_pass": pass_fail(timer_stability.get("result") == "PASS"),
-        "minimum_24h_successes_observed": pass_fail(
+        f"minimum_{window_label}_successes_observed": pass_fail(
             success_count is not None and success_count >= min_successes
         ),
         "no_new_production_request": pass_fail(
@@ -141,11 +157,12 @@ def build_review(report_dir: Path, since: str, min_successes: int) -> dict[str, 
         "generated_at": utc_now(),
         "result": result,
         "status": (
-            "POST_PRODUCTION_24H_STABILITY_REVIEW_PASS"
+            f"POST_PRODUCTION_{window_label.upper()}_STABILITY_REVIEW_PASS"
             if result == "PASS"
-            else "POST_PRODUCTION_24H_STABILITY_REVIEW_BLOCKED"
+            else f"POST_PRODUCTION_{window_label.upper()}_STABILITY_REVIEW_BLOCKED"
         ),
         "review_window": {
+            "label": window_label,
             "since": since,
             "minimum_successful_runs_required": min_successes,
             "observed_successful_runs": success_count,
@@ -188,7 +205,7 @@ def build_review(report_dir: Path, since: str, min_successes: int) -> dict[str, 
             "go_live": "NO-GO",
             "live_trading": "NO-GO",
         },
-        "next_single_task": "continue_48_to_72h_read_only_observation_or_operator_freeze_decision",
+        "next_single_task": next_single_task(window_label),
     }
 
 
@@ -197,7 +214,7 @@ def markdown(report: dict[str, Any]) -> str:
     checks = "\n".join(f"- {key}: {value}" for key, value in report["checks"].items())
     boundary = "\n".join(f"- {key}: {value}" for key, value in report["boundary"].items())
     window = report["review_window"]
-    return f"""# Post-Production 24h Stability Review
+    return f"""# Post-Production {window["label"]} Stability Review
 
 Generated at: `{report["generated_at"]}`
 
@@ -234,14 +251,15 @@ def main() -> int:
     parser.add_argument("--md-out", type=Path, default=DEFAULT_MD_OUT)
     parser.add_argument("--since", default="24 hours ago")
     parser.add_argument("--min-successes", type=int, default=12)
+    parser.add_argument("--window-label", default="24h")
     args = parser.parse_args()
 
-    report = build_review(args.report_dir, args.since, args.min_successes)
+    report = build_review(args.report_dir, args.since, args.min_successes, args.window_label)
     args.json_out.parent.mkdir(parents=True, exist_ok=True)
     args.json_out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     args.md_out.write_text(markdown(report), encoding="utf-8")
 
-    print("[Post-Production 24h Stability Review]")
+    print(f"[Post-Production {args.window_label} Stability Review]")
     print(f"result: {report['result']}")
     print(f"status: {report['status']}")
     print(f"observed successful runs: {report['review_window']['observed_successful_runs']}")

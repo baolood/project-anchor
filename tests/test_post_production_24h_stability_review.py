@@ -80,6 +80,7 @@ class PostProduction24hStabilityReviewTest(unittest.TestCase):
 
         self.assertEqual(report["result"], "PASS")
         self.assertEqual(report["checks"]["minimum_24h_successes_observed"], "PASS")
+        self.assertEqual(report["status"], "POST_PRODUCTION_24H_STABILITY_REVIEW_PASS")
         self.assertEqual(report["boundary"]["credential_file_read"], "NO")
         self.assertEqual(report["boundary"]["new_production_request_sent"], "NO")
         self.assertEqual(report["boundary"]["go_live"], "NO-GO")
@@ -148,6 +149,41 @@ class PostProduction24hStabilityReviewTest(unittest.TestCase):
 
         self.assertEqual(report["result"], "BLOCKED")
         self.assertEqual(report["checks"]["timer_active"], "FAIL")
+
+    def test_review_uses_custom_window_label(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report_dir = Path(tmp)
+            write_json(
+                report_dir / "post_production_monitoring_run.json",
+                """
+                {
+                  "result": "PASS",
+                  "boundary": {
+                    "new_production_request_sent": "NO",
+                    "second_production_request_sent": "NO",
+                    "canary_rerun": "NO",
+                    "go_live": "NO-GO",
+                    "live_trading": "NO-GO"
+                  }
+                }
+                """,
+            )
+            write_json(report_dir / "post_production_monitoring_snapshot.json", '{"result":"PASS"}')
+            write_json(report_dir / "post_production_monitoring_alert.json", '{"result":"CLEAR"}')
+            write_json(report_dir / "post_production_monitoring_alert_notification.json", "{}")
+            write_json(report_dir / "post_production_monitoring_timer_runtime_validation.json", '{"result":"PASS"}')
+            write_json(report_dir / "post_production_monitoring_timer_stability_validation.json", '{"result":"PASS"}')
+
+            with mock.patch.object(module, "systemctl_active", return_value="active"), mock.patch.object(
+                module, "systemctl_enabled", return_value="enabled"
+            ), mock.patch.object(module, "journal_success_count", return_value=(191, None)):
+                report = module.build_review(report_dir, "48 hours ago", 24, "48h")
+
+        self.assertEqual(report["result"], "PASS")
+        self.assertEqual(report["status"], "POST_PRODUCTION_48H_STABILITY_REVIEW_PASS")
+        self.assertEqual(report["review_window"]["label"], "48h")
+        self.assertEqual(report["checks"]["minimum_48h_successes_observed"], "PASS")
+        self.assertEqual(report["next_single_task"], "continue_to_72h_read_only_observation")
 
 
 if __name__ == "__main__":
