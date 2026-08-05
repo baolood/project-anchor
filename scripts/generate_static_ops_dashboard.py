@@ -26,6 +26,8 @@ REPORT_NAMES = {
     "timer_runtime": "post_production_monitoring_timer_runtime_validation.json",
     "timer_stability": "post_production_monitoring_timer_stability_validation.json",
     "operations": "post_production_operations_decision.json",
+    "manual_policy": "manual_low_frequency_operations_policy_validation.json",
+    "manual_runbook": "manual_low_frequency_operations_runbook_validation.json",
 }
 
 FORBIDDEN_FRAGMENTS = [
@@ -74,6 +76,8 @@ def sanitize_summary(reports_dir: Path) -> dict[str, Any]:
     timer_runtime = pick_report(reports_dir, "timer_runtime")
     timer_stability = pick_report(reports_dir, "timer_stability")
     operations = pick_report(reports_dir, "operations")
+    manual_policy = pick_report(reports_dir, "manual_policy")
+    manual_runbook = pick_report(reports_dir, "manual_runbook")
 
     return {
         "generated_at": utc_now(),
@@ -124,6 +128,35 @@ def sanitize_summary(reports_dir: Path) -> dict[str, Any]:
             "result": operations.get("result"),
             "decision": operations.get("decision"),
             "next_gate": operations.get("next_gate"),
+        },
+        "manual_low_frequency": {
+            "policy_result": manual_policy.get("result"),
+            "policy_status": manual_policy.get("status"),
+            "runbook_result": manual_runbook.get("result"),
+            "runbook_status": manual_runbook.get("status"),
+            "mode": nested(manual_policy, "policy", "mode"),
+            "symbols": nested(manual_policy, "policy", "symbols", default=[]),
+            "sides": nested(manual_policy, "policy", "sides", default=[]),
+            "max_notional_per_request": nested(
+                manual_policy, "policy", "max_notional_per_request"
+            ),
+            "min_hours_between_requests": nested(
+                manual_policy, "policy", "min_hours_between_production_requests"
+            ),
+            "recommended_max_requests_per_week": nested(
+                manual_policy, "policy", "recommended_max_requests_per_week"
+            ),
+            "operator_authorization_required": nested(
+                manual_policy,
+                "policy",
+                "requires_explicit_operator_authorization_per_request",
+            ),
+            "before_request_steps": nested(
+                manual_runbook, "runbook", "before_request_steps"
+            ),
+            "after_request_steps": nested(
+                manual_runbook, "runbook", "after_request_steps"
+            ),
         },
         "boundary": {
             "secret_disclosed": "NO",
@@ -204,8 +237,11 @@ def render_html(summary: dict[str, Any]) -> str:
       <section class="grid">
         <article class="panel"><div class="label">Timer</div><div id="timerResult" class="value warn">Loading</div><div id="timerDetail" class="small">Loading</div></article>
         <article class="panel"><div class="label">Reconciliation</div><div id="reconResult" class="value warn">Loading</div><div id="reconDetail" class="small">Loading</div></article>
-        <article class="panel"><div class="label">Next Gate</div><div id="nextGate" class="value warn">Loading</div><div class="small">Operator authorization remains required for any new production request.</div></article>
+        <article class="panel"><div class="label">Manual Ops</div><div id="manualOpsResult" class="value warn">Loading</div><div id="manualOpsDetail" class="small">Loading</div></article>
         <article class="panel"><div class="label">Boundary</div><div class="value ok">SAFE</div><div id="boundaryDetail" class="small">No new request from dashboard.</div></article>
+      </section>
+      <section class="grid">
+        <article class="panel"><div class="label">Next Gate</div><div id="nextGate" class="value warn">Loading</div><div class="small">Operator authorization remains required for any new production request.</div></article>
       </section>
       <section class="wide">
         <article class="panel">
@@ -238,6 +274,7 @@ def render_html(summary: dict[str, Any]) -> str:
         const timer = reportSummary.timer || {{}};
         const recon = reportSummary.reconciliation || {{}};
         const ops = reportSummary.operations || {{}};
+        const manual = reportSummary.manual_low_frequency || {{}};
         setValue("sendResult", text(send.external_status || send.result, "UNKNOWN"));
         document.getElementById("sendDetail").textContent = `${{text(send.symbol, "?")}} ${{text(send.side, "?")}} · notional ${{text(send.max_notional, "?")}} · order id present ${{text(send.external_order_id_present, "?")}}`;
         setValue("monitorResult", text(monitoring.result, "UNKNOWN"));
@@ -248,6 +285,9 @@ def render_html(summary: dict[str, Any]) -> str:
         document.getElementById("timerDetail").textContent = `active ${{text(timer.timer_active, "?")}} · enabled ${{text(timer.timer_enabled, "?")}} · successes ${{text(timer.consecutive_successes, "?")}}`;
         setValue("reconResult", text(recon.result, "UNKNOWN"));
         document.getElementById("reconDetail").textContent = `${{text(recon.status, "reconciled")}} · errors ${{text(recon.errors, 0)}}`;
+        const manualStatus = manual.policy_result === "PASS" && manual.runbook_result === "PASS" ? "PASS" : text(manual.policy_result || manual.runbook_result, "UNKNOWN");
+        setValue("manualOpsResult", manualStatus);
+        document.getElementById("manualOpsDetail").textContent = `${{text((manual.symbols || []).join(", "), "?")}} · ${{text((manual.sides || []).join(", "), "?")}} · max ${{text(manual.max_notional_per_request, "?")}} · min gap ${{text(manual.min_hours_between_requests, "?")}}h · authorization required ${{text(manual.operator_authorization_required, true)}}`;
         document.getElementById("nextGate").textContent = text(ops.next_gate || ops.decision, "NO-GO");
         document.getElementById("boundaryDetail").textContent = `new request ${{text(reportSummary.boundary.production_request_sent_by_dashboard, "NO")}} · second request ${{text(reportSummary.boundary.second_production_request_sent, "NO")}} · Telegram send by dashboard ${{text(reportSummary.boundary.telegram_send_triggered_by_dashboard, "NO")}}`;
       }}

@@ -1,6 +1,6 @@
 # Project Anchor Operations Readiness Snapshot
 
-Generated at: `2026-07-31T06:21:53Z`
+Generated at: `2026-08-05T07:24:34Z`
 
 ## Overall
 
@@ -12,7 +12,7 @@ Generated at: `2026-07-31T06:21:53Z`
 
 - backend: PASS
 - worker: PASS
-- worker heartbeat at: `2026-07-31T06:21:48.905597+00:00`
+- worker heartbeat at: `2026-08-05T07:24:06.500205+00:00`
 - kill switch enabled: False
 - kill switch source: `none`
 
@@ -203,6 +203,39 @@ Generated at: `2026-07-31T06:21:53Z`
 - alerting env read: NO
 - Telegram HTTP attempted: NO
 - secret disclosed: NO
+- production request sent: NO
+- go-live: NO-GO
+- live trading: NO-GO
+
+## Manual Low-Frequency Operations Policy
+
+- result: PASS
+- status: MANUAL_LOW_FREQUENCY_OPERATIONS_POLICY_PASS
+- mode: manual_confirmed_low_frequency_only
+- market: binance_spot
+- symbols: BTCUSDT
+- sides: BUY_ONLY
+- max notional per request: 10
+- max order count per request: 1
+- min hours between production requests: 24
+- recommended max requests per week: 3
+- explicit operator authorization required: True
+- secret read: NO
+- production request sent: NO
+- go-live: NO-GO
+- live trading: NO-GO
+
+## Manual Low-Frequency Operations Runbook
+
+- result: PASS
+- status: MANUAL_LOW_FREQUENCY_OPERATIONS_RUNBOOK_PASS
+- mode: manual_confirmed_low_frequency_execution_only
+- before-request steps: 8
+- during-request steps: 6
+- after-request steps: 7
+- stop conditions: 12
+- secret read: NO
+- Telegram sent by validator: NO
 - production request sent: NO
 - go-live: NO-GO
 - live trading: NO-GO

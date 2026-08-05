@@ -62,6 +62,12 @@ CLOUD_OPERATIONS_EVIDENCE_LAYOUT_AUDIT_REPORT = (
 POST_PRODUCTION_ALERT_POLICY_VALIDATION_REPORT = (
     REPORTS_DIR / "post_production_alert_policy_validation.json"
 )
+MANUAL_LOW_FREQUENCY_OPERATIONS_POLICY_REPORT = (
+    REPORTS_DIR / "manual_low_frequency_operations_policy_validation.json"
+)
+MANUAL_LOW_FREQUENCY_OPERATIONS_RUNBOOK_REPORT = (
+    REPORTS_DIR / "manual_low_frequency_operations_runbook_validation.json"
+)
 
 BACKEND_PRECHECK = os.getenv("BACKEND_PRECHECK", "http://127.0.0.1:8000").rstrip("/")
 OPS_DOMAIN = os.getenv("OPS_DOMAIN", "ops.anchor-infra.com")
@@ -918,6 +924,74 @@ def load_post_production_alert_policy_validation() -> dict[str, Any]:
     }
 
 
+def load_manual_low_frequency_operations_policy() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "status": "MANUAL_LOW_FREQUENCY_OPERATIONS_POLICY_UNREADABLE",
+        "policy": {},
+        "checks": {},
+        "evidence": {},
+        "boundary": {
+            "secret_read": "NO",
+            "production_request_sent": "NO",
+            "second_production_request_sent": "NO",
+            "telegram_sent_by_validator": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(
+            MANUAL_LOW_FREQUENCY_OPERATIONS_POLICY_REPORT.read_text(encoding="utf-8")
+        )
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "status": data.get("status", "UNKNOWN"),
+        "policy": data.get("policy") if isinstance(data.get("policy"), dict) else {},
+        "checks": data.get("checks") if isinstance(data.get("checks"), dict) else {},
+        "evidence": data.get("evidence") if isinstance(data.get("evidence"), dict) else {},
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
+def load_manual_low_frequency_operations_runbook() -> dict[str, Any]:
+    fallback = {
+        "result": "UNREADABLE",
+        "status": "MANUAL_LOW_FREQUENCY_OPERATIONS_RUNBOOK_UNREADABLE",
+        "runbook": {},
+        "checks": {},
+        "evidence": {},
+        "boundary": {
+            "secret_read": "NO",
+            "production_request_sent": "NO",
+            "second_production_request_sent": "NO",
+            "telegram_sent_by_validator": "NO",
+            "go_live": "NO-GO",
+            "live_trading": "NO-GO",
+        },
+    }
+    try:
+        data = json.loads(
+            MANUAL_LOW_FREQUENCY_OPERATIONS_RUNBOOK_REPORT.read_text(encoding="utf-8")
+        )
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return {
+        "result": data.get("result", "UNKNOWN"),
+        "status": data.get("status", "UNKNOWN"),
+        "runbook": data.get("runbook") if isinstance(data.get("runbook"), dict) else {},
+        "checks": data.get("checks") if isinstance(data.get("checks"), dict) else {},
+        "evidence": data.get("evidence") if isinstance(data.get("evidence"), dict) else {},
+        "boundary": data.get("boundary") if isinstance(data.get("boundary"), dict) else {},
+    }
+
+
 def build_snapshot() -> tuple[dict[str, Any], int]:
     generated_at = utc_now()
 
@@ -980,6 +1054,12 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     )
     post_production_alert_policy_validation = (
         load_post_production_alert_policy_validation()
+    )
+    manual_low_frequency_operations_policy = (
+        load_manual_low_frequency_operations_policy()
+    )
+    manual_low_frequency_operations_runbook = (
+        load_manual_low_frequency_operations_runbook()
     )
     ops_domain_ingress = ops_domain_ingress_snapshot()
     ops_dashboard = ops_dashboard_snapshot(ops_domain_ingress)
@@ -1054,6 +1134,8 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
         ),
         "cloud_operations_evidence_layout_audit": cloud_operations_evidence_layout_audit,
         "post_production_alert_policy_validation": post_production_alert_policy_validation,
+        "manual_low_frequency_operations_policy": manual_low_frequency_operations_policy,
+        "manual_low_frequency_operations_runbook": manual_low_frequency_operations_runbook,
         "ops_domain_ingress": ops_domain_ingress,
         "ops_dashboard": ops_dashboard,
         "go_live": {
@@ -1294,6 +1376,71 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
                 )
                 != "YES"
             ),
+            "manual_low_frequency_operations_policy_resolved": pass_fail(
+                manual_low_frequency_operations_policy.get("result") == "PASS"
+            ),
+            "manual_low_frequency_operations_policy_requires_operator_authorization": pass_fail(
+                manual_low_frequency_operations_policy.get("policy", {}).get(
+                    "requires_explicit_operator_authorization_per_request"
+                )
+                is True
+            ),
+            "manual_low_frequency_operations_policy_limits_notional": pass_fail(
+                manual_low_frequency_operations_policy.get("policy", {}).get(
+                    "max_notional_per_request"
+                )
+                == 10
+            ),
+            "manual_low_frequency_operations_policy_requires_24h_spacing": pass_fail(
+                int(
+                    manual_low_frequency_operations_policy.get("policy", {}).get(
+                        "min_hours_between_production_requests", 0
+                    )
+                    or 0
+                )
+                >= 24
+            ),
+            "manual_low_frequency_operations_policy_secret_disclosed": pass_fail(
+                manual_low_frequency_operations_policy.get("boundary", {}).get(
+                    "secret_read"
+                )
+                != "YES"
+                and manual_low_frequency_operations_policy.get("boundary", {}).get(
+                    "secret_value_disclosed"
+                )
+                != "YES"
+            ),
+            "manual_low_frequency_operations_runbook_resolved": pass_fail(
+                manual_low_frequency_operations_runbook.get("result") == "PASS"
+            ),
+            "manual_low_frequency_operations_runbook_before_steps_present": pass_fail(
+                int(
+                    manual_low_frequency_operations_runbook.get("runbook", {}).get(
+                        "before_request_steps", 0
+                    )
+                    or 0
+                )
+                >= 1
+            ),
+            "manual_low_frequency_operations_runbook_after_steps_present": pass_fail(
+                int(
+                    manual_low_frequency_operations_runbook.get("runbook", {}).get(
+                        "after_request_steps", 0
+                    )
+                    or 0
+                )
+                >= 1
+            ),
+            "manual_low_frequency_operations_runbook_secret_disclosed": pass_fail(
+                manual_low_frequency_operations_runbook.get("boundary", {}).get(
+                    "secret_read"
+                )
+                != "YES"
+                and manual_low_frequency_operations_runbook.get("boundary", {}).get(
+                    "secret_value_disclosed"
+                )
+                != "YES"
+            ),
             "ops_domain_ingress_resolved": pass_fail(
                 ops_domain_ingress.get("result") == "PASS"
             ),
@@ -1355,6 +1502,8 @@ def markdown(snapshot: dict[str, Any]) -> str:
     post_timer_stability = snapshot["post_production_monitoring_timer_stability"]
     cloud_layout = snapshot["cloud_operations_evidence_layout_audit"]
     alert_policy = snapshot["post_production_alert_policy_validation"]
+    manual_policy = snapshot["manual_low_frequency_operations_policy"]
+    manual_runbook = snapshot["manual_low_frequency_operations_runbook"]
     ops_domain = snapshot["ops_domain_ingress"]
     ops_dashboard = snapshot["ops_dashboard"]
     blockers = "\n".join(f"- {item}" for item in snapshot["go_live"]["blocking_gates"])
@@ -1577,6 +1726,39 @@ Generated at: `{snapshot["generated_at"]}`
 - production request sent: {alert_policy.get("boundary", {}).get("production_request_sent")}
 - go-live: {alert_policy.get("boundary", {}).get("go_live")}
 - live trading: {alert_policy.get("boundary", {}).get("live_trading")}
+
+## Manual Low-Frequency Operations Policy
+
+- result: {manual_policy.get("result")}
+- status: {manual_policy.get("status")}
+- mode: {manual_policy.get("policy", {}).get("mode")}
+- market: {manual_policy.get("policy", {}).get("market")}
+- symbols: {", ".join(manual_policy.get("policy", {}).get("symbols") or []) or "none"}
+- sides: {", ".join(manual_policy.get("policy", {}).get("sides") or []) or "none"}
+- max notional per request: {manual_policy.get("policy", {}).get("max_notional_per_request")}
+- max order count per request: {manual_policy.get("policy", {}).get("max_order_count_per_request")}
+- min hours between production requests: {manual_policy.get("policy", {}).get("min_hours_between_production_requests")}
+- recommended max requests per week: {manual_policy.get("policy", {}).get("recommended_max_requests_per_week")}
+- explicit operator authorization required: {manual_policy.get("policy", {}).get("requires_explicit_operator_authorization_per_request")}
+- secret read: {manual_policy.get("boundary", {}).get("secret_read")}
+- production request sent: {manual_policy.get("boundary", {}).get("production_request_sent")}
+- go-live: {manual_policy.get("boundary", {}).get("go_live")}
+- live trading: {manual_policy.get("boundary", {}).get("live_trading")}
+
+## Manual Low-Frequency Operations Runbook
+
+- result: {manual_runbook.get("result")}
+- status: {manual_runbook.get("status")}
+- mode: {manual_runbook.get("runbook", {}).get("mode")}
+- before-request steps: {manual_runbook.get("runbook", {}).get("before_request_steps")}
+- during-request steps: {manual_runbook.get("runbook", {}).get("during_request_steps")}
+- after-request steps: {manual_runbook.get("runbook", {}).get("after_request_steps")}
+- stop conditions: {manual_runbook.get("runbook", {}).get("stop_conditions")}
+- secret read: {manual_runbook.get("boundary", {}).get("secret_read")}
+- Telegram sent by validator: {manual_runbook.get("boundary", {}).get("telegram_sent_by_validator")}
+- production request sent: {manual_runbook.get("boundary", {}).get("production_request_sent")}
+- go-live: {manual_runbook.get("boundary", {}).get("go_live")}
+- live trading: {manual_runbook.get("boundary", {}).get("live_trading")}
 
 ## Ops Domain Ingress
 
@@ -1844,6 +2026,26 @@ def main() -> int:
     print(
         "post_production_alert_policy_repeated_active_send: "
         f"{snapshot['post_production_alert_policy_validation'].get('policy', {}).get('repeated_active_telegram_send')}"
+    )
+    print(
+        "manual_low_frequency_operations_policy: "
+        f"{snapshot['manual_low_frequency_operations_policy'].get('result')}"
+    )
+    print(
+        "manual_low_frequency_max_notional: "
+        f"{snapshot['manual_low_frequency_operations_policy'].get('policy', {}).get('max_notional_per_request')}"
+    )
+    print(
+        "manual_low_frequency_min_hours_between_requests: "
+        f"{snapshot['manual_low_frequency_operations_policy'].get('policy', {}).get('min_hours_between_production_requests')}"
+    )
+    print(
+        "manual_low_frequency_operations_runbook: "
+        f"{snapshot['manual_low_frequency_operations_runbook'].get('result')}"
+    )
+    print(
+        "manual_low_frequency_operator_authorization_required: "
+        f"{str(snapshot['manual_low_frequency_operations_policy'].get('policy', {}).get('requires_explicit_operator_authorization_per_request')).lower()}"
     )
     print(f"ops_domain_ingress: {snapshot['ops_domain_ingress'].get('result')}")
     print(f"ops_domain_dns: {snapshot['ops_domain_ingress'].get('dns_result')}")

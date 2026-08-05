@@ -87,6 +87,43 @@ class StaticOpsDashboardTest(unittest.TestCase):
                 reports / "post_production_operations_decision.json",
                 {"result": "PASS", "next_gate": "POST_PRODUCTION_MONITORING_DASHBOARD_OR_FREEZE_DECISION"},
             )
+            write_json(
+                reports / "manual_low_frequency_operations_policy_validation.json",
+                {
+                    "result": "PASS",
+                    "status": "MANUAL_LOW_FREQUENCY_OPERATIONS_POLICY_PASS",
+                    "policy": {
+                        "mode": "manual_confirmed_low_frequency_only",
+                        "symbols": ["BTCUSDT"],
+                        "sides": ["BUY_ONLY"],
+                        "max_notional_per_request": 10,
+                        "min_hours_between_production_requests": 24,
+                        "recommended_max_requests_per_week": 3,
+                        "requires_explicit_operator_authorization_per_request": True,
+                    },
+                    "boundary": {
+                        "secret_read": "NO",
+                        "production_request_sent": "NO",
+                    },
+                },
+            )
+            write_json(
+                reports / "manual_low_frequency_operations_runbook_validation.json",
+                {
+                    "result": "PASS",
+                    "status": "MANUAL_LOW_FREQUENCY_OPERATIONS_RUNBOOK_PASS",
+                    "runbook": {
+                        "mode": "manual_confirmed_low_frequency_execution_only",
+                        "before_request_steps": 8,
+                        "after_request_steps": 7,
+                    },
+                    "boundary": {
+                        "secret_read": "NO",
+                        "telegram_sent_by_validator": "NO",
+                        "production_request_sent": "NO",
+                    },
+                },
+            )
 
             summary = module.sanitize_summary(reports)
             html = module.render_html(summary)
@@ -96,6 +133,12 @@ class StaticOpsDashboardTest(unittest.TestCase):
         self.assertEqual(summary["telegram"]["send_result"], "YES")
         self.assertEqual(summary["telegram"]["status"], "POST_PRODUCTION_TELEGRAM_CHANNEL_DELIVERY_CONFIRMED")
         self.assertEqual(validation["result"], "PASS")
+        self.assertEqual(summary["manual_low_frequency"]["policy_result"], "PASS")
+        self.assertEqual(summary["manual_low_frequency"]["runbook_result"], "PASS")
+        self.assertEqual(summary["manual_low_frequency"]["max_notional_per_request"], 10)
+        self.assertEqual(summary["manual_low_frequency"]["min_hours_between_requests"], 24)
+        self.assertIn("Manual Ops", html)
+        self.assertIn("operator_authorization_required", html)
         self.assertNotIn("do-not-render", html)
         self.assertNotIn("TELEGRAM_BOT_TOKEN", html)
         self.assertNotIn("Authorization", html)
