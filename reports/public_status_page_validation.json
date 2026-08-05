@@ -1,0 +1,21 @@
+{
+  "boundary": {
+    "canary_rerun": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_request_sent": "NO",
+    "secret_disclosed": "NO",
+    "secret_read": "NO"
+  },
+  "checks": {
+    "forbidden_fragments_absent": "PASS",
+    "html_generated": "PASS",
+    "live_trading_not_open": "PASS",
+    "no_execution_controls": "PASS",
+    "public_message_present": "PASS",
+    "public_status_payload_embedded": "PASS"
+  },
+  "forbidden_hits": [],
+  "generated_at": "2026-08-05T08:56:49Z",
+  "result": "PASS"
+}
