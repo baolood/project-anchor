@@ -15,6 +15,24 @@ spec.loader.exec_module(module)
 
 
 class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
+    def test_overall_status_treats_legacy_testnet_gap_as_warning_after_production(self):
+        status = module.determine_overall_status(
+            active_hard_failures=[False, False, False],
+            historical_evidence_warnings=[True, True],
+            go_live_blockers=[],
+        )
+
+        self.assertEqual(status, "WARN")
+
+    def test_overall_status_keeps_current_runtime_health_failures_hard_failed(self):
+        status = module.determine_overall_status(
+            active_hard_failures=[False, True, False],
+            historical_evidence_warnings=[False, False],
+            go_live_blockers=[],
+        )
+
+        self.assertEqual(status, "FAIL")
+
     def test_post_production_alerting_loaders_preserve_non_secret_status(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)

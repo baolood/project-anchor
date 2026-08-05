@@ -318,6 +318,19 @@ def pass_fail(value: bool) -> str:
     return "PASS" if value else "FAIL"
 
 
+def determine_overall_status(
+    *,
+    active_hard_failures: list[bool],
+    historical_evidence_warnings: list[bool],
+    go_live_blockers: list[str],
+) -> str:
+    if any(active_hard_failures):
+        return "FAIL"
+    if any(historical_evidence_warnings) or go_live_blockers:
+        return "WARN"
+    return "PASS"
+
+
 def load_production_execution_readiness() -> dict[str, Any]:
     fallback = {
         "result": "UNREADABLE",
@@ -1065,19 +1078,20 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
     ops_dashboard = ops_dashboard_snapshot(ops_domain_ingress)
     production_execution_ready = production_execution_readiness.get("result") == "PASS"
 
-    hard_failures = [
+    active_hard_failures = [
         not backend_ok,
         not worker_health,
         not kill_switch_safe,
+    ]
+    historical_evidence_warnings = [
         not controlled_ok,
         not canary_ok,
     ]
-    if any(hard_failures):
-        overall_status = "FAIL"
-    elif GO_LIVE_BLOCKERS:
-        overall_status = "WARN"
-    else:
-        overall_status = "PASS"
+    overall_status = determine_overall_status(
+        active_hard_failures=active_hard_failures,
+        historical_evidence_warnings=historical_evidence_warnings,
+        go_live_blockers=GO_LIVE_BLOCKERS,
+    )
 
     snapshot = {
         "generated_at": generated_at,
@@ -1143,6 +1157,12 @@ def build_snapshot() -> tuple[dict[str, Any], int]:
             "blocking_gates": GO_LIVE_BLOCKERS,
         },
         "evidence_resolution": {
+            "active_operations_status": "PASS"
+            if not any(active_hard_failures)
+            else "FAIL",
+            "historical_testnet_evidence_status": "WARN"
+            if any(historical_evidence_warnings)
+            else "PASS",
             "source_endpoints_readable": pass_fail(health_ok and state_ok and worker_ok),
             "controlled_request_evidence_resolved": pass_fail(controlled_ok),
             "controlled_request_error": controlled_error,

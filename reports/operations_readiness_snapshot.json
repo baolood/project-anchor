@@ -73,6 +73,7 @@
     }
   },
   "evidence_resolution": {
+    "active_operations_status": "PASS",
     "canary_error": null,
     "canary_evidence_resolved": "PASS",
     "cloud_operations_evidence_layout_audit_resolved": "PASS",
@@ -83,6 +84,7 @@
     "controlled_request_error": null,
     "controlled_request_evidence_resolved": "PASS",
     "go_live_blockers_explicit": "PASS",
+    "historical_testnet_evidence_status": "PASS",
     "manual_low_frequency_operations_policy_limits_notional": "PASS",
     "manual_low_frequency_operations_policy_requires_24h_spacing": "PASS",
     "manual_low_frequency_operations_policy_requires_operator_authorization": "PASS",
@@ -154,7 +156,7 @@
     "production_unsigned_canonical_payload_sendable": "FAIL",
     "source_endpoints_readable": "PASS"
   },
-  "generated_at": "2026-08-05T07:24:34Z",
+  "generated_at": "2026-08-05T08:12:01Z",
   "go_live": {
     "blocking_gates": [
       "production credential access not authorized",
@@ -172,7 +174,7 @@
     "backend_error": null,
     "worker": "PASS",
     "worker_error": null,
-    "worker_heartbeat_at": "2026-08-05T07:24:06.500205+00:00"
+    "worker_heartbeat_at": "2026-08-05T08:11:34.607778+00:00"
   },
   "latest_canary": {
     "attempt": 1,
