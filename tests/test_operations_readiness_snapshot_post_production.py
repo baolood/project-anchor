@@ -328,6 +328,83 @@ class OperationsReadinessSnapshotPostProductionTest(unittest.TestCase):
         self.assertEqual(policy["boundary"]["telegram_http_attempted"], "NO")
         self.assertEqual(policy["boundary"]["secret_value_disclosed"], "NO")
 
+    def test_manual_low_frequency_operations_loaders_preserve_read_only_policy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            policy_path = tmp_path / "manual_low_frequency_operations_policy_validation.json"
+            runbook_path = tmp_path / "manual_low_frequency_operations_runbook_validation.json"
+            policy_path.write_text(
+                json.dumps(
+                    {
+                        "result": "PASS",
+                        "status": "MANUAL_LOW_FREQUENCY_OPERATIONS_POLICY_PASS",
+                        "policy": {
+                            "mode": "manual_confirmed_low_frequency_only",
+                            "market": "binance_spot",
+                            "symbols": ["BTCUSDT"],
+                            "sides": ["BUY_ONLY"],
+                            "max_notional_per_request": 10,
+                            "min_hours_between_production_requests": 24,
+                            "requires_explicit_operator_authorization_per_request": True,
+                        },
+                        "checks": {"explicit_operator_authorization_required": "PASS"},
+                        "boundary": {
+                            "secret_read": "NO",
+                            "production_request_sent": "NO",
+                            "second_production_request_sent": "NO",
+                            "go_live": "NO-GO",
+                            "live_trading": "NO-GO",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            runbook_path.write_text(
+                json.dumps(
+                    {
+                        "result": "PASS",
+                        "status": "MANUAL_LOW_FREQUENCY_OPERATIONS_RUNBOOK_PASS",
+                        "runbook": {
+                            "mode": "manual_confirmed_low_frequency_execution_only",
+                            "before_request_steps": 8,
+                            "during_request_steps": 6,
+                            "after_request_steps": 7,
+                            "stop_conditions": 12,
+                        },
+                        "checks": {"policy_validation_pass": "PASS"},
+                        "boundary": {
+                            "secret_read": "NO",
+                            "telegram_sent_by_validator": "NO",
+                            "production_request_sent": "NO",
+                            "go_live": "NO-GO",
+                            "live_trading": "NO-GO",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            old_policy = module.MANUAL_LOW_FREQUENCY_OPERATIONS_POLICY_REPORT
+            old_runbook = module.MANUAL_LOW_FREQUENCY_OPERATIONS_RUNBOOK_REPORT
+            module.MANUAL_LOW_FREQUENCY_OPERATIONS_POLICY_REPORT = policy_path
+            module.MANUAL_LOW_FREQUENCY_OPERATIONS_RUNBOOK_REPORT = runbook_path
+            try:
+                policy = module.load_manual_low_frequency_operations_policy()
+                runbook = module.load_manual_low_frequency_operations_runbook()
+            finally:
+                module.MANUAL_LOW_FREQUENCY_OPERATIONS_POLICY_REPORT = old_policy
+                module.MANUAL_LOW_FREQUENCY_OPERATIONS_RUNBOOK_REPORT = old_runbook
+
+        self.assertEqual(policy["result"], "PASS")
+        self.assertEqual(policy["policy"]["max_notional_per_request"], 10)
+        self.assertEqual(policy["policy"]["min_hours_between_production_requests"], 24)
+        self.assertIs(policy["policy"]["requires_explicit_operator_authorization_per_request"], True)
+        self.assertEqual(policy["boundary"]["secret_read"], "NO")
+        self.assertEqual(policy["boundary"]["production_request_sent"], "NO")
+        self.assertEqual(runbook["result"], "PASS")
+        self.assertEqual(runbook["runbook"]["before_request_steps"], 8)
+        self.assertEqual(runbook["boundary"]["telegram_sent_by_validator"], "NO")
+        self.assertEqual(runbook["boundary"]["production_request_sent"], "NO")
 
 
 if __name__ == "__main__":
