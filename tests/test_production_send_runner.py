@@ -8,8 +8,13 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "anchor-backend"))
 
-from app.executors.production_send_runner import run_final_production_send  # noqa: E402
+from app.executors.production_send_runner import (  # noqa: E402
+    run_final_production_send,
+    run_next_manual_low_frequency_production_send,
+)
 from app.trade_gate_production import (  # noqa: E402
+    NEXT_MANUAL_LOW_FREQUENCY_PRODUCTION_IDEMPOTENCY_KEY,
+    NEXT_MANUAL_LOW_FREQUENCY_REQUEST_SEND_GATE_REQUIRED_VERDICT,
     PRODUCTION_IDEMPOTENCY_KEY,
     PRODUCTION_REQUEST_SEND_GATE_REQUIRED_VERDICT,
 )
@@ -69,6 +74,23 @@ def _gate_config():
             PRODUCTION_REQUEST_SEND_GATE_REQUIRED_VERDICT
         ),
     }
+
+
+def _next_manual_body():
+    body = _body()
+    body["idempotency_key"] = NEXT_MANUAL_LOW_FREQUENCY_PRODUCTION_IDEMPOTENCY_KEY
+    return body
+
+
+def _next_manual_gate_config():
+    config = _gate_config()
+    config["PRODUCTION_REQUEST_SEND_IDEMPOTENCY_KEY"] = (
+        NEXT_MANUAL_LOW_FREQUENCY_PRODUCTION_IDEMPOTENCY_KEY
+    )
+    config["FINAL_PRODUCTION_REQUEST_SEND_OPERATOR_VERDICT"] = (
+        NEXT_MANUAL_LOW_FREQUENCY_REQUEST_SEND_GATE_REQUIRED_VERDICT
+    )
+    return config
 
 
 def _fixture_env():
@@ -152,6 +174,32 @@ class ProductionSendRunnerTest(unittest.TestCase):
         self.assertNotIn("fixture-production-secret", str(outcome))
         self.assertNotIn("fixture-production-key-id", str(outcome))
         self.assertNotIn("signature=", str(outcome))
+
+    def test_next_manual_runner_uses_distinct_gate_and_key(self):
+        fake_opener = _FakeOpener()
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8") as tmp:
+            tmp.write(_fixture_env())
+            tmp.flush()
+
+            outcome, requested_payload, terminal_type, terminal_payload = (
+                run_next_manual_low_frequency_production_send(
+                    _next_manual_body(),
+                    _next_manual_gate_config(),
+                    tmp.name,
+                    1234567890,
+                    now=datetime(2026, 7, 22, 8, 0, tzinfo=timezone.utc),
+                    execute=True,
+                    credential_read_enabled=True,
+                    opener=fake_opener,
+                )
+            )
+
+        self.assertTrue(outcome["ok"])
+        self.assertEqual(len(fake_opener.calls), 1)
+        self.assertEqual(terminal_type, "PRODUCTION_HTTP_RESPONSE")
+        self.assertEqual(terminal_payload["external_status"], "FILLED")
+        self.assertTrue(requested_payload["sendable"])
+        self.assertNotIn("fixture-production-secret", str(outcome))
 
 
 if __name__ == "__main__":

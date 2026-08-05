@@ -8,16 +8,21 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "anchor-backend"))
 
 from app.trade_gate_production import (  # noqa: E402
+    NEXT_MANUAL_LOW_FREQUENCY_PRODUCTION_IDEMPOTENCY_KEY,
+    NEXT_MANUAL_LOW_FREQUENCY_REQUEST_SEND_GATE_REQUIRED_VERDICT,
     PRODUCTION_COMMAND_TYPE,
     PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT,
     PRODUCTION_IDEMPOTENCY_KEY,
     PRODUCTION_REQUEST_SEND_GATE_REQUIRED_VERDICT,
+    next_manual_low_frequency_production_order_send_decision_response,
+    next_manual_low_frequency_production_request_send_gate_decision,
     production_order_command_creation_candidate_response,
     production_order_command_creation_payload,
     production_order_send_decision_response,
     production_execution_gate_decision,
     production_order_blocked_response,
     production_request_send_gate_decision,
+    validate_next_manual_low_frequency_production_order_request,
     validate_production_order_request,
 )
 
@@ -37,7 +42,21 @@ def _valid_production_body(**overrides):
     return body
 
 
+def _valid_next_manual_body(**overrides):
+    body = _valid_production_body(
+        idempotency_key=NEXT_MANUAL_LOW_FREQUENCY_PRODUCTION_IDEMPOTENCY_KEY
+    )
+    body.update(overrides)
+    return body
+
+
 class ProductionTradeGateFailClosedTest(unittest.TestCase):
+    def test_next_manual_key_is_distinct_from_first_production_key(self):
+        self.assertNotEqual(
+            NEXT_MANUAL_LOW_FREQUENCY_PRODUCTION_IDEMPOTENCY_KEY,
+            PRODUCTION_IDEMPOTENCY_KEY,
+        )
+
     def test_valid_production_shape_is_accepted_by_validator(self):
         ok, reason = validate_production_order_request(_valid_production_body())
 
@@ -67,6 +86,21 @@ class ProductionTradeGateFailClosedTest(unittest.TestCase):
 
         self.assertFalse(ok)
         self.assertEqual(reason, "FORBIDDEN_FIELD:api_secret")
+
+    def test_next_manual_validator_accepts_next_key_and_rejects_first_key(self):
+        ok, reason = validate_next_manual_low_frequency_production_order_request(
+            _valid_next_manual_body()
+        )
+
+        self.assertTrue(ok)
+        self.assertIsNone(reason)
+
+        ok, reason = validate_next_manual_low_frequency_production_order_request(
+            _valid_next_manual_body(idempotency_key=PRODUCTION_IDEMPOTENCY_KEY)
+        )
+
+        self.assertFalse(ok)
+        self.assertEqual(reason, "PRODUCTION_IDEMPOTENCY_KEY_INVALID")
 
     def test_blocked_response_never_contains_command_id(self):
         payload = production_order_blocked_response()
@@ -152,6 +186,86 @@ class ProductionTradeGateFailClosedTest(unittest.TestCase):
         self.assertTrue(decision["checks"]["live_trading_not_authorized"])
         self.assertFalse(decision["go_live_allowed"])
         self.assertFalse(decision["live_trading_allowed"])
+
+    def test_next_manual_send_gate_accepts_only_next_manual_verdict_and_key(self):
+        decision = next_manual_low_frequency_production_request_send_gate_decision(
+            {
+                "AUTHORIZED_PRODUCTION_REQUEST_SEND": "YES",
+                "AUTHORIZED_PRODUCTION_CREDENTIAL_ACCESS": "YES",
+                "AUTHORIZED_PRODUCTION_SIGNING": "YES",
+                "AUTHORIZED_PRODUCTION_HTTP_NETWORK": "YES",
+                "AUTHORIZED_GO_LIVE": "NO",
+                "AUTHORIZED_LIVE_TRADING": "NO",
+                "PRODUCTION_REQUEST_SEND_WINDOW_OPEN": True,
+                "PRODUCTION_REQUEST_SEND_WINDOW_EXPIRES_AT": "2026-07-22T09:00:00Z",
+                "PRODUCTION_REQUEST_SEND_NO_RETRY": True,
+                "PRODUCTION_REQUEST_SEND_IDEMPOTENCY_KEY": (
+                    NEXT_MANUAL_LOW_FREQUENCY_PRODUCTION_IDEMPOTENCY_KEY
+                ),
+                "FINAL_PRODUCTION_REQUEST_SEND_OPERATOR_VERDICT": (
+                    NEXT_MANUAL_LOW_FREQUENCY_REQUEST_SEND_GATE_REQUIRED_VERDICT
+                ),
+            },
+            now=datetime(2026, 7, 22, 8, 0, tzinfo=timezone.utc),
+        )
+
+        self.assertTrue(decision["authorized"])
+        self.assertEqual(decision["required_verdict"], NEXT_MANUAL_LOW_FREQUENCY_REQUEST_SEND_GATE_REQUIRED_VERDICT)
+
+        old_key_decision = next_manual_low_frequency_production_request_send_gate_decision(
+            {
+                "AUTHORIZED_PRODUCTION_REQUEST_SEND": "YES",
+                "AUTHORIZED_PRODUCTION_CREDENTIAL_ACCESS": "YES",
+                "AUTHORIZED_PRODUCTION_SIGNING": "YES",
+                "AUTHORIZED_PRODUCTION_HTTP_NETWORK": "YES",
+                "AUTHORIZED_GO_LIVE": "NO",
+                "AUTHORIZED_LIVE_TRADING": "NO",
+                "PRODUCTION_REQUEST_SEND_WINDOW_OPEN": True,
+                "PRODUCTION_REQUEST_SEND_WINDOW_EXPIRES_AT": "2026-07-22T09:00:00Z",
+                "PRODUCTION_REQUEST_SEND_NO_RETRY": True,
+                "PRODUCTION_REQUEST_SEND_IDEMPOTENCY_KEY": PRODUCTION_IDEMPOTENCY_KEY,
+                "FINAL_PRODUCTION_REQUEST_SEND_OPERATOR_VERDICT": (
+                    NEXT_MANUAL_LOW_FREQUENCY_REQUEST_SEND_GATE_REQUIRED_VERDICT
+                ),
+            },
+            now=datetime(2026, 7, 22, 8, 0, tzinfo=timezone.utc),
+        )
+
+        self.assertFalse(old_key_decision["authorized"])
+        self.assertFalse(old_key_decision["checks"]["idempotency_key_matches"])
+
+    def test_next_manual_send_decision_uses_separate_transport_key(self):
+        gate = next_manual_low_frequency_production_request_send_gate_decision(
+            {
+                "AUTHORIZED_PRODUCTION_REQUEST_SEND": "YES",
+                "AUTHORIZED_PRODUCTION_CREDENTIAL_ACCESS": "YES",
+                "AUTHORIZED_PRODUCTION_SIGNING": "YES",
+                "AUTHORIZED_PRODUCTION_HTTP_NETWORK": "YES",
+                "AUTHORIZED_GO_LIVE": "NO",
+                "AUTHORIZED_LIVE_TRADING": "NO",
+                "PRODUCTION_REQUEST_SEND_WINDOW_OPEN": True,
+                "PRODUCTION_REQUEST_SEND_WINDOW_EXPIRES_AT": "2026-07-22T09:00:00Z",
+                "PRODUCTION_REQUEST_SEND_NO_RETRY": True,
+                "PRODUCTION_REQUEST_SEND_IDEMPOTENCY_KEY": (
+                    NEXT_MANUAL_LOW_FREQUENCY_PRODUCTION_IDEMPOTENCY_KEY
+                ),
+                "FINAL_PRODUCTION_REQUEST_SEND_OPERATOR_VERDICT": (
+                    NEXT_MANUAL_LOW_FREQUENCY_REQUEST_SEND_GATE_REQUIRED_VERDICT
+                ),
+            },
+            now=datetime(2026, 7, 22, 8, 0, tzinfo=timezone.utc),
+        )
+
+        response = next_manual_low_frequency_production_order_send_decision_response(
+            _valid_next_manual_body(),
+            gate,
+        )
+
+        self.assertEqual(response["status"], "ready_for_exactly_one_send")
+        self.assertEqual(
+            response["transport_input"]["idempotency_key"],
+            NEXT_MANUAL_LOW_FREQUENCY_PRODUCTION_IDEMPOTENCY_KEY,
+        )
 
     def test_request_send_gate_rejects_expired_window(self):
         decision = production_request_send_gate_decision(
