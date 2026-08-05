@@ -1,0 +1,33 @@
+{
+  "POLICY_NAME": "manual_low_frequency_operations_v1",
+  "POLICY_MODE": "manual_confirmed_low_frequency_only",
+  "AUTHORIZED_MARKET": "binance_spot",
+  "AUTHORIZED_SYMBOLS": ["BTCUSDT"],
+  "AUTHORIZED_SIDES": ["BUY_ONLY"],
+  "MAX_NOTIONAL_PER_REQUEST": 10,
+  "MAX_ORDER_COUNT_PER_REQUEST": 1,
+  "MAX_REQUESTS_PER_WINDOW": 1,
+  "MIN_HOURS_BETWEEN_PRODUCTION_REQUESTS": 24,
+  "RECOMMENDED_MAX_REQUESTS_PER_WEEK": 3,
+  "REQUIRES_EXPLICIT_OPERATOR_AUTHORIZATION_PER_REQUEST": true,
+  "REQUIRES_FRESH_PRE_SEND_READINESS": true,
+  "REQUIRES_POST_SEND_RECONCILIATION": true,
+  "REQUIRES_POST_SEND_OBSERVATION_HOURS": 24,
+  "ALLOW_AUTOMATIC_RETRY": false,
+  "ALLOW_SECOND_REQUEST_IN_SAME_WINDOW": false,
+  "ALLOW_AUTOMATIC_TRADING": false,
+  "ALLOW_AUTOMATIC_POSITION_MANAGEMENT": false,
+  "ALLOW_GO_LIVE": false,
+  "ALLOW_LIVE_TRADING": false,
+  "STOP_CONDITIONS": [
+    "monitoring_not_pass",
+    "telegram_not_ready",
+    "reconciliation_not_pass",
+    "unresolved_alert_present",
+    "duplicate_or_second_request_risk",
+    "secret_disclosure_risk",
+    "unexpected_exchange_response",
+    "operator_authorization_missing"
+  ],
+  "FINAL_OPERATOR_VERDICT": "APPROVED_FOR_MANUAL_LOW_FREQUENCY_OPERATIONS_POLICY_ONLY"
+}

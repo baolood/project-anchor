@@ -1,0 +1,47 @@
+{
+  "boundary": {
+    "canary_rerun": "NO",
+    "credential_file_read": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_http_network_attempted": "NO",
+    "production_request_sent": "NO",
+    "production_signing_executed": "NO",
+    "second_production_request_sent": "NO",
+    "secret_read": "NO",
+    "telegram_sent_by_validator": "NO"
+  },
+  "checks": {
+    "after_request_complete": "PASS",
+    "before_request_complete": "PASS",
+    "during_request_complete": "PASS",
+    "monitoring_pass_or_available": "PASS",
+    "operator_verdict_runbook_only": "PASS",
+    "policy_file_linked": "PASS",
+    "policy_validation_pass": "PASS",
+    "post_send_reconciliation_pass": "PASS",
+    "prohibited_actions_complete": "PASS",
+    "runbook_mode_manual_confirmed": "PASS",
+    "stop_conditions_complete": "PASS",
+    "telegram_channel_evidence_pass_or_available": "PASS"
+  },
+  "evidence": {
+    "policy_validation": "PASS",
+    "post_production_monitoring": "PASS",
+    "post_send_reconciliation": "PASS",
+    "telegram_channel_evidence": "PASS"
+  },
+  "generated_at": "2026-08-05T06:34:06Z",
+  "input_file": "config/manual_low_frequency_operations_runbook.json",
+  "next_single_task": "merge_manual_low_frequency_operations_policy_and_runbook",
+  "result": "PASS",
+  "runbook": {
+    "after_request_steps": 7,
+    "before_request_steps": 8,
+    "during_request_steps": 6,
+    "mode": "manual_confirmed_low_frequency_execution_only",
+    "policy_file": "config/manual_low_frequency_operations_policy.json",
+    "stop_conditions": 12
+  },
+  "status": "MANUAL_LOW_FREQUENCY_OPERATIONS_RUNBOOK_PASS"
+}
