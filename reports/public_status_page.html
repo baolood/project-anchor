@@ -72,7 +72,7 @@
           <div class="fact"><strong>Mode</strong>Manual review only</div>
           <div class="fact"><strong>Alerts</strong>PASS</div>
           <div class="fact"><strong>Observation</strong>PASS</div>
-          <div class="fact"><strong>Next step</strong>Observe or approve the next manual operation</div>
+          <div class="fact"><strong>Next step</strong>READY_FOR_OPERATOR_DECISION</div>
         </div>
       </section>
       <footer>This public page is informational only. It contains no secrets, no order identifiers, no account balances, and no execution controls.</footer>
@@ -89,11 +89,13 @@
     "new_production_request_sent_by_page": "NO",
     "secret_disclosed": "NO"
   },
-  "generated_at": "2026-08-05T08:56:49Z",
+  "generated_at": "2026-08-05T10:10:11Z",
   "manual_operations": {
+    "eligibility": "READY_FOR_OPERATOR_DECISION",
     "minimum_interval_hours": 24,
     "operator_authorization_required": true,
-    "policy": "LOW_FREQUENCY_MANUAL_CONFIRMATION"
+    "policy": "LOW_FREQUENCY_MANUAL_CONFIRMATION",
+    "production_send_authorization_granted": "NO"
   },
   "monitoring": "PASS",
   "observation_window": "PASS",
@@ -101,7 +103,7 @@
   "project": "Project Anchor",
   "public_message": {
     "headline": "Project Anchor is in monitored observation mode.",
-    "next_step": "Continue observation or approve the next manual low-frequency operation.",
+    "next_step": "Continue observation or make a separate manual low-frequency operator decision.",
     "summary": "The first production validation has completed, monitoring is active, and live trading remains closed until a separate operator decision."
   },
   "public_status": "OBSERVATION_ACTIVE",

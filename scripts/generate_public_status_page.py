@@ -62,6 +62,7 @@ def public_summary(reports_dir: Path) -> dict[str, Any]:
     send = load_json(reports_dir / "production_exactly_one_send_result.json")
     reconciliation = load_json(reports_dir / "production_post_send_readonly_reconciliation.json")
     telegram = load_json(reports_dir / "post_production_telegram_channel_evidence.json")
+    next_manual_eligibility = load_json(reports_dir / "next_manual_operation_eligibility.json")
 
     production_validation = "COMPLETE" if nested(send, "terminal", "external_status") == "FILLED" else "OBSERVING"
     reconciliation_status = "PASS" if reconciliation.get("result") == "PASS" else "OBSERVING"
@@ -94,12 +95,18 @@ def public_summary(reports_dir: Path) -> dict[str, Any]:
                 policy, "manual_low_frequency_operations_policy", "policy", "min_hours_between_production_requests",
                 default=nested(policy, "policy", "min_hours_between_production_requests"),
             ),
+            "eligibility": (
+                "READY_FOR_OPERATOR_DECISION"
+                if next_manual_eligibility.get("result") == "PASS"
+                else "OBSERVING"
+            ),
             "operator_authorization_required": True,
+            "production_send_authorization_granted": "NO",
         },
         "public_message": {
             "headline": "Project Anchor is in monitored observation mode.",
             "summary": "The first production validation has completed, monitoring is active, and live trading remains closed until a separate operator decision.",
-            "next_step": "Continue observation or approve the next manual low-frequency operation.",
+            "next_step": "Continue observation or make a separate manual low-frequency operator decision.",
         },
         "boundary": {
             "secret_disclosed": "NO",
@@ -191,7 +198,7 @@ def render_html(summary: dict[str, Any]) -> str:
           <div class="fact"><strong>Mode</strong>Manual review only</div>
           <div class="fact"><strong>Alerts</strong>{summary["alerts"]}</div>
           <div class="fact"><strong>Observation</strong>{summary["observation_window"]}</div>
-          <div class="fact"><strong>Next step</strong>Observe or approve the next manual operation</div>
+          <div class="fact"><strong>Next step</strong>{summary["manual_operations"]["eligibility"]}</div>
         </div>
       </section>
       <footer>This public page is informational only. It contains no secrets, no order identifiers, no account balances, and no execution controls.</footer>

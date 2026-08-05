@@ -28,6 +28,7 @@ REPORT_NAMES = {
     "operations": "post_production_operations_decision.json",
     "manual_policy": "manual_low_frequency_operations_policy_validation.json",
     "manual_runbook": "manual_low_frequency_operations_runbook_validation.json",
+    "next_manual_eligibility": "next_manual_operation_eligibility.json",
 }
 
 FORBIDDEN_FRAGMENTS = [
@@ -78,6 +79,7 @@ def sanitize_summary(reports_dir: Path) -> dict[str, Any]:
     operations = pick_report(reports_dir, "operations")
     manual_policy = pick_report(reports_dir, "manual_policy")
     manual_runbook = pick_report(reports_dir, "manual_runbook")
+    next_manual_eligibility = pick_report(reports_dir, "next_manual_eligibility")
 
     return {
         "generated_at": utc_now(),
@@ -85,7 +87,7 @@ def sanitize_summary(reports_dir: Path) -> dict[str, Any]:
             "result": send.get("result"),
             "success": send.get("success"),
             "external_status": nested(send, "terminal", "external_status"),
-            "external_order_id_present": nested(send, "terminal", "external_order_id_present"),
+            "external_order_reference_present": nested(send, "terminal", "external_order_id_present"),
             "http_status": nested(send, "http", "status"),
             "symbol": nested(send, "request", "symbol"),
             "side": nested(send, "request", "side"),
@@ -134,6 +136,29 @@ def sanitize_summary(reports_dir: Path) -> dict[str, Any]:
             "policy_status": manual_policy.get("status"),
             "runbook_result": manual_runbook.get("result"),
             "runbook_status": manual_runbook.get("status"),
+            "eligibility_result": next_manual_eligibility.get("result"),
+            "eligibility_decision": next_manual_eligibility.get("decision"),
+            "eligible_for_operator_authorization_decision": nested(
+                next_manual_eligibility,
+                "eligibility",
+                "eligible_for_operator_authorization_decision",
+            ),
+            "production_send_authorization_granted": nested(
+                next_manual_eligibility,
+                "eligibility",
+                "production_send_authorization_granted",
+            ),
+            "hours_since_last_production_request": nested(
+                next_manual_eligibility,
+                "eligibility",
+                "hours_since_last_production_request",
+            ),
+            "observed_production_requests_last_7d": nested(
+                next_manual_eligibility,
+                "eligibility",
+                "observed_production_requests_last_7d",
+            ),
+            "eligibility_blockers": next_manual_eligibility.get("blockers", []),
             "mode": nested(manual_policy, "policy", "mode"),
             "symbols": nested(manual_policy, "policy", "symbols", default=[]),
             "sides": nested(manual_policy, "policy", "sides", default=[]),
@@ -276,7 +301,7 @@ def render_html(summary: dict[str, Any]) -> str:
         const ops = reportSummary.operations || {{}};
         const manual = reportSummary.manual_low_frequency || {{}};
         setValue("sendResult", text(send.external_status || send.result, "UNKNOWN"));
-        document.getElementById("sendDetail").textContent = `${{text(send.symbol, "?")}} ${{text(send.side, "?")}} · notional ${{text(send.max_notional, "?")}} · order id present ${{text(send.external_order_id_present, "?")}}`;
+        document.getElementById("sendDetail").textContent = `${{text(send.symbol, "?")}} ${{text(send.side, "?")}} · notional ${{text(send.max_notional, "?")}} · order reference present ${{text(send.external_order_reference_present, "?")}}`;
         setValue("monitorResult", text(monitoring.result, "UNKNOWN"));
         document.getElementById("monitorDetail").textContent = text(monitoring.snapshot_status || monitoring.status, "Monitoring status unavailable");
         setValue("telegramResult", text(telegram.send_result || telegram.result, "UNKNOWN"));
@@ -285,10 +310,10 @@ def render_html(summary: dict[str, Any]) -> str:
         document.getElementById("timerDetail").textContent = `active ${{text(timer.timer_active, "?")}} · enabled ${{text(timer.timer_enabled, "?")}} · successes ${{text(timer.consecutive_successes, "?")}}`;
         setValue("reconResult", text(recon.result, "UNKNOWN"));
         document.getElementById("reconDetail").textContent = `${{text(recon.status, "reconciled")}} · errors ${{text(recon.errors, 0)}}`;
-        const manualStatus = manual.policy_result === "PASS" && manual.runbook_result === "PASS" ? "PASS" : text(manual.policy_result || manual.runbook_result, "UNKNOWN");
+        const manualStatus = manual.policy_result === "PASS" && manual.runbook_result === "PASS" && manual.eligibility_result === "PASS" ? "PASS" : text(manual.eligibility_result || manual.policy_result || manual.runbook_result, "UNKNOWN");
         setValue("manualOpsResult", manualStatus);
-        document.getElementById("manualOpsDetail").textContent = `${{text((manual.symbols || []).join(", "), "?")}} · ${{text((manual.sides || []).join(", "), "?")}} · max ${{text(manual.max_notional_per_request, "?")}} · min gap ${{text(manual.min_hours_between_requests, "?")}}h · authorization required ${{text(manual.operator_authorization_required, true)}}`;
-        document.getElementById("nextGate").textContent = text(ops.next_gate || ops.decision, "NO-GO");
+        document.getElementById("manualOpsDetail").textContent = `${{text((manual.symbols || []).join(", "), "?")}} · ${{text((manual.sides || []).join(", "), "?")}} · max ${{text(manual.max_notional_per_request, "?")}} · elapsed ${{text(manual.hours_since_last_production_request, "?")}}h · 7d requests ${{text(manual.observed_production_requests_last_7d, "?")}} · authorization granted ${{text(manual.production_send_authorization_granted, "NO")}}`;
+        document.getElementById("nextGate").textContent = text(manual.eligibility_decision || ops.next_gate || ops.decision, "NO-GO");
         document.getElementById("boundaryDetail").textContent = `new request ${{text(reportSummary.boundary.production_request_sent_by_dashboard, "NO")}} · second request ${{text(reportSummary.boundary.second_production_request_sent, "NO")}} · Telegram send by dashboard ${{text(reportSummary.boundary.telegram_send_triggered_by_dashboard, "NO")}}`;
       }}
       async function refreshOps() {{
