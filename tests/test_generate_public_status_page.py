@@ -69,6 +69,17 @@ class PublicStatusPageTest(unittest.TestCase):
                     "TELEGRAM_BOT_TOKEN": "do-not-render",
                 },
             )
+            write_json(
+                reports / "next_manual_operation_eligibility.json",
+                {
+                    "result": "PASS",
+                    "decision": "READY_FOR_NEXT_MANUAL_LOW_FREQUENCY_OPERATOR_AUTHORIZATION_DECISION",
+                    "eligibility": {
+                        "production_send_authorization_granted": "NO",
+                        "last_production_request_at": "do-not-render",
+                    },
+                },
+            )
 
             summary = module.public_summary(reports)
             html = module.render_html(summary)
@@ -77,6 +88,12 @@ class PublicStatusPageTest(unittest.TestCase):
         self.assertEqual(summary["public_status"], "OBSERVATION_ACTIVE")
         self.assertEqual(summary["production_validation"], "COMPLETE")
         self.assertEqual(summary["observation_window"], "PASS")
+        self.assertEqual(
+            summary["manual_operations"]["eligibility"], "READY_FOR_OPERATOR_DECISION"
+        )
+        self.assertEqual(
+            summary["manual_operations"]["production_send_authorization_granted"], "NO"
+        )
         self.assertEqual(validation["result"], "PASS")
         self.assertIn("Project Anchor is operating under monitored review.", html)
         self.assertIn("NOT OPEN", html)
@@ -88,6 +105,7 @@ class PublicStatusPageTest(unittest.TestCase):
         self.assertNotIn("risk_limits", html)
         self.assertNotIn("worker", html)
         self.assertNotIn("production.env", html)
+        self.assertNotIn("do-not-render", html)
         self.assertNotRegex(html.lower(), r"method=['\"]post")
         embedded = re.search(
             r'<script id="projectAnchorPublicStatus" type="application/json">(.*?)</script>',

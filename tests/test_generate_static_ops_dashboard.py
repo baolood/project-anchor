@@ -124,25 +124,49 @@ class StaticOpsDashboardTest(unittest.TestCase):
                     },
                 },
             )
+            write_json(
+                reports / "next_manual_operation_eligibility.json",
+                {
+                    "result": "PASS",
+                    "decision": "READY_FOR_NEXT_MANUAL_LOW_FREQUENCY_OPERATOR_AUTHORIZATION_DECISION",
+                    "eligibility": {
+                        "eligible_for_operator_authorization_decision": "YES",
+                        "hours_since_last_production_request": 120,
+                        "observed_production_requests_last_7d": 1,
+                        "production_send_authorization_granted": "NO",
+                    },
+                    "blockers": [],
+                    "boundary": {
+                        "secret_read": "NO",
+                        "production_request_sent": "NO",
+                    },
+                },
+            )
 
             summary = module.sanitize_summary(reports)
             html = module.render_html(summary)
             validation = module.validate_html(html, summary)
 
         self.assertEqual(summary["production_send"]["external_status"], "FILLED")
+        self.assertEqual(summary["production_send"]["external_order_reference_present"], True)
         self.assertEqual(summary["telegram"]["send_result"], "YES")
         self.assertEqual(summary["telegram"]["status"], "POST_PRODUCTION_TELEGRAM_CHANNEL_DELIVERY_CONFIRMED")
         self.assertEqual(validation["result"], "PASS")
         self.assertEqual(summary["manual_low_frequency"]["policy_result"], "PASS")
         self.assertEqual(summary["manual_low_frequency"]["runbook_result"], "PASS")
+        self.assertEqual(summary["manual_low_frequency"]["eligibility_result"], "PASS")
+        self.assertEqual(
+            summary["manual_low_frequency"]["production_send_authorization_granted"], "NO"
+        )
         self.assertEqual(summary["manual_low_frequency"]["max_notional_per_request"], 10)
         self.assertEqual(summary["manual_low_frequency"]["min_hours_between_requests"], 24)
         self.assertIn("Manual Ops", html)
+        self.assertIn("eligibility_decision", html)
         self.assertIn("operator_authorization_required", html)
         self.assertNotIn("do-not-render", html)
         self.assertNotIn("TELEGRAM_BOT_TOKEN", html)
         self.assertNotIn("Authorization", html)
-        self.assertIn("external_order_id_present", html)
+        self.assertIn("external_order_reference_present", html)
         self.assertNotIn('"external_order_id"', html)
         embedded = re.search(
             r'<script id="projectAnchorReports" type="application/json">(.*?)</script>',

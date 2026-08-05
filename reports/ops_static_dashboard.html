@@ -95,16 +95,23 @@
     "secret_disclosed": "NO",
     "telegram_send_triggered_by_dashboard": "NO"
   },
-  "generated_at": "2026-08-05T08:12:04Z",
+  "generated_at": "2026-08-05T10:12:48Z",
   "manual_low_frequency": {
     "after_request_steps": 7,
     "before_request_steps": 8,
+    "eligibility_blockers": [],
+    "eligibility_decision": "READY_FOR_NEXT_MANUAL_LOW_FREQUENCY_OPERATOR_AUTHORIZATION_DECISION",
+    "eligibility_result": "PASS",
+    "eligible_for_operator_authorization_decision": "YES",
+    "hours_since_last_production_request": 139.93,
     "max_notional_per_request": 10,
     "min_hours_between_requests": 24,
     "mode": "manual_confirmed_low_frequency_only",
+    "observed_production_requests_last_7d": 1,
     "operator_authorization_required": true,
     "policy_result": "PASS",
     "policy_status": "MANUAL_LOW_FREQUENCY_OPERATIONS_POLICY_PASS",
+    "production_send_authorization_granted": "NO",
     "recommended_max_requests_per_week": 3,
     "runbook_result": "PASS",
     "runbook_status": "MANUAL_LOW_FREQUENCY_OPERATIONS_RUNBOOK_PASS",
@@ -127,7 +134,7 @@
     "result": "PASS"
   },
   "production_send": {
-    "external_order_id_present": true,
+    "external_order_reference_present": true,
     "external_status": "FILLED",
     "http_status": null,
     "max_notional": null,
@@ -173,7 +180,7 @@
         const ops = reportSummary.operations || {};
         const manual = reportSummary.manual_low_frequency || {};
         setValue("sendResult", text(send.external_status || send.result, "UNKNOWN"));
-        document.getElementById("sendDetail").textContent = `${text(send.symbol, "?")} ${text(send.side, "?")} · notional ${text(send.max_notional, "?")} · order id present ${text(send.external_order_id_present, "?")}`;
+        document.getElementById("sendDetail").textContent = `${text(send.symbol, "?")} ${text(send.side, "?")} · notional ${text(send.max_notional, "?")} · order reference present ${text(send.external_order_reference_present, "?")}`;
         setValue("monitorResult", text(monitoring.result, "UNKNOWN"));
         document.getElementById("monitorDetail").textContent = text(monitoring.snapshot_status || monitoring.status, "Monitoring status unavailable");
         setValue("telegramResult", text(telegram.send_result || telegram.result, "UNKNOWN"));
@@ -182,10 +189,10 @@
         document.getElementById("timerDetail").textContent = `active ${text(timer.timer_active, "?")} · enabled ${text(timer.timer_enabled, "?")} · successes ${text(timer.consecutive_successes, "?")}`;
         setValue("reconResult", text(recon.result, "UNKNOWN"));
         document.getElementById("reconDetail").textContent = `${text(recon.status, "reconciled")} · errors ${text(recon.errors, 0)}`;
-        const manualStatus = manual.policy_result === "PASS" && manual.runbook_result === "PASS" ? "PASS" : text(manual.policy_result || manual.runbook_result, "UNKNOWN");
+        const manualStatus = manual.policy_result === "PASS" && manual.runbook_result === "PASS" && manual.eligibility_result === "PASS" ? "PASS" : text(manual.eligibility_result || manual.policy_result || manual.runbook_result, "UNKNOWN");
         setValue("manualOpsResult", manualStatus);
-        document.getElementById("manualOpsDetail").textContent = `${text((manual.symbols || []).join(", "), "?")} · ${text((manual.sides || []).join(", "), "?")} · max ${text(manual.max_notional_per_request, "?")} · min gap ${text(manual.min_hours_between_requests, "?")}h · authorization required ${text(manual.operator_authorization_required, true)}`;
-        document.getElementById("nextGate").textContent = text(ops.next_gate || ops.decision, "NO-GO");
+        document.getElementById("manualOpsDetail").textContent = `${text((manual.symbols || []).join(", "), "?")} · ${text((manual.sides || []).join(", "), "?")} · max ${text(manual.max_notional_per_request, "?")} · elapsed ${text(manual.hours_since_last_production_request, "?")}h · 7d requests ${text(manual.observed_production_requests_last_7d, "?")} · authorization granted ${text(manual.production_send_authorization_granted, "NO")}`;
+        document.getElementById("nextGate").textContent = text(manual.eligibility_decision || ops.next_gate || ops.decision, "NO-GO");
         document.getElementById("boundaryDetail").textContent = `new request ${text(reportSummary.boundary.production_request_sent_by_dashboard, "NO")} · second request ${text(reportSummary.boundary.second_production_request_sent, "NO")} · Telegram send by dashboard ${text(reportSummary.boundary.telegram_send_triggered_by_dashboard, "NO")}`;
       }
       async function refreshOps() {
