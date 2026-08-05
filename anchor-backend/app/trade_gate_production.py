@@ -14,6 +14,12 @@ PRODUCTION_EXECUTION_GATE_REQUIRED_VERDICT = (
 PRODUCTION_REQUEST_SEND_GATE_REQUIRED_VERDICT = (
     "APPROVED_FOR_EXACTLY_ONE_PRODUCTION_REQUEST_SEND_ONLY"
 )
+NEXT_MANUAL_LOW_FREQUENCY_PRODUCTION_IDEMPOTENCY_KEY = (
+    "production:ops_manual:BTCUSDT:BUY:10:next-manual-low-frequency-request:v1"
+)
+NEXT_MANUAL_LOW_FREQUENCY_REQUEST_SEND_GATE_REQUIRED_VERDICT = (
+    "APPROVED_FOR_EXACTLY_ONE_NEXT_MANUAL_LOW_FREQUENCY_PRODUCTION_REQUEST_ONLY"
+)
 
 FORBIDDEN_PRODUCTION_INPUT_FIELDS = frozenset(
     {
@@ -46,7 +52,10 @@ def coerce_positive_float(value: object) -> float | None:
     return number
 
 
-def validate_production_order_request(body: dict) -> tuple[bool, str | None]:
+def _validate_production_order_request_for_key(
+    body: dict,
+    expected_idempotency_key: str,
+) -> tuple[bool, str | None]:
     forbidden = next(
         (
             key
@@ -75,7 +84,7 @@ def validate_production_order_request(body: dict) -> tuple[bool, str | None]:
         return (False, "PRODUCTION_NOTIONAL_INVALID")
     if order_type != "market":
         return (False, "PRODUCTION_ORDER_TYPE_INVALID")
-    if idempotency_key != PRODUCTION_IDEMPOTENCY_KEY:
+    if idempotency_key != expected_idempotency_key:
         return (False, "PRODUCTION_IDEMPOTENCY_KEY_INVALID")
     if execution_mode != "production":
         return (False, "PRODUCTION_EXECUTION_MODE_REQUIRED")
@@ -84,6 +93,19 @@ def validate_production_order_request(body: dict) -> tuple[bool, str | None]:
     if source != "ops_manual":
         return (False, "PRODUCTION_SOURCE_INVALID")
     return (True, None)
+
+
+def validate_production_order_request(body: dict) -> tuple[bool, str | None]:
+    return _validate_production_order_request_for_key(body, PRODUCTION_IDEMPOTENCY_KEY)
+
+
+def validate_next_manual_low_frequency_production_order_request(
+    body: dict,
+) -> tuple[bool, str | None]:
+    return _validate_production_order_request_for_key(
+        body,
+        NEXT_MANUAL_LOW_FREQUENCY_PRODUCTION_IDEMPOTENCY_KEY,
+    )
 
 
 def production_execution_gate_decision(config: dict | None = None) -> dict:
@@ -120,10 +142,12 @@ def _parse_utc(value: object) -> datetime | None:
         return None
 
 
-def production_request_send_gate_decision(
+def _production_request_send_gate_decision_for_key(
     config: dict | None = None,
     *,
     now: datetime | None = None,
+    expected_idempotency_key: str,
+    required_verdict: str,
 ) -> dict:
     data = config if isinstance(config, dict) else {}
     current_time = now.astimezone(timezone.utc) if now else datetime.now(timezone.utc)
@@ -143,23 +167,55 @@ def production_request_send_gate_decision(
         "window_expires_at_valid": expires_at is not None,
         "window_not_expired": expires_at is not None and current_time < expires_at,
         "no_retry": data.get("PRODUCTION_REQUEST_SEND_NO_RETRY") is True,
-        "idempotency_key_matches": idempotency_key == PRODUCTION_IDEMPOTENCY_KEY,
-        "operator_verdict_matches": verdict == PRODUCTION_REQUEST_SEND_GATE_REQUIRED_VERDICT,
+        "idempotency_key_matches": idempotency_key == expected_idempotency_key,
+        "operator_verdict_matches": verdict == required_verdict,
     }
     authorized = all(checks.values())
     return {
         "authorized": authorized,
         "reason": "AUTHORIZED" if authorized else "PRODUCTION_REQUEST_SEND_GATE_CLOSED",
         "checks": checks,
-        "required_verdict": PRODUCTION_REQUEST_SEND_GATE_REQUIRED_VERDICT,
+        "required_verdict": required_verdict,
         "go_live_allowed": False,
         "live_trading_allowed": False,
     }
 
 
-def production_order_send_decision_response(body: dict, gate_decision: dict | None = None) -> dict:
+def production_request_send_gate_decision(
+    config: dict | None = None,
+    *,
+    now: datetime | None = None,
+) -> dict:
+    return _production_request_send_gate_decision_for_key(
+        config,
+        now=now,
+        expected_idempotency_key=PRODUCTION_IDEMPOTENCY_KEY,
+        required_verdict=PRODUCTION_REQUEST_SEND_GATE_REQUIRED_VERDICT,
+    )
+
+
+def next_manual_low_frequency_production_request_send_gate_decision(
+    config: dict | None = None,
+    *,
+    now: datetime | None = None,
+) -> dict:
+    return _production_request_send_gate_decision_for_key(
+        config,
+        now=now,
+        expected_idempotency_key=NEXT_MANUAL_LOW_FREQUENCY_PRODUCTION_IDEMPOTENCY_KEY,
+        required_verdict=NEXT_MANUAL_LOW_FREQUENCY_REQUEST_SEND_GATE_REQUIRED_VERDICT,
+    )
+
+
+def _production_order_send_decision_response_for_key(
+    body: dict,
+    gate_decision: dict | None,
+    *,
+    expected_idempotency_key: str,
+    validator,
+) -> dict:
     decision = gate_decision if isinstance(gate_decision, dict) else production_request_send_gate_decision()
-    is_valid, reject_reason = validate_production_order_request(body)
+    is_valid, reject_reason = validator(body)
     if not is_valid:
         return {
             "status": "error",
@@ -180,7 +236,7 @@ def production_order_send_decision_response(body: dict, gate_decision: dict | No
             "production_http_network_executed": False,
             "go_live_allowed": False,
             "live_trading_allowed": False,
-            "idempotency_key": PRODUCTION_IDEMPOTENCY_KEY,
+            "idempotency_key": expected_idempotency_key,
             "gate_checks": decision.get("checks", {}),
         }
 
@@ -194,10 +250,40 @@ def production_order_send_decision_response(body: dict, gate_decision: dict | No
         "production_http_network_executed": False,
         "go_live_allowed": False,
         "live_trading_allowed": False,
-        "idempotency_key": PRODUCTION_IDEMPOTENCY_KEY,
-        "transport_input": production_order_command_creation_payload(body),
+        "idempotency_key": expected_idempotency_key,
+        "transport_input": production_order_command_creation_payload_for_key(
+            body,
+            expected_idempotency_key,
+        ),
         "gate_checks": decision.get("checks", {}),
     }
+
+
+def production_order_send_decision_response(body: dict, gate_decision: dict | None = None) -> dict:
+    decision = gate_decision if isinstance(gate_decision, dict) else production_request_send_gate_decision()
+    return _production_order_send_decision_response_for_key(
+        body,
+        decision,
+        expected_idempotency_key=PRODUCTION_IDEMPOTENCY_KEY,
+        validator=validate_production_order_request,
+    )
+
+
+def next_manual_low_frequency_production_order_send_decision_response(
+    body: dict,
+    gate_decision: dict | None = None,
+) -> dict:
+    decision = (
+        gate_decision
+        if isinstance(gate_decision, dict)
+        else next_manual_low_frequency_production_request_send_gate_decision()
+    )
+    return _production_order_send_decision_response_for_key(
+        body,
+        decision,
+        expected_idempotency_key=NEXT_MANUAL_LOW_FREQUENCY_PRODUCTION_IDEMPOTENCY_KEY,
+        validator=validate_next_manual_low_frequency_production_order_request,
+    )
 
 
 def load_production_execution_gate_config(path: str | Path | None = None) -> dict:
@@ -227,7 +313,7 @@ def production_order_blocked_response(gate_decision: dict | None = None) -> dict
     }
 
 
-def production_order_command_creation_payload(body: dict) -> dict:
+def production_order_command_creation_payload_for_key(body: dict, idempotency_key: str) -> dict:
     notional = coerce_positive_float(body.get("notional"))
     return {
         "command_type": PRODUCTION_COMMAND_TYPE,
@@ -238,12 +324,16 @@ def production_order_command_creation_payload(body: dict) -> dict:
         "notional": notional,
         "order_type": "market",
         "source": "ops_manual",
-        "idempotency_key": PRODUCTION_IDEMPOTENCY_KEY,
+        "idempotency_key": idempotency_key,
         "command_creation_only": True,
         "production_signing_executed": False,
         "production_http_network_executed": False,
         "production_request_sent": False,
     }
+
+
+def production_order_command_creation_payload(body: dict) -> dict:
+    return production_order_command_creation_payload_for_key(body, PRODUCTION_IDEMPOTENCY_KEY)
 
 
 def production_order_command_creation_candidate_response(

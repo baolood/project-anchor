@@ -1,0 +1,77 @@
+{
+  "boundary": {
+    "authorization_header_value_disclosed": "NO",
+    "automatic_retry": "NO",
+    "canary_rerun": "NO",
+    "credential_file_read": "NO",
+    "dns_lookup_or_socket_possible": "NO",
+    "go_live": "NO-GO",
+    "live_trading": "NO-GO",
+    "production_http_network_attempted": "NO",
+    "production_request_accepted": "NO",
+    "production_request_attempted": "NO",
+    "production_signing_executed": "NO",
+    "second_request_sent": "NO",
+    "secret_hash_disclosed": "NO",
+    "secret_length_disclosed": "NO",
+    "secret_prefix_suffix_disclosed": "NO",
+    "secret_value_disclosed": "NO"
+  },
+  "credential_contract": {
+    "checks": {
+      "file_exists": false,
+      "group_matches": false,
+      "mode_matches": false,
+      "owner_matches": false,
+      "path_matches_contract": true
+    },
+    "compliant": false,
+    "expected_group": "project_anchor_runtime",
+    "expected_mode": "600",
+    "expected_owner": "project_anchor_runtime",
+    "expected_path": "/etc/project-anchor/production.env",
+    "observed_group": null,
+    "observed_mode": null,
+    "observed_owner": null,
+    "path": "/etc/project-anchor/production.env",
+    "stat_error": "PERMISSION_DENIED"
+  },
+  "eligibility_decision": "READY_FOR_NEXT_MANUAL_LOW_FREQUENCY_OPERATOR_AUTHORIZATION_DECISION",
+  "eligibility_result": "PASS",
+  "execution_host_contract": {
+    "checks": {
+      "api_ip_whitelist_present": true,
+      "macos_local_execution_blocked": false
+    },
+    "compliant": false,
+    "expected_binance_api_ip_whitelist": "45.76.190.109",
+    "failure_code": "PRODUCTION_EXECUTION_HOST_NOT_WHITELISTED",
+    "observed_platform": "Darwin"
+  },
+  "execution_requested": false,
+  "failure_code": "NEXT_MANUAL_PRODUCTION_SEND_EXECUTION_NOT_REQUESTED",
+  "generated_at": "2026-08-05T11:00:56Z",
+  "request": {
+    "idempotency_key": "production:ops_manual:BTCUSDT:BUY:10:next-manual-low-frequency-request:v1",
+    "market": "binance_spot",
+    "max_notional": "10",
+    "order_type": "market",
+    "side": "BUY",
+    "symbol": "BTCUSDT"
+  },
+  "requested_payload_shape": null,
+  "result": "BLOCKED",
+  "success": false,
+  "terminal": {
+    "exchange_error_code": null,
+    "exchange_error_code_present": null,
+    "exchange_error_message_present": null,
+    "exchange_error_msg": null,
+    "external_order_id_present": false,
+    "external_request_started": false,
+    "external_status": null,
+    "http_status": null,
+    "terminal_type": null,
+    "transport_error_type": null
+  }
+}
