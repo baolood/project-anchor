@@ -179,6 +179,58 @@ class StaticOpsDashboardTest(unittest.TestCase):
         self.assertEqual(validation["boundary"]["production_request_sent"], "NO")
         self.assertEqual(validation["boundary"]["go_live"], "NO-GO")
 
+    def test_next_manual_insufficient_balance_blocks_next_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            reports = Path(tmp)
+            write_json(
+                reports / "next_manual_low_frequency_production_send_result.json",
+                {
+                    "result": "FAIL",
+                    "success": False,
+                    "failure_code": "PRODUCTION_HTTP_REQUEST_REJECTED",
+                    "request": {
+                        "symbol": "BTCUSDT",
+                        "side": "BUY",
+                        "max_notional": 10,
+                    },
+                    "terminal": {
+                        "http_status": 400,
+                        "exchange_error_code": -2010,
+                        "exchange_error_msg": "Account has insufficient balance for requested action.",
+                        "external_order_id_present": False,
+                    },
+                    "boundary": {
+                        "production_request_accepted": "NO",
+                        "second_request_sent": "NO",
+                        "secret_value_disclosed": "NO",
+                    },
+                },
+            )
+            write_json(
+                reports / "post_production_operations_decision.json",
+                {"result": "PASS", "next_gate": "READY_FOR_OPERATOR_DECISION"},
+            )
+
+            summary = module.sanitize_summary(reports)
+            html = module.render_html(summary)
+            validation = module.validate_html(html, summary)
+
+        self.assertEqual(
+            summary["production_send"]["display_status"],
+            "BLOCKED_INSUFFICIENT_BALANCE",
+        )
+        self.assertEqual(summary["production_send"]["funding_blocker"], "INSUFFICIENT_BALANCE")
+        self.assertEqual(summary["production_send"]["request_accepted"], "NO")
+        self.assertEqual(summary["production_send"]["second_request_sent"], "NO")
+        self.assertEqual(
+            summary["operations"]["next_gate"],
+            "BLOCKED_BY_INSUFFICIENT_BALANCE",
+        )
+        self.assertIn("BLOCKED_INSUFFICIENT_BALANCE", html)
+        self.assertIn("INSUFFICIENT_BALANCE", html)
+        self.assertNotIn("Account has insufficient balance", html)
+        self.assertEqual(validation["result"], "PASS")
+
 
 if __name__ == "__main__":
     unittest.main()
