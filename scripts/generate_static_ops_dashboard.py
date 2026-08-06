@@ -18,6 +18,7 @@ DEFAULT_MD_OUT = REPORTS_DIR / "ops_static_dashboard_validation.md"
 
 REPORT_NAMES = {
     "production_send": "production_exactly_one_send_result.json",
+    "next_manual_send": "next_manual_low_frequency_production_send_result.json",
     "reconciliation": "production_post_send_readonly_reconciliation.json",
     "monitoring": "post_production_monitoring_run.json",
     "alerting": "post_production_alerting_readiness.json",
@@ -67,8 +68,19 @@ def pick_report(reports_dir: Path, name: str) -> dict[str, Any]:
     return load_json(reports_dir / REPORT_NAMES[name])
 
 
+def manual_send_blocker(send: dict[str, Any]) -> str:
+    if nested(send, "terminal", "exchange_error_code") == -2010:
+        message = str(nested(send, "terminal", "exchange_error_msg", default="")).lower()
+        if "insufficient balance" in message:
+            return "INSUFFICIENT_BALANCE"
+    if send.get("failure_code"):
+        return str(send["failure_code"])
+    return ""
+
+
 def sanitize_summary(reports_dir: Path) -> dict[str, Any]:
     send = pick_report(reports_dir, "production_send")
+    next_manual_send = pick_report(reports_dir, "next_manual_send")
     reconciliation = pick_report(reports_dir, "reconciliation")
     monitoring = pick_report(reports_dir, "monitoring")
     alerting = pick_report(reports_dir, "alerting")
@@ -81,17 +93,35 @@ def sanitize_summary(reports_dir: Path) -> dict[str, Any]:
     manual_runbook = pick_report(reports_dir, "manual_runbook")
     next_manual_eligibility = pick_report(reports_dir, "next_manual_eligibility")
 
+    active_send = next_manual_send if next_manual_send else send
+    active_send_blocker = manual_send_blocker(active_send)
+    next_gate = (
+        "BLOCKED_BY_INSUFFICIENT_BALANCE"
+        if active_send_blocker == "INSUFFICIENT_BALANCE"
+        else operations.get("next_gate")
+    )
+
     return {
         "generated_at": utc_now(),
         "production_send": {
-            "result": send.get("result"),
-            "success": send.get("success"),
-            "external_status": nested(send, "terminal", "external_status"),
-            "external_order_reference_present": nested(send, "terminal", "external_order_id_present"),
-            "http_status": nested(send, "http", "status"),
-            "symbol": nested(send, "request", "symbol"),
-            "side": nested(send, "request", "side"),
-            "max_notional": nested(send, "risk_limits", "max_notional"),
+            "result": active_send.get("result"),
+            "success": active_send.get("success"),
+            "failure_code": active_send.get("failure_code"),
+            "funding_blocker": active_send_blocker,
+            "display_status": (
+                "BLOCKED_INSUFFICIENT_BALANCE"
+                if active_send_blocker == "INSUFFICIENT_BALANCE"
+                else nested(active_send, "terminal", "external_status")
+                or active_send.get("result")
+            ),
+            "external_status": nested(active_send, "terminal", "external_status"),
+            "external_order_reference_present": nested(active_send, "terminal", "external_order_id_present"),
+            "http_status": nested(active_send, "terminal", "http_status", default=nested(active_send, "http", "status")),
+            "symbol": nested(active_send, "request", "symbol"),
+            "side": nested(active_send, "request", "side"),
+            "max_notional": nested(active_send, "request", "max_notional", default=nested(active_send, "risk_limits", "max_notional")),
+            "request_accepted": nested(active_send, "boundary", "production_request_accepted"),
+            "second_request_sent": nested(active_send, "boundary", "second_request_sent"),
         },
         "reconciliation": {
             "result": reconciliation.get("result"),
@@ -129,7 +159,7 @@ def sanitize_summary(reports_dir: Path) -> dict[str, Any]:
         "operations": {
             "result": operations.get("result"),
             "decision": operations.get("decision"),
-            "next_gate": operations.get("next_gate"),
+            "next_gate": next_gate,
         },
         "manual_low_frequency": {
             "policy_result": manual_policy.get("result"),
@@ -159,6 +189,7 @@ def sanitize_summary(reports_dir: Path) -> dict[str, Any]:
                 "observed_production_requests_last_7d",
             ),
             "eligibility_blockers": next_manual_eligibility.get("blockers", []),
+            "funding_blocker": active_send_blocker,
             "mode": nested(manual_policy, "policy", "mode"),
             "symbols": nested(manual_policy, "policy", "symbols", default=[]),
             "sides": nested(manual_policy, "policy", "sides", default=[]),
@@ -300,8 +331,8 @@ def render_html(summary: dict[str, Any]) -> str:
         const recon = reportSummary.reconciliation || {{}};
         const ops = reportSummary.operations || {{}};
         const manual = reportSummary.manual_low_frequency || {{}};
-        setValue("sendResult", text(send.external_status || send.result, "UNKNOWN"));
-        document.getElementById("sendDetail").textContent = `${{text(send.symbol, "?")}} ${{text(send.side, "?")}} · notional ${{text(send.max_notional, "?")}} · order reference present ${{text(send.external_order_reference_present, "?")}}`;
+        setValue("sendResult", text(send.display_status || send.external_status || send.result, "UNKNOWN"));
+        document.getElementById("sendDetail").textContent = `${{text(send.symbol, "?")}} ${{text(send.side, "?")}} · notional ${{text(send.max_notional, "?")}} · accepted ${{text(send.request_accepted, "?")}} · second request ${{text(send.second_request_sent, "NO")}} · blocker ${{text(send.funding_blocker, "none")}}`;
         setValue("monitorResult", text(monitoring.result, "UNKNOWN"));
         document.getElementById("monitorDetail").textContent = text(monitoring.snapshot_status || monitoring.status, "Monitoring status unavailable");
         setValue("telegramResult", text(telegram.send_result || telegram.result, "UNKNOWN"));
