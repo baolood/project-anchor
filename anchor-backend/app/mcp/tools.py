@@ -6,7 +6,9 @@ from dataclasses import dataclass
 from os import environ
 from typing import Any, Callable, Mapping
 
+from app.mcp.backend_probe import probe_backend
 from app.mcp.commands import CommandResult, run_readonly_command
+from app.mcp.inventory import host_sidecar_enabled
 from app.mcp.sanitize import redact_obj
 from app.mcp.status import (
     checklist_counts,
@@ -92,7 +94,7 @@ def collect_anchor_status(ctx: ToolContext) -> dict[str, Any]:
         kill_switch = normalize_kill_switch(ctx.kill_switch())
     except Exception:
         kill_switch = normalize_kill_switch(None)
-    return {
+    payload = {
         "process": process_from_units(services),
         "kill_switch": kill_switch,
         "checklist": checklist_counts(ctx.repo_root),
@@ -101,6 +103,9 @@ def collect_anchor_status(ctx: ToolContext) -> dict[str, Any]:
         "ledger_available": bool(ledger.get("available")),
         "ledger_fill_status": ledger.get("fill_status") if ledger.get("available") else None,
     }
+    if host_sidecar_enabled(ctx.env):
+        payload["backend_http"] = probe_backend(ctx.env)
+    return payload
 
 
 def get_anchor_status(ctx: ToolContext) -> dict[str, Any]:
@@ -171,25 +176,38 @@ def run_readonly_healthcheck(ctx: ToolContext) -> dict[str, Any]:
     error_count = len(errors.get("journal_lines") or []) + len(errors.get("artifact_errors") or [])
     checks = [
         _process_check(process),
-        _kill_switch_check(kill),
-        _check(
-            "observation",
-            observation.get("available") is True and observation.get("result") in {"PASS", "OK"},
-            str(observation.get("result") or observation.get("reason") or "missing"),
-        ),
-        _check(
-            "ledger",
-            ledger.get("available") is True,
-            str(ledger.get("fill_status") or ledger.get("reason") or "missing"),
-        ),
-        _check("services", service_state_ok(services), str(services.get("command_state"))),
-        _check("timers", service_state_ok(timers), str(timers.get("command_state"))),
-        _check(
-            "recent_errors",
-            error_count == 0 and errors.get("command_state") == "ok",
-            f"lines={error_count};state={errors.get('command_state')}",
-        ),
     ]
+    backend = status.get("backend_http")
+    if isinstance(backend, dict) and backend.get("enabled") is True:
+        checks.append(
+            _check(
+                "backend_http",
+                backend.get("ok") is True,
+                str(backend.get("reason") or "backend"),
+            )
+        )
+    checks.extend(
+        [
+            _kill_switch_check(kill),
+            _check(
+                "observation",
+                observation.get("available") is True and observation.get("result") in {"PASS", "OK"},
+                str(observation.get("result") or observation.get("reason") or "missing"),
+            ),
+            _check(
+                "ledger",
+                ledger.get("available") is True,
+                str(ledger.get("fill_status") or ledger.get("reason") or "missing"),
+            ),
+            _check("services", service_state_ok(services), str(services.get("command_state"))),
+            _check("timers", service_state_ok(timers), str(timers.get("command_state"))),
+            _check(
+                "recent_errors",
+                error_count == 0 and errors.get("command_state") == "ok",
+                f"lines={error_count};state={errors.get('command_state')}",
+            ),
+        ]
+    )
     verdict = "PASS" if all(item["result"] == "PASS" for item in checks) else "DEGRADED"
     return _envelope(
         "run_readonly_healthcheck",
@@ -225,12 +243,19 @@ def tool_definitions() -> list[dict[str, Any]]:
         "get_anchor_status": (
             "Read overall Project Anchor status from allowlisted systemd units and the kill switch. "
             "Unknown or failed process status is not PASS. An unread kill switch is UNKNOWN. "
+            "On the host sidecar, only CORE_RUNTIME units gate PASS. "
             "Does not trade, change config, or read secrets."
         ),
         "get_latest_observation": "Read the latest Forward/observation sample from allowlisted report JSON. Read-only.",
         "get_ledger_summary": "Read the Official Fake-Fill / ledger summary from allowlisted report JSON. Read-only.",
-        "get_services": "Read allowlisted systemd service status. Does not start, stop, or restart units.",
-        "get_timers": "Read allowlisted systemd timer status. Does not start, stop, or restart units.",
+        "get_services": (
+            "Read allowlisted systemd service status. Does not start, stop, or restart units. "
+            "Host sidecar responses include unit class. Only CORE_RUNTIME gates PASS."
+        ),
+        "get_timers": (
+            "Read allowlisted systemd timer status. Does not start, stop, or restart units. "
+            "Host sidecar responses include unit class. Only CORE_RUNTIME gates PASS."
+        ),
         "get_recent_errors": "Read recent allowlisted journal errors and sanitized artifact errors. Read-only.",
         "run_readonly_healthcheck": "Run one combined read-only health check across the other six status views.",
     }

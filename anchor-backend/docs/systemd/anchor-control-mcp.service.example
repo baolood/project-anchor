@@ -1,0 +1,34 @@
+[Unit]
+Description=Project Anchor read-only control MCP host sidecar
+Documentation=file:/path/to/project-anchor/anchor-backend/docs/ANCHOR_CONTROL_MCP_HOST_SIDECAR_V1.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=anchor-mcp
+Group=anchor-mcp
+SupplementaryGroups=systemd-journal
+WorkingDirectory=/path/to/project-anchor/anchor-backend
+Environment=PYTHONPATH=/path/to/project-anchor/anchor-backend
+Environment=ANCHOR_CONTROL_MCP_HOST_SIDECAR=1
+Environment=ANCHOR_CONTROL_MCP_BIND=127.0.0.1:8021
+Environment=ANCHOR_CONTROL_MCP_SERVICE_UNITS=nginx.service,project-anchor-commercial-api.service,project-anchor-payment-webhook.service,project-anchor-whisper.service,project-anchor-word-converter.service
+Environment=ANCHOR_CONTROL_MCP_TIMER_UNITS=project-anchor-post-production-monitoring.timer,project-anchor-kraken-public-shadow-paper-v1-1.timer,project-anchor-evidence-reporter-v1.timer,project-anchor-jev-forward-shadow-v1.timer,project-anchor-jev-candidate-review-v1.timer,project-anchor-kraken-forward.timer
+Environment=ANCHOR_CONTROL_MCP_REPORTS_DIR=/var/lib/project-anchor/reports
+Environment=ANCHOR_CONTROL_MCP_BACKEND_PROBE=1
+EnvironmentFile=-/etc/project-anchor/anchor-control-mcp.env
+ExecStart=/usr/bin/python3 -m app.mcp.host_sidecar
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+UMask=0077
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=localhost
+LockPersonality=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
