@@ -496,7 +496,9 @@ class ProtocolTests(unittest.TestCase):
     def test_nginx_example_documents_mcp_route_without_claiming_it_is_live(self) -> None:
         example = (REPO / "anchor-backend" / "docs" / "nginx" / "anchor-control-mcp.location.example.conf").read_text(encoding="utf-8")
         self.assertIn("location = /mcp", example)
-        self.assertIn("proxy_pass http://127.0.0.1:8000/mcp;", example)
+        self.assertIn("proxy_pass http://127.0.0.1:8001/mcp;", example)
+        self.assertNotIn("proxy_pass http://127.0.0.1:8000/mcp;", example)
+        self.assertIn("127.0.0.1:8000", example)
         self.assertIn("EXAMPLE ONLY", example)
         self.assertNotIn("ssl_certificate_key", example)
         doc = (REPO / "anchor-backend" / "docs" / "ANCHOR_CONTROL_MCP_V1.md").read_text(encoding="utf-8")

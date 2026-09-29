@@ -11,7 +11,7 @@ This change does not deploy to Vultr or any other host, does not edit live Nginx
 - Transport: stateless MCP Streamable HTTP (JSON-RPC 2.0). `GET /mcp` returns 405. Notifications return 202.
 - Example Nginx route (not applied on a live host): [`nginx/anchor-control-mcp.location.example.conf`](nginx/anchor-control-mcp.location.example.conf)
 
-The backend process already listens on `127.0.0.1:8000` in `anchor-backend/docker-compose.yml`. A future Nginx `location = /mcp` would proxy to `http://127.0.0.1:8000/mcp` and forward the `Authorization` header. Keep raw port 8000 off the public internet.
+The backend process already listens on `127.0.0.1:8000` in `anchor-backend/docker-compose.yml`. That container cannot reliably see host systemd, so the public MCP path must not stop at the container. The host sidecar in [`ANCHOR_CONTROL_MCP_HOST_SIDECAR_V1.md`](ANCHOR_CONTROL_MCP_HOST_SIDECAR_V1.md) listens on `127.0.0.1:8001` and is the process that may call `systemctl show`. The example Nginx `location = /mcp` proxies to `http://127.0.0.1:8001/mcp` and forwards the `Authorization` header. Keep raw ports 8000 and 8001 off the public internet. The Docker publish line stays `127.0.0.1:8000:8000`.
 
 ## Auth
 
@@ -29,7 +29,7 @@ Deploy-time unit allowlists, each a comma-separated list of safe unit names (max
 - `ANCHOR_CONTROL_MCP_SERVICE_UNITS`
 - `ANCHOR_CONTROL_MCP_TIMER_UNITS`
 
-Set both to the real Anchor service and timer units installed on that host before relying on `get_anchor_status` or `run_readonly_healthcheck`. The built-in default is only `project-anchor-post-production-monitoring.service` and `project-anchor-post-production-monitoring.timer`. That pair is the read-only monitoring refresh. It is not the full runtime picture (backend, worker, and any other units the operator actually runs). Process health is derived only from `systemctl show` of the configured service units. Long-running services pass only when `ActiveState=active`. `inactive` or `dead` with `Result=success` is a stopped service and is `FAILED`, not healthy. A oneshot unit is idle-healthy only when `systemctl show` reports `Type=oneshot` and `Result=success`. Other service types do not get that exception. If the read is missing, process state is `UNKNOWN`. `UNKNOWN` and `FAILED` are not reported as `PASS`. Timers pass only when `ActiveState=active`.
+Set both to the real Anchor service and timer units installed on that host before relying on `get_anchor_status` or `run_readonly_healthcheck`. Inside the Docker backend the built-in default is only `project-anchor-post-production-monitoring.service` and `project-anchor-post-production-monitoring.timer`. That pair is the read-only monitoring refresh. It is not the full runtime picture (backend, worker, and any other units the operator actually runs). The host sidecar uses a different default and the founder-note unit classes; see [`ANCHOR_CONTROL_MCP_HOST_SIDECAR_V1.md`](ANCHOR_CONTROL_MCP_HOST_SIDECAR_V1.md). Recommended host values are `ANCHOR_CONTROL_MCP_SERVICE_UNITS=docker.service` and an empty `ANCHOR_CONTROL_MCP_TIMER_UNITS`. Only `CORE_RUNTIME` gates PASS. `jev-forward-shadow-v2.service` is `INTENTIONALLY_DISABLED` and is not required to be active. Process health is derived only from `systemctl show` of the configured service units. Long-running services pass only when `ActiveState=active`. `inactive` or `dead` with `Result=success` is a stopped service and is `FAILED`, not healthy. A oneshot unit is idle-healthy only when `systemctl show` reports `Type=oneshot` and `Result=success`. Other service types do not get that exception. If the read is missing, process state is `UNKNOWN`. `UNKNOWN` and `FAILED` are not reported as `PASS`. Timers pass only when `ActiveState=active`.
 
 Optional report directory: `ANCHOR_CONTROL_MCP_REPORTS_DIR`. When unset, the collector reads `<repo>/reports`.
 
@@ -82,7 +82,7 @@ Kill-switch reads fail closed. An unread or failed Redis read is `UNKNOWN` and t
 
 ```bash
 cd /path/to/project-anchor
-PYTHONPATH=anchor-backend python3 -m unittest discover -s anchor-backend/tests -p test_anchor_control_mcp_v1.py
+PYTHONPATH=anchor-backend python3 -m unittest discover -s anchor-backend/tests -p 'test_anchor_control_mcp*.py'
 ```
 
 ## Non-goals

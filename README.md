@@ -103,6 +103,6 @@ python3 -c "import local_box.control.server as c; print('control', c.app.name)"
 
 More detail: **RUNBOOK.md** → section **Parent repo — `local_box` (Python + SQLite)**.
 
-Read-only Ops MCP for a future Grok Custom MCP Connector: **`anchor-backend/docs/ANCHOR_CONTROL_MCP_V1.md`**. `POST /mcp` stays disabled until `ANCHOR_CONTROL_MCP_TOKEN` is set outside git. That document does not deploy or change live Nginx.
+Read-only Ops MCP for a future Grok Custom MCP Connector: **`anchor-backend/docs/ANCHOR_CONTROL_MCP_V1.md`**. `POST /mcp` stays disabled until `ANCHOR_CONTROL_MCP_TOKEN` is set outside git. That document does not deploy or change live Nginx. Host systemd is read by the separate sidecar on `127.0.0.1:8001`: **`anchor-backend/docs/ANCHOR_CONTROL_MCP_HOST_SIDECAR_V1.md`**. The example Nginx `/mcp` route targets that sidecar. The Docker backend remains on `127.0.0.1:8000`.
 
 **Dependency PRs:** [Dependabot](.github/dependabot.yml) targets **repo-root** [`requirements.txt`](requirements.txt) (weekly) and **GitHub Actions** workflow pins (monthly). **Architecture note:** [`docs/adr/ADR-0004-local-box-execution-boundaries-and-naming.md`](docs/adr/ADR-0004-local-box-execution-boundaries-and-naming.md).

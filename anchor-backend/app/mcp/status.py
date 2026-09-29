@@ -19,6 +19,20 @@ from app.mcp.commands import (
     journalctl_err_argv,
     systemctl_show_argv,
 )
+from app.mcp.inventory import (
+    CLASS_INTENTIONALLY_DISABLED,
+    GATING_CLASSES,
+    HOST_DEFAULT_SERVICES,
+    HOST_DEFAULT_TIMERS,
+    HOST_OBSERVE_LIMIT,
+    NON_GATING_CLASSES,
+    OBSERVE_SERVICES,
+    OBSERVE_TIMERS,
+    RECOMMENDED_SERVICE_UNITS,
+    RECOMMENDED_TIMER_UNITS,
+    classify_unit,
+    host_sidecar_enabled,
+)
 from app.mcp.sanitize import looks_sensitive_path, redact_text
 
 
@@ -314,17 +328,48 @@ def _unit_healthy(props: dict[str, str], kind: str) -> bool:
     return False
 
 
-def collect_units(kind: str, env: Mapping[str, str], run_command: Callable[[list[str], float], CommandResult]) -> dict[str, Any]:
+def _select_units(kind: str, env: Mapping[str, str]) -> tuple[list[str], str | None, bool]:
+    """Host mode defaults to docker.service and also shows the fixed observe catalog."""
+    host = host_sidecar_enabled(env)
     if kind == "service":
-        names, warning = configured_units(env.get(SERVICE_UNITS_ENV, ""), ".service", DEFAULT_SERVICES)
-        argv_for = systemctl_show_argv
+        defaults = HOST_DEFAULT_SERVICES if host else DEFAULT_SERVICES
+        suffix = ".service"
+        extra = OBSERVE_SERVICES if host else ()
+        env_name = SERVICE_UNITS_ENV
     else:
-        names, warning = configured_units(env.get(TIMER_UNITS_ENV, ""), ".timer", DEFAULT_TIMERS)
-        argv_for = systemctl_show_argv
+        defaults = HOST_DEFAULT_TIMERS if host else DEFAULT_TIMERS
+        suffix = ".timer"
+        extra = OBSERVE_TIMERS if host else ()
+        env_name = TIMER_UNITS_ENV
+    names, warning = configured_units(env.get(env_name, ""), suffix, defaults)
+    if host:
+        for name in extra:
+            if name not in names and len(names) < HOST_OBSERVE_LIMIT:
+                names.append(name)
+    return names, warning, host
+
+
+def _unit_record(name: str, props: dict[str, str], kind: str, host: bool) -> dict[str, Any]:
+    record: dict[str, Any] = {
+        "name": name,
+        "available": bool(props),
+        "healthy": _unit_healthy(props, kind) if props else False,
+        "properties": props,
+    }
+    if not host:
+        return record
+    record.update(classify_unit(name))
+    if record.get("unit_class") == CLASS_INTENTIONALLY_DISABLED and props.get("active_state") == "active":
+        record["note"] = "active_while_intentionally_disabled"
+    return record
+
+
+def collect_units(kind: str, env: Mapping[str, str], run_command: Callable[[list[str], float], CommandResult]) -> dict[str, Any]:
+    names, warning, host = _select_units(kind, env)
     units: list[dict[str, Any]] = []
     command_state = "ok"
     for name in names:
-        result = run_command(argv_for(name), 3.0)
+        result = run_command(systemctl_show_argv(name), 3.0)
         if result.stderr in {"command_not_found", "timeout"}:
             command_state = result.stderr
             break
@@ -334,16 +379,9 @@ def collect_units(kind: str, env: Mapping[str, str], run_command: Callable[[list
         props = _parse_show(result.stdout)
         if props.get("id") and props.get("id") != name:
             props = {}
-        units.append(
-            {
-                "name": name,
-                "available": bool(props),
-                "healthy": _unit_healthy(props, kind) if props else False,
-                "properties": props,
-            }
-        )
+        units.append(_unit_record(name, props, kind, host))
     available = command_state == "ok"
-    return {
+    report: dict[str, Any] = {
         "kind": kind,
         "mode": "read_only",
         "source": "systemctl show",
@@ -353,6 +391,13 @@ def collect_units(kind: str, env: Mapping[str, str], run_command: Callable[[list
         "units": units if available else [],
         "expected_units": names,
     }
+    if host:
+        report["host_sidecar"] = True
+        report["gating_classes"] = list(GATING_CLASSES)
+        report["non_gating_classes"] = list(NON_GATING_CLASSES)
+        report["recommended_service_units"] = list(RECOMMENDED_SERVICE_UNITS)
+        report["recommended_timer_units"] = list(RECOMMENDED_TIMER_UNITS)
+    return report
 
 
 def collect_errors(
@@ -362,7 +407,11 @@ def collect_errors(
     limit: int,
 ) -> dict[str, Any]:
     bounded = max(1, min(int(limit), 50))
-    services, warning = configured_units(env.get(SERVICE_UNITS_ENV, ""), ".service", DEFAULT_SERVICES)
+    host = host_sidecar_enabled(env)
+    defaults = HOST_DEFAULT_SERVICES if host else DEFAULT_SERVICES
+    services, warning = configured_units(env.get(SERVICE_UNITS_ENV, ""), ".service", defaults)
+    if host:
+        services = [name for name in services if classify_unit(name)["gates_overall_pass"] is True]
     lines: list[str] = []
     command_state = "ok"
     for name in services:
@@ -403,25 +452,50 @@ def collect_errors(
     }
 
 
+def _partition_units(services: dict[str, Any]) -> tuple[bool, list[Any], list[Any]]:
+    """Host mode gates PASS on CORE_RUNTIME only. Other classes are ignored for PASS."""
+    units = services.get("units")
+    host = services.get("host_sidecar") is True
+    if not isinstance(units, list):
+        return host, [], []
+    if not host:
+        return False, list(units), []
+    gating: list[Any] = []
+    ignored: list[Any] = []
+    for item in units:
+        if isinstance(item, dict) and item.get("gates_overall_pass") is True:
+            gating.append(item)
+        else:
+            ignored.append(item)
+    return True, gating, ignored
+
+
 def process_from_units(services: dict[str, Any]) -> dict[str, Any]:
-    """Process health is only PASS when every configured service unit was shown healthy."""
+    """Process health is PASS only when every gating service unit was shown healthy.
+
+    Outside host mode every configured service gates. In host mode only
+    CORE_RUNTIME gates. INTENTIONALLY_DISABLED, EVALUATION, and AUXILIARY do not.
+    """
     command_state = str(services.get("command_state") or "undetermined")
+    host, gating, ignored = _partition_units(services)
     view: dict[str, Any] = {
         "source": "systemctl show",
         "command_state": command_state,
         "expected_units": list(services.get("expected_units") or []),
     }
+    if host:
+        view["gating_units"] = [item.get("name") for item in gating if isinstance(item, dict)]
+        view["ignored_for_pass"] = [item.get("name") for item in ignored if isinstance(item, dict)]
     if command_state != "ok" or services.get("available") is not True:
         view.update({"state": "UNKNOWN", "ok": None, "reason": command_state})
         return view
-    units = services.get("units")
-    if not isinstance(units, list) or not units:
-        view.update({"state": "UNKNOWN", "ok": None, "reason": "no_units"})
+    if not gating:
+        view.update({"state": "UNKNOWN", "ok": None, "reason": "no_core_units" if host else "no_units"})
         return view
-    if any(not isinstance(item, dict) or item.get("available") is not True for item in units):
+    if any(not isinstance(item, dict) or item.get("available") is not True for item in gating):
         view.update({"state": "UNKNOWN", "ok": None, "reason": "unit_status_missing"})
         return view
-    if not all(item.get("healthy") is True for item in units):
+    if not all(item.get("healthy") is True for item in gating):
         view.update({"state": "FAILED", "ok": False, "reason": "unit_not_healthy"})
         return view
     view.update({"state": "PASS", "ok": True, "reason": "allowlisted_units_healthy"})
@@ -431,7 +505,9 @@ def process_from_units(services: dict[str, Any]) -> dict[str, Any]:
 def service_state_ok(unit_report: dict[str, Any]) -> bool:
     if not unit_report.get("available"):
         return False
-    units = unit_report.get("units")
-    if not isinstance(units, list) or not units:
+    host, gating, _ignored = _partition_units(unit_report)
+    if host and not gating:
+        return unit_report.get("kind") == "timer"
+    if not gating:
         return False
-    return all(isinstance(item, dict) and item.get("healthy") is True for item in units)
+    return all(isinstance(item, dict) and item.get("healthy") is True for item in gating)

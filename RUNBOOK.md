@@ -211,14 +211,17 @@ cd /path/to/project-anchor
 
 Ops notes: [`anchor-backend/docs/ANCHOR_CONTROL_MCP_V1.md`](anchor-backend/docs/ANCHOR_CONTROL_MCP_V1.md).
 
-- Endpoint shape: `https://<anchor-domain>/mcp` → FastAPI `POST /mcp`
+- Endpoint shape: `https://<anchor-domain>/mcp` → host sidecar `POST /mcp` on `127.0.0.1:8001`
+- Docker backend stays `127.0.0.1:8000` and is not the systemd-capable MCP listener
 - Credential env var: `ANCHOR_CONTROL_MCP_TOKEN` (unset means the route returns 503)
 - Example Nginx location only: [`anchor-backend/docs/nginx/anchor-control-mcp.location.example.conf`](anchor-backend/docs/nginx/anchor-control-mcp.location.example.conf)
-- Do not apply that example on a live host from the doc change. Do not put a real token in git.
+- Host unit example: [`anchor-backend/docs/systemd/anchor-control-mcp.service.example`](anchor-backend/docs/systemd/anchor-control-mcp.service.example)
+- Ops notes for the sidecar and unit classes: [`anchor-backend/docs/ANCHOR_CONTROL_MCP_HOST_SIDECAR_V1.md`](anchor-backend/docs/ANCHOR_CONTROL_MCP_HOST_SIDECAR_V1.md)
+- Do not apply the Nginx example or the systemd example on a live host from the doc change. Do not put a real token in git.
 
 ```bash
 cd /path/to/project-anchor
-PYTHONPATH=anchor-backend python3 -m unittest discover -s anchor-backend/tests -p test_anchor_control_mcp_v1.py
+PYTHONPATH=anchor-backend python3 -m unittest discover -s anchor-backend/tests -p 'test_anchor_control_mcp*.py'
 ```
 
 ## Evidence (paths)
