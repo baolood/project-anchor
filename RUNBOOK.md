@@ -211,7 +211,7 @@ cd /path/to/project-anchor
 
 Ops notes: [`anchor-backend/docs/ANCHOR_CONTROL_MCP_V1.md`](anchor-backend/docs/ANCHOR_CONTROL_MCP_V1.md).
 
-- Endpoint shape: `https://<anchor-domain>/mcp` → host sidecar `POST /mcp` on `127.0.0.1:8001`
+- Endpoint shape: `https://<anchor-domain>/mcp` → host sidecar `POST /mcp` on `127.0.0.1:8021`
 - Docker backend stays `127.0.0.1:8000` and is not the systemd-capable MCP listener
 - Credential env var: `ANCHOR_CONTROL_MCP_TOKEN` (unset means the route returns 503)
 - Example Nginx location only: [`anchor-backend/docs/nginx/anchor-control-mcp.location.example.conf`](anchor-backend/docs/nginx/anchor-control-mcp.location.example.conf)

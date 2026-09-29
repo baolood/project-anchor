@@ -8,7 +8,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 from app.mcp.backend_probe import HEALTH_URL, OPS_URL, _fetch_allowlisted, probe_backend
-from app.mcp.commands import CommandResult, run_readonly_command
+from app.mcp.commands import CommandResult, configured_units, parse_units, run_readonly_command
 from app.mcp.host_sidecar import (
     BindRejected,
     create_app,
@@ -69,15 +69,15 @@ class HostRunner:
 
 def _healthy_states() -> dict[str, tuple[str, str, str]]:
     return {
-        "docker.service": ("active", "success", "simple"),
+        "nginx.service": ("active", "success", "simple"),
+        "project-anchor-commercial-api.service": ("inactive", "success", "simple"),
+        "project-anchor-payment-webhook.service": ("inactive", "success", "simple"),
+        "project-anchor-whisper.service": ("inactive", "success", "simple"),
+        "project-anchor-word-converter.service": ("inactive", "success", "simple"),
         "project-anchor-post-production-monitoring.service": ("dead", "success", "oneshot"),
-        "project-anchor-post-production-monitoring.timer": ("active", "success", "simple"),
-        "nginx.service": ("inactive", "success", "simple"),
-        "jev-forward-shadow-v2.service": ("inactive", "success", "simple"),
-        "whisper.service": ("inactive", "success", "simple"),
-        "word-converter.service": ("inactive", "success", "simple"),
-        "commercial.service": ("failed", "failed", "simple"),
-        "payment.service": ("inactive", "success", "simple"),
+        "project-anchor-post-production-monitoring.timer": ("inactive", "dead", "simple"),
+        "project-anchor-jev-forward-shadow-v2.service": ("inactive", "success", "simple"),
+        "project-anchor-jev-forward-shadow-v2.timer": ("active", "success", "simple"),
     }
 
 
@@ -129,29 +129,52 @@ def _probe_ok(_env, fetch=None):
 class InventoryClassificationTests(unittest.TestCase):
     def test_founder_note_classes_and_gating(self) -> None:
         self.assertEqual(GATING_CLASSES, (CLASS_CORE_RUNTIME,))
-        self.assertEqual(RECOMMENDED_SERVICE_UNITS, ("docker.service",))
-        self.assertEqual(RECOMMENDED_TIMER_UNITS, ())
+        self.assertEqual(
+            RECOMMENDED_SERVICE_UNITS,
+            (
+                "nginx.service",
+                "project-anchor-commercial-api.service",
+                "project-anchor-payment-webhook.service",
+                "project-anchor-whisper.service",
+                "project-anchor-word-converter.service",
+            ),
+        )
+        self.assertEqual(len(RECOMMENDED_TIMER_UNITS), 6)
+        self.assertNotIn("project-anchor-jev-forward-shadow-v2.timer", RECOMMENDED_TIMER_UNITS)
+        self.assertNotIn("project-anchor-kraken-turtle-eth-1h-shadow.timer", RECOMMENDED_TIMER_UNITS)
         expected = {
-            "docker.service": CLASS_CORE_RUNTIME,
-            "project-anchor-post-production-monitoring.service": CLASS_AUXILIARY,
-            "project-anchor-post-production-monitoring.timer": CLASS_AUXILIARY,
-            "nginx.service": CLASS_AUXILIARY,
-            "jev-forward-shadow-v2.service": CLASS_INTENTIONALLY_DISABLED,
-            "whisper.service": CLASS_AUXILIARY,
+            "nginx.service": CLASS_CORE_RUNTIME,
+            "docker.service": CLASS_AUXILIARY,
+            "project-anchor-commercial-api.service": CLASS_AUXILIARY,
+            "project-anchor-payment-webhook.service": CLASS_AUXILIARY,
+            "project-anchor-whisper.service": CLASS_AUXILIARY,
+            "project-anchor-word-converter.service": CLASS_AUXILIARY,
+            "project-anchor-kraken-public-shadow-paper-v1-1.service": CLASS_EVALUATION,
+            "project-anchor-kraken-public-shadow-paper-v1-1.timer": CLASS_EVALUATION,
+            "project-anchor-kraken-public-shadow-paper-v1-1-monitor.service": CLASS_EVALUATION,
+            "project-anchor-evidence-reporter-v1.service": CLASS_AUXILIARY,
+            "project-anchor-jev-candidate-review-v1.timer": CLASS_EVALUATION,
+            "project-anchor-jev-forward-shadow-v1.service": CLASS_EVALUATION,
+            "project-anchor-jev-forward-shadow-v2.service": CLASS_INTENTIONALLY_DISABLED,
+            "project-anchor-jev-forward-shadow-v2.timer": CLASS_EVALUATION,
+            "project-anchor-kraken-forward.timer": CLASS_EVALUATION,
+            "project-anchor-kraken-turtle-eth-1h-shadow.timer": CLASS_EVALUATION,
+            "project-anchor-track-b-historical.service": CLASS_EVALUATION,
+            "project-anchor-prop-pe-old.service": CLASS_EVALUATION,
             "faster-whisper.service": CLASS_AUXILIARY,
-            "word-converter.service": CLASS_AUXILIARY,
-            "word_converter.service": CLASS_AUXILIARY,
-            "commercial-preview.service": CLASS_EVALUATION,
-            "payment.service": CLASS_EVALUATION,
-            "anchor-payment-api.service": CLASS_EVALUATION,
         }
         for name, unit_class in expected.items():
             classified = classify_unit(name)
             self.assertEqual(classified["unit_class"], unit_class, name)
             self.assertEqual(classified["gates_overall_pass"], unit_class == CLASS_CORE_RUNTIME, name)
-        disabled = classify_unit("jev-forward-shadow-v2.service")
+        disabled = classify_unit("project-anchor-jev-forward-shadow-v2.service")
         self.assertEqual(disabled["expectation"], "not_required")
         self.assertIs(disabled["gates_overall_pass"], False)
+        services, warning = configured_units(" ".join(RECOMMENDED_SERVICE_UNITS), ".service", ())
+        self.assertIsNone(warning)
+        self.assertEqual(tuple(services), RECOMMENDED_SERVICE_UNITS)
+        timers = parse_units(" ".join(RECOMMENDED_TIMER_UNITS), ".timer")
+        self.assertEqual(tuple(timers), RECOMMENDED_TIMER_UNITS)
 
     def test_unknown_allowlisted_unit_stays_core(self) -> None:
         classified = classify_unit("anchor-worker.service")
@@ -165,16 +188,8 @@ class HostHealthTests(unittest.TestCase):
         runner = HostRunner(states)
         env = {
             **HOST_ENV,
-            "ANCHOR_CONTROL_MCP_SERVICE_UNITS": ",".join(
-                [
-                    "docker.service",
-                    "whisper.service",
-                    "word-converter.service",
-                    "commercial.service",
-                    "payment.service",
-                    "jev-forward-shadow-v2.service",
-                ]
-            ),
+            "ANCHOR_CONTROL_MCP_SERVICE_UNITS": " ".join(RECOMMENDED_SERVICE_UNITS),
+            "ANCHOR_CONTROL_MCP_TIMER_UNITS": " ".join(RECOMMENDED_TIMER_UNITS),
         }
         with tempfile.TemporaryDirectory() as tmp:
             ctx = _context(Path(tmp), runner, env)
@@ -192,30 +207,33 @@ class HostHealthTests(unittest.TestCase):
                 tools_module.probe_backend = original
         self.assertEqual(status["process"]["state"], "PASS")
         self.assertIs(status["process"]["ok"], True)
-        self.assertIn("docker.service", status["process"]["gating_units"])
-        self.assertIn("jev-forward-shadow-v2.service", status["process"]["ignored_for_pass"])
-        self.assertIn("whisper.service", status["process"]["ignored_for_pass"])
-        self.assertIn("word-converter.service", status["process"]["ignored_for_pass"])
-        self.assertIn("commercial.service", status["process"]["ignored_for_pass"])
-        self.assertIn("payment.service", status["process"]["ignored_for_pass"])
+        self.assertEqual(status["process"]["gating_units"], ["nginx.service"])
+        self.assertIn("project-anchor-jev-forward-shadow-v2.service", status["process"]["ignored_for_pass"])
+        self.assertIn("project-anchor-whisper.service", status["process"]["ignored_for_pass"])
+        self.assertIn("project-anchor-word-converter.service", status["process"]["ignored_for_pass"])
+        self.assertIn("project-anchor-commercial-api.service", status["process"]["ignored_for_pass"])
+        self.assertIn("project-anchor-payment-webhook.service", status["process"]["ignored_for_pass"])
         by_name = {item["name"]: item for item in services["units"]}
-        self.assertEqual(by_name["jev-forward-shadow-v2.service"]["unit_class"], CLASS_INTENTIONALLY_DISABLED)
-        self.assertIs(by_name["jev-forward-shadow-v2.service"]["gates_overall_pass"], False)
-        self.assertFalse(by_name["jev-forward-shadow-v2.service"]["healthy"])
-        self.assertEqual(by_name["whisper.service"]["unit_class"], CLASS_AUXILIARY)
-        self.assertEqual(by_name["payment.service"]["unit_class"], CLASS_EVALUATION)
-        self.assertEqual(services["recommended_service_units"], ["docker.service"])
+        jev = by_name["project-anchor-jev-forward-shadow-v2.service"]
+        self.assertEqual(jev["unit_class"], CLASS_INTENTIONALLY_DISABLED)
+        self.assertIs(jev["gates_overall_pass"], False)
+        self.assertFalse(jev["healthy"])
+        self.assertEqual(by_name["project-anchor-whisper.service"]["unit_class"], CLASS_AUXILIARY)
+        self.assertEqual(by_name["project-anchor-payment-webhook.service"]["unit_class"], CLASS_AUXILIARY)
+        self.assertEqual(by_name["nginx.service"]["unit_class"], CLASS_CORE_RUNTIME)
+        self.assertEqual(list(services["recommended_service_units"]), list(RECOMMENDED_SERVICE_UNITS))
         self.assertEqual(services["gating_classes"], [CLASS_CORE_RUNTIME])
-        self.assertEqual(timers["recommended_timer_units"], [])
+        self.assertEqual(list(timers["recommended_timer_units"]), list(RECOMMENDED_TIMER_UNITS))
+        self.assertNotIn("project-anchor-jev-forward-shadow-v2.timer", timers["recommended_timer_units"])
         self.assertEqual(health["verdict"], "PASS")
         self.assertIn("backend_http", [item["name"] for item in health["checks"]])
         journal_units = [call[2] for call in runner.calls if call[0] == "journalctl"]
-        self.assertEqual(journal_units, ["docker.service"])
-        self.assertNotIn("jev-forward-shadow-v2.service", journal_units)
+        self.assertEqual(journal_units, ["nginx.service"])
+        self.assertNotIn("project-anchor-jev-forward-shadow-v2.service", journal_units)
 
     def test_intentionally_disabled_unit_active_still_passes(self) -> None:
         states = _healthy_states()
-        states["jev-forward-shadow-v2.service"] = ("active", "success", "simple")
+        states["project-anchor-jev-forward-shadow-v2.service"] = ("active", "success", "simple")
         runner = HostRunner(states)
         with tempfile.TemporaryDirectory() as tmp:
             ctx = _context(Path(tmp), runner, dict(HOST_ENV))
@@ -229,13 +247,14 @@ class HostHealthTests(unittest.TestCase):
                 health = call_tool("run_readonly_healthcheck", {}, ctx)
             finally:
                 tools_module.probe_backend = original
-        jev = next(item for item in services["units"] if item["name"] == "jev-forward-shadow-v2.service")
+        jev = next(item for item in services["units"] if item["name"] == "project-anchor-jev-forward-shadow-v2.service")
         self.assertEqual(jev["note"], "active_while_intentionally_disabled")
         self.assertEqual(health["verdict"], "PASS")
 
     def test_core_runtime_down_is_not_pass(self) -> None:
         states = _healthy_states()
-        states["docker.service"] = ("inactive", "success", "simple")
+        states["nginx.service"] = ("inactive", "success", "simple")
+        states["project-anchor-commercial-api.service"] = ("active", "success", "simple")
         runner = HostRunner(states)
         with tempfile.TemporaryDirectory() as tmp:
             ctx = _context(Path(tmp), runner, dict(HOST_ENV))
@@ -315,21 +334,21 @@ class BackendProbeTests(unittest.TestCase):
 
 class PackagingAndEntrypointTests(unittest.TestCase):
     def test_bind_policy_and_non_root(self) -> None:
-        self.assertEqual(require_loopback_bind({}), ("127.0.0.1", 8001))
-        self.assertEqual(require_loopback_bind({"ANCHOR_CONTROL_MCP_BIND": "127.0.0.1:8001"}), ("127.0.0.1", 8001))
-        for raw in ("0.0.0.0:8001", "127.0.0.1:8000", "[::]:8001", "127.0.0.1:8001/mcp"):
+        self.assertEqual(require_loopback_bind({}), ("127.0.0.1", 8021))
+        self.assertEqual(require_loopback_bind({"ANCHOR_CONTROL_MCP_BIND": "127.0.0.1:8021"}), ("127.0.0.1", 8021))
+        for raw in ("0.0.0.0:8021", "127.0.0.1:8000", "127.0.0.1:8001", "[::]:8021"):
             with self.assertRaises(BindRejected):
                 require_loopback_bind({"ANCHOR_CONTROL_MCP_BIND": raw})
         self.assertIs(root_rejected(0), True)
         self.assertIs(root_rejected(999), False)
 
-    def test_listener_is_loopback_8001(self) -> None:
+    def test_listener_is_loopback_8021(self) -> None:
         try:
             sock = open_loopback_listener({})
         except OSError as exc:
-            self.skipTest(f"port 8001 unavailable: {exc}")
+            self.skipTest(f"port 8021 unavailable: {exc}")
         try:
-            self.assertEqual(sock.getsockname(), ("127.0.0.1", 8001))
+            self.assertEqual(sock.getsockname(), ("127.0.0.1", 8021))
         finally:
             sock.close()
 
@@ -415,10 +434,11 @@ class PackagingAndEntrypointTests(unittest.TestCase):
         compose = (REPO / "anchor-backend/docker-compose.yml").read_text(encoding="utf-8")
         dockerfile = (REPO / "anchor-backend/Dockerfile").read_text(encoding="utf-8")
         self.assertIn('"127.0.0.1:8000:8000"', compose)
-        self.assertNotIn("8001", compose)
+        self.assertNotIn("8021", compose)
         self.assertIn('--port", "8000"', dockerfile)
         example = (REPO / "anchor-backend/docs/nginx/anchor-control-mcp.location.example.conf").read_text(encoding="utf-8")
-        self.assertIn("proxy_pass http://127.0.0.1:8001/mcp;", example)
+        self.assertIn("proxy_pass http://127.0.0.1:8021/mcp;", example)
+        self.assertNotIn("proxy_pass http://127.0.0.1:8001/mcp;", example)
         self.assertNotIn("proxy_pass http://127.0.0.1:8000/mcp;", example)
 
 

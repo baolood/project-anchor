@@ -33,9 +33,16 @@ class CommandRejected(Exception):
 
 
 def parse_units(raw: str, suffix: str) -> list[str]:
+    """Accept comma-separated or whitespace-separated unit lists.
+
+    The Vultr inventory writes the recommended values as a quoted
+    space-separated assignment. A comma list still fits a systemd Environment
+    line, which treats an unquoted space as a separator.
+    """
+    text = raw.strip().strip('"').strip("'")
     out: list[str] = []
-    for part in raw.split(","):
-        name = part.strip()
+    for part in re.split(r"[\s,]+", text):
+        name = part.strip().strip('"').strip("'")
         if not name:
             continue
         if not UNIT_RE.fullmatch(name) or not name.endswith(suffix):

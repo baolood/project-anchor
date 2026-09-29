@@ -329,7 +329,7 @@ def _unit_healthy(props: dict[str, str], kind: str) -> bool:
 
 
 def _select_units(kind: str, env: Mapping[str, str]) -> tuple[list[str], str | None, bool]:
-    """Host mode defaults to docker.service and also shows the fixed observe catalog."""
+    """Host mode defaults to the inventoried production units and shows the fixed catalog."""
     host = host_sidecar_enabled(env)
     if kind == "service":
         defaults = HOST_DEFAULT_SERVICES if host else DEFAULT_SERVICES

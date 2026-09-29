@@ -1,4 +1,4 @@
-"""Host-side ANCHOR_CONTROL_MCP listener. Loopback port 8001 only, never root.
+"""Host-side ANCHOR_CONTROL_MCP listener. Loopback port 8021 only, never root.
 
 This process is separate from the Docker backend on 127.0.0.1:8000. It mounts
 only the read-only MCP router.
@@ -13,8 +13,8 @@ from typing import Mapping
 
 
 BIND_HOST = "127.0.0.1"
-BIND_PORT = 8001
-BIND_VALUE = "127.0.0.1:8001"
+BIND_PORT = 8021
+BIND_VALUE = "127.0.0.1:8021"
 BIND_ENV = "ANCHOR_CONTROL_MCP_BIND"
 SERVICE_USER = "anchor-mcp"
 PROJECT_ROOT = "/path/to/project-anchor"
@@ -34,15 +34,19 @@ FORBIDDEN_UNIT_SNIPPETS = (
     "CAP_SYS_ADMIN",
     "0.0.0.0",
     ":8000",
+    ":8001",
 )
 
 
 class BindRejected(Exception):
-    """The process was asked to listen somewhere other than 127.0.0.1:8001."""
+    """The process was asked to listen somewhere other than 127.0.0.1:8021."""
 
 
 def require_loopback_bind(env: Mapping[str, str]) -> tuple[str, int]:
-    """Accept only the unset default or the exact loopback sidecar address."""
+    """Accept only the unset default or 127.0.0.1:8021.
+
+    127.0.0.1:8001 is the payment webhook on the inventoried host.
+    """
     raw = env.get(BIND_ENV)
     if raw is None or raw.strip() == "" or raw.strip() == BIND_VALUE:
         return BIND_HOST, BIND_PORT
@@ -55,7 +59,11 @@ def root_rejected(euid: int) -> bool:
 
 def render_service_unit() -> str:
     """Example systemd unit. Review only; this function does not install it."""
+    from app.mcp.inventory import RECOMMENDED_SERVICE_UNITS, RECOMMENDED_TIMER_UNITS, REPORTS_DIR
+
     backend = f"{PROJECT_ROOT}/anchor-backend"
+    service_units = ",".join(RECOMMENDED_SERVICE_UNITS)
+    timer_units = ",".join(RECOMMENDED_TIMER_UNITS)
     return f"""[Unit]
 Description=Project Anchor read-only control MCP host sidecar
 Documentation=file:{backend}/docs/ANCHOR_CONTROL_MCP_HOST_SIDECAR_V1.md
@@ -71,9 +79,9 @@ WorkingDirectory={backend}
 Environment=PYTHONPATH={backend}
 Environment=ANCHOR_CONTROL_MCP_HOST_SIDECAR=1
 Environment=ANCHOR_CONTROL_MCP_BIND={BIND_VALUE}
-Environment=ANCHOR_CONTROL_MCP_SERVICE_UNITS=docker.service
-Environment=ANCHOR_CONTROL_MCP_TIMER_UNITS=
-Environment=ANCHOR_CONTROL_MCP_REPORTS_DIR={PROJECT_ROOT}/reports
+Environment=ANCHOR_CONTROL_MCP_SERVICE_UNITS={service_units}
+Environment=ANCHOR_CONTROL_MCP_TIMER_UNITS={timer_units}
+Environment=ANCHOR_CONTROL_MCP_REPORTS_DIR={REPORTS_DIR}
 Environment=ANCHOR_CONTROL_MCP_BACKEND_PROBE=1
 EnvironmentFile=-/etc/project-anchor/anchor-control-mcp.env
 ExecStart=/usr/bin/python3 -m app.mcp.host_sidecar
@@ -104,7 +112,9 @@ def unit_problems(text: str) -> list[str]:
         "SupplementaryGroups=systemd-journal",
         f"Environment=ANCHOR_CONTROL_MCP_BIND={BIND_VALUE}",
         "Environment=ANCHOR_CONTROL_MCP_HOST_SIDECAR=1",
-        "Environment=ANCHOR_CONTROL_MCP_SERVICE_UNITS=docker.service",
+        "Environment=ANCHOR_CONTROL_MCP_SERVICE_UNITS=nginx.service,",
+        "project-anchor-payment-webhook.service",
+        "project-anchor-post-production-monitoring.timer",
         "Environment=ANCHOR_CONTROL_MCP_BACKEND_PROBE=1",
         "ExecStart=/usr/bin/python3 -m app.mcp.host_sidecar",
         "EnvironmentFile=-/etc/project-anchor/anchor-control-mcp.env",
