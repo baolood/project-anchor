@@ -225,21 +225,44 @@ def checklist_counts(repo: Path) -> dict[str, Any]:
     return {"available": True, "source": "docs/GO_LIVE_CHECKLIST.md", "counts": counts}
 
 
-def read_kill_switch(timeout_sec: float = 0.3) -> dict[str, Any]:
-    """Match ops kill-switch precedence (env, then redis) with a short socket timeout.
+def _kill_switch_view(state: str, enabled: bool | None, source: str, reason: str) -> dict[str, Any]:
+    return {"state": state, "enabled": enabled, "source": source, "reason": reason}
 
-    Redis is queried only when REDIS_URL is set. Failures stay generic so a DSN
-    or password in that URL is never returned.
+
+def normalize_kill_switch(raw: Any) -> dict[str, Any]:
+    """Fail closed. An unread switch is UNKNOWN, not closed."""
+    if not isinstance(raw, dict):
+        return _kill_switch_view("UNKNOWN", None, "unavailable", "unreadable")
+    state = raw.get("state")
+    enabled = raw.get("enabled")
+    source = raw.get("source")
+    reason = raw.get("reason") if isinstance(raw.get("reason"), str) and TOKEN_RE.fullmatch(raw["reason"]) else "unreadable"
+    if state == "CLOSED" and enabled is False and source == "redis":
+        return _kill_switch_view("CLOSED", False, "redis", reason if reason != "unreadable" else "redis_read")
+    if state == "OPEN" and enabled is True and source in {"env", "redis"}:
+        return _kill_switch_view("OPEN", True, source, reason if reason != "unreadable" else f"{source}_read")
+    if source == "redis" and enabled is False:
+        return _kill_switch_view("CLOSED", False, "redis", "redis_read")
+    if source in {"env", "redis"} and enabled is True:
+        return _kill_switch_view("OPEN", True, source, f"{source}_read")
+    return _kill_switch_view("UNKNOWN", None, "unavailable", reason if reason != "unreadable" else "unreadable")
+
+
+def read_kill_switch(timeout_sec: float = 0.3) -> dict[str, Any]:
+    """Read kill-switch state. Env ON is authoritative. Otherwise require a Redis read.
+
+    Missing Redis, a missing client, or a failed read is UNKNOWN. It is not reported
+    as closed. Exception text is dropped so a URL or password cannot leak.
     """
     if (os.getenv("ANCHOR_KILL_SWITCH") or "").strip() == "1":
-        return {"enabled": True, "source": "env"}
+        return _kill_switch_view("OPEN", True, "env", "env_flag")
     url = (os.getenv("REDIS_URL") or "").strip()
     if not url or looks_sensitive_path(url):
-        return {"enabled": False, "source": "none"}
+        return _kill_switch_view("UNKNOWN", None, "unavailable", "redis_url_unset")
     try:
         import redis
     except Exception:
-        return {"enabled": False, "source": "none"}
+        return _kill_switch_view("UNKNOWN", None, "unavailable", "redis_client_unavailable")
     try:
         client = redis.Redis.from_url(
             url,
@@ -251,9 +274,11 @@ def read_kill_switch(timeout_sec: float = 0.3) -> dict[str, Any]:
             enabled = client.get("anchor:kill_switch") == "1"
         finally:
             client.close()
-        return {"enabled": enabled, "source": "redis"}
     except Exception:
-        return {"enabled": None, "source": "unavailable"}
+        return _kill_switch_view("UNKNOWN", None, "unavailable", "redis_read_failed")
+    if enabled:
+        return _kill_switch_view("OPEN", True, "redis", "redis_read")
+    return _kill_switch_view("CLOSED", False, "redis", "redis_read")
 
 
 def _parse_show(stdout: str) -> dict[str, str]:
@@ -368,6 +393,31 @@ def collect_errors(
         "artifact_errors": artifact_errors,
         "redacted": True,
     }
+
+
+def process_from_units(services: dict[str, Any]) -> dict[str, Any]:
+    """Process health is only PASS when every configured service unit was shown healthy."""
+    command_state = str(services.get("command_state") or "undetermined")
+    view: dict[str, Any] = {
+        "source": "systemctl show",
+        "command_state": command_state,
+        "expected_units": list(services.get("expected_units") or []),
+    }
+    if command_state != "ok" or services.get("available") is not True:
+        view.update({"state": "UNKNOWN", "ok": None, "reason": command_state})
+        return view
+    units = services.get("units")
+    if not isinstance(units, list) or not units:
+        view.update({"state": "UNKNOWN", "ok": None, "reason": "no_units"})
+        return view
+    if any(not isinstance(item, dict) or item.get("available") is not True for item in units):
+        view.update({"state": "UNKNOWN", "ok": None, "reason": "unit_status_missing"})
+        return view
+    if not all(item.get("healthy") is True for item in units):
+        view.update({"state": "FAILED", "ok": False, "reason": "unit_not_healthy"})
+        return view
+    view.update({"state": "PASS", "ok": True, "reason": "allowlisted_units_healthy"})
+    return view
 
 
 def service_state_ok(unit_report: dict[str, Any]) -> bool:

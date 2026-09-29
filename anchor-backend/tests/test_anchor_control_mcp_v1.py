@@ -60,7 +60,7 @@ def _context(root: Path, runner: RecordingRunner | None = None, env: dict | None
         repo_root=root,
         env=selected_env,
         run_command=runner or RecordingRunner(),
-        kill_switch=lambda: {"enabled": False, "source": "none"},
+        kill_switch=lambda: {"enabled": False, "source": "redis", "state": "CLOSED", "reason": "redis_read"},
         clock=lambda: "2026-09-29T00:00:00Z",
         extra_secrets=(TOKEN,),
     )
@@ -154,8 +154,15 @@ class AnchorControlMcpToolTests(unittest.TestCase):
             blob = json.dumps(
                 {"status": status, "observation": observation, "ledger": ledger, "services": services, "timers": timers, "health": health}
             )
+            self.assertEqual(status["process"]["state"], "PASS")
             self.assertEqual(status["process"]["ok"], True)
+            self.assertEqual(status["process"]["source"], "systemctl show")
+            self.assertEqual(status["kill_switch"]["state"], "CLOSED")
             self.assertEqual(status["kill_switch"]["enabled"], False)
+            process_check = next(item for item in health["checks"] if item["name"] == "process")
+            kill_check = next(item for item in health["checks"] if item["name"] == "kill_switch")
+            self.assertEqual(process_check["result"], "PASS")
+            self.assertEqual(kill_check["result"], "PASS")
             self.assertEqual(observation["observation_class"], "forward")
             self.assertEqual(observation["source"], "forward_observation.json")
             self.assertEqual(observation["result"], "PASS")
@@ -195,6 +202,66 @@ class AnchorControlMcpToolTests(unittest.TestCase):
             self.assertEqual(payload["unit_config"], "invalid_override_ignored")
             self.assertEqual(payload["expected_units"], ["project-anchor-post-production-monitoring.service"])
             self.assertTrue(all("reboot" not in part for call in runner.calls for part in call))
+
+    def test_process_unknown_or_failed_is_not_pass(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            missing_ctx = _context(root, RecordingRunner())
+
+            def unavailable(argv: list[str], timeout: float) -> CommandResult:
+                if argv[0] == "journalctl":
+                    return CommandResult(False, None, "", "command_not_found")
+                return CommandResult(False, None, "", "command_not_found")
+
+            missing_ctx.run_command = unavailable
+            status = call_tool("get_anchor_status", {}, missing_ctx)
+            health = call_tool("run_readonly_healthcheck", {}, missing_ctx)
+            self.assertEqual(status["process"]["state"], "UNKNOWN")
+            self.assertIsNone(status["process"]["ok"])
+            self.assertNotEqual(status["process"]["state"], "PASS")
+            process_check = next(item for item in health["checks"] if item["name"] == "process")
+            self.assertEqual(process_check["result"], "UNKNOWN")
+            self.assertNotEqual(health["verdict"], "PASS")
+
+            def failed(argv: list[str], timeout: float) -> CommandResult:
+                unit = argv[2]
+                if argv[0] == "journalctl":
+                    return CommandResult(True, 0, "", "")
+                if unit.endswith(".service"):
+                    return CommandResult(True, 0, _ok_show(unit, "failed", "failed"), "")
+                return CommandResult(True, 0, _ok_show(unit, "active", "success"), "")
+
+            failed_ctx = _context(root, RecordingRunner())
+            failed_ctx.run_command = failed
+            failed_status = call_tool("get_anchor_status", {}, failed_ctx)
+            failed_health = call_tool("run_readonly_healthcheck", {}, failed_ctx)
+            self.assertEqual(failed_status["process"]["state"], "FAILED")
+            self.assertIs(failed_status["process"]["ok"], False)
+            failed_check = next(item for item in failed_health["checks"] if item["name"] == "process")
+            self.assertEqual(failed_check["result"], "DEGRADED")
+            self.assertNotEqual(failed_health["verdict"], "PASS")
+
+    def test_unread_kill_switch_is_unknown_not_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = _context(Path(tmp), RecordingRunner())
+            ctx.kill_switch = lambda: {"enabled": False, "source": "none"}
+            status = call_tool("get_anchor_status", {}, ctx)
+            health = call_tool("run_readonly_healthcheck", {}, ctx)
+            self.assertEqual(status["kill_switch"]["state"], "UNKNOWN")
+            self.assertIsNone(status["kill_switch"]["enabled"])
+            self.assertNotEqual(status["kill_switch"]["state"], "CLOSED")
+            kill_check = next(item for item in health["checks"] if item["name"] == "kill_switch")
+            self.assertEqual(kill_check["result"], "UNKNOWN")
+            self.assertNotEqual(health["verdict"], "PASS")
+
+            ctx.kill_switch = lambda: {"enabled": True, "source": "env", "state": "OPEN", "reason": "env_flag"}
+            opened = call_tool("get_anchor_status", {}, ctx)
+            opened_health = call_tool("run_readonly_healthcheck", {}, ctx)
+            self.assertEqual(opened["kill_switch"]["state"], "OPEN")
+            self.assertIs(opened["kill_switch"]["enabled"], True)
+            opened_check = next(item for item in opened_health["checks"] if item["name"] == "kill_switch")
+            self.assertEqual(opened_check["result"], "DEGRADED")
+            self.assertNotEqual(opened_health["verdict"], "PASS")
 
     def test_recent_errors_are_sanitized_and_limited(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -239,7 +306,7 @@ class AnchorControlMcpToolTests(unittest.TestCase):
             repo_root=REPO,
             env={},
             run_command=RecordingRunner(),
-            kill_switch=lambda: {"enabled": False, "source": "none"},
+            kill_switch=lambda: {"enabled": False, "source": "redis", "state": "CLOSED", "reason": "redis_read"},
             clock=lambda: "2026-09-29T00:00:00Z",
         )
         ledger = call_tool("get_ledger_summary", {}, ctx)
@@ -439,7 +506,23 @@ class KillSwitchReadTests(unittest.TestCase):
         os.environ["ANCHOR_KILL_SWITCH"] = "1"
         os.environ["REDIS_URL"] = "redis://secret-user:secret-pass@127.0.0.1:1/0"
         try:
-            self.assertEqual(read_kill_switch(), {"enabled": True, "source": "env"})
+            opened = read_kill_switch()
+            self.assertEqual(opened["state"], "OPEN")
+            self.assertIs(opened["enabled"], True)
+            self.assertEqual(opened["source"], "env")
+            self.assertNotIn("secret-pass", json.dumps(opened))
+            os.environ.pop("ANCHOR_KILL_SWITCH", None)
+            os.environ.pop("REDIS_URL", None)
+            unread = read_kill_switch()
+            self.assertEqual(unread["state"], "UNKNOWN")
+            self.assertIsNone(unread["enabled"])
+            self.assertNotEqual(unread["state"], "CLOSED")
+            os.environ["REDIS_URL"] = "redis://secret-user:secret-pass@127.0.0.1:1/0"
+            failed = read_kill_switch()
+            self.assertEqual(failed["state"], "UNKNOWN")
+            self.assertIsNone(failed["enabled"])
+            self.assertNotIn("secret-pass", json.dumps(failed))
+            self.assertNotIn("secret-user", json.dumps(failed))
         finally:
             if previous_flag is None:
                 os.environ.pop("ANCHOR_KILL_SWITCH", None)

@@ -15,6 +15,8 @@ from app.mcp.status import (
     collect_observation,
     collect_units,
     default_reports_dir,
+    normalize_kill_switch,
+    process_from_units,
     read_kill_switch,
     repo_root,
     service_state_ok,
@@ -85,9 +87,14 @@ def _envelope(tool: str, payload: dict[str, Any], ctx: ToolContext) -> dict[str,
 def collect_anchor_status(ctx: ToolContext) -> dict[str, Any]:
     observation = collect_observation(ctx.reports_dir)
     ledger = collect_ledger(ctx.reports_dir)
+    services = collect_units("service", ctx.env, ctx.run_command)
+    try:
+        kill_switch = normalize_kill_switch(ctx.kill_switch())
+    except Exception:
+        kill_switch = normalize_kill_switch(None)
     return {
-        "process": {"ok": True},
-        "kill_switch": ctx.kill_switch(),
+        "process": process_from_units(services),
+        "kill_switch": kill_switch,
         "checklist": checklist_counts(ctx.repo_root),
         "latest_observation_result": observation.get("result") if observation.get("available") else None,
         "latest_observation_available": bool(observation.get("available")),
@@ -131,6 +138,27 @@ def _check(name: str, ok: bool, detail: str) -> dict[str, str]:
     return {"name": name, "result": "PASS" if ok else "DEGRADED", "detail": detail}
 
 
+def _process_check(process: dict[str, Any]) -> dict[str, str]:
+    state = process.get("state")
+    if state == "PASS" and process.get("ok") is True:
+        result = "PASS"
+    elif state == "FAILED" or process.get("ok") is False:
+        result = "DEGRADED"
+    else:
+        result = "UNKNOWN"
+    return {"name": "process", "result": result, "detail": str(process.get("reason") or state or "UNKNOWN")}
+
+
+def _kill_switch_check(kill: dict[str, Any]) -> dict[str, str]:
+    if kill.get("state") == "CLOSED" and kill.get("enabled") is False and kill.get("source") == "redis":
+        result = "PASS"
+    elif kill.get("state") == "OPEN" or kill.get("enabled") is True:
+        result = "DEGRADED"
+    else:
+        result = "UNKNOWN"
+    return {"name": "kill_switch", "result": result, "detail": str(kill.get("state") or "UNKNOWN")}
+
+
 def run_readonly_healthcheck(ctx: ToolContext) -> dict[str, Any]:
     status = collect_anchor_status(ctx)
     observation = collect_observation(ctx.reports_dir)
@@ -138,12 +166,12 @@ def run_readonly_healthcheck(ctx: ToolContext) -> dict[str, Any]:
     services = collect_units("service", ctx.env, ctx.run_command)
     timers = collect_units("timer", ctx.env, ctx.run_command)
     errors = collect_errors(ctx.reports_dir, ctx.env, ctx.run_command, 20)
-    kill = status.get("kill_switch") if isinstance(status.get("kill_switch"), dict) else {}
-    kill_known = kill.get("source") in {"env", "redis", "none"} and isinstance(kill.get("enabled"), bool)
+    kill = status.get("kill_switch") if isinstance(status.get("kill_switch"), dict) else {"state": "UNKNOWN"}
+    process = status.get("process") if isinstance(status.get("process"), dict) else {"state": "UNKNOWN"}
     error_count = len(errors.get("journal_lines") or []) + len(errors.get("artifact_errors") or [])
     checks = [
-        _check("process", status.get("process", {}).get("ok") is True, "mcp_process_up"),
-        _check("kill_switch", kill_known and kill.get("enabled") is False, str(kill.get("source") or "unavailable")),
+        _process_check(process),
+        _kill_switch_check(kill),
         _check(
             "observation",
             observation.get("available") is True and observation.get("result") in {"PASS", "OK"},
@@ -194,7 +222,11 @@ def tool_definitions() -> list[dict[str, Any]]:
         "additionalProperties": False,
     }
     descriptions = {
-        "get_anchor_status": "Read overall Project Anchor status. Does not trade, change config, or read secrets.",
+        "get_anchor_status": (
+            "Read overall Project Anchor status from allowlisted systemd units and the kill switch. "
+            "Unknown or failed process status is not PASS. An unread kill switch is UNKNOWN. "
+            "Does not trade, change config, or read secrets."
+        ),
         "get_latest_observation": "Read the latest Forward/observation sample from allowlisted report JSON. Read-only.",
         "get_ledger_summary": "Read the Official Fake-Fill / ledger summary from allowlisted report JSON. Read-only.",
         "get_services": "Read allowlisted systemd service status. Does not start, stop, or restart units.",

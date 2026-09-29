@@ -24,10 +24,12 @@ The backend process already listens on `127.0.0.1:8000` in `anchor-backend/docke
 
 Optional: `ANCHOR_CONTROL_MCP_ALLOWED_ORIGINS` (comma-separated exact origins). When unset, a request with an `Origin` header is accepted only when that origin's host matches the request `Host`. Requests with no `Origin` are accepted after the bearer check. Server-side Grok connectors typically omit `Origin`.
 
-Optional unit allowlists, each a comma-separated list of safe unit names (max 8):
+Deploy-time unit allowlists, each a comma-separated list of safe unit names (max 8):
 
-- `ANCHOR_CONTROL_MCP_SERVICE_UNITS` (default `project-anchor-post-production-monitoring.service`)
-- `ANCHOR_CONTROL_MCP_TIMER_UNITS` (default `project-anchor-post-production-monitoring.timer`)
+- `ANCHOR_CONTROL_MCP_SERVICE_UNITS`
+- `ANCHOR_CONTROL_MCP_TIMER_UNITS`
+
+Set both to the real Anchor service and timer units installed on that host before relying on `get_anchor_status` or `run_readonly_healthcheck`. The built-in default is only `project-anchor-post-production-monitoring.service` and `project-anchor-post-production-monitoring.timer`. That pair is the read-only monitoring refresh. It is not the full runtime picture (backend, worker, and any other units the operator actually runs). Process health is derived only from `systemctl show` of the configured service units. If that read is missing or a unit is failed, process state is `UNKNOWN` or `FAILED` and is not reported as `PASS`.
 
 Optional report directory: `ANCHOR_CONTROL_MCP_REPORTS_DIR`. When unset, the collector reads `<repo>/reports`.
 
@@ -37,7 +39,7 @@ Exactly these seven, all read-only:
 
 | Tool | What it returns |
 | --- | --- |
-| `get_anchor_status` | Process up, kill switch enabled/source (`ANCHOR_KILL_SWITCH`, else Redis only when `REDIS_URL` is set, with a short timeout), checklist marker counts, observation/ledger availability |
+| `get_anchor_status` | Process state from allowlisted `systemctl show` (`PASS` only when every configured service unit is healthy; otherwise `UNKNOWN` or `FAILED`), kill switch (`OPEN` when `ANCHOR_KILL_SWITCH=1` or Redis reads on; `CLOSED` only after a successful Redis read of off; `UNKNOWN` when Redis cannot be read), checklist marker counts, observation/ledger availability |
 | `get_latest_observation` | Latest Forward/observation sample (`forward_observation.json`, else the newest allowlisted monitoring report) |
 | `get_ledger_summary` | Official Fake-Fill / ledger summary from allowlisted fake-fill report JSON |
 | `get_services` | `systemctl show` for the service allowlist |
@@ -61,6 +63,8 @@ The MCP surface must not:
 systemd access is a fixed argv allowlist (`systemctl show` and `journalctl -u <service> -p err`). Report JSON is read only from an allowlisted basename inside the reports directory. Symlinks that resolve outside that directory are ignored. Payloads are projected to status fields and then redacted.
 
 Live trading and go-live remain `NO-GO` in every tool envelope.
+
+Kill-switch reads fail closed. An unread or failed Redis read is `UNKNOWN` and the combined health check is not `PASS`. It is not treated as closed or normal. A confirmed off state requires a successful Redis read. `ANCHOR_KILL_SWITCH=1` is `OPEN`.
 
 ## Connect Grok Custom MCP
 
