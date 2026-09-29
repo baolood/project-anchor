@@ -207,6 +207,20 @@ cd /path/to/project-anchor
 
 生成 `docker-compose.override.yml`，执行 release 验证，打 `risk-core-v2` 并推送。
 
+## Read-only control MCP (ANCHOR_CONTROL_MCP_V1)
+
+Ops notes: [`anchor-backend/docs/ANCHOR_CONTROL_MCP_V1.md`](anchor-backend/docs/ANCHOR_CONTROL_MCP_V1.md).
+
+- Endpoint shape: `https://<anchor-domain>/mcp` → FastAPI `POST /mcp`
+- Credential env var: `ANCHOR_CONTROL_MCP_TOKEN` (unset means the route returns 503)
+- Example Nginx location only: [`anchor-backend/docs/nginx/anchor-control-mcp.location.example.conf`](anchor-backend/docs/nginx/anchor-control-mcp.location.example.conf)
+- Do not apply that example on a live host from the doc change. Do not put a real token in git.
+
+```bash
+cd /path/to/project-anchor
+PYTHONPATH=anchor-backend python3 -m unittest discover -s anchor-backend/tests -p test_anchor_control_mcp_v1.py
+```
+
 ## Evidence (paths)
 
 - `/tmp/anchor_risk_core_tag_head.out`

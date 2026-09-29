@@ -1,0 +1,7 @@
+"""Read-only Project Anchor control MCP (ANCHOR_CONTROL_MCP_V1)."""
+
+PROTOCOL = "ANCHOR_CONTROL_MCP_V1"
+SERVER_NAME = "anchor-control-mcp"
+SERVER_VERSION = "1.0.0"
+ENDPOINT_PATH = "/mcp"
+TOKEN_ENV = "ANCHOR_CONTROL_MCP_TOKEN"

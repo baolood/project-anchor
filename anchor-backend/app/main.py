@@ -9,6 +9,7 @@ from fastapi import Body, FastAPI, HTTPException, Query, Request
 from app.api.routes import router
 from app.api.ops import router as ops_router
 from app.api.routes_domain_command_validation_dev import router as domain_command_validation_dev_router
+from app.mcp.router import router as anchor_control_mcp_router
 from app.domain_events import append_domain_event_pool
 from app.trade_gate_production import (
     PRODUCTION_COMMAND_CREATED_STATUS,
@@ -32,6 +33,7 @@ app = FastAPI(title="Anchor Backend", version="0.1.0")
 app.include_router(router)
 app.include_router(ops_router)
 app.include_router(domain_command_validation_dev_router)
+app.include_router(anchor_control_mcp_router)
 
 
 def _now_z() -> str:
