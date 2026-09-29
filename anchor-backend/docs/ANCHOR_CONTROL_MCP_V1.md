@@ -29,7 +29,7 @@ Deploy-time unit allowlists, each a comma-separated list of safe unit names (max
 - `ANCHOR_CONTROL_MCP_SERVICE_UNITS`
 - `ANCHOR_CONTROL_MCP_TIMER_UNITS`
 
-Set both to the real Anchor service and timer units installed on that host before relying on `get_anchor_status` or `run_readonly_healthcheck`. The built-in default is only `project-anchor-post-production-monitoring.service` and `project-anchor-post-production-monitoring.timer`. That pair is the read-only monitoring refresh. It is not the full runtime picture (backend, worker, and any other units the operator actually runs). Process health is derived only from `systemctl show` of the configured service units. If that read is missing or a unit is failed, process state is `UNKNOWN` or `FAILED` and is not reported as `PASS`.
+Set both to the real Anchor service and timer units installed on that host before relying on `get_anchor_status` or `run_readonly_healthcheck`. The built-in default is only `project-anchor-post-production-monitoring.service` and `project-anchor-post-production-monitoring.timer`. That pair is the read-only monitoring refresh. It is not the full runtime picture (backend, worker, and any other units the operator actually runs). Process health is derived only from `systemctl show` of the configured service units. Long-running services pass only when `ActiveState=active`. `inactive` or `dead` with `Result=success` is a stopped service and is `FAILED`, not healthy. A oneshot unit is idle-healthy only when `systemctl show` reports `Type=oneshot` and `Result=success`. Other service types do not get that exception. If the read is missing, process state is `UNKNOWN`. `UNKNOWN` and `FAILED` are not reported as `PASS`. Timers pass only when `ActiveState=active`.
 
 Optional report directory: `ANCHOR_CONTROL_MCP_REPORTS_DIR`. When unset, the collector reads `<repo>/reports`.
 
@@ -39,7 +39,7 @@ Exactly these seven, all read-only:
 
 | Tool | What it returns |
 | --- | --- |
-| `get_anchor_status` | Process state from allowlisted `systemctl show` (`PASS` only when every configured service unit is healthy; otherwise `UNKNOWN` or `FAILED`), kill switch (`OPEN` when `ANCHOR_KILL_SWITCH=1` or Redis reads on; `CLOSED` only after a successful Redis read of off; `UNKNOWN` when Redis cannot be read), checklist marker counts, observation/ledger availability |
+| `get_anchor_status` | Process state from allowlisted `systemctl show` (long-running services `PASS` only when `ActiveState=active`; stopped `Result=success` is `FAILED`; `Type=oneshot` may be idle-healthy; otherwise `UNKNOWN` or `FAILED`), kill switch (`OPEN` when `ANCHOR_KILL_SWITCH=1` or Redis reads on; `CLOSED` only after a successful Redis read of off; `UNKNOWN` when Redis cannot be read), checklist marker counts, observation/ledger availability |
 | `get_latest_observation` | Latest Forward/observation sample (`forward_observation.json`, else the newest allowlisted monitoring report) |
 | `get_ledger_summary` | Official Fake-Fill / ledger summary from allowlisted fake-fill report JSON |
 | `get_services` | `systemctl show` for the service allowlist |

@@ -21,14 +21,15 @@ TOKEN = "test-mcp-token-value"
 REPO = Path(__file__).resolve().parents[2]
 
 
-def _ok_show(unit: str, active: str, result: str) -> str:
+def _ok_show(unit: str, active: str, result: str, unit_type: str = "simple") -> str:
     return "\n".join(
         [
             f"Id={unit}",
             f"ActiveState={active}",
-            "SubState=dead" if active != "active" else "SubState=waiting",
+            "SubState=dead" if active != "active" else "SubState=running",
             "UnitFileState=enabled",
             f"Result={result}",
+            f"Type={unit_type}",
             "Description=read-only unit",
             "NextElapseUSecRealtime=",
             "LastTriggerUSecRealtime=",
@@ -47,7 +48,7 @@ class RecordingRunner:
             return CommandResult(True, 0, self.journal_stdout, "")
         unit = argv[2]
         if unit.endswith(".service"):
-            return CommandResult(True, 0, _ok_show(unit, "inactive", "success"), "")
+            return CommandResult(True, 0, _ok_show(unit, "active", "success", "simple"), "")
         return CommandResult(True, 0, _ok_show(unit, "active", "success"), "")
 
 
@@ -240,6 +241,46 @@ class AnchorControlMcpToolTests(unittest.TestCase):
             failed_check = next(item for item in failed_health["checks"] if item["name"] == "process")
             self.assertEqual(failed_check["result"], "DEGRADED")
             self.assertNotEqual(failed_health["verdict"], "PASS")
+
+    def test_stopped_long_running_service_with_success_is_failed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            def stopped(argv: list[str], timeout: float) -> CommandResult:
+                unit = argv[2]
+                if argv[0] == "journalctl":
+                    return CommandResult(True, 0, "", "")
+                if unit.endswith(".service"):
+                    return CommandResult(True, 0, _ok_show(unit, "inactive", "success", "simple"), "")
+                return CommandResult(True, 0, _ok_show(unit, "active", "success"), "")
+
+            ctx = _context(root, RecordingRunner())
+            ctx.run_command = stopped
+            status = call_tool("get_anchor_status", {}, ctx)
+            services = call_tool("get_services", {}, ctx)
+            health = call_tool("run_readonly_healthcheck", {}, ctx)
+            self.assertEqual(services["units"][0]["healthy"], False)
+            self.assertEqual(services["units"][0]["properties"]["active_state"], "inactive")
+            self.assertEqual(services["units"][0]["properties"]["result"], "success")
+            self.assertEqual(status["process"]["state"], "FAILED")
+            self.assertIs(status["process"]["ok"], False)
+            process_check = next(item for item in health["checks"] if item["name"] == "process")
+            self.assertEqual(process_check["result"], "DEGRADED")
+            self.assertNotEqual(health["verdict"], "PASS")
+
+            def oneshot_idle(argv: list[str], timeout: float) -> CommandResult:
+                unit = argv[2]
+                if argv[0] == "journalctl":
+                    return CommandResult(True, 0, "", "")
+                if unit.endswith(".service"):
+                    return CommandResult(True, 0, _ok_show(unit, "dead", "success", "oneshot"), "")
+                return CommandResult(True, 0, _ok_show(unit, "active", "success"), "")
+
+            oneshot_ctx = _context(root, RecordingRunner())
+            oneshot_ctx.run_command = oneshot_idle
+            oneshot_status = call_tool("get_anchor_status", {}, oneshot_ctx)
+            self.assertEqual(oneshot_status["process"]["state"], "PASS")
+            self.assertIs(oneshot_status["process"]["ok"], True)
 
     def test_unread_kill_switch_is_unknown_not_closed(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

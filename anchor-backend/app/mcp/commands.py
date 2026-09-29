@@ -10,7 +10,7 @@ from dataclasses import dataclass
 UNIT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9:_.@-]{0,127}\.(service|timer)$")
 MAX_UNITS = 8
 SYSTEMCTL_PROPERTIES = (
-    "Id,ActiveState,SubState,UnitFileState,Result,Description,"
+    "Id,ActiveState,SubState,UnitFileState,Result,Type,Description,"
     "NextElapseUSecRealtime,LastTriggerUSecRealtime"
 )
 DEFAULT_SERVICES = ("project-anchor-post-production-monitoring.service",)

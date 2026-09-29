@@ -45,6 +45,7 @@ PROP_MAP = {
     "SubState": "sub_state",
     "UnitFileState": "unit_file_state",
     "Result": "result",
+    "Type": "type",
     "Description": "description",
     "NextElapseUSecRealtime": "next_elapse_usec_realtime",
     "LastTriggerUSecRealtime": "last_trigger_usec_realtime",
@@ -295,14 +296,21 @@ def _parse_show(stdout: str) -> dict[str, str]:
 
 
 def _unit_healthy(props: dict[str, str], kind: str) -> bool:
+    """Long-running services and timers pass only while ActiveState=active.
+
+    inactive/dead with Result=success is a stopped unit, not a healthy one.
+    Oneshot services are the explicit exception: systemctl must report Type=oneshot,
+    and the idle success state is inactive or dead with Result=success.
+    """
     active = props.get("active_state", "")
-    result = props.get("result", "")
+    if kind == "timer":
+        return active == "active"
+    if kind != "service":
+        return False
     if active == "active":
         return True
-    if kind == "service" and active in {"inactive", "dead"} and result == "success":
+    if props.get("type") == "oneshot" and active in {"inactive", "dead"} and props.get("result") == "success":
         return True
-    if kind == "timer" and active in {"inactive", "active"} and result in {"success", ""}:
-        return active == "active" or result == "success"
     return False
 
 
