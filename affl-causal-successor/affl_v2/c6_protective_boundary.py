@@ -95,6 +95,27 @@ def D(value) -> Decimal:
     return Decimal(value)
 
 
+def finite_number(value, reason: str) -> Decimal:
+    """Finite Decimal. NaN and Infinity are rejected before they reach the book."""
+    number = D(value)
+    if not number.is_finite():
+        raise ProtectiveBoundaryError(reason)
+    return number
+
+
+def positive_price(value, reason: str = "C6_INVALID_PRICE") -> Decimal:
+    number = finite_number(value, reason)
+    if number <= 0:
+        raise ProtectiveBoundaryError(reason)
+    return number
+
+
+def _require_metadata(observation_id, at) -> None:
+    """Ledger identity fields must be serializable before any book mutation."""
+    _jsonable(observation_id)
+    _jsonable(at)
+
+
 def floor_qty(amount: Decimal) -> Decimal:
     if amount <= 0:
         return Decimal(0)
@@ -198,15 +219,23 @@ def row_hash(event: dict) -> str:
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
-@dataclass
+class _Unset:
+    pass
+
+
+_UNSET = _Unset()
+
+
+@dataclass(frozen=True)
 class OpenLeg:
+    """Private ex-ante snapshot. Fields do not change after the open commits."""
+
     trade_id: str
     side: str
     quantity: Decimal
     entry_price: Decimal
     reference_price: Decimal
     preset_stop_price: Decimal
-    protective_stop_price: Decimal
     equity_at_open: Decimal
     risk_amount: Decimal
     risk_pct: Decimal
@@ -239,21 +268,60 @@ class OpenLeg:
         }
 
 
+@dataclass(frozen=True)
+class PositionView:
+    """Read-only view returned by ProtectiveRiskBook.position.
+
+    Mutating this object, including via object.__setattr__, does not change
+    the book's working stop or the ex-ante snapshot copied onto later exits.
+    """
+
+    trade_id: str
+    side: str
+    quantity: Decimal
+    entry_price: Decimal
+    preset_stop_price: Decimal
+    protective_stop_price: Decimal
+    equity_at_open: Decimal
+    risk_amount: Decimal
+    risk_pct: Decimal
+    stop_distance: Decimal
+
+
 class ProtectiveRiskBook:
     """In-memory Fake-Fill book. Append-only Official-shaped events. No order routing."""
 
     def __init__(self, starting_equity, *, execution: str = EXECUTION_FAKE_FILL):
         _require_execution(execution)
-        starting_equity = D(starting_equity)
+        starting_equity = finite_number(starting_equity, "C6_INVALID_EQUITY")
         if starting_equity < 0:
             raise ProtectiveBoundaryError("C6_INVALID_EQUITY")
         self.execution = execution
         self.cash = starting_equity
         self.realized_pnl_cum = Decimal(0)
-        self.position: Optional[OpenLeg] = None
+        self._leg: Optional[OpenLeg] = None
+        self._protective_stop: Optional[Decimal] = None
         self._events: list[dict] = []
         self._seq = 0
         self._prev_hash = GENESIS_HASH
+
+    @property
+    def position(self) -> Optional[PositionView]:
+        leg = self._leg
+        if leg is None or self._protective_stop is None:
+            return None
+        return PositionView(
+            trade_id=leg.trade_id,
+            side=leg.side,
+            quantity=leg.quantity,
+            entry_price=leg.entry_price,
+            preset_stop_price=leg.preset_stop_price,
+            protective_stop_price=self._protective_stop,
+            equity_at_open=leg.equity_at_open,
+            risk_amount=leg.risk_amount,
+            risk_pct=leg.risk_pct,
+            stop_distance=leg.stop_distance,
+        )
 
     @property
     def events(self) -> list[dict]:
@@ -268,11 +336,11 @@ class ProtectiveRiskBook:
         return "\n".join(lines) + "\n"
 
     def net_liquidation(self, mark: Decimal) -> Decimal:
-        if self.position is None:
+        if self._leg is None:
             return self.cash
-        mark = D(mark)
-        direction = Decimal(1) if self.position.side == "LONG" else Decimal(-1)
-        unrealized = (mark - self.position.entry_price) * self.position.quantity * direction
+        mark = positive_price(mark, "C6_INVALID_MARK")
+        direction = Decimal(1) if self._leg.side == "LONG" else Decimal(-1)
+        unrealized = (mark - self._leg.entry_price) * self._leg.quantity * direction
         return self.cash + unrealized
 
     def on_signal(
@@ -286,22 +354,25 @@ class ProtectiveRiskBook:
         execution: str = EXECUTION_FAKE_FILL,
     ) -> list[dict]:
         _require_execution(execution)
+        _require_metadata(observation_id, at)
         if choice not in ("LONG", "SHORT", "FLAT"):
             raise ProtectiveBoundaryError("C6_INVALID_SIDE")
-        reference = D(reference_price)
-        candidate = D(candidate_quantity)
+        if self._leg is None and choice == "FLAT":
+            return []
+        reference = finite_number(reference_price, "C6_INVALID_PRICE")
+        candidate = finite_number(candidate_quantity, "C6_INVALID_QUANTITY")
 
-        if self.position is None:
-            if choice == "FLAT":
-                return []
+        if self._leg is None:
             return [self._open_leg(choice, reference, candidate, observation_id, at, "OPEN")]
 
-        if choice == self.position.side:
+        if reference <= 0:
+            raise ProtectiveBoundaryError("C6_INVALID_PRICE")
+        if choice == self._leg.side:
             return []
 
         if choice == "FLAT":
             return [self._close_leg(
-                exit_price=adverse_fill_price(_sell_buy(self.position.side), reference),
+                exit_price=adverse_fill_price(_sell_buy(self._leg.side), reference),
                 event_type="FLAT_EXIT",
                 reason_code="FLAT_SIGNAL",
                 observation_id=observation_id,
@@ -311,7 +382,7 @@ class ProtectiveRiskBook:
             )]
 
         events = [self._close_leg(
-            exit_price=adverse_fill_price(_sell_buy(self.position.side), reference),
+            exit_price=adverse_fill_price(_sell_buy(self._leg.side), reference),
             event_type="REVERSE_EXIT",
             reason_code="REVERSE_SIGNAL",
             observation_id=observation_id,
@@ -323,66 +394,73 @@ class ProtectiveRiskBook:
         return events
 
     def on_mark(self, price, *, observation_id: str, at: str) -> Optional[dict]:
-        if self.position is None:
+        _require_metadata(observation_id, at)
+        mark = positive_price(price, "C6_INVALID_MARK")
+        if self._leg is None or self._protective_stop is None:
             return None
-        mark = D(price)
-        if mark <= 0:
-            raise ProtectiveBoundaryError("C6_INVALID_MARK")
-        trigger = self.position.protective_stop_price
-        if self.position.side == "LONG" and mark > trigger:
+        trigger = self._protective_stop
+        if self._leg.side == "LONG" and mark > trigger:
             return None
-        if self.position.side == "SHORT" and mark < trigger:
+        if self._leg.side == "SHORT" and mark < trigger:
             return None
-        slipped = adverse_fill_price(_sell_buy(self.position.side), trigger)
-        if self.position.side == "LONG":
+        slipped = positive_price(
+            adverse_fill_price(_sell_buy(self._leg.side), trigger),
+            "C6_INVALID_PRICE",
+        )
+        if self._leg.side == "LONG":
             exit_price = mark if mark < slipped else slipped
         else:
             exit_price = mark if mark > slipped else slipped
         return self._close_leg(
-            exit_price=exit_price,
+            exit_price=positive_price(exit_price, "C6_INVALID_PRICE"),
             event_type="HARD_STOP_EXIT",
             reason_code="HARD_STOP_TOUCHED",
             observation_id=observation_id,
             at=at,
-            signal_choice=self.position.side,
+            signal_choice=self._leg.side,
             reference_price=trigger,
         )
 
     def propose_stop_update(self, new_stop, *, observation_id: str, at: str) -> Optional[dict]:
-        if self.position is None:
+        _require_metadata(observation_id, at)
+        if self._leg is None or self._protective_stop is None:
             raise ProtectiveBoundaryError("C6_NO_POSITION")
-        proposed = D(new_stop)
-        current = self.position.protective_stop_price
-        entry = self.position.entry_price
+        proposed = positive_price(new_stop, "C6_INVALID_PRICE")
+        current = self._protective_stop
+        entry = self._leg.entry_price
         if proposed == current:
             return None
-        if not _is_tighter(self.position.side, entry, current, proposed):
-            return self._append(self._shell(
+        if not _is_tighter(self._leg.side, entry, current, proposed):
+            return self._commit_event(self._shell(
                 event_type="STOP_UPDATE_REJECTED",
                 reason_code="STOP_WIDEN_FORBIDDEN",
                 observation_id=observation_id,
                 at=at,
                 fill_status=None,
+                net_liquidation_equity=self._equity_now(),
+                realized_pnl_cum=self.realized_pnl_cum,
                 extra={
                     "proposed_stop_price": proposed,
                     "protective_stop_price": current,
-                    **self.position.ex_ante(),
+                    **self._leg.ex_ante(),
                 },
             ))
-        self.position.protective_stop_price = proposed
-        return self._append(self._shell(
+        event = self._commit_event(self._shell(
             event_type="STOP_TIGHTEN",
             reason_code="STOP_TIGHTENED",
             observation_id=observation_id,
             at=at,
             fill_status=None,
+            net_liquidation_equity=self._equity_now(),
+            realized_pnl_cum=self.realized_pnl_cum,
             extra={
                 "proposed_stop_price": proposed,
                 "protective_stop_price": proposed,
                 "ex_ante_fields_unchanged": True,
-                **self.position.ex_ante(),
+                **self._leg.ex_ante(),
             },
-        ))
+        ), protective_stop=proposed)
+        return event
 
     def _open_leg(
         self,
@@ -418,7 +496,7 @@ class ProtectiveRiskBook:
                 entry_price=entry,
             )
 
-        equity_at_open = self.cash if self.position is None else self.net_liquidation(reference)
+        equity_at_open = self.cash if self._leg is None else self.net_liquidation(reference)
         entry = adverse_fill_price(side, reference)
         stop = frozen_stop_price(side, entry)
         distance = price_stop_distance(entry, stop)
@@ -496,9 +574,9 @@ class ProtectiveRiskBook:
             raise ProtectiveBoundaryError("C6_OPEN_INVARIANT")
 
         entry_fee = entry * quantity * FEE_RATE
-        self.cash -= entry_fee
-        self.realized_pnl_cum -= entry_fee
-        ledger_event_id = self._next_id()
+        new_cash = self.cash - entry_fee
+        new_realized = self.realized_pnl_cum - entry_fee
+        ledger_event_id = self._peek_id()
         trade_id = "tr_%s" % ledger_event_id
         leg = OpenLeg(
             trade_id=trade_id,
@@ -507,7 +585,6 @@ class ProtectiveRiskBook:
             entry_price=entry,
             reference_price=reference,
             preset_stop_price=stop,
-            protective_stop_price=stop,
             equity_at_open=equity_at_open,
             risk_amount=risk_amount,
             risk_pct=risk_pct,
@@ -519,7 +596,6 @@ class ProtectiveRiskBook:
             entry_fee=entry_fee,
             entry_ledger_event_id=ledger_event_id,
         )
-        self.position = leg
         notional = entry * quantity
         event = self._shell(
             event_type=event_type,
@@ -528,6 +604,8 @@ class ProtectiveRiskBook:
             at=at,
             fill_status="FILLED",
             ledger_event_id=ledger_event_id,
+            net_liquidation_equity=new_cash,
+            realized_pnl_cum=new_realized,
             extra={
                 "signal_choice": side,
                 "side": side,
@@ -549,7 +627,13 @@ class ProtectiveRiskBook:
                 **leg.ex_ante(),
             },
         )
-        return self._append(event)
+        return self._commit_event(
+            event,
+            cash=new_cash,
+            realized=new_realized,
+            leg=leg,
+            protective_stop=stop,
+        )
 
     def _close_leg(
         self,
@@ -562,22 +646,28 @@ class ProtectiveRiskBook:
         signal_choice: str,
         reference_price: Decimal,
     ) -> dict:
-        leg = self.position
-        if leg is None:
+        exit_price = positive_price(exit_price, "C6_INVALID_PRICE")
+        reference_price = positive_price(reference_price, "C6_INVALID_PRICE")
+        leg = self._leg
+        if leg is None or self._protective_stop is None:
             raise ProtectiveBoundaryError("C6_NO_POSITION")
+        protective_stop = self._protective_stop
         direction = Decimal(1) if leg.side == "LONG" else Decimal(-1)
         gross = (exit_price - leg.entry_price) * leg.quantity * direction
         exit_fee = abs(exit_price) * leg.quantity * FEE_RATE
         net = gross - leg.entry_fee - exit_fee
-        self.cash += gross - exit_fee
-        self.realized_pnl_cum += gross - exit_fee
-        self.position = None
+        new_cash = self.cash + gross - exit_fee
+        new_realized = self.realized_pnl_cum + gross - exit_fee
+        if not new_cash.is_finite() or not new_realized.is_finite() or not gross.is_finite():
+            raise ProtectiveBoundaryError("C6_INVALID_PRICE")
         event = self._shell(
             event_type=event_type,
             reason_code=reason_code,
             observation_id=observation_id,
             at=at,
             fill_status="FILLED",
+            net_liquidation_equity=new_cash,
+            realized_pnl_cum=new_realized,
             extra={
                 "signal_choice": signal_choice,
                 "side": leg.side,
@@ -597,11 +687,17 @@ class ProtectiveRiskBook:
                 "NET_PNL_EX_FUNDING": net,
                 "unrealized_pnl": Decimal(0),
                 "exposure": Decimal(0),
-                "protective_stop_price": leg.protective_stop_price,
+                "protective_stop_price": protective_stop,
                 **leg.ex_ante(),
             },
         )
-        return self._append(event)
+        return self._commit_event(
+            event,
+            cash=new_cash,
+            realized=new_realized,
+            leg=None,
+            protective_stop=None,
+        )
 
     def _reject(
         self,
@@ -625,6 +721,8 @@ class ProtectiveRiskBook:
             observation_id=observation_id,
             at=at,
             fill_status="NO_FILL",
+            net_liquidation_equity=self.cash if self._leg is None else self._equity_now(),
+            realized_pnl_cum=self.realized_pnl_cum,
             extra={
                 "signal_choice": signal_choice,
                 "side": signal_choice,
@@ -643,16 +741,21 @@ class ProtectiveRiskBook:
                 "quantity": Decimal(0),
                 "trade_id": None,
                 "size_action": "REJECT",
-                "position_before": "FLAT" if self.position is None else self.position.side,
-                "position_after": "FLAT" if self.position is None else self.position.side,
+                "position_before": "FLAT" if self._leg is None else self._leg.side,
+                "position_after": "FLAT" if self._leg is None else self._leg.side,
                 "fill_time_utc": None,
                 "funding_pnl": None,
                 "fee_paid": Decimal(0),
                 "slippage_cost": Decimal(0),
-                "exposure": Decimal(0) if self.position is None else None,
+                "exposure": Decimal(0) if self._leg is None else None,
             },
         )
-        return self._append(event)
+        return self._commit_event(event)
+
+    def _equity_now(self) -> Decimal:
+        if self._leg is None:
+            return self.cash
+        return self.net_liquidation(self._leg.entry_price)
 
     def _shell(
         self,
@@ -663,6 +766,8 @@ class ProtectiveRiskBook:
         at: str,
         fill_status,
         extra: dict,
+        net_liquidation_equity: Decimal,
+        realized_pnl_cum: Decimal,
         ledger_event_id: Optional[str] = None,
     ) -> dict:
         event = {
@@ -674,7 +779,7 @@ class ProtectiveRiskBook:
             "size_policy_id": SIZE_POLICY_ID,
             "event_type": event_type,
             "reason_code": reason_code,
-            "ledger_event_id": ledger_event_id or self._next_id(),
+            "ledger_event_id": ledger_event_id or self._peek_id(),
             "observation_id": observation_id,
             "market": MARKET,
             "sample_class": SAMPLE_CLASS,
@@ -690,26 +795,59 @@ class ProtectiveRiskBook:
             "deploy": DEPLOY,
             "live_trading": LIVE_TRADING,
             "execution": self.execution,
-            "net_liquidation_equity": self.cash if self.position is None else self.net_liquidation(
-                self.position.entry_price
-            ),
-            "realized_pnl_cum": self.realized_pnl_cum,
+            "net_liquidation_equity": net_liquidation_equity,
+            "realized_pnl_cum": realized_pnl_cum,
         }
         event.update(extra)
-        if self.position is None and "position_after" not in event:
-            event["position_after"] = "FLAT"
+        if "position_after" not in event:
+            event["position_after"] = "FLAT" if self._leg is None else self._leg.side
         return event
 
-    def _append(self, event: dict) -> dict:
-        event["prev_hash"] = self._prev_hash
-        event["row_hash"] = row_hash(event)
-        self._prev_hash = event["row_hash"]
-        self._events.append(event)
-        return deepcopy(event)
+    def _peek_id(self) -> str:
+        return "le-%06d" % (self._seq + 1)
 
-    def _next_id(self) -> str:
-        self._seq += 1
-        return "le-%06d" % self._seq
+    def _commit_event(
+        self,
+        event: dict,
+        *,
+        cash=_UNSET,
+        realized=_UNSET,
+        leg=_UNSET,
+        protective_stop=_UNSET,
+    ) -> dict:
+        """Hash the finished event first. Book fields change only after that succeeds."""
+        staged = dict(event)
+        staged["prev_hash"] = self._prev_hash
+        staged["row_hash"] = row_hash(staged)
+        prior_cash = self.cash
+        prior_realized = self.realized_pnl_cum
+        prior_leg = self._leg
+        prior_stop = self._protective_stop
+        prior_seq = self._seq
+        prior_hash = self._prev_hash
+        prior_len = len(self._events)
+        try:
+            if cash is not _UNSET:
+                self.cash = cash
+            if realized is not _UNSET:
+                self.realized_pnl_cum = realized
+            if leg is not _UNSET:
+                self._leg = leg
+            if protective_stop is not _UNSET:
+                self._protective_stop = protective_stop
+            self._seq = prior_seq + 1
+            self._prev_hash = staged["row_hash"]
+            self._events.append(staged)
+        except Exception:
+            self.cash = prior_cash
+            self.realized_pnl_cum = prior_realized
+            self._leg = prior_leg
+            self._protective_stop = prior_stop
+            self._seq = prior_seq
+            self._prev_hash = prior_hash
+            del self._events[prior_len:]
+            raise
+        return deepcopy(staged)
 
 
 def _sell_buy(position_side: str) -> str:

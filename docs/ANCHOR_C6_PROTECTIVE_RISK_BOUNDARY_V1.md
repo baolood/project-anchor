@@ -212,7 +212,15 @@ A same-side signal while a leg is open does not add size and does not move the s
 
 ---
 
-## 6. What this change does not do
+## 6. Caller boundary
+
+`position` is a read-only snapshot. Assigning its fields, or replacing `book.position`, does not change the working stop or the ex-ante values copied onto later exits. The working stop moves only through `propose_stop_update`.
+
+Reference prices, marks, and exit prices must be finite and strictly positive before any cash or position change. Zero, negative, NaN, and Infinity do not create a filled exit.
+
+The ledger row is hashed before cash, position, or the event list change. A value that cannot be serialized leaves the book as it was.
+
+## 7. What this change does not do
 
 - Deploy, restart, or reconfigure Vultr, launchd, nginx, or a ledger poller
 - Authorize live orders, testnet sends, or production execution
@@ -223,7 +231,7 @@ A same-side signal while a leg is open does not add size and does not move the s
 
 ---
 
-## 7. How to verify
+## 8. How to verify
 
 From the repository root:
 

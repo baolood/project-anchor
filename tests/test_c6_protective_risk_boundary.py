@@ -428,6 +428,114 @@ class ProtectiveRiskBoundaryTest(unittest.TestCase):
         self.assertIn('"preset_stop_price":"99.0198"', text)
         self.assertNotIn("HARD_STOP_EXIT", text)
 
+    def test_public_position_mutation_cannot_bypass_stop(self):
+        book = _book()
+        opened = _open(book, qty="1")[0]
+        original = opened["preset_stop_price"]
+        view = book.position
+        with self.assertRaises(AttributeError):
+            view.protective_stop_price = Decimal("90")
+        with self.assertRaises(AttributeError):
+            view.preset_stop_price = Decimal("90")
+        with self.assertRaises(AttributeError):
+            view.risk_amount = Decimal(0)
+        object.__setattr__(view, "protective_stop_price", Decimal("90"))
+        object.__setattr__(view, "preset_stop_price", Decimal("90"))
+        object.__setattr__(view, "risk_amount", Decimal(0))
+        object.__setattr__(view, "risk_pct", Decimal(0))
+        self.assertEqual(book.position.protective_stop_price, original)
+        self.assertEqual(book.position.preset_stop_price, original)
+        self.assertEqual(book.position.risk_amount, opened["risk_amount"])
+        self.assertEqual(book.position.risk_pct, opened["risk_pct"])
+        with self.assertRaises(AttributeError):
+            book.position = None
+        self.assertEqual(book.position.side, "LONG")
+        hit = book.on_mark(original, observation_id="obs-still-stopped", at="2026-09-30T00:02:00Z")
+        self.assertEqual(hit["event_type"], "HARD_STOP_EXIT")
+        self.assertEqual(hit["preset_stop_price"], opened["preset_stop_price"])
+        self.assertEqual(hit["risk_amount"], opened["risk_amount"])
+        self.assertEqual(hit["risk_pct"], opened["risk_pct"])
+        self.assertEqual(hit["equity_at_open"], opened["equity_at_open"])
+        self.assertIsNone(book.position)
+
+    def test_exit_and_mark_reject_non_finite_or_non_positive_prices(self):
+        book = _book()
+        _open(book, choice="SHORT", qty="1")
+        cash = book.cash
+        event_count = len(book.events)
+        for bad in (0, -1, "NaN", "Infinity", "-Infinity"):
+            with self.assertRaises(ProtectiveBoundaryError):
+                book.on_signal(
+                    "FLAT",
+                    bad,
+                    Decimal("1"),
+                    observation_id="obs-bad-flat",
+                    at="2026-09-30T00:04:00Z",
+                )
+            self.assertEqual(len(book.events), event_count)
+            self.assertEqual(book.cash, cash)
+            self.assertEqual(book.position.side, "SHORT")
+            self.assertFalse(any(row["fill_status"] == "FILLED" and row["event_type"] != "OPEN" for row in book.events))
+        for bad in (0, -1, "NaN", "Infinity", "-Infinity"):
+            with self.assertRaises(ProtectiveBoundaryError):
+                book.on_mark(bad, observation_id="obs-bad-mark", at="2026-09-30T00:05:00Z")
+            self.assertEqual(len(book.events), event_count)
+            self.assertEqual(book.cash, cash)
+            self.assertEqual(book.position.protective_stop_price, book.events[0]["preset_stop_price"])
+        flat = book.on_signal(
+            "FLAT",
+            Decimal("101"),
+            Decimal("1"),
+            observation_id="obs-good-flat",
+            at="2026-09-30T00:06:00Z",
+        )
+        self.assertEqual(flat[0]["event_type"], "FLAT_EXIT")
+        self.assertEqual(flat[0]["fill_status"], "FILLED")
+        self.assertIsNone(book.position)
+
+    def test_unserializable_observation_id_does_not_half_apply(self):
+        book = _book()
+        cash = book.cash
+        with self.assertRaises(TypeError):
+            book.on_signal(
+                "LONG",
+                REF,
+                Decimal("1"),
+                observation_id=["not-a-string"],
+                at=AT,
+            )
+        self.assertEqual(book.events, [])
+        self.assertIsNone(book.position)
+        self.assertEqual(book.cash, cash)
+
+        opened = _open(book, qty="1")[0]
+        cash = book.cash
+        with self.assertRaises(TypeError):
+            book.on_signal(
+                "FLAT",
+                Decimal("101"),
+                Decimal("1"),
+                observation_id=["not-a-string"],
+                at="2026-09-30T00:04:00Z",
+            )
+        self.assertEqual(len(book.events), 1)
+        self.assertEqual(book.events[0]["event_type"], "OPEN")
+        self.assertEqual(book.events[0]["trade_id"], opened["trade_id"])
+        self.assertEqual(book.position.side, "LONG")
+        self.assertEqual(book.position.protective_stop_price, opened["preset_stop_price"])
+        self.assertEqual(book.cash, cash)
+        flat = book.on_signal(
+            "FLAT",
+            Decimal("101"),
+            Decimal("1"),
+            observation_id="obs-flat-after-reject",
+            at="2026-09-30T00:05:00Z",
+        )
+        self.assertEqual(flat[0]["event_type"], "FLAT_EXIT")
+        self.assertEqual(flat[0]["trade_id"], opened["trade_id"])
+        self.assertEqual(flat[0]["risk_amount"], opened["risk_amount"])
+        self.assertIsNone(book.position)
+
 
 if __name__ == "__main__":
     unittest.main()
