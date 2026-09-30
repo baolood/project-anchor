@@ -218,7 +218,7 @@ A same-side signal while a leg is open does not add size and does not move the s
 
 Reference prices, marks, and exit prices must be finite and strictly positive before any cash or position change. Zero, negative, NaN, and Infinity do not create a filled exit.
 
-The ledger row is hashed before cash, position, or the event list change. A value that cannot be serialized leaves the book as it was.
+`observation_id` and `at` must be non-empty plain strings, not mutable containers. The ledger row and caller return value are detached copies prepared before cash, position, or the event list change. Copy or hash failures leave the book unchanged; an append failure restores cash, position, stop, sequence, hash head, and event count. This is an in-memory event commit boundary, not durable storage or whole-reversal transaction support.
 
 ## 7. What this change does not do
 

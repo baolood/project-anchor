@@ -3,6 +3,7 @@ import sys
 import unittest
 from decimal import Decimal
 from pathlib import Path
+from unittest.mock import patch
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +27,7 @@ from affl_v2.c6_protective_boundary import (  # noqa: E402
     max_allowed_quantity,
     risk_per_unit,
 )
+import affl_v2.c6_protective_boundary as boundary  # noqa: E402
 
 
 AT = "2026-09-30T00:00:00Z"
@@ -534,6 +536,121 @@ class ProtectiveRiskBoundaryTest(unittest.TestCase):
         self.assertEqual(flat[0]["event_type"], "FLAT_EXIT")
         self.assertEqual(flat[0]["trade_id"], opened["trade_id"])
         self.assertEqual(flat[0]["risk_amount"], opened["risk_amount"])
+        self.assertIsNone(book.position)
+
+
+class ProtectiveCommitBoundaryRegressionTest(unittest.TestCase):
+    @staticmethod
+    def snapshot(book):
+        return (
+            book.cash, book.realized_pnl_cum, book.position,
+            book.events, book._seq, book._prev_hash,
+        )
+
+    @staticmethod
+    def operation(kind):
+        book = _book()
+        if kind not in ("open", "reject"):
+            _open(book)
+        if kind == "open":
+            call = lambda **meta: book.on_signal("LONG", REF, "1", **meta)
+        elif kind == "reject":
+            call = lambda **meta: book.on_signal("LONG", REF, "0", **meta)
+        elif kind == "close":
+            call = lambda **meta: book.on_signal("FLAT", "101", "1", **meta)
+        elif kind == "mark":
+            call = lambda **meta: book.on_mark("99.0198", **meta)
+        elif kind == "tighten":
+            call = lambda **meta: book.propose_stop_update("99.5", **meta)
+        elif kind == "widen":
+            call = lambda **meta: book.propose_stop_update("98", **meta)
+        else:
+            raise AssertionError(kind)
+        return book, call
+
+    def test_metadata_requires_immutable_plain_strings(self):
+        for kind in ("open", "reject", "close", "mark", "tighten", "widen"):
+            for field in ("observation_id", "at"):
+                for value in ({"id": "mutable"}, [], None, 1, False, Decimal("1")):
+                    with self.subTest(kind=kind, field=field, value=value):
+                        book, call = self.operation(kind)
+                        before = self.snapshot(book)
+                        meta = {"observation_id": "next", "at": AT, field: value}
+                        with self.assertRaises(TypeError):
+                            call(**meta)
+                        self.assertEqual(self.snapshot(book), before)
+
+    def test_metadata_rejects_blank_strings_without_mutation(self):
+        for field in ("observation_id", "at"):
+            for value in ("", " ", "\t"):
+                with self.subTest(field=field, value=value):
+                    book, call = self.operation("open")
+                    before = self.snapshot(book)
+                    with self.assertRaises(ProtectiveBoundaryError):
+                        call(**{"observation_id": "next", "at": AT, field: value})
+                    self.assertEqual(self.snapshot(book), before)
+
+    def test_hash_failure_preserves_state_sequence_and_chain(self):
+        for kind in ("open", "reject", "close", "mark", "tighten", "widen"):
+            with self.subTest(kind=kind):
+                book, call = self.operation(kind)
+                before = self.snapshot(book)
+                with patch.object(boundary, "row_hash", side_effect=RuntimeError("hash fault")):
+                    with self.assertRaises(RuntimeError):
+                        call(observation_id="next", at=AT)
+                self.assertEqual(self.snapshot(book), before)
+
+    def test_copy_failure_is_before_any_commit(self):
+        original_copy = boundary.deepcopy
+        for kind in ("open", "reject", "close", "mark", "tighten", "widen"):
+            for fail_on in (1, 2):
+                with self.subTest(kind=kind, fail_on=fail_on):
+                    book, call = self.operation(kind)
+                    before = self.snapshot(book)
+                    calls = 0
+
+                    def fail_copy(value):
+                        nonlocal calls
+                        calls += 1
+                        if calls == fail_on:
+                            raise MemoryError("copy fault")
+                        return original_copy(value)
+
+                    with patch.object(boundary, "deepcopy", side_effect=fail_copy):
+                        with self.assertRaises(MemoryError):
+                            call(observation_id="next", at=AT)
+                    self.assertEqual(self.snapshot(book), before)
+
+    def test_append_failure_rolls_back_state_sequence_and_chain(self):
+        class AppendThenFail(list):
+            def append(self, value):
+                super().append(value)
+                raise RuntimeError("append fault")
+
+        for kind in ("open", "reject", "close", "mark", "tighten", "widen"):
+            with self.subTest(kind=kind):
+                book, call = self.operation(kind)
+                before = self.snapshot(book)
+                book._events = AppendThenFail(book._events)
+                with self.assertRaises(RuntimeError):
+                    call(observation_id="next", at=AT)
+                # Disable the injected container fault before the readback;
+                # preserve its contents so missing/extra rows still fail.
+                book._events = list(book._events)
+                self.assertEqual(self.snapshot(book), before)
+
+    def test_successful_commits_keep_detached_rows_and_valid_hashes(self):
+        book = _book()
+        first = _open(book)[0]
+        first["observation_id"] = "caller-mutated"
+        book.propose_stop_update("99.5", observation_id="tighten", at=AT)
+        book.on_mark("99.5", observation_id="stop", at=AT)
+        previous = boundary.GENESIS_HASH
+        for event in book.events:
+            self.assertEqual(event["prev_hash"], previous)
+            self.assertEqual(event["row_hash"], boundary.row_hash(event))
+            previous = event["row_hash"]
+        self.assertEqual(book.events[0]["observation_id"], "obs-open")
         self.assertIsNone(book.position)
 
 

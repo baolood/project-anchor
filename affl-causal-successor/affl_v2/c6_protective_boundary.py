@@ -111,9 +111,11 @@ def positive_price(value, reason: str = "C6_INVALID_PRICE") -> Decimal:
 
 
 def _require_metadata(observation_id, at) -> None:
-    """Ledger identity fields must be serializable before any book mutation."""
-    _jsonable(observation_id)
-    _jsonable(at)
+    """Require immutable scalar identities before constructing a ledger row."""
+    if type(observation_id) is not str or type(at) is not str:
+        raise TypeError("observation_id and at must be plain strings")
+    if not observation_id.strip() or not at.strip():
+        raise ProtectiveBoundaryError("C6_INVALID_METADATA")
 
 
 def floor_qty(amount: Decimal) -> Decimal:
@@ -816,9 +818,12 @@ class ProtectiveRiskBook:
         protective_stop=_UNSET,
     ) -> dict:
         """Hash the finished event first. Book fields change only after that succeeds."""
-        staged = dict(event)
+        staged = deepcopy(event)
         staged["prev_hash"] = self._prev_hash
         staged["row_hash"] = row_hash(staged)
+        # Prepare the caller's copy before committing any book state. A copy
+        # failure must not make a successful commit look like a failed call.
+        result = deepcopy(staged)
         prior_cash = self.cash
         prior_realized = self.realized_pnl_cum
         prior_leg = self._leg
@@ -847,7 +852,7 @@ class ProtectiveRiskBook:
             self._prev_hash = prior_hash
             del self._events[prior_len:]
             raise
-        return deepcopy(staged)
+        return result
 
 
 def _sell_buy(position_side: str) -> str:
