@@ -1,0 +1,52 @@
+{
+  "schema_id": "equity_v2_1",
+  "filename": "anchor_fake_fill_equity_v2_1_official.csv",
+  "formal_scoring_chain": "NOT_ON_FORMAL_SCORING_CHAIN",
+  "legacy_do_not_rewrite": [
+    "anchor_fake_fill_equity_v2_official.csv"
+  ],
+  "legacy_headers": {
+    "columns_6": [
+      "timestamp_utc",
+      "equity",
+      "realized_pnl",
+      "unrealized_pnl",
+      "position",
+      "event"
+    ],
+    "columns_10": [
+      "timestamp_utc",
+      "observation_id",
+      "position",
+      "realized_pnl",
+      "unrealized_pnl",
+      "net_liquidation_equity",
+      "drawdown",
+      "exposure",
+      "cash_reserve",
+      "active_notional"
+    ]
+  },
+  "header": [
+    "schema_version",
+    "timestamp_utc",
+    "observation_id",
+    "trade_id",
+    "position",
+    "realized_pnl",
+    "unrealized_pnl",
+    "net_liquidation_equity",
+    "equity_at_open",
+    "drawdown",
+    "exposure",
+    "cash_reserve",
+    "active_notional",
+    "mark_rule_id",
+    "mark_kind",
+    "mark_honesty_label",
+    "sample_class"
+  ],
+  "header_sha256": "846a0c8e2d2b39f3b38673caf68995d7242dcb1ce844fafc6923762897569c8a",
+  "mark_rule_id": "MARK_RULE_C7_V1",
+  "sample_class": "FORWARD_LIVE_SHADOW"
+}
