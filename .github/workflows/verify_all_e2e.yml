@@ -1,0 +1,108 @@
+name: verify_all_e2e
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches:
+      - "codex/**"
+  workflow_dispatch: {}
+
+concurrency:
+  group: verify_all_e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify_all_e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout (NO submodules)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Show versions
+        run: |
+          set -euo pipefail
+          uname -a
+          git --version
+          docker --version
+          docker compose version || docker-compose --version || true
+          node --version || true
+          python --version || true
+
+      # Optional warm-up: do NOT fail the job if your repo doesn't have these paths.
+      - name: Docker compose up (infra) (best-effort)
+        run: |
+          set -euo pipefail
+          echo "== warm up docker compose (best-effort) =="
+          for d in anchor-backend anchor_backend backend . ; do
+            if [ -f "$d/docker-compose.yml" ] || [ -f "$d/docker-compose.yaml" ]; then
+              echo "Using compose dir: $d"
+              (cd "$d" && docker compose up -d --build || true)
+              exit 0
+            fi
+          done
+          echo "No docker-compose.yml found in expected dirs; skip warm-up."
+          exit 0
+
+      - name: Wait for services (best-effort)
+        run: |
+          set -euo pipefail
+          echo "== wait a bit for services (best-effort) =="
+          sleep 10
+          exit 0
+
+      - name: Run verify_all_e2e
+        env:
+          CI: "true"
+          ROOT: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          chmod +x scripts/verify_all_e2e.sh || true
+          ./scripts/verify_all_e2e.sh
+
+      - name: Upload verify artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify_all_e2e_artifacts
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            /tmp/anchor_e2e_*
+            /tmp/*anchor*e2e*
+            **/playwright-report/**
+            **/test-results/**
+            **/*.png
+            **/*.log
+
+      # IMPORTANT: this step must NEVER fail the job
+      - name: Dump docker logs on failure (best-effort)
+        if: failure()
+        run: |
+          set +e
+          echo "== dump docker logs (best-effort) =="
+
+          # try likely compose dirs; do NOT fail if none exist
+          for d in anchor-backend anchor_backend backend . ; do
+            if [ -f "$d/docker-compose.yml" ] || [ -f "$d/docker-compose.yaml" ]; then
+              echo "Using compose dir: $d"
+              cd "$d" || true
+              echo "== docker compose ps =="
+              docker compose ps || true
+              echo "== docker compose logs (tail) =="
+              docker compose logs --no-color --tail=500 || true
+              exit 0
+            fi
+          done
+
+          echo "No docker-compose.yml found; nothing to dump."
+          exit 0
