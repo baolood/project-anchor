@@ -14,7 +14,7 @@ Source, under the ledger root (`/var/lib/anchor-official-ledger-20261010`, which
 affl-v2-official-ledger/out/anchor_fake_fill_ledger_v2_official.jsonl
 ```
 
-Nothing else. `runs/*/before/`, `baseline/`, and a same-named file at the top of the root are not copied.
+The mirror also copies `events.jsonl` when that file is a regular file at the ledger root, and it writes `run-boundaries.jsonl`. A boundary line is the committed `at` from `events.jsonl` plus the last `ledger_event_id` in `runs/run-NNNNNN/before/anchor_fake_fill_ledger_v2_official.jsonl`. Those before-snapshots are opened read-only, last line only, and are not copied. `baseline/`, a same-named file at the top of the root, and `BLOCKED.json` are not copied. The same 2 second stability rule applies to `events.jsonl` and to each before-snapshot that is read: if any of them is still changing after 30 seconds, the copier skips and does not publish a partial mirror.
 
 Destination directory: `/var/lib/anchor-ledger-mirror`
 
@@ -24,6 +24,8 @@ Destination directory: `/var/lib/anchor-ledger-mirror`
 | `anchor_fake_fill_ledger_v2_official.jsonl` | `0640` | `root:anchor-mcp` |
 | `anchor_fake_fill_ledger_v2_official.jsonl.sha256` | `0640` | `root:anchor-mcp` |
 | `anchor_fake_fill_ledger_v2_official.jsonl.meta.json` | `0640` | `root:anchor-mcp` |
+| `events.jsonl` and `events.jsonl.sha256`, when the source file exists | `0640` | `root:anchor-mcp` |
+| `run-boundaries.jsonl` and `run-boundaries.jsonl.sha256`, when a committed run has a before-snapshot | `0640` | `root:anchor-mcp` |
 
 The `.sha256` file is `sha256sum` form: 64 hex digits, two spaces, the ledger basename, and a newline. The metadata JSON has `source_mtime` (UTC), `source_size` (bytes), and `copied_at` (UTC).
 

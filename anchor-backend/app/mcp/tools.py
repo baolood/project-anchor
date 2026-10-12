@@ -262,7 +262,10 @@ def tool_definitions() -> list[dict[str, Any]]:
             "When ANCHOR_CONTROL_MCP_LEDGER_DIR is set, read only the allowlisted mirror directory and verify its sha256 sidecar. "
             "Live rows use ledger_event_id, row_hash, and signal_available_at, fill_time_utc, or signal_candle_open_utc. "
             "last_event_time is the latest of those times on the last row, and last_event_time_field names the source. "
-            "Repeated PENDING_NEXT_BAR rows for one observation count once, as BAR_NOT_YET_CLOSED or DATA_GAP. "
+            "Repeated PENDING_NEXT_BAR rows for one observation count once. "
+            "Write time is the committed time of the ledger run that appended the row. "
+            "BAR_NOT_YET_CLOSED, DATA_GAP, and IN_FLIGHT are set only when that run is known. "
+            "IN_FLIGHT means the fill bar has not closed. Otherwise the summary reports observation count, raw row count, and runs_waited. "
             "Per-exit NET_PNL rows exclude entry costs. "
             "Does not write the ledger or fall back to report JSON while that env var is set."
         ),

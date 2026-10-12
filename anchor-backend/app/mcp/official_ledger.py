@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from app.mcp.inventory import LEDGER_MIRROR_DIR
+from app.mcp.ledger_run_index import BOUNDARY_NAME, write_times_for_rows
 from app.mcp.sanitize import looks_sensitive_path
 
 
@@ -93,16 +94,14 @@ ALIASES = {
     "realized_pnl_cumulative": "realized_pnl_cum",
     "net_pnl": "net_pnl",
     "observation_id": "observation_id",
-    "written_at": "written_at",
-    "recorded_at": "recorded_at",
 }
 PENDING_EVENT = "PENDING_NEXT_BAR"
 BAR_NOT_YET_CLOSED = "BAR_NOT_YET_CLOSED"
 DATA_GAP = "DATA_GAP"
+IN_FLIGHT = "IN_FLIGHT"
 FILL_BAR = timedelta(hours=1)
 # A later row of one of these types, with fill_time_utc, resolves the fill bar.
 RESOLVING_EVENTS = frozenset({"OPEN", "REVERSE_ENTRY", "REVERSE_EXIT", "FLAT_EXIT", "NO_FILL"})
-PENDING_WRITE_FIELDS = ("event_time", "written_at", "recorded_at")
 NET_PNL_NOTE = (
     "Per-exit NET_PNL rows exclude entry costs. "
     "realized_pnl_cum is the ledger cumulative figure, not an exchange cash balance."
@@ -165,7 +164,7 @@ def read_official_ledger(
     failure = _verify_sha256(resolved, loaded)
     if failure is not None:
         return _unavailable(failure)
-    summary = _summarize(loaded)
+    summary = _summarize(loaded, boundaries=_load_run_boundaries(resolved), now=checked_at)
     summary.update(_mirror_fields(resolved, loaded, summary.get("source"), checked_at))
     return summary
 
@@ -342,7 +341,59 @@ def _read_bytes(path: Path) -> bytes:
         os.close(fd)
 
 
-def _summarize(loaded: list[tuple[str, bytes]]) -> dict[str, Any]:
+def _load_run_boundaries(root: Path) -> list[dict[str, Any]] | None:
+    """Read the mirror's run-boundary index. Missing or rejected means unlabeled pending counts."""
+    path = root / BOUNDARY_NAME
+    try:
+        info = os.lstat(path)
+    except OSError:
+        return None
+    if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
+        return None
+    try:
+        blob = _read_bytes(path)
+    except (OSError, _TooLarge):
+        return None
+    if _check_sha256(root, BOUNDARY_NAME, blob) is not None:
+        return None
+    boundaries: list[dict[str, Any]] = []
+    for line in blob.decode("utf-8", errors="replace").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            obj = json.loads(stripped)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(obj, dict):
+            return None
+        run = obj.get("run")
+        index = obj.get("run_index")
+        at = obj.get("committed_at")
+        before = obj.get("last_ledger_event_id_before")
+        if not isinstance(run, str) or not isinstance(at, str) or type(index) is not int:
+            return None
+        if f"run-{index:06d}" != run:
+            return None
+        if before is not None and not isinstance(before, str):
+            return None
+        boundaries.append(
+            {
+                "run": run,
+                "run_index": index,
+                "committed_at": at,
+                "last_ledger_event_id_before": before,
+            }
+        )
+    return boundaries
+
+
+def _summarize(
+    loaded: list[tuple[str, bytes]],
+    *,
+    boundaries: list[dict[str, Any]] | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
     state = _State()
     for name, blob in loaded:
         text = blob.decode("utf-8-sig", errors="replace")
@@ -373,7 +424,7 @@ def _summarize(loaded: list[tuple[str, bytes]]) -> dict[str, Any]:
         "net_pnl_note": NET_PNL_NOTE,
         "fill_status": "OFFICIAL_V2",
         "redacted": True,
-        "pending_observations": classify_pending_observations(state.rows),
+        "pending_observations": pending_observation_summary(state.rows, boundaries, now),
     }
 
 
@@ -404,14 +455,39 @@ class _State:
         self.rows.append(mapped)
 
 
-def classify_pending_observations(events: Sequence[Mapping[str, Any]]) -> dict[str, int]:
+def pending_observation_summary(
+    events: Sequence[Mapping[str, Any]],
+    boundaries: Sequence[Mapping[str, Any]] | None,
+    now: datetime | None,
+) -> dict[str, int]:
+    """Collapse repeated PENDING_NEXT_BAR rows. Does not write the ledger.
+
+    Write time is the committed ``at`` of the run that appended the row.
+    A ledger field such as ``event_time`` is not that time. When a pending
+    row cannot be placed in a run, the result has only ``raw_rows``,
+    ``observations``, and ``runs_waited``.
+    """
+    writes = None
+    if boundaries is not None:
+        writes = write_times_for_rows(events, boundaries)
+    return classify_pending_observations(events, write_times=writes, now=now)
+
+
+def classify_pending_observations(
+    events: Sequence[Mapping[str, Any]],
+    *,
+    write_times: Mapping[str, tuple[str, str]] | None = None,
+    now: datetime | None = None,
+) -> dict[str, int]:
     """Collapse repeated PENDING_NEXT_BAR rows for one observation into one count.
 
-    BAR_NOT_YET_CLOSED: a later row resolves the fill bar, and the earliest
-    pending write time is before that bar's open plus one hour.
-    DATA_GAP: the pending was written at or after that instant, or no later
-    row resolves the fill bar. This does not write the ledger.
+    ``write_times`` maps event id to ``(committed_at, run)``. Labels are
+    omitted when a pending row has no entry. ``IN_FLIGHT`` is an unresolved
+    observation whose fill-bar close is still after ``now``.
     """
+    checked = now or datetime.now(timezone.utc)
+    if checked.tzinfo is None:
+        checked = checked.replace(tzinfo=timezone.utc)
     groups: dict[tuple[Any, ...], dict[str, Any]] = {}
     order: list[tuple[Any, ...]] = []
     for index, event in enumerate(events):
@@ -423,45 +499,124 @@ def classify_pending_observations(events: Sequence[Mapping[str, Any]]) -> dict[s
         if group is None:
             group = {
                 "raw": 0,
+                "runs": set(),
                 "earliest_write": None,
                 "saw_pending": False,
                 "fill_open": None,
+                "signal": None,
+                "unplaced": False,
             }
             groups[key] = group
             order.append(key)
         if event_type == PENDING_EVENT:
             group["raw"] += 1
             group["saw_pending"] = True
-            written = _pending_write_time(event)
-            earliest = group["earliest_write"]
-            if written is not None and (earliest is None or written < earliest):
-                group["earliest_write"] = written
+            signal = _parse_time(event.get("signal_available_at"))
+            if signal is not None and group["signal"] is None:
+                group["signal"] = signal[0]
+            placed = _placed_write(event, write_times)
+            if placed is None:
+                group["unplaced"] = True
+            else:
+                written, run = placed
+                group["runs"].add(run)
+                earliest = group["earliest_write"]
+                if earliest is None or written < earliest:
+                    group["earliest_write"] = written
         elif group["saw_pending"] and group["fill_open"] is None:
             parsed = _parse_time(event.get("fill_time_utc"))
             if parsed is not None:
                 group["fill_open"] = parsed[0]
     raw_rows = 0
     observations = 0
+    runs_waited = 0
     not_yet_closed = 0
     data_gap = 0
+    in_flight = 0
+    unlabeled = write_times is None
     for key in order:
         group = groups[key]
         if not group["saw_pending"]:
             continue
         raw_rows += group["raw"]
         observations += 1
-        fill_open = group["fill_open"]
-        written = group["earliest_write"]
-        if fill_open is not None and written is not None and written < fill_open + FILL_BAR:
+        if group["unplaced"] or not group["runs"]:
+            unlabeled = True
+        runs_waited += len(group["runs"]) if group["runs"] else group["raw"]
+        kind = _pending_label(group, checked)
+        if kind == BAR_NOT_YET_CLOSED:
             not_yet_closed += 1
-        else:
+        elif kind == IN_FLIGHT:
+            in_flight += 1
+        elif kind == DATA_GAP:
             data_gap += 1
+        else:
+            unlabeled = True
+    if observations == 0:
+        return {
+            "raw_rows": 0,
+            "observations": 0,
+            "runs_waited": 0,
+            BAR_NOT_YET_CLOSED: 0,
+            DATA_GAP: 0,
+            IN_FLIGHT: 0,
+        }
+    if unlabeled:
+        return {
+            "raw_rows": raw_rows,
+            "observations": observations,
+            "runs_waited": raw_rows,
+        }
     return {
         "raw_rows": raw_rows,
         "observations": observations,
+        "runs_waited": runs_waited,
         BAR_NOT_YET_CLOSED: not_yet_closed,
         DATA_GAP: data_gap,
+        IN_FLIGHT: in_flight,
     }
+
+
+def _placed_write(
+    event: Mapping[str, Any],
+    write_times: Mapping[str, tuple[str, str]] | None,
+) -> tuple[datetime, str] | None:
+    if write_times is None:
+        return None
+    event_id = event.get("event_id")
+    if not isinstance(event_id, str):
+        return None
+    placed = write_times.get(event_id.strip())
+    if placed is None:
+        return None
+    parsed = _parse_time(placed[0])
+    if parsed is None:
+        return None
+    return parsed[0], placed[1]
+
+
+def _pending_label(group: Mapping[str, Any], now: datetime) -> str | None:
+    written = group["earliest_write"]
+    fill_open = group["fill_open"]
+    if fill_open is None:
+        signal = group["signal"]
+        if signal is None or written is None:
+            return None
+        close = _fill_bar_open(signal) + FILL_BAR
+        if now < close:
+            return IN_FLIGHT
+        return DATA_GAP
+    if written is None:
+        return None
+    if written < fill_open + FILL_BAR:
+        return BAR_NOT_YET_CLOSED
+    return DATA_GAP
+
+
+def _fill_bar_open(signal: datetime) -> datetime:
+    """First 1h bar that opens strictly after ``signal``. 10:05 → 11:00; 11:00 → 12:00."""
+    floored = signal.replace(minute=0, second=0, microsecond=0)
+    return floored + FILL_BAR
 
 
 def _observation_key(event: Mapping[str, Any], index: int) -> tuple[Any, ...]:
@@ -475,17 +630,6 @@ def _observation_key(event: Mapping[str, Any], index: int) -> tuple[Any, ...]:
     if isinstance(signal, str) and isinstance(candle, str) and signal.strip() and candle.strip():
         return ("signal", signal.strip(), candle.strip())
     return ("row", index)
-
-
-def _pending_write_time(event: Mapping[str, Any]) -> datetime | None:
-    earliest: datetime | None = None
-    for field in PENDING_WRITE_FIELDS:
-        parsed = _parse_time(event.get(field))
-        if parsed is None:
-            continue
-        if earliest is None or parsed[0] < earliest:
-            earliest = parsed[0]
-    return earliest
 
 
 def _canon_key(value: str) -> str | None:

@@ -24,6 +24,14 @@ from app.mcp.inventory import (
     OFFICIAL_LEDGER_DIR,
     OFFICIAL_LEDGER_DIR_PRIVATE,
 )
+from app.mcp.ledger_run_index import (
+    BOUNDARY_NAME,
+    EVENTS_NAME,
+    RUN_DIR_RE,
+    build_boundaries,
+    last_event_id_from_snapshot,
+    parse_committed_runs,
+)
 
 
 SOURCE_RELATIVE = (
@@ -38,6 +46,8 @@ MIRROR_GROUP = "anchor-mcp"
 PROJECT_ROOT = "/path/to/project-anchor"
 STABLE_FOR_SEC = 2.0
 STABLE_MAX_WAIT_SEC = 30.0
+EVENTS_MAX_BYTES = 8 * 1024 * 1024
+SNAPSHOT_TAIL_BYTES = 65536
 
 
 class MirrorError(Exception):
@@ -122,19 +132,31 @@ def mirror_ledger(
     source_real = _resolve_dir(source_root)
     dest_real = _prepare_dest(dest, source_real, group)
     source_file = _resolve_source_file(source_real)
-    sample = _wait_until_stable(
-        source_file,
+    index_paths = _index_paths(source_real)
+    watched = [source_file, *index_paths]
+    stat_fn = os.stat if stat_source is None else stat_source
+    sample = _wait_until_all_stable(
+        watched,
         stable_for=stable_for,
         max_wait=max_wait,
         sleep=sleep,
         monotonic=monotonic,
-        stat_source=os.stat if stat_source is None else stat_source,
+        stat_source=stat_fn,
     )
     if sample is None:
         return "skipped"
     blob, source_stat = _read_source(source_file)
-    if stable_for > 0 and (source_stat.st_size, source_stat.st_mtime_ns) != sample:
+    if stable_for > 0 and (source_stat.st_size, source_stat.st_mtime_ns) != sample[source_file]:
         return "skipped"
+    index_blobs: dict[Path, bytes] = {}
+    for path in index_paths:
+        limit = None if path.name == EVENTS_NAME else SNAPSHOT_TAIL_BYTES
+        index_blob, index_stat = _read_source(path, limit=limit)
+        if stable_for > 0 and (index_stat.st_size, index_stat.st_mtime_ns) != sample[path]:
+            return "skipped"
+        if path.name == EVENTS_NAME and index_stat.st_size > EVENTS_MAX_BYTES:
+            continue
+        index_blobs[path] = index_blob
     digest = hashlib.sha256(blob).hexdigest()
     copied_at = _utc_now()
     source_mtime = datetime.fromtimestamp(source_stat.st_mtime, timezone.utc).replace(microsecond=0)
@@ -151,6 +173,7 @@ def mirror_ledger(
         (json.dumps(meta, sort_keys=True) + "\n").encode("utf-8"),
         group,
     )
+    _publish_run_index(dest_real, source_real, index_blobs, group)
     _fsync_dir(dest_real)
     return "copied"
 
@@ -169,6 +192,125 @@ def main(argv: list[str] | None = None) -> int:
     if outcome == "skipped":
         print("ledger mirror skipped: source size or mtime still changing", file=sys.stderr)
     return 0
+
+
+def _index_paths(root: Path) -> list[Path]:
+    """Regular files the run index is read from. Snapshots are not copied."""
+    paths: list[Path] = []
+    events = _regular_inside(root, (EVENTS_NAME,))
+    if events is not None:
+        paths.append(events)
+    runs = root / "runs"
+    try:
+        info = os.lstat(runs)
+    except OSError:
+        return paths
+    if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
+        return paths
+    try:
+        names = sorted(os.listdir(runs))
+    except OSError:
+        return paths
+    for name in names:
+        if RUN_DIR_RE.fullmatch(name) is None:
+            continue
+        before = _regular_inside(root, ("runs", name, "before", LEDGER_BASENAME))
+        if before is not None:
+            paths.append(before)
+    return paths
+
+
+def _regular_inside(root: Path, parts: tuple[str, ...]) -> Path | None:
+    current = root
+    for index, part in enumerate(parts):
+        nxt = current / part
+        try:
+            info = os.lstat(nxt)
+        except OSError:
+            return None
+        if stat.S_ISLNK(info.st_mode):
+            return None
+        last = index == len(parts) - 1
+        if last and not stat.S_ISREG(info.st_mode):
+            return None
+        if not last and not stat.S_ISDIR(info.st_mode):
+            return None
+        current = nxt
+    try:
+        resolved = Path(os.path.realpath(current))
+        rel = resolved.relative_to(root)
+    except (OSError, ValueError):
+        return None
+    if rel.parts != parts:
+        return None
+    return resolved
+
+
+def _publish_run_index(dest: Path, source: Path, blobs: dict[Path, bytes], group: str) -> None:
+    events_path = _regular_inside(source, (EVENTS_NAME,))
+    if events_path is None or events_path not in blobs:
+        return
+    events_blob = blobs[events_path]
+    commits = parse_committed_runs(events_blob.decode("utf-8", errors="replace"))
+    tails: dict[str, str | None] = {}
+    for commit in commits:
+        name = str(commit["run"])
+        before = _regular_inside(source, ("runs", name, "before", LEDGER_BASENAME))
+        if before is None or before not in blobs:
+            continue
+        ok, event_id = last_event_id_from_snapshot(blobs[before])
+        if not ok:
+            continue
+        tails[name] = event_id
+    lines = [
+        json.dumps(boundary, sort_keys=True)
+        for boundary in build_boundaries(commits, tails)
+    ]
+    boundary_blob = ("" if not lines else "\n".join(lines) + "\n").encode("utf-8")
+    _atomic_write(dest, EVENTS_NAME, events_blob, group)
+    _atomic_write(dest, f"{EVENTS_NAME}.sha256", _sha_line(events_blob, EVENTS_NAME), group)
+    if lines:
+        _atomic_write(dest, BOUNDARY_NAME, boundary_blob, group)
+        _atomic_write(dest, f"{BOUNDARY_NAME}.sha256", _sha_line(boundary_blob, BOUNDARY_NAME), group)
+
+
+def _sha_line(blob: bytes, name: str) -> bytes:
+    digest = hashlib.sha256(blob).hexdigest()
+    return f"{digest}  {name}\n".encode("ascii")
+
+
+def _wait_until_all_stable(
+    paths: list[Path],
+    *,
+    stable_for: float,
+    max_wait: float,
+    sleep: Callable[[float], None],
+    monotonic: Callable[[], float],
+    stat_source: Callable[[Path], os.stat_result],
+) -> dict[Path, tuple[int, int]] | None:
+    """Return size and mtime_ns for every path once the whole set is unchanged."""
+
+    def sample() -> dict[Path, tuple[int, int]]:
+        return {path: (info.st_size, info.st_mtime_ns) for path in paths for info in (stat_source(path),)}
+
+    if stable_for <= 0:
+        return sample()
+    deadline = monotonic() + max_wait
+    last = sample()
+    stable_since = monotonic()
+    while True:
+        now = monotonic()
+        current = sample()
+        if current != last:
+            last = current
+            stable_since = now
+        elif now - stable_since >= stable_for:
+            return last
+        if now >= deadline:
+            return None
+        remaining = min(0.2, stable_for - (now - stable_since), deadline - now)
+        if remaining > 0:
+            sleep(remaining)
 
 
 def _wait_until_stable(
@@ -313,7 +455,7 @@ def _resolve_source_file(root_real: Path) -> Path:
     raise MirrorError("live ledger file missing")
 
 
-def _read_source(path: Path) -> tuple[bytes, os.stat_result]:
+def _read_source(path: Path, *, limit: int | None = None) -> tuple[bytes, os.stat_result]:
     flags = os.O_RDONLY
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
@@ -322,17 +464,22 @@ def _read_source(path: Path) -> tuple[bytes, os.stat_result]:
     try:
         fd = os.open(path, flags)
     except OSError as exc:
-        raise MirrorError("live ledger file unreadable") from exc
+        raise MirrorError("source file unreadable") from exc
     try:
         info = os.fstat(fd)
         if not stat.S_ISREG(info.st_mode):
-            raise MirrorError("live ledger file is not a regular file")
+            raise MirrorError("source file is not a regular file")
+        if limit is not None and info.st_size > limit:
+            os.lseek(fd, info.st_size - limit, os.SEEK_SET)
         chunks: list[bytes] = []
-        while True:
-            chunk = os.read(fd, 65536)
+        remaining = limit
+        while remaining is None or remaining > 0:
+            chunk = os.read(fd, 65536 if remaining is None else min(65536, remaining))
             if not chunk:
                 break
             chunks.append(chunk)
+            if remaining is not None:
+                remaining -= len(chunk)
         return b"".join(chunks), info
     finally:
         os.close(fd)

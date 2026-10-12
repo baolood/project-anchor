@@ -1,2 +1,0 @@
-[Unit]
-OnSuccess=anchor-official-ledger.service
