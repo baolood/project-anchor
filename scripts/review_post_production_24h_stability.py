@@ -43,6 +43,26 @@ def pass_fail(condition: bool) -> str:
     return "PASS" if condition else "FAIL"
 
 
+# Repo-recorded monitoring is a stability pass. Plain PASS is only the
+# exchange-confirmed snapshot result. UNKNOWN exchange confirmation is not a
+# failure. See reports/post_production_monitoring_snapshot.SEMANTICS.md.
+_REPO_LEVEL_SNAPSHOT_RESULTS = {"PASS", "PASS_REPO_RECORDED_ONLY"}
+
+
+def exchange_confirmation_status(snapshot: dict[str, Any]) -> str:
+    """UNKNOWN unless the snapshot records an offline reconciliation file.
+
+    A historical exactly_one_order_confirmed check is not exchange confirmation.
+    """
+    block = snapshot.get("snapshot") if isinstance(snapshot.get("snapshot"), dict) else {}
+    if block.get("exchange_reconciliation_supplied") != "YES":
+        return "UNKNOWN"
+    status = block.get("exchange_confirmed_order_status")
+    if status in {"PASS", "FAIL", "UNKNOWN"}:
+        return status
+    return "UNKNOWN"
+
+
 def next_single_task(window_label: str) -> str:
     normalized = window_label.strip().lower()
     if normalized == "24h":
@@ -117,9 +137,13 @@ def build_review(
     timer_active = systemctl_active(TIMER_NAME)
     timer_enabled = systemctl_enabled(TIMER_NAME)
 
+    exchange_status = exchange_confirmation_status(snapshot)
+    snapshot_block = snapshot.get("snapshot") if isinstance(snapshot.get("snapshot"), dict) else {}
     checks = {
         "monitoring_run_pass": pass_fail(run.get("result") == "PASS"),
-        "monitoring_snapshot_pass": pass_fail(snapshot.get("result") == "PASS"),
+        "monitoring_snapshot_pass": pass_fail(
+            snapshot.get("result") in _REPO_LEVEL_SNAPSHOT_RESULTS and exchange_status != "FAIL"
+        ),
         "alert_clear": pass_fail(alert.get("result") == "CLEAR"),
         "timer_active": pass_fail(timer_active == "active"),
         "timer_enabled": pass_fail(timer_enabled == "enabled"),
@@ -173,6 +197,10 @@ def build_review(
             "monitoring_status": run.get("status"),
             "snapshot_generated_at": snapshot.get("generated_at"),
             "snapshot_result": snapshot.get("result"),
+            "exchange_reconciliation_supplied": (
+                "YES" if snapshot_block.get("exchange_reconciliation_supplied") == "YES" else "NO"
+            ),
+            "exchange_confirmed_order_status": exchange_status,
             "alert_result": alert.get("result"),
             "alert_status": alert.get("status"),
             "telegram_notification_result": telegram.get("result"),
