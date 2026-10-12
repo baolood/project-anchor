@@ -15,6 +15,7 @@ from app.mcp.inventory import OFFICIAL_LEDGER_DIR, OFFICIAL_LEDGER_DIR_PRIVATE
 from app.mcp.official_ledger import (
     ALLOWLISTED_LEDGER_DIRS,
     LEDGER_DIR_ENV,
+    LEDGER_OUT_RELATIVE,
     NET_PNL_NOTE,
     read_official_ledger,
 )
@@ -44,6 +45,22 @@ def _context(root: Path, env: dict[str, str]) -> ToolContext:
 
 def _jsonl(*records: dict) -> str:
     return "".join(json.dumps(record) + "\n" for record in records)
+
+
+def _out(root: Path) -> Path:
+    dest = root.joinpath(*LEDGER_OUT_RELATIVE)
+    dest.mkdir(parents=True, exist_ok=True)
+    return dest
+
+
+def _event(event_id: str, event_hash: str, event_type: str = "GENESIS", pnl: str = "0") -> dict:
+    return {
+        "event_id": event_id,
+        "event_time": "2026-10-10T00:00:00Z",
+        "event_type": event_type,
+        "event_hash": event_hash,
+        "realized_pnl_cum": pnl,
+    }
 
 
 class OfficialLedgerSummaryTests(unittest.TestCase):
@@ -83,7 +100,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 },
             )
             text += "not-json\n"
-            path = ledger / LEDGER_NAME
+            path = _out(ledger) / LEDGER_NAME
             path.write_text(text, encoding="utf-8")
             before = path.read_bytes()
             digest = hashlib.sha256(before).hexdigest()
@@ -119,7 +136,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
     def test_later_file_supplies_the_hash_chain_head(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             ledger = Path(tmp)
-            (ledger / LEDGER_NAME).write_text(
+            (_out(ledger) / LEDGER_NAME).write_text(
                 _jsonl(
                     {
                         "event_id": "evt-1",
@@ -132,7 +149,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 encoding="utf-8",
             )
             later = "anchor_fake_fill_ledger_v2_official_b.jsonl"
-            (ledger / later).write_text(
+            (_out(ledger) / later).write_text(
                 _jsonl(
                     {
                         "event_id": "evt-2",
@@ -166,7 +183,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                     "",
                 ]
             )
-            (ledger / name).write_text(body, encoding="utf-8")
+            (_out(ledger) / name).write_text(body, encoding="utf-8")
             summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
             self.assertTrue(summary["available"])
             self.assertEqual(summary["counts"]["events"], 1)
@@ -189,7 +206,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                     f"evt-2,2026-10-10T00:01:00Z,NET_PNL,0.25,prev1,{HASH_B},1.25",
                 ]
             )
-            (ledger / name).write_text(body, encoding="utf-8")
+            (_out(ledger) / name).write_text(body, encoding="utf-8")
             summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
             self.assertEqual(summary["counts"]["header_row_mismatches"], 1)
             self.assertEqual(summary["counts"]["events"], 2)
@@ -209,7 +226,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
             )
             ledger = root / "v2"
             ledger.mkdir()
-            (ledger / LEDGER_NAME).write_text(
+            (_out(ledger) / LEDGER_NAME).write_text(
                 _jsonl({"event_id": "evt-1", "event_hash": HASH_A, "event_type": "GENESIS"}),
                 encoding="utf-8",
             )
@@ -229,7 +246,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
             )
             ledger = root / "v2"
             ledger.mkdir()
-            (ledger / LEDGER_NAME).write_text(
+            (_out(ledger) / LEDGER_NAME).write_text(
                 _jsonl(
                     {
                         "event_id": "evt-1",
@@ -261,7 +278,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
             )
             ledger = root / "v2"
             ledger.mkdir()
-            (ledger / LEDGER_NAME).write_text(
+            (_out(ledger) / LEDGER_NAME).write_text(
                 _jsonl({"event_id": "evt-1", "event_hash": HASH_A, "event_type": "GENESIS"}),
                 encoding="utf-8",
             )
@@ -327,7 +344,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (ledger / LEDGER_NAME).write_text(
+            (_out(ledger) / LEDGER_NAME).write_text(
                 _jsonl(
                     {
                         "event_id": "evt-1",
@@ -339,12 +356,12 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (ledger / "anchor_fake_fill_ledger_v2_official_link.jsonl").symlink_to(outside)
-            (ledger / "notes.jsonl").write_text(
+            (_out(ledger) / "anchor_fake_fill_ledger_v2_official_link.jsonl").symlink_to(outside)
+            (_out(ledger) / "notes.jsonl").write_text(
                 _jsonl({"event_id": "evt-notes", "event_hash": "d" * 64, "event_type": "GENESIS"}),
                 encoding="utf-8",
             )
-            (ledger / "anchor_fake_fill_ledger_v2_official.json").write_text(
+            (_out(ledger) / "anchor_fake_fill_ledger_v2_official.json").write_text(
                 _jsonl({"event_id": "evt-json", "event_hash": "e" * 64, "event_type": "GENESIS"}),
                 encoding="utf-8",
             )
@@ -361,7 +378,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
     def test_permission_error_is_unreadable_without_a_partial_head(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             ledger = Path(tmp)
-            (ledger / LEDGER_NAME).write_text(
+            (_out(ledger) / LEDGER_NAME).write_text(
                 _jsonl({"event_id": "evt-1", "event_hash": HASH_A, "event_type": "GENESIS"}),
                 encoding="utf-8",
             )
@@ -375,7 +392,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
     def test_oversize_ledger_does_not_report_a_head(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             ledger = Path(tmp)
-            (ledger / LEDGER_NAME).write_text(
+            (_out(ledger) / LEDGER_NAME).write_text(
                 _jsonl(
                     {
                         "event_id": "evt-1",
@@ -396,7 +413,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
     def test_opens_are_read_only_and_do_not_follow_links(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             ledger = Path(tmp)
-            (ledger / LEDGER_NAME).write_text(
+            (_out(ledger) / LEDGER_NAME).write_text(
                 _jsonl({"event_id": "evt-1", "event_hash": HASH_A, "event_type": "GENESIS"}),
                 encoding="utf-8",
             )
@@ -414,3 +431,131 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
             for flags in flags_seen:
                 self.assertEqual(flags & os.O_ACCMODE, os.O_RDONLY)
                 self.assertTrue(flags & os.O_NOFOLLOW)
+
+    def test_live_out_ignores_snapshots_and_does_not_recurse(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            (_out(ledger) / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-live", HASH_A, pnl="1.5")),
+                encoding="utf-8",
+            )
+            nested = _out(ledger) / "nested"
+            nested.mkdir()
+            (nested / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-nested", "e" * 64, pnl="8")),
+                encoding="utf-8",
+            )
+            (ledger / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-top", "d" * 64, pnl="7")),
+                encoding="utf-8",
+            )
+            baseline = ledger / "baseline"
+            baseline.mkdir()
+            (baseline / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-baseline", "b" * 64, pnl="2")),
+                encoding="utf-8",
+            )
+            before = ledger / "runs" / "sample-run" / "before"
+            before.mkdir(parents=True)
+            (before / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-before", "c" * 64, pnl="3")),
+                encoding="utf-8",
+            )
+            opened: list[str] = []
+            real_open = os.open
+
+            def spy(path: str | os.PathLike[str], flags: int, *args: int, **kwargs: int) -> int:
+                opened.append(os.fspath(path))
+                return real_open(path, flags, *args, **kwargs)
+
+            with mock.patch("app.mcp.official_ledger.os.open", side_effect=spy):
+                summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            blob = json.dumps(summary)
+            self.assertTrue(summary["available"])
+            self.assertEqual(summary["counts"]["events"], 1)
+            self.assertEqual(summary["last_event_id"], "evt-live")
+            self.assertEqual(summary["hash_chain_head"], HASH_A)
+            self.assertEqual(summary["realized_pnl_cum"], "1.5")
+            self.assertEqual(summary["source"], LEDGER_NAME)
+            for marker in ("evt-baseline", "evt-before", "evt-top", "evt-nested"):
+                self.assertNotIn(marker, blob)
+            self.assertTrue(opened)
+            for path in opened:
+                self.assertIn(f"{LEDGER_OUT_RELATIVE[0]}/{LEDGER_OUT_RELATIVE[1]}", path)
+                self.assertNotIn("/baseline/", path)
+                self.assertNotIn("/runs/", path)
+                self.assertNotIn("/nested/", path)
+
+    def test_symlinked_root_reads_live_out_and_ignores_snapshots(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            real = base / "private"
+            real.mkdir()
+            public = base / "var-lib"
+            public.symlink_to(real, target_is_directory=True)
+            (_out(real) / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-live", HASH_A, pnl="4.5")),
+                encoding="utf-8",
+            )
+            (real / "baseline").mkdir()
+            (real / "baseline" / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-baseline", "b" * 64)),
+                encoding="utf-8",
+            )
+            before = real / "runs" / "sample-run" / "before"
+            before.mkdir(parents=True)
+            (before / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-before", "c" * 64)),
+                encoding="utf-8",
+            )
+            summary = read_official_ledger({LEDGER_DIR_ENV: str(public)}, allowlist=(str(public),))
+            blob = json.dumps(summary)
+            self.assertTrue(summary["available"])
+            self.assertEqual(summary["last_event_id"], "evt-live")
+            self.assertEqual(summary["hash_chain_head"], HASH_A)
+            self.assertEqual(summary["realized_pnl_cum"], "4.5")
+            self.assertNotIn("evt-baseline", blob)
+            self.assertNotIn("evt-before", blob)
+            self.assertNotIn(str(real), blob)
+            self.assertNotIn(str(public), blob)
+
+    def test_out_symlink_outside_root_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            ledger = base / "ledger"
+            outside = base / "outside"
+            outside.mkdir()
+            (outside / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-outside", "f" * 64, pnl="9")),
+                encoding="utf-8",
+            )
+            parent = ledger / LEDGER_OUT_RELATIVE[0]
+            parent.mkdir(parents=True)
+            (parent / LEDGER_OUT_RELATIVE[1]).symlink_to(outside, target_is_directory=True)
+            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            blob = json.dumps(summary)
+            self.assertFalse(summary["available"])
+            self.assertEqual(summary["reason"], "ledger_out_rejected")
+            self.assertNotIn("evt-outside", blob)
+            self.assertNotIn("hash_chain_head", summary)
+
+    def test_out_symlink_to_baseline_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            baseline = ledger / "baseline"
+            baseline.mkdir()
+            (baseline / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-baseline", "b" * 64, pnl="2")),
+                encoding="utf-8",
+            )
+            parent = ledger / LEDGER_OUT_RELATIVE[0]
+            parent.mkdir()
+            (parent / LEDGER_OUT_RELATIVE[1]).symlink_to(baseline, target_is_directory=True)
+            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            self.assertFalse(summary["available"])
+            self.assertEqual(summary["reason"], "ledger_out_rejected")
+            self.assertNotIn("evt-baseline", json.dumps(summary))
+            self.assertEqual(
+                LEDGER_OUT_RELATIVE,
+                ("affl-v2-official-ledger", "out"),
+            )

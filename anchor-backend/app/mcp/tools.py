@@ -259,7 +259,7 @@ def tool_definitions() -> list[dict[str, Any]]:
         ),
         "get_ledger_summary": (
             "Read the Official Fake-Fill ledger summary. Read-only. "
-            "When ANCHOR_CONTROL_MCP_LEDGER_DIR is set, read only an allowlisted Official V2 directory. "
+            "When ANCHOR_CONTROL_MCP_LEDGER_DIR is set, read only affl-v2-official-ledger/out under an allowlisted root. "
             "Per-exit NET_PNL rows exclude entry costs. "
             "Does not write the ledger or fall back to report JSON while that env var is set."
         ),
