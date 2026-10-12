@@ -125,6 +125,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
             self.assertEqual(summary["counts"]["unparsed"], 1)
             self.assertEqual(summary["last_event_id"], "evt-2")
             self.assertEqual(summary["last_event_time"], "2026-10-10T00:02:00Z")
+            self.assertEqual(summary["last_event_time_field"], "event_time")
             self.assertEqual(summary["hash_chain_head"], HASH_B)
             self.assertEqual(summary["realized_pnl_cum"], "3.25")
             self.assertEqual(summary["net_pnl_note"], NET_PNL_NOTE)
@@ -559,3 +560,113 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 LEDGER_OUT_RELATIVE,
                 ("affl-v2-official-ledger", "out"),
             )
+
+    def test_live_row_names_map_id_hash_and_latest_time(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            earlier = {
+                "ledger_event_id": "evt-100",
+                "event_type": "GENESIS",
+                "prev_hash": "0" * 64,
+                "row_hash": HASH_A,
+                "signal_candle_open_utc": "2026-10-12T00:00:00Z",
+                "signal_available_at": "2026-10-12T00:01:00Z",
+                "fill_time_utc": "2026-10-12T12:00:00Z",
+                "realized_pnl_cum": "0",
+                "net_pnl": "0",
+                "order_id": ORDER_MARKER,
+            }
+            last = {
+                "ledger_event_id": "evt-101",
+                "event_type": "NET_PNL",
+                "prev_hash": HASH_A,
+                "row_hash": HASH_B,
+                "signal_candle_open_utc": "2026-10-12T00:00:00Z",
+                "signal_available_at": "2026-10-12T00:05:00+00:00",
+                "fill_time_utc": "2026-10-12T00:04:30.250000Z",
+                "realized_pnl_cum": "1.25",
+                "net_pnl": "0.25",
+                "client_order_id": CLIENT_MARKER,
+            }
+            (_out(ledger) / LEDGER_NAME).write_text(_jsonl(earlier, last), encoding="utf-8")
+            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            blob = json.dumps(summary)
+            self.assertTrue(summary["available"])
+            self.assertEqual(summary["counts"]["events"], 2)
+            self.assertEqual(summary["counts"]["by_type"], {"GENESIS": 1, "NET_PNL": 1})
+            self.assertEqual(summary["last_event_id"], "evt-101")
+            self.assertEqual(summary["hash_chain_head"], HASH_B)
+            self.assertEqual(summary["realized_pnl_cum"], "1.25")
+            self.assertEqual(summary["last_event_time"], "2026-10-12T00:05:00+00:00")
+            self.assertEqual(summary["last_event_time_field"], "signal_available_at")
+            self.assertNotIn(ORDER_MARKER, blob)
+            self.assertNotIn(CLIENT_MARKER, blob)
+            self.assertNotIn("order_id", blob)
+
+    def test_last_row_time_uses_fill_when_it_is_latest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            row = {
+                "ledger_event_id": "evt-102",
+                "event_type": "NET_PNL",
+                "row_hash": HASH_A,
+                "signal_available_at": "not-a-time",
+                "signal_candle_open_utc": "2026-10-12 00:00:00",
+                "fill_time_utc": "2026-10-12T01:00:00Z",
+                "realized_pnl_cum": "2",
+            }
+            (_out(ledger) / LEDGER_NAME).write_text(_jsonl(row), encoding="utf-8")
+            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            self.assertEqual(summary["last_event_id"], "evt-102")
+            self.assertEqual(summary["hash_chain_head"], HASH_A)
+            self.assertEqual(summary["last_event_time"], "2026-10-12T01:00:00Z")
+            self.assertEqual(summary["last_event_time_field"], "fill_time_utc")
+
+    def test_equal_times_prefer_signal_available_at(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            row = {
+                "ledger_event_id": "evt-103",
+                "row_hash": HASH_A,
+                "event_type": "GENESIS",
+                "signal_candle_open_utc": "2026-10-12T00:05:00Z",
+                "fill_time_utc": "2026-10-12T00:05:00+00:00",
+                "signal_available_at": "2026-10-12T00:05:00Z",
+            }
+            (_out(ledger) / LEDGER_NAME).write_text(_jsonl(row), encoding="utf-8")
+            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            self.assertEqual(summary["last_event_time"], "2026-10-12T00:05:00Z")
+            self.assertEqual(summary["last_event_time_field"], "signal_available_at")
+
+    def test_only_candle_open_is_named(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            row = {
+                "ledger_event_id": "evt-104",
+                "row_hash": HASH_B,
+                "event_type": "GENESIS",
+                "signal_candle_open_utc": "2026-10-12T00:15:00Z",
+            }
+            (_out(ledger) / LEDGER_NAME).write_text(_jsonl(row), encoding="utf-8")
+            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            self.assertEqual(summary["last_event_time"], "2026-10-12T00:15:00Z")
+            self.assertEqual(summary["last_event_time_field"], "signal_candle_open_utc")
+
+    def test_csv_header_uses_live_field_names(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            name = "anchor_fake_fill_ledger_v2_official.csv"
+            body = "\n".join(
+                [
+                    "ledger_event_id,event_type,row_hash,signal_candle_open_utc,fill_time_utc,signal_available_at,realized_pnl_cum",
+                    f"evt-105,NET_PNL,{HASH_A},2026-10-12T00:00:00Z,2026-10-12T00:02:00Z,2026-10-12T00:01:00Z,3.5",
+                ]
+            )
+            (_out(ledger) / name).write_text(body, encoding="utf-8")
+            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            self.assertEqual(summary["last_event_id"], "evt-105")
+            self.assertEqual(summary["hash_chain_head"], HASH_A)
+            self.assertEqual(summary["realized_pnl_cum"], "3.5")
+            self.assertEqual(summary["last_event_time"], "2026-10-12T00:02:00Z")
+            self.assertEqual(summary["last_event_time_field"], "fill_time_utc")
+            self.assertEqual(summary["counts"]["header_row_mismatches"], 0)
