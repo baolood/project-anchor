@@ -27,7 +27,7 @@ Destination directory: `/var/lib/anchor-ledger-mirror`
 
 The `.sha256` file is `sha256sum` form: 64 hex digits, two spaces, the ledger basename, and a newline. The metadata JSON has `source_mtime` (UTC), `source_size` (bytes), and `copied_at` (UTC).
 
-The copy writes a temp file in the destination directory, `fsync`s it, and `rename`s it into place. The source is opened `O_RDONLY|O_NOFOLLOW`. The destination must not sit inside the source tree, and the source must not sit inside the destination.
+The copy writes a temp file in the destination directory, `fsync`s it, and `rename`s it into place. The source is opened `O_RDONLY|O_NOFOLLOW`. Before that open, the copier waits until the source size and mtime have stayed unchanged for 2 seconds, and it skips the copy if they are still changing after 30 seconds. The destination must not sit inside the source tree, and the source must not sit inside the destination.
 
 ## Units
 
@@ -37,7 +37,7 @@ Examples, rendered by `app.mcp.ledger_mirror`:
 - [`systemd/anchor-ledger-readonly-mirror.timer.example`](systemd/anchor-ledger-readonly-mirror.timer.example)
 - [`systemd/anchor-official-ledger.service.d/readonly-mirror.conf.example`](systemd/anchor-official-ledger.service.d/readonly-mirror.conf.example)
 
-The service and the timer are ordered `After=anchor-official-ledger.service`. The timer runs `OnCalendar=*:0/10` (every 10 minutes), `OnBootSec=2min`, `Persistent=true`. The drop-in adds only `OnSuccess=anchor-ledger-readonly-mirror.service` on the ledger unit so a completed ledger run starts a copy. `OnSuccess=` can be set more than once; this drop-in adds a dependency and does not replace another `OnSuccess=`.
+The service and the timer are ordered `After=anchor-official-ledger.service`. The timer runs `OnCalendar=*:00,20,30,40,50`, `OnBootSec=2min`, `Persistent=true`. Minute 10 is omitted because that is when `anchor-official-ledger.service` writes the source file. The drop-in adds only `OnSuccess=anchor-ledger-readonly-mirror.service` on the ledger unit so a completed ledger run starts a copy, which then waits for the source to stay unchanged for 2 seconds. `OnSuccess=` can be set more than once; this drop-in adds a dependency and does not replace another `OnSuccess=`.
 
 The service is `User=root`, `ProtectSystem=strict`, `ReadOnlyPaths=` on both ledger roots, `ReadWritePaths=/var/lib/anchor-ledger-mirror`, `PrivateNetwork=yes`, and `RestrictAddressFamilies=AF_UNIX`. It does not set `StateDirectory=` or `DynamicUser=`. It does not `chmod` or `setfacl` the ledger StateDirectory.
 

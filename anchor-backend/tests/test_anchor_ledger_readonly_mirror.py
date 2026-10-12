@@ -19,6 +19,7 @@ from app.mcp.ledger_mirror import (
     LEDGER_BASENAME,
     SOURCE_RELATIVE,
     MirrorError,
+    _wait_until_stable,
     mirror_ledger,
     render_service_unit,
     render_success_drop_in,
@@ -70,7 +71,7 @@ class LedgerMirrorTests(unittest.TestCase):
                 real_chmod(path, mode)
 
             with mock.patch("app.mcp.ledger_mirror.os.chmod", side_effect=spy_chmod):
-                mirror_ledger(source, dest)
+                mirror_ledger(source, dest, stable_for=0)
             self.assertEqual(live.read_bytes(), payload)
             self.assertEqual(live.stat().st_mode, file_mode)
             self.assertEqual(live.stat().st_mtime_ns, file_mtime)
@@ -141,7 +142,7 @@ class LedgerMirrorTests(unittest.TestCase):
                 mock.patch("app.mcp.ledger_mirror.os.fsync", side_effect=spy_fsync),
                 mock.patch("app.mcp.ledger_mirror.os.replace", side_effect=spy_replace),
             ):
-                mirror_ledger(source, dest)
+                mirror_ledger(source, dest, stable_for=0)
             source_opens = [flags for path, flags in opens if path == str(live)]
             self.assertEqual(source_opens, [READ_FLAGS])
             write_bits = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND
@@ -232,13 +233,96 @@ class LedgerMirrorTests(unittest.TestCase):
                 mock.patch("app.mcp.ledger_mirror.grp.getgrnam", return_value=group) as getgrnam,
                 mock.patch("app.mcp.ledger_mirror.os.chown", side_effect=spy_chown),
             ):
-                mirror_ledger(source, dest, group="anchor-mcp")
+                mirror_ledger(source, dest, group="anchor-mcp", stable_for=0)
             getgrnam.assert_called_with("anchor-mcp")
             self.assertGreaterEqual(len(chowns), 4)
             for path, uid, gid in chowns:
                 self.assertEqual((uid, gid), (0, 42))
                 self.assertTrue(path.startswith(str(dest)))
                 self.assertFalse(path.startswith(str(source)))
+
+    def test_skips_while_source_size_or_mtime_is_changing(self) -> None:
+        payload = b"live-bytes\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "ledger-root"
+            dest = base / "mirror"
+            live = _plant(source, payload)
+            before_mode = live.stat().st_mode
+            before_mtime = live.stat().st_mtime_ns
+            clock = {"t": 0.0}
+            calls = {"n": 0}
+
+            def monotonic() -> float:
+                return clock["t"]
+
+            def sleep(seconds: float) -> None:
+                clock["t"] += seconds
+
+            def stat_source(path: Path):
+                calls["n"] += 1
+                return mock.Mock(st_size=calls["n"], st_mtime_ns=calls["n"])
+
+            outcome = mirror_ledger(
+                source,
+                dest,
+                stable_for=2,
+                max_wait=1,
+                sleep=sleep,
+                monotonic=monotonic,
+                stat_source=stat_source,
+            )
+            self.assertEqual(outcome, "skipped")
+            self.assertFalse((dest / LEDGER_BASENAME).exists())
+            self.assertEqual(live.read_bytes(), payload)
+            self.assertEqual(live.stat().st_mode, before_mode)
+            self.assertEqual(live.stat().st_mtime_ns, before_mtime)
+
+    def test_copies_after_size_and_mtime_are_stable_for_two_seconds(self) -> None:
+        payload = b"stable-live\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "ledger-root"
+            dest = base / "mirror"
+            _plant(source, payload)
+            clock = {"t": 0.0}
+
+            def monotonic() -> float:
+                return clock["t"]
+
+            def sleep(seconds: float) -> None:
+                clock["t"] += seconds
+
+            outcome = mirror_ledger(source, dest, stable_for=2, max_wait=5, sleep=sleep, monotonic=monotonic)
+            self.assertEqual(outcome, "copied")
+            self.assertGreaterEqual(clock["t"], 2)
+            self.assertEqual((dest / LEDGER_BASENAME).read_bytes(), payload)
+
+    def test_stability_window_resets_when_mtime_changes(self) -> None:
+        clock = {"t": 0.0}
+        mtime = {"n": 5}
+
+        def monotonic() -> float:
+            return clock["t"]
+
+        def sleep(seconds: float) -> None:
+            clock["t"] += seconds
+
+        def stat_source(path: Path):
+            if clock["t"] >= 1:
+                mtime["n"] = 9
+            return mock.Mock(st_size=10, st_mtime_ns=mtime["n"])
+
+        sample = _wait_until_stable(
+            Path("/tmp/ledger-source"),
+            stable_for=2,
+            max_wait=10,
+            sleep=sleep,
+            monotonic=monotonic,
+            stat_source=stat_source,
+        )
+        self.assertEqual(sample, (10, 9))
+        self.assertGreaterEqual(clock["t"], 3)
 
     def test_units_are_hardened_and_match_the_examples(self) -> None:
         service = render_service_unit()
@@ -260,7 +344,10 @@ class LedgerMirrorTests(unittest.TestCase):
         self.assertIn("User=root", service)
         self.assertIn("ProtectSystem=strict", service)
         self.assertIn("RestrictAddressFamilies=AF_UNIX", service)
-        self.assertIn("OnCalendar=*:0/10", timer)
+        self.assertIn("OnCalendar=*:00,20,30,40,50", timer)
+        self.assertNotIn("*:0/10", timer)
+        calendar = next(line for line in timer.splitlines() if line.startswith("OnCalendar="))
+        self.assertNotIn("10", calendar.split("=", 1)[1])
         self.assertEqual(drop_in, "[Unit]\nOnSuccess=anchor-ledger-readonly-mirror.service\n")
         for forbidden in ("setfacl", "chmod", "AF_INET", "StateDirectory=", "DynamicUser="):
             self.assertNotIn(forbidden, combined)
