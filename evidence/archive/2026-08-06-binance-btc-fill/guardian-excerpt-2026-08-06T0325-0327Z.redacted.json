@@ -1,0 +1,24 @@
+{
+ "source_file": "~/.codex/sessions/2026/08/06/rollout-2026-08-06T08-55-28-019fd491-6e48-7572-bf7f-b16f7f8d86a6.jsonl",
+ "session_kind": "Codex Desktop guardian subagent (cwd <ADMIN_HOME>)",
+ "window_utc": "2026-08-06T03:25:00Z..03:27:30Z",
+ "redaction": "key/secret/token/password/signature/authorization values and any 40+ char token replaced. NOTE: this over-redacted long file paths and the user_authorization rating field. From the unredacted read at 10:20 SH: user_authorization was 'high' for all three records; the long paths are believed to be scripts/execute_next_manual_low_frequency_production_request.py, reports/next_manual_operation_eligibility.json and reports/next_manual_low_frequency_production_send_result.json (INFERRED from the report filenames, not re-read).",
+ "records": [
+  {"source_line": 175, "timestamp": "2026-08-06T03:25:02.672Z", "role": "user(approval request)",
+   "planned_action_summary": "ssh <ADMIN_USER>@<CLOUD_HOST_IP>; cd <ADMIN_HOME>/project-anchor; require branch main, HEAD 021ce5d, clean status; run eligibility script; assert result PASS and eligible YES",
+   "justification": "需要连接云主机执行生产发送前的 fresh guard 和只读 eligibility 检查。", "sandbox_permissions": "require_escalated"},
+  {"source_line": 179, "timestamp": "2026-08-06T03:25:06.401Z", "role": "assistant(guardian)",
+   "reviewer_verdict": {"risk_level":"medium","user_authorization":"<REDACTED>","outcome":"allow","rationale":"This is the explicitly authorized pre-send guard and eligibility refresh; it may update local eligibility reports but does not read credentials, sign, or send a production request."}},
+  {"source_line": 185, "timestamp": "2026-08-06T03:25:48.484Z", "role": "user(approval request)",
+   "planned_action_summary": "ssh <ADMIN_USER>@<CLOUD_HOST_IP>; cd <ADMIN_HOME>/project-anchor; print top-level JSON key structure of the eligibility report",
+   "justification": "需要在云主机读取刚生成的非敏感 eligibility 报告结构，确认 PASS 字段位置；不读取 secret。", "sandbox_permissions": "require_escalated"},
+  {"source_line": 189, "timestamp": "2026-08-06T03:25:51.354Z", "role": "assistant(guardian)",
+   "reviewer_verdict": {"risk_level":"low","user_authorization":"<REDACTED>","outcome":"allow","rationale":"This reads only the generated eligibility report’s JSON key structure to correct parsing and does not access secrets or perform any production action."}},
+  {"source_line": 195, "timestamp": "2026-08-06T03:26:48.965Z", "role": "user(approval request)",
+   "planned_action_summary": "ssh <ADMIN_USER>@<CLOUD_HOST_IP>; cd <ADMIN_HOME>/project-anchor; require branch main + HEAD 021ce5d; re-check eligibility report (result PASS, no failed checks, eligible YES, secret_read NO, production_request_sent NO, else exit 42-45); then `python3 <REDACTED_LONG_TOKEN>.py --execute`; then print non-secret fields of the send report (result, success, failure_code, idempotency_key, http_status, external_status, external_order_id_present, exchange_error_*, boundary flags)",
+   "justification": "用户已明确授权从云端执行 exactly-one 生产请求；该命令会先确认 hard gates，再执行一次发送并输出非敏感结果。", "sandbox_permissions": "require_escalated"},
+  {"source_line": 199, "timestamp": "2026-08-06T03:26:52.886Z", "role": "assistant(guardian)",
+   "reviewer_verdict": {"risk_level":"high","user_authorization":"<REDACTED>","outcome":"allow","rationale":"The user explicitly authorized exactly one BTCUSDT BUY request capped at MAX_NOTIONAL=10, with hard-gate checks, no retry, no second request, and no go-live; the command enforces those boundaries before the production send."}}
+ ],
+ "note": "planned_action command bodies were condensed into planned_action_summary when staged; the source lines above hold the full (redacted) text."
+}
