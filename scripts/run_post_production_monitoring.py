@@ -53,27 +53,50 @@ def check(name: str, passed: bool, evidence: str) -> dict[str, str]:
     }
 
 
+_NON_PAGING_SNAPSHOT_RESULTS = {"PASS", "PASS_REPO_RECORDED_ONLY"}
+_NON_PAGING_SNAPSHOT_STATUSES = {
+    "MONITORING_READY_CONTINUOUS_TRADING_DISABLED",
+    "MONITORING_REPO_RECORDED_ONLY_CONTINUOUS_TRADING_DISABLED",
+}
+
+
 def build_run_report(snapshot_report: dict[str, Any], snapshot_exit_code: int) -> tuple[dict[str, Any], int]:
     boundary = snapshot_report.get("boundary") if isinstance(snapshot_report.get("boundary"), dict) else {}
     snapshot_data = (
         snapshot_report.get("snapshot") if isinstance(snapshot_report.get("snapshot"), dict) else {}
     )
+    snapshot_result = snapshot_report.get("result")
     checks = [
         check(
             "snapshot_result_pass",
-            snapshot_exit_code == 0 and snapshot_report.get("result") == "PASS",
-            "post-production monitoring snapshot returned PASS",
+            snapshot_exit_code == 0 and snapshot_result in _NON_PAGING_SNAPSHOT_RESULTS,
+            (
+                "post-production monitoring snapshot returned PASS_REPO_RECORDED_ONLY; "
+                "exchange confirmation is not PASS and this does not page"
+                if snapshot_result == "PASS_REPO_RECORDED_ONLY"
+                else "post-production monitoring snapshot returned PASS"
+            ),
         ),
         check(
             "monitoring_status_safe",
-            snapshot_report.get("status") == "MONITORING_READY_CONTINUOUS_TRADING_DISABLED",
-            "monitoring is ready while continuous trading remains disabled",
+            snapshot_report.get("status") in _NON_PAGING_SNAPSHOT_STATUSES,
+            "monitoring stays non-paging while continuous trading remains disabled",
         ),
         check(
             "exactly_one_production_order_still_recorded",
-            snapshot_data.get("matching_filled_order_count") == 1
-            and snapshot_data.get("symbol_order_count_in_window") == 1,
-            "exactly one filled BTCUSDT order remains recorded in the authorized window",
+            (
+                snapshot_data.get("repo_recorded_matching_filled_order_count")
+                if "repo_recorded_matching_filled_order_count" in snapshot_data
+                else snapshot_data.get("matching_filled_order_count")
+            )
+            == 1
+            and (
+                snapshot_data.get("repo_recorded_symbol_order_count_in_window")
+                if "repo_recorded_symbol_order_count_in_window" in snapshot_data
+                else snapshot_data.get("symbol_order_count_in_window")
+            )
+            == 1,
+            "repo-recorded filled-order count in stored reports is 1; this check is not an exchange confirmation",
         ),
         check(
             "continuous_runtime_disabled",
@@ -99,9 +122,14 @@ def build_run_report(snapshot_report: dict[str, Any], snapshot_exit_code: int) -
     ]
     failed = [item for item in checks if item["result"] != "PASS"]
     result = "PASS" if not failed else "BLOCKED"
+    supplied = snapshot_data.get("exchange_reconciliation_supplied") == "YES"
+    raw_exchange = snapshot_data.get("exchange_confirmed_order_status")
+    exchange_status = raw_exchange if supplied and raw_exchange in {"PASS", "FAIL", "UNKNOWN"} else "UNKNOWN"
     report = {
         "generated_at": utc_now(),
         "result": result,
+        "result_scope": "repo_recorded_evidence",
+        "exchange_confirmed_order_status": exchange_status,
         "status": (
             "POST_PRODUCTION_MONITORING_RUN_READY"
             if result == "PASS"

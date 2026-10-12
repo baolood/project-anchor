@@ -1,0 +1,120 @@
+{
+  "commissions_paid_usd": 3.2,
+  "fill_timestamp_note": "Original simulator writes intrabar stop exit_time as candle OPEN; exact intrabar execution instant is unknown. Bar intervals below are the supported timing evidence.",
+  "final_wrapper_process_count": 0,
+  "fixed_deadline_utc": "2026-10-19T01:12:27.756343+00:00",
+  "funding_status": "NOT_INCLUDED_UNKNOWN",
+  "funding_usd": null,
+  "new_round_count": 1,
+  "no_new_entries": true,
+  "no_pending_instructions": true,
+  "original_reports_unchanged": true,
+  "other_protected_hashes_unchanged": true,
+  "outcome": "ALL_FOUR_ORIGINAL_POSITIONS_CLOSED_BY_EXISTING_STOPS",
+  "process_state": {
+    "ActiveState": "inactive",
+    "ExecMainExitTimestamp": "n/a",
+    "ExecMainStartTimestamp": "n/a",
+    "ExecMainStatus": "0",
+    "KillMode": "control-group",
+    "LoadState": "loaded",
+    "MainPID": "0",
+    "NRestarts": "0",
+    "Restart": "no",
+    "Result": "success",
+    "RuntimeMaxUSec": "1w 1h",
+    "StateDirectory": "anchor-d5-closeout-20261012",
+    "SubState": "dead",
+    "UnitFileState": "static",
+    "User": "anchor-d5-closeout-20261012"
+  },
+  "public_mark_as_of_utc": "2026-10-12T00:00:00+00:00",
+  "public_marks": {
+    "PI_ETHUSD": 2533.25,
+    "PI_XBTUSD": 83664.0
+  },
+  "realized_net_ex_funding_usd": -44.008000000000244,
+  "round_id": "fce80f9544514fd1886e0b02e9273423",
+  "run_id": "anchor-d5-closeout-20261012",
+  "signal_evidence_gap": {
+    "effect": "Backlog applies original stop/target and existing pending instructions only; historical signal exits cannot be reconstructed.",
+    "from": "2026-10-11T08:21:28.946660+00:00",
+    "status": "NO_PUBLISHED_SIGNAL_EVIDENCE_DURING_DOWNTIME",
+    "to": "2026-10-12T01:12:29.265227+00:00"
+  },
+  "source_snapshot_sha256": "685c07e9072f1a664ea98532981f3300fc3a923a6830921a59d3e43da1c3d472",
+  "started_at_utc": "2026-10-12T01:12:27.756343+00:00",
+  "stopped_at_utc": "2026-10-12T01:12:29.450685+00:00",
+  "trades": [
+    {
+      "commissions_both_sides_usd": 0.8,
+      "exit_reason": "STOP",
+      "fill_price_including_slippage": 2518.13189927472,
+      "original_instruction_id": "cbc0415be11bc10185c9a24cba81f263",
+      "pair": "breakout_55_strength_1pct|PI_ETHUSD",
+      "preceding_backlog_bars_without_stop_or_target": 2,
+      "raw_ohlc": {
+        "close": 2532.05,
+        "high": 2551.2,
+        "low": 2510.75,
+        "open": 2510.75
+      },
+      "recomputed_net_ex_funding_usd": -11.002000000000042,
+      "stop_bar_close_utc": "2026-10-11T20:00:00+00:00",
+      "stop_bar_open_utc": "2026-10-11T16:00:00+00:00"
+    },
+    {
+      "commissions_both_sides_usd": 0.8,
+      "exit_reason": "STOP",
+      "fill_price_including_slippage": 2527.0703989171802,
+      "original_instruction_id": "b9fcd0c81df3da31c366517ea9b94689",
+      "pair": "breakout_55|PI_ETHUSD",
+      "preceding_backlog_bars_without_stop_or_target": 2,
+      "raw_ohlc": {
+        "close": 2532.05,
+        "high": 2551.2,
+        "low": 2510.75,
+        "open": 2510.75
+      },
+      "recomputed_net_ex_funding_usd": -11.00200000000006,
+      "stop_bar_close_utc": "2026-10-11T20:00:00+00:00",
+      "stop_bar_open_utc": "2026-10-11T16:00:00+00:00"
+    },
+    {
+      "commissions_both_sides_usd": 0.8,
+      "exit_reason": "STOP",
+      "fill_price_including_slippage": 83369.43666522241,
+      "original_instruction_id": "d52785498af0b1ed8a7ada081a55a733",
+      "pair": "breakout_55|PI_XBTUSD",
+      "preceding_backlog_bars_without_stop_or_target": 1,
+      "raw_ohlc": {
+        "close": 83517.5,
+        "high": 83517.5,
+        "low": 82932.5,
+        "open": 82932.5
+      },
+      "recomputed_net_ex_funding_usd": -11.002000000000104,
+      "stop_bar_close_utc": "2026-10-11T16:00:00+00:00",
+      "stop_bar_open_utc": "2026-10-11T12:00:00+00:00"
+    },
+    {
+      "commissions_both_sides_usd": 0.8,
+      "exit_reason": "STOP",
+      "fill_price_including_slippage": 2518.13189927472,
+      "original_instruction_id": "ecf8941289327a7aa7a560752bd445fc",
+      "pair": "ema_50_100_strength_1pct|PI_ETHUSD",
+      "preceding_backlog_bars_without_stop_or_target": 2,
+      "raw_ohlc": {
+        "close": 2532.05,
+        "high": 2551.2,
+        "low": 2510.75,
+        "open": 2510.75
+      },
+      "recomputed_net_ex_funding_usd": -11.002000000000042,
+      "stop_bar_close_utc": "2026-10-11T20:00:00+00:00",
+      "stop_bar_open_utc": "2026-10-11T16:00:00+00:00"
+    }
+  ],
+  "unrealized_gross_usd": 0,
+  "wrapper_start_events": 1
+}

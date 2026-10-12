@@ -21,9 +21,14 @@ from app.mcp.status import (
     process_from_units,
     read_kill_switch,
     repo_root,
+    REPO_RECORDED_ONLY_RESULT,
     service_state_ok,
     utc_now,
 )
+
+# Repo-recorded monitoring is explicit and non-paging. It must not degrade
+# the read-only health check the way a missing or failed observation does.
+_OBSERVATION_HEALTH_OK = {"PASS", "OK", REPO_RECORDED_ONLY_RESULT}
 
 
 TOOL_NAMES = (
@@ -191,7 +196,7 @@ def run_readonly_healthcheck(ctx: ToolContext) -> dict[str, Any]:
             _kill_switch_check(kill),
             _check(
                 "observation",
-                observation.get("available") is True and observation.get("result") in {"PASS", "OK"},
+                observation.get("available") is True and observation.get("result") in _OBSERVATION_HEALTH_OK,
                 str(observation.get("result") or observation.get("reason") or "missing"),
             ),
             _check(
@@ -246,7 +251,12 @@ def tool_definitions() -> list[dict[str, Any]]:
             "On the host sidecar, only CORE_RUNTIME units gate PASS. "
             "Does not trade, change config, or read secrets."
         ),
-        "get_latest_observation": "Read the latest Forward/observation sample from allowlisted report JSON. Read-only.",
+        "get_latest_observation": (
+            "Read the latest Forward/observation sample from allowlisted report JSON. Read-only. "
+            "Repo-recorded order counts are not exchange confirmation. "
+            "exchange_confirmed_order_status is UNKNOWN unless the snapshot records an offline reconciliation file. "
+            "A monitoring PASS without that file is projected as PASS_REPO_RECORDED_ONLY and does not page."
+        ),
         "get_ledger_summary": "Read the Official Fake-Fill / ledger summary from allowlisted report JSON. Read-only.",
         "get_services": (
             "Read allowlisted systemd service status. Does not start, stop, or restart units. "

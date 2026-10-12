@@ -1,0 +1,25 @@
+{
+  "archive_bytes": 27782,
+  "archive_sha256": "da33c75d183162f7062dadd2d1caa9d5199236c868563bf2c4704c548fb91e5d",
+  "files_sha256": {
+    "bundle/scripts/availability_fill_v1.py": "ead85ff2c41b65638d1682508892595f8f968c613a207de205419fd004e31403",
+    "bundle/scripts/backtest_kraken_prop_strategy.py": "27f610d0fb734a1a4eb7e818b17adda387d30ff5ab0e29312630dcd2ef5ab858",
+    "bundle/scripts/research_kraken_prop_strategies.py": "47917a663cad9a762c9698312f4e2fe7f658af79e418aa07122bbe20f315bba6",
+    "bundle/scripts/run_forward_round_v1.py": "0b1d375f389b0e95f71fb55ed09dff69242014ce0cf0b44bf3a5787fb64785c8",
+    "bundle/scripts/track_kraken_prop_forward_observation.py": "a39141ab76ef7ef5d6ae607023616d9bc17516b53123d5cd89d1a32b8a2d27c4",
+    "bundle/scripts/walk_forward_kraken_prop_strategies.py": "195e9ab5aad964e82fc3c3d553d68ab3b40394fe3e255eefd140f7e506caa8a2",
+    "checkpoints/initial/reports/kraken_prop/dry-run-v1.jsonl": "0959c05d87aa1d7cc24667ce983d4fd364406b5af8c2f98bf0880fb16ba1d462",
+    "checkpoints/initial/reports/kraken_prop/forward-observation-latest.json": "f90bde635c5bd3581eb2f537fceb5099c02a1380754fda7f4c57729f74c3f79f",
+    "checkpoints/initial/reports/kraken_prop/forward-observation-latest.md": "3b5b0cfeabb81985e8ff7fb5948671eadf39e333eb7a9cbc722c8db3a33d3629",
+    "checkpoints/initial/reports/kraken_prop/forward-observation-state.json": "0e733a89f9f421771883911d49a66f6c9bdc8f4e0aeb78cfb60a3286f6c6e7a1",
+    "checkpoints/initial/reports/kraken_prop/rounds/round.43d903a6055d4df5b716842271db8548.json": "3218915b1db2a07129af47883259d94aa3cd70476932456653043ec704596d5f",
+    "checkpoints/initial/reports/kraken_prop/rounds/round.e9390cc584854ccdb99556aa32aa710e.json": "64b664f756dbd8c3aec1f2cebf894b03af5e24a5db00dc1d6bce67fe19dee9bd",
+    "checkpoints/initial/reports/kraken_prop/rounds/round.ebe0b44fb839435c850d183d5a66f867.json": "6fddecb5b3fc098725b6e88e8e050f9803bb1d32f01bc92e0652158fa9643f2d",
+    "checkpoints/initial/reports/kraken_prop/sim-availability-v1-latest.json": "d8b2439656e5cbdb7e1c7b2f0cb5dc8ce115fb1cd272f7fa58b08054a20fd749",
+    "checkpoints/initial/reports/kraken_prop/sim-state-v1.json": "1cf29b554d8f7b7397a088b083d2b2f31dd57e975ee86eef91b3223291db2c86",
+    "cloud_loop.py": "ea7c427f25098a5b0449a3bd9c8f501175ba2156ca44a1f5ad57cbae54aec329",
+    "control.json": "3e89ed82d2b25d5006f22b51f3c70df56169373e7edb09a4ccbd40fdb32ee3d5",
+    "manifest.json": "12d7c0f0cfd0cf21dc9681e799646aea14bb89655767338f0c9d8bc6660898aa"
+  },
+  "unit_sha256": "6dc7d9e40f50a9cbabf01a1e0172d158975ca359aa58f46b86272146d17eb980"
+}

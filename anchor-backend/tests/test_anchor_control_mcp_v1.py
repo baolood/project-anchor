@@ -1,6 +1,7 @@
 import ast
 import json
 import os
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -19,6 +20,7 @@ from app.mcp.tools import TOOL_NAMES, ToolContext, call_tool, tool_definitions
 
 TOKEN = "test-mcp-token-value"
 REPO = Path(__file__).resolve().parents[2]
+IPV4_LITERAL = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 
 
 def _ok_show(unit: str, active: str, result: str, unit_type: str = "simple") -> str:
@@ -360,6 +362,129 @@ class AnchorControlMcpToolTests(unittest.TestCase):
         self.assertNotIn("idempotency", blob.lower())
         self.assertNotIn("45.76.190.109", blob)
         self.assertNotIn("TELEGRAM", blob)
+
+
+    def test_projection_and_archive_omit_ipv4_literals(self) -> None:
+        ctx = ToolContext(
+            reports_dir=REPO / "reports",
+            repo_root=REPO,
+            env={},
+            run_command=RecordingRunner(),
+            kill_switch=lambda: {"enabled": False, "source": "redis", "state": "CLOSED", "reason": "redis_read"},
+            clock=lambda: "2026-09-29T00:00:00Z",
+        )
+        ledger = call_tool("get_ledger_summary", {}, ctx)
+        observation = call_tool("get_latest_observation", {}, ctx)
+        blob = json.dumps({"ledger": ledger, "observation": observation})
+        self.assertIsNone(IPV4_LITERAL.search(blob))
+        self.assertEqual(observation["result"], "PASS_REPO_RECORDED_ONLY")
+        self.assertNotEqual(observation["result"], "PASS")
+        self.assertEqual(observation["exchange_confirmed_order_status"], "UNKNOWN")
+        projected = {item["name"]: item["result"] for item in observation["checks"]}
+        self.assertNotIn("exactly_one_order_confirmed", projected)
+        self.assertNotIn("no_new_or_second_request", projected)
+        self.assertEqual(projected["repo_recorded_exactly_one_order"], "PASS")
+        self.assertEqual(projected["repo_recorded_no_new_or_second_request"], "PASS")
+        self.assertNotEqual(observation["exchange_confirmed_order_status"], "PASS")
+        archive = REPO / "evidence" / "archive"
+        archived = [path for path in archive.rglob("*") if path.is_file()]
+        self.assertTrue(archived)
+        for path in archived:
+            text = path.read_text(encoding="utf-8", errors="replace")
+            self.assertIsNone(IPV4_LITERAL.search(text), str(path.relative_to(REPO)))
+
+    def test_repo_recorded_order_pass_is_not_exchange_confirmation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            ctx = _context(root, RecordingRunner())
+            _write(
+                ctx.reports_dir / "post_production_monitoring_snapshot.json",
+                {
+                    "generated_at": "2026-08-06T03:26:55Z",
+                    "result": "PASS",
+                    "boundary": {"go_live": "NO-GO", "live_trading": "NO-GO"},
+                    "checks": [
+                        {
+                            "name": "exactly_one_order_confirmed",
+                            "result": "PASS",
+                            "evidence": "exactly one matching BTCUSDT BUY order was found",
+                        },
+                        {
+                            "name": "no_new_or_second_request",
+                            "result": "PASS",
+                            "evidence": "monitoring snapshot did not send or imply another request",
+                        },
+                    ],
+                    "snapshot": {
+                        "matching_filled_order_count": 1,
+                        "symbol_order_count_in_window": 1,
+                    },
+                },
+            )
+            _write(
+                ctx.reports_dir / "official_fake_fill_ledger.json",
+                {
+                    "generated_at": "2026-08-06T03:26:55Z",
+                    "result": "PASS",
+                    "fake_transport_external_status": "FILLED",
+                    "fake_transport_called_once": True,
+                },
+            )
+            observation = call_tool("get_latest_observation", {}, ctx)
+            health = call_tool("run_readonly_healthcheck", {}, ctx)
+
+        names = {item["name"]: item["result"] for item in observation["checks"]}
+        self.assertEqual(observation["result"], "PASS_REPO_RECORDED_ONLY")
+        self.assertNotEqual(observation["result"], "PASS")
+        observation_check = next(item for item in health["checks"] if item["name"] == "observation")
+        self.assertEqual(observation_check["result"], "PASS")
+        self.assertEqual(health["verdict"], "PASS")
+        self.assertEqual(names["repo_recorded_exactly_one_order"], "PASS")
+        self.assertEqual(names["repo_recorded_no_new_or_second_request"], "PASS")
+        self.assertNotIn("exactly_one_order_confirmed", names)
+        self.assertNotIn("no_new_or_second_request", names)
+        self.assertEqual(observation["exchange_reconciliation_supplied"], "NO")
+        self.assertEqual(observation["exchange_confirmed_order_status"], "UNKNOWN")
+        self.assertNotIn("evidence", json.dumps(observation))
+
+    def test_offline_reconciliation_flag_is_required_before_exchange_pass(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            ctx = _context(root, RecordingRunner())
+            _write(
+                ctx.reports_dir / "post_production_monitoring_snapshot.json",
+                {
+                    "generated_at": "2026-08-06T03:26:55Z",
+                    "result": "PASS",
+                    "checks": [
+                        {"name": "exchange_confirmed_exactly_one_order", "result": "PASS"},
+                    ],
+                    "snapshot": {
+                        "exchange_reconciliation_supplied": "YES",
+                        "exchange_confirmed_order_status": "PASS",
+                    },
+                },
+            )
+            confirmed = call_tool("get_latest_observation", {}, ctx)
+            _write(
+                ctx.reports_dir / "post_production_monitoring_snapshot.json",
+                {
+                    "generated_at": "2026-08-06T03:27:55Z",
+                    "result": "PASS",
+                    "checks": [
+                        {"name": "exchange_confirmed_exactly_one_order", "result": "PASS"},
+                    ],
+                    "snapshot": {"exchange_confirmed_order_status": "PASS"},
+                },
+            )
+            unconfirmed = call_tool("get_latest_observation", {}, ctx)
+
+        self.assertEqual(confirmed["result"], "PASS")
+        self.assertEqual(confirmed["exchange_confirmed_order_status"], "PASS")
+        self.assertEqual(confirmed["checks"][0]["result"], "PASS")
+        self.assertEqual(unconfirmed["result"], "PASS_REPO_RECORDED_ONLY")
+        self.assertEqual(unconfirmed["exchange_confirmed_order_status"], "UNKNOWN")
+        self.assertEqual(unconfirmed["checks"][0]["result"], "UNKNOWN")
 
 
 class CommandGuardTests(unittest.TestCase):

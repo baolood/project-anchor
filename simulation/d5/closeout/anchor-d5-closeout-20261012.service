@@ -1,0 +1,27 @@
+[Unit]
+Description=Bounded public-only Anchor D5 four-position closeout (seven days)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+StateDirectory=anchor-d5-closeout-20261012
+StateDirectoryMode=0700
+WorkingDirectory=/var/lib/anchor-d5-closeout-20261012
+ExecStart=/usr/bin/python3 -B /var/lib/anchor-d5-closeout-20261012/closeout_loop.py --root /var/lib/anchor-d5-closeout-20261012
+Restart=no
+KillMode=control-group
+TimeoutStopSec=15
+RuntimeMaxSec=7d1h
+UMask=0077
+Environment=PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1 LANG=C.UTF-8
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectHome=yes
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadOnlyPaths=/var/lib/anchor-d5-closeout-20261012/bundle /var/lib/anchor-d5-closeout-20261012/manifest.json /var/lib/anchor-d5-closeout-20261012/closeout-contract.json /var/lib/anchor-d5-closeout-20261012/checkpoints/initial /var/lib/anchor-d5-closeout-20261012/closeout_loop.py
+StandardOutput=journal
+StandardError=journal

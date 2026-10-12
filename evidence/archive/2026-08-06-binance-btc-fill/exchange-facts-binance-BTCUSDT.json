@@ -1,0 +1,20 @@
+{
+  "source": "Binance spot production key, GET /api/v3/allOrders + /api/v3/myTrades (symbol=BTCUSDT), queried read-only on cloud host <CLOUD_HOST_IP> at 2026-10-12 ~10:10 SH",
+  "total_orders_for_symbol": 2,
+  "open_orders_spot": 0,
+  "margin_account": "does not exist (-3003)",
+  "nonzero_balances_under_key": [],
+  "orders": [
+    {"orderId": <ORDER_1>, "clientOrderId": "<CLIENT_ORDER_1>", "time_utc": "2026-07-30T13:52:57.286Z", "time_shanghai": "2026-07-30 21:52:57",
+     "side": "BUY", "type": "MARKET", "status": "FILLED", "origQuoteOrderQty": "10.00000000", "executedQty": "0.00015000", "cummulativeQuoteQty": "9.75580800",
+     "fills": [{"tradeId": <TRADE_1>, "price": "65038.72000000", "qty": "0.00015000", "quoteQty": "9.75580800", "commission": "0.00000015", "commissionAsset": "BTC", "isMaker": false}],
+     "repo_idempotency_key": "production:ops_manual:BTCUSDT:BUY:10:first-bounded-production-request:v1",
+     "repo_report": "reports/production_exactly_one_send_result.json (committed f0bcae9, generated_at 2026-07-30T13:52:57Z, PASS)"},
+    {"orderId": <ORDER_2>, "clientOrderId": "<CLIENT_ORDER_2>", "time_utc": "2026-08-06T03:26:55.385Z", "time_shanghai": "2026-08-06 11:26:55",
+     "side": "BUY", "type": "MARKET", "status": "FILLED", "origQuoteOrderQty": "10.00000000", "executedQty": "0.00015000", "cummulativeQuoteQty": "9.67950000",
+     "fills": [{"tradeId": <TRADE_2>, "price": "64530.00000000", "qty": "0.00015000", "quoteQty": "9.67950000", "commission": "0.00000015", "commissionAsset": "BTC", "isMaker": false}],
+     "repo_idempotency_key": "production:ops_manual:BTCUSDT:BUY:10:next-manual-low-frequency-request:v1",
+     "repo_report": "reports/next_manual_low_frequency_production_send_result.json: committed version (2468f66) = earlier 2026-08-05T11:00:56Z Darwin BLOCKED attempt; UNCOMMITTED worktree version (cloud <ADMIN_HOME>/project-anchor and Mac ~/Projects/project-anchor, byte-identical) = generated_at 2026-08-06T03:26:55Z Linux PASS FILLED"}
+  ],
+  "note": "orderId/clientOrderId are not recorded in any repo report (reports only say external_order_id_present=true). They are exchange identifiers, not secrets."
+}

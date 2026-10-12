@@ -1,0 +1,45 @@
+{
+  "code_sha256": {
+    "availability_fill_v1.py": "467969ce7ccf5c36ff1d162a055fa5d845653e411ba7736f778c16a755a37724",
+    "backtest_kraken_prop_strategy.py": "27f610d0fb734a1a4eb7e818b17adda387d30ff5ab0e29312630dcd2ef5ab858",
+    "research_kraken_prop_strategies.py": "47917a663cad9a762c9698312f4e2fe7f658af79e418aa07122bbe20f315bba6",
+    "run_forward_round_v1.py": "e7382ba01b453f526332897c1d0cca20cc523a69acee99463d994cef822fafc6",
+    "track_kraken_prop_forward_observation.py": "1af43419fd224b9969e4f805a0031fa8e8a885f3167821c14271f633a2b94422",
+    "walk_forward_kraken_prop_strategies.py": "195e9ab5aad964e82fc3c3d553d68ab3b40394fe3e255eefd140f7e506caa8a2"
+  },
+  "initial_report_sha256": {
+    "reports/kraken_prop/dry-run-v1.jsonl": "a0fa43935d3f48ea57bec55637e9498b1b82f70adb7b963a3f8311ef6404433f",
+    "reports/kraken_prop/forward-observation-latest.json": "11ed7b0f9cfb6373584d5138a81673954b47553570542e6bda79052049ab51f8",
+    "reports/kraken_prop/forward-observation-latest.md": "673f8d9ebfe6c4677da136d53b1eeead637ebac0a193831f27a0ebdbedc15811",
+    "reports/kraken_prop/forward-observation-state.json": "0e733a89f9f421771883911d49a66f6c9bdc8f4e0aeb78cfb60a3286f6c6e7a1",
+    "reports/kraken_prop/rounds/round.00ac573f4ae14470a708438ed88905d6.json": "87f65ab88e390025ade4015d468dc3407f9bfd6e609cae88f80aa15a83415472",
+    "reports/kraken_prop/rounds/round.05987f34135e4f3188f02f13e94f280e.json": "da071459ff6baed492c85f1329102dafabe421e682361a17a566cce38cba1ace",
+    "reports/kraken_prop/rounds/round.1b648e86efa344c99f7ccdf30eff76bf.json": "272fb0990c6906a94d84052f44365938cc17842e406224150ab605983056e155",
+    "reports/kraken_prop/rounds/round.43952c01f7b54275a32b55064214865e.json": "ad57da63ed6409d6fecee42a017c559ac74e7433dec05820673a105e58b3ee26",
+    "reports/kraken_prop/rounds/round.43d903a6055d4df5b716842271db8548.json": "3218915b1db2a07129af47883259d94aa3cd70476932456653043ec704596d5f",
+    "reports/kraken_prop/rounds/round.a8be24168b2647889a545ea20ff51681.json": "7f25dabdf39685c4e7d093b4e6e9f6ffed020fd402af61d8c5ac91b0f275d6a8",
+    "reports/kraken_prop/rounds/round.c0eb2a76aecf49e08442dabd5009a266.json": "78a73705ce184cc684580addfe69801517f30f24d3e4a9e7d14997b017b104f9",
+    "reports/kraken_prop/rounds/round.c822023c68f04b2e9200c8c7db120fd5.json": "9b7bf0f33120308ae8ce00a0b377982ec608dcda5634d633c0bd2d72388a0046",
+    "reports/kraken_prop/rounds/round.e8096b1f48b446c8a57c7e380ab62374.json": "b1339ebfbf02988a6002415708b54b03c44a59ce75acd542149c81f33a61dfad",
+    "reports/kraken_prop/rounds/round.e9390cc584854ccdb99556aa32aa710e.json": "64b664f756dbd8c3aec1f2cebf894b03af5e24a5db00dc1d6bce67fe19dee9bd",
+    "reports/kraken_prop/rounds/round.ebe0b44fb839435c850d183d5a66f867.json": "6fddecb5b3fc098725b6e88e8e050f9803bb1d32f01bc92e0652158fa9643f2d",
+    "reports/kraken_prop/rounds/round.fbad59ad5cbb405092af08bbfe484f29.json": "de60324d720cb30a0588150a43a125a9d9e8f75756ae5cd2a5708817afeb445c",
+    "reports/kraken_prop/sim-availability-v1-latest.json": "9c1561f0f9dee04c50c4f1656ee751dc0378b8d339a1d7ba8ad161a5c56d406b",
+    "reports/kraken_prop/sim-state-v1.json": "e991adc5720f8f24db9cff404a0fc5e9fceba7c6fce120cc7bbcda5be01ec20a"
+  },
+  "initial_round_ids": [
+    "43d903a6055d4df5b716842271db8548",
+    "ebe0b44fb839435c850d183d5a66f867",
+    "e9390cc584854ccdb99556aa32aa710e",
+    "fbad59ad5cbb405092af08bbfe484f29",
+    "00ac573f4ae14470a708438ed88905d6",
+    "c0eb2a76aecf49e08442dabd5009a266",
+    "e8096b1f48b446c8a57c7e380ab62374",
+    "43952c01f7b54275a32b55064214865e",
+    "a8be24168b2647889a545ea20ff51681",
+    "1b648e86efa344c99f7ccdf30eff76bf",
+    "c822023c68f04b2e9200c8c7db120fd5",
+    "05987f34135e4f3188f02f13e94f280e"
+  ],
+  "schema": 1
+}
