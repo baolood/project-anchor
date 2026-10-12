@@ -59,7 +59,12 @@ def root_rejected(euid: int) -> bool:
 
 def render_service_unit() -> str:
     """Example systemd unit. Review only; this function does not install it."""
-    from app.mcp.inventory import RECOMMENDED_SERVICE_UNITS, RECOMMENDED_TIMER_UNITS, REPORTS_DIR
+    from app.mcp.inventory import (
+        OFFICIAL_LEDGER_DIR,
+        RECOMMENDED_SERVICE_UNITS,
+        RECOMMENDED_TIMER_UNITS,
+        REPORTS_DIR,
+    )
 
     backend = f"{PROJECT_ROOT}/anchor-backend"
     service_units = ",".join(RECOMMENDED_SERVICE_UNITS)
@@ -82,6 +87,7 @@ Environment=ANCHOR_CONTROL_MCP_BIND={BIND_VALUE}
 Environment=ANCHOR_CONTROL_MCP_SERVICE_UNITS={service_units}
 Environment=ANCHOR_CONTROL_MCP_TIMER_UNITS={timer_units}
 Environment=ANCHOR_CONTROL_MCP_REPORTS_DIR={REPORTS_DIR}
+Environment=ANCHOR_CONTROL_MCP_LEDGER_DIR={OFFICIAL_LEDGER_DIR}
 Environment=ANCHOR_CONTROL_MCP_BACKEND_PROBE=1
 EnvironmentFile=-/etc/project-anchor/anchor-control-mcp.env
 ExecStart=/usr/bin/python3 -m app.mcp.host_sidecar
@@ -102,6 +108,8 @@ WantedBy=multi-user.target
 
 
 def unit_problems(text: str) -> list[str]:
+    from app.mcp.inventory import OFFICIAL_LEDGER_DIR
+
     problems: list[str] = []
     for snippet in FORBIDDEN_UNIT_SNIPPETS:
         if snippet in text:
@@ -116,6 +124,7 @@ def unit_problems(text: str) -> list[str]:
         "project-anchor-payment-webhook.service",
         "project-anchor-post-production-monitoring.timer",
         "Environment=ANCHOR_CONTROL_MCP_BACKEND_PROBE=1",
+        f"Environment=ANCHOR_CONTROL_MCP_LEDGER_DIR={OFFICIAL_LEDGER_DIR}",
         "ExecStart=/usr/bin/python3 -m app.mcp.host_sidecar",
         "EnvironmentFile=-/etc/project-anchor/anchor-control-mcp.env",
         "IPAddressAllow=localhost",

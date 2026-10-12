@@ -24,6 +24,8 @@ NON_GATING_CLASSES = (
 HOST_SIDECAR_ENV = "ANCHOR_CONTROL_MCP_HOST_SIDECAR"
 HOST_OBSERVE_LIMIT = 16
 REPORTS_DIR = "/var/lib/project-anchor/reports"
+OFFICIAL_LEDGER_DIR = "/var/lib/anchor-official-ledger-20261010"
+OFFICIAL_LEDGER_DIR_PRIVATE = "/var/lib/private/anchor-official-ledger-20261010"
 
 # Inventory section 3. Long-running enabled production processes.
 # Comma-separated in the unit file; the parser also accepts the inventory's spaces.

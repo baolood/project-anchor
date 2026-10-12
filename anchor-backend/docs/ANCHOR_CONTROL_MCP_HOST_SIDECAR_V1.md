@@ -21,6 +21,7 @@ The seven tools are the same tools as [`ANCHOR_CONTROL_MCP_V1.md`](ANCHOR_CONTRO
 
 - `systemctl show` and `journalctl -p err` for allowlisted unit names
 - Read allowlisted report JSON and `docs/GO_LIVE_CHECKLIST.md`
+- Read Official V2 ledger files when `ANCHOR_CONTROL_MCP_LEDGER_DIR` names an allowlisted directory (`/var/lib/anchor-official-ledger-20261010` or `/var/lib/private/anchor-official-ledger-20261010`). Opens are read-only. The sidecar does not write that directory.
 - Optionally `GET http://127.0.0.1:8000/health` and `GET http://127.0.0.1:8000/ops/state`
 
 `/health` gates the host health check. `/ops/state` is reduced to booleans (`kill_switch`, `worker_heartbeat`, `worker_panic` present or not) and does not gate PASS. Response bodies are not returned. Redirects are not followed. No other URL is requested. `ANCHOR_CONTROL_MCP_BACKEND_PROBE=0` turns the probe off.
@@ -53,7 +54,7 @@ Classes:
 
 Only `CORE_RUNTIME` gates the process, service, and timer portions of `run_readonly_healthcheck`. An empty core-timer set passes the timer check (no core timer is required). An empty core-service set is `UNKNOWN` and is not PASS. `INTENTIONALLY_DISABLED` is not required to be active. If that unit is active anyway, the payload notes `active_while_intentionally_disabled` and PASS is still not blocked by it.
 
-The same health check still requires the existing non-unit gates: kill switch `CLOSED` from a successful Redis read, an observation result of `PASS` or `OK`, a ledger file present, and no sanitized errors from core units. On the host sidecar, enabled `backend_http` (`/health` on `127.0.0.1:8000`) is also required.
+The same health check still requires the existing non-unit gates: kill switch `CLOSED` from a successful Redis read, an observation result of `PASS`, `OK`, or `PASS_REPO_RECORDED_ONLY`, a ledger summary with `available` true, and no sanitized errors from core units. On the host sidecar, enabled `backend_http` (`/health` on `127.0.0.1:8000`) is also required. When `ANCHOR_CONTROL_MCP_LEDGER_DIR` is set, the ledger gate is the Official V2 directory and does not fall back to report JSON.
 
 Classes below use the 2026-09-29 Vultr read-only inventory (host `vultr`, no production change). Docker container names are not systemd units. The backend on `127.0.0.1:8000` is covered by the HTTP probe, not by `docker.service`. An allowlisted name that matches nothing here stays `CORE_RUNTIME`.
 
@@ -94,6 +95,8 @@ Of those services, only `nginx.service` gates PASS. The four product services ar
 
 Reports directory from the inventory: `/var/lib/project-anchor/reports`.
 
+Official V2 ledger directory named by the example unit: `/var/lib/anchor-official-ledger-20261010`. The writer is `anchor-official-ledger.service` and its timer. This repository change does not install that unit, restart it, or change its directory mode.
+
 `get_services` and `get_timers` repeat `recommended_service_units`, `recommended_timer_units`, `gating_classes`, and `non_gating_classes` when `ANCHOR_CONTROL_MCP_HOST_SIDECAR=1`.
 
 The in-container MCP does not set that flag. Its default units remain `project-anchor-post-production-monitoring.service` and `.timer`.
@@ -106,7 +109,16 @@ Do not run these from this pull request. They are the reviewed install shape for
 2. Give that user read access to the reports directory and `docs/GO_LIVE_CHECKLIST.md`. Do not run the sidecar as root to work around a `/root` checkout mode.
 3. Install the existing `anchor-backend` Python dependencies for `/usr/bin/python3` (FastAPI, uvicorn, redis). The sidecar imports those modules. It does not need a Docker client.
 4. Create `/etc/project-anchor/anchor-control-mcp.env` mode `0600`, owned by root, containing `ANCHOR_CONTROL_MCP_TOKEN` and `REDIS_URL=redis://127.0.0.1:6379/0`. No database URL, API key, or exchange secret.
-5. Install the example unit under `/etc/systemd/system/anchor-control-mcp.service`, then `systemctl daemon-reload` and enable it in a separate reviewed change.
+5. Install the example unit under `/etc/systemd/system/anchor-control-mcp.service`, then `systemctl daemon-reload` and enable it in a separate reviewed change. The example sets `ANCHOR_CONTROL_MCP_LEDGER_DIR=/var/lib/anchor-official-ledger-20261010`. `EnvironmentFile=` is later in the unit, so a value in `/etc/project-anchor/anchor-control-mcp.env` overrides that line. Leave the variable unset in the env file unless the resolved directory is the private state path below.
+6. Give `anchor-mcp` read-only access to the Official V2 ledger directory. Do not grant write, do not `chmod` the directory world-readable, and do not add `anchor-mcp` to a group that can write the ledger. The writer uses a dynamic user, and its state directory is often mode `0700`, so the sidecar cannot read it until an ACL exists. If `readlink` shows the real directory is `/var/lib/private/anchor-official-ledger-20261010`, set `ANCHOR_CONTROL_MCP_LEDGER_DIR` to that path instead and apply the ACL there. Both paths are allowlisted. If `/var/lib/private` is not traversable, also grant `anchor-mcp` `r-x` on that parent, or a readers group through `SupplementaryGroups`, still without write.
+
+```bash
+setfacl -m u:anchor-mcp:rX /var/lib/anchor-official-ledger-20261010
+setfacl -m u:anchor-mcp:r /var/lib/anchor-official-ledger-20261010/anchor_fake_fill_ledger_v2_official*.jsonl
+setfacl -d -m u:anchor-mcp:r /var/lib/anchor-official-ledger-20261010
+```
+
+The default ACL applies to new files. It is `r`, not `rw`. Do not restart `anchor-official-ledger.service` for this read. Restart `anchor-control-mcp.service` only in that later reviewed change, after the unit and ACL are in place.
 
 Render the example without installing it:
 

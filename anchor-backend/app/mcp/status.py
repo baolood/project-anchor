@@ -33,6 +33,7 @@ from app.mcp.inventory import (
     classify_unit,
     host_sidecar_enabled,
 )
+from app.mcp.official_ledger import official_ledger_configured, read_official_ledger
 from app.mcp.sanitize import looks_sensitive_path, redact_text
 
 
@@ -289,7 +290,19 @@ def collect_observation(reports_dir: Path) -> dict[str, Any]:
     return project_observation(data, name)
 
 
-def collect_ledger(reports_dir: Path) -> dict[str, Any]:
+def collect_ledger(
+    reports_dir: Path,
+    env: Mapping[str, str] | None = None,
+    *,
+    ledger_allowlist: tuple[str, ...] | None = None,
+) -> dict[str, Any]:
+    """Read the Official V2 ledger when its env var is set; otherwise report JSON.
+
+    A set env var never falls back to report JSON. `ledger_allowlist` is a
+    test injection and is not read from the environment or tool arguments.
+    """
+    if env is not None and official_ledger_configured(env):
+        return read_official_ledger(env, allowlist=ledger_allowlist)
     found = _newest(reports_dir, LEDGER_FILES, _is_fake_fill)
     if found is None:
         return {"kind": "official_fake_fill", "available": False, "reason": "official_fake_fill_not_found", "redacted": True}
