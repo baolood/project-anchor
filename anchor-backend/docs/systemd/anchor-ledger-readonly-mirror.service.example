@@ -1,0 +1,27 @@
+[Unit]
+Description=Read-only mirror of the Official V2 ledger for anchor-mcp
+Documentation=file:/path/to/project-anchor/anchor-backend/docs/ANCHOR_LEDGER_READONLY_MIRROR_V1.md
+After=anchor-official-ledger.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/path/to/project-anchor/anchor-backend
+Environment=PYTHONPATH=/path/to/project-anchor/anchor-backend
+ExecStart=/usr/bin/python3 -m app.mcp.ledger_mirror
+ReadOnlyPaths=/var/lib/anchor-official-ledger-20261010
+ReadOnlyPaths=/var/lib/private/anchor-official-ledger-20261010
+ReadWritePaths=/var/lib/anchor-ledger-mirror
+ProtectSystem=strict
+PrivateNetwork=yes
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+UMask=0027
+RestrictAddressFamilies=AF_UNIX
+LockPersonality=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

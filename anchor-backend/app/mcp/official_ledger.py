@@ -1,15 +1,16 @@
 """Read-only Official V2 fake-fill ledger summary.
 
 The host writer keeps this ledger outside the MCP reports directory. The
-collector opens an allowlisted directory only, and only the fixed
-``affl-v2-official-ledger/out/`` directory under that root, with read flags.
-Snapshot copies under ``runs/`` and ``baseline/`` are not opened.
-It does not create, rewrite, or truncate ledger files.
+MCP reads only the root-owned mirror at ``/var/lib/anchor-ledger-mirror``.
+It checks the ``.sha256`` sidecar before summarizing and reports how old
+``copied_at`` is. It does not open the ledger StateDirectory and does not
+write the mirror or the source.
 """
 
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import json
 import os
@@ -20,14 +21,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
-from app.mcp.inventory import OFFICIAL_LEDGER_DIR, OFFICIAL_LEDGER_DIR_PRIVATE
+from app.mcp.inventory import LEDGER_MIRROR_DIR
 from app.mcp.sanitize import looks_sensitive_path
 
 
 LEDGER_DIR_ENV = "ANCHOR_CONTROL_MCP_LEDGER_DIR"
-ALLOWLISTED_LEDGER_DIRS = (OFFICIAL_LEDGER_DIR, OFFICIAL_LEDGER_DIR_PRIVATE)
-# Live file only. runs/*/before and baseline are snapshots and are not read.
-LEDGER_OUT_RELATIVE = ("affl-v2-official-ledger", "out")
+ALLOWLISTED_LEDGER_DIRS = (LEDGER_MIRROR_DIR,)
+MIRROR_STALE_AFTER_SEC = 90 * 60
+SHA256_RE = re.compile(r"^([0-9a-fA-F]{64})(?:\s+\S+)?\s*$")
 LEDGER_NAME_RE = re.compile(
     r"^anchor_fake_fill_ledger_v2_official[A-Za-z0-9._-]*\.(jsonl|csv)$"
 )
@@ -102,10 +103,6 @@ class _TooLarge(Exception):
     """Combined ledger bytes exceeded the read cap."""
 
 
-class _OutRejected(Exception):
-    """The fixed out directory escaped the allowlisted root or is not that path."""
-
-
 def official_ledger_configured(env: Mapping[str, str]) -> bool:
     return bool((env.get(LEDGER_DIR_ENV) or "").strip())
 
@@ -114,8 +111,9 @@ def read_official_ledger(
     env: Mapping[str, str],
     *,
     allowlist: tuple[str, ...] | None = None,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Summarize the Official V2 ledger. `allowlist` is for tests only."""
+    """Summarize the mirrored Official V2 ledger. `allowlist` and `now` are for tests only."""
     raw = (env.get(LEDGER_DIR_ENV) or "").strip()
     if not raw or not Path(raw).is_absolute() or looks_sensitive_path(raw):
         return _unavailable("ledger_dir_rejected")
@@ -138,15 +136,7 @@ def read_official_ledger(
     if not stat.S_ISDIR(info.st_mode):
         return _unavailable("ledger_dir_rejected")
     try:
-        out_dir = _official_out_dir(resolved)
-    except PermissionError:
-        return _unavailable("ledger_unreadable")
-    except _OutRejected:
-        return _unavailable("ledger_out_rejected")
-    if out_dir is None:
-        return _unavailable("official_ledger_not_found")
-    try:
-        names = sorted(os.listdir(out_dir))
+        names = sorted(os.listdir(resolved))
     except PermissionError:
         return _unavailable("ledger_unreadable")
     except OSError:
@@ -154,12 +144,20 @@ def read_official_ledger(
     matched = [name for name in names if LEDGER_NAME_RE.fullmatch(name)]
     if len(matched) > MAX_LEDGER_FILES:
         return _unavailable("official_ledger_too_many_files")
-    loaded, failure = _load_files(out_dir, matched)
+    loaded, failure = _load_files(resolved, matched)
     if failure is not None:
         return _unavailable(failure)
     if not loaded:
         return _unavailable("official_ledger_not_found")
-    return _summarize(loaded)
+    checked_at = now or datetime.now(timezone.utc)
+    if checked_at.tzinfo is None:
+        checked_at = checked_at.replace(tzinfo=timezone.utc)
+    failure = _verify_sha256(resolved, loaded)
+    if failure is not None:
+        return _unavailable(failure)
+    summary = _summarize(loaded)
+    summary.update(_mirror_fields(resolved, loaded, summary.get("source"), checked_at))
+    return summary
 
 
 def _unavailable(reason: str) -> dict[str, Any]:
@@ -172,47 +170,90 @@ def _unavailable(reason: str) -> dict[str, Any]:
     }
 
 
-def _official_out_dir(root: Path) -> Path | None:
-    """Return the live out directory, or None when that fixed path is absent.
+def _verify_sha256(root: Path, loaded: list[tuple[str, bytes]]) -> str | None:
+    for name, blob in loaded:
+        reason = _check_sha256(root, name, blob)
+        if reason is not None:
+            return reason
+    return None
 
-    Symlinks are resolved one component at a time. The canonical path must
-    stay inside ``root`` and must be exactly ``affl-v2-official-ledger/out``.
-    A link to ``baseline/``, ``runs/*/before/``, or anywhere else is rejected.
-    """
-    root_real = Path(os.path.realpath(root))
-    if not root_real.is_dir():
-        raise _OutRejected()
-    current = root_real
-    walked: list[str] = []
-    for part in LEDGER_OUT_RELATIVE:
-        walked.append(part)
-        nxt = current / part
-        try:
-            info = os.lstat(nxt)
-        except FileNotFoundError:
-            return None
-        except PermissionError:
-            raise
-        except OSError as exc:
-            raise _OutRejected() from exc
-        if not (stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode)):
-            raise _OutRejected()
-        try:
-            nxt_real = Path(os.path.realpath(nxt))
-        except PermissionError:
-            raise
-        except OSError as exc:
-            raise _OutRejected() from exc
-        if not nxt_real.is_dir():
-            raise _OutRejected()
-        try:
-            rel = nxt_real.relative_to(root_real)
-        except ValueError as exc:
-            raise _OutRejected() from exc
-        if rel.parts != tuple(walked):
-            raise _OutRejected()
-        current = nxt_real
-    return current
+
+def _mirror_fields(
+    root: Path,
+    loaded: list[tuple[str, bytes]],
+    source_name: Any,
+    now: datetime,
+) -> dict[str, Any]:
+    by_name = {name: blob for name, blob in loaded}
+    name = source_name if isinstance(source_name, str) and source_name in by_name else loaded[-1][0]
+    meta = _read_meta(root, name)
+    age_sec: int | None = None
+    copied_at: str | None = None
+    stale = True
+    source_mtime: str | None = None
+    source_size: int | None = None
+    if meta is not None:
+        parsed_mtime = _parse_time(meta.get("source_mtime"))
+        source_mtime = parsed_mtime[1] if parsed_mtime is not None else None
+        size = meta.get("source_size")
+        source_size = size if isinstance(size, int) and not isinstance(size, bool) else None
+        parsed = _parse_time(meta.get("copied_at"))
+        if parsed is not None:
+            copied_at = parsed[1]
+            age_sec = int((now - parsed[0]).total_seconds())
+            stale = age_sec > MIRROR_STALE_AFTER_SEC
+        if source_size is not None and source_size != len(by_name[name]):
+            stale = True
+    return {
+        "mirror_copied_at": copied_at,
+        "mirror_age_sec": age_sec,
+        "mirror_stale": stale,
+        "mirror_stale_after_sec": MIRROR_STALE_AFTER_SEC,
+        "mirror_source_mtime": source_mtime,
+        "mirror_source_size": source_size,
+        "mirror_sha256_ok": True,
+    }
+
+
+def _check_sha256(root: Path, name: str, blob: bytes) -> str | None:
+    path = root / f"{name}.sha256"
+    try:
+        info = os.lstat(path)
+    except FileNotFoundError:
+        return "ledger_mirror_hash_missing"
+    except OSError:
+        return "ledger_mirror_hash_rejected"
+    if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
+        return "ledger_mirror_hash_rejected"
+    try:
+        text = _read_bytes(path).decode("ascii")
+    except (OSError, _TooLarge, UnicodeError):
+        return "ledger_mirror_hash_rejected"
+    line = next((item.strip() for item in text.splitlines() if item.strip()), "")
+    match = SHA256_RE.fullmatch(line)
+    if match is None:
+        return "ledger_mirror_hash_rejected"
+    actual = hashlib.sha256(blob).hexdigest()
+    if match.group(1).lower() != actual:
+        return "ledger_mirror_hash_mismatch"
+    return None
+
+
+def _read_meta(root: Path, name: str) -> dict[str, Any] | None:
+    path = root / f"{name}.meta.json"
+    try:
+        info = os.lstat(path)
+    except OSError:
+        return None
+    if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode) or info.st_size > 65536:
+        return None
+    try:
+        payload = json.loads(_read_bytes(path).decode("utf-8"))
+    except (OSError, _TooLarge, UnicodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return payload
 
 
 def _resolved_allowlist(allowlist: tuple[str, ...] | None) -> tuple[Path, ...]:

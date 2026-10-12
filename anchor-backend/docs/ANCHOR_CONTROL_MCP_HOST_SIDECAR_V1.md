@@ -21,7 +21,7 @@ The seven tools are the same tools as [`ANCHOR_CONTROL_MCP_V1.md`](ANCHOR_CONTRO
 
 - `systemctl show` and `journalctl -p err` for allowlisted unit names
 - Read allowlisted report JSON and `docs/GO_LIVE_CHECKLIST.md`
-- Read Official V2 ledger files when `ANCHOR_CONTROL_MCP_LEDGER_DIR` names an allowlisted directory (`/var/lib/anchor-official-ledger-20261010` or `/var/lib/private/anchor-official-ledger-20261010`). The live files are only those directly in `affl-v2-official-ledger/out/`. `runs/*/before/` and `baseline/` are not read. Opens are read-only. The sidecar does not write that directory.
+- Read Official V2 ledger files when `ANCHOR_CONTROL_MCP_LEDGER_DIR` names the allowlisted mirror directory `/var/lib/anchor-ledger-mirror`. The sidecar does not open the ledger StateDirectory. Opens are read-only. The sidecar does not write the mirror. See [`ANCHOR_LEDGER_READONLY_MIRROR_V1.md`](ANCHOR_LEDGER_READONLY_MIRROR_V1.md).
 - Optionally `GET http://127.0.0.1:8000/health` and `GET http://127.0.0.1:8000/ops/state`
 
 `/health` gates the host health check. `/ops/state` is reduced to booleans (`kill_switch`, `worker_heartbeat`, `worker_panic` present or not) and does not gate PASS. Response bodies are not returned. Redirects are not followed. No other URL is requested. `ANCHOR_CONTROL_MCP_BACKEND_PROBE=0` turns the probe off.
@@ -95,7 +95,7 @@ Of those services, only `nginx.service` gates PASS. The four product services ar
 
 Reports directory from the inventory: `/var/lib/project-anchor/reports`.
 
-Official V2 ledger directory named by the example unit: `/var/lib/anchor-official-ledger-20261010`. On the host that path is a symlink to `/var/lib/private/anchor-official-ledger-20261010`. The live ledger is `affl-v2-official-ledger/out/anchor_fake_fill_ledger_v2_official.jsonl` under that root. Copies under `runs/*/before/` and `baseline/` are snapshots and are not the summary source. The writer is `anchor-official-ledger.service` and its timer. This repository change does not install that unit, restart it, or change its directory mode.
+Official V2 ledger directory named by the example unit: `/var/lib/anchor-ledger-mirror`. That directory is a root-owned copy. The writer still stores the live file at `affl-v2-official-ledger/out/anchor_fake_fill_ledger_v2_official.jsonl` under `/var/lib/anchor-official-ledger-20261010` (a symlink to `/var/lib/private/anchor-official-ledger-20261010`). The MCP allowlist does not include that StateDirectory. The writer is `anchor-official-ledger.service` and its timer. This repository change does not install that unit, restart it, or change its directory mode.
 
 `get_services` and `get_timers` repeat `recommended_service_units`, `recommended_timer_units`, `gating_classes`, and `non_gating_classes` when `ANCHOR_CONTROL_MCP_HOST_SIDECAR=1`.
 
@@ -109,20 +109,8 @@ Do not run these from this pull request. They are the reviewed install shape for
 2. Give that user read access to the reports directory and `docs/GO_LIVE_CHECKLIST.md`. Do not run the sidecar as root to work around a `/root` checkout mode.
 3. Install the existing `anchor-backend` Python dependencies for `/usr/bin/python3` (FastAPI, uvicorn, redis). The sidecar imports those modules. It does not need a Docker client.
 4. Create `/etc/project-anchor/anchor-control-mcp.env` mode `0600`, owned by root, containing `ANCHOR_CONTROL_MCP_TOKEN` and `REDIS_URL=redis://127.0.0.1:6379/0`. No database URL, API key, or exchange secret.
-5. Install the example unit under `/etc/systemd/system/anchor-control-mcp.service`, then `systemctl daemon-reload` and enable it in a separate reviewed change. The example sets `ANCHOR_CONTROL_MCP_LEDGER_DIR=/var/lib/anchor-official-ledger-20261010`. `EnvironmentFile=` is later in the unit, so a value in `/etc/project-anchor/anchor-control-mcp.env` overrides that line. Leave the variable unset in the env file unless the resolved directory is the private state path below.
-6. Give `anchor-mcp` read-only access to the Official V2 ledger directory. Do not grant write, do not `chmod` the directory world-readable, and do not add `anchor-mcp` to a group that can write the ledger. The writer uses a dynamic user, and its state directory is often mode `0700`, so the sidecar cannot read it until an ACL exists. If `readlink` shows the real directory is `/var/lib/private/anchor-official-ledger-20261010`, set `ANCHOR_CONTROL_MCP_LEDGER_DIR` to that path instead and apply the ACL there. Both paths are allowlisted. If `/var/lib/private` is not traversable, also grant `anchor-mcp` `r-x` on that parent, or a readers group through `SupplementaryGroups`, still without write.
-
-```bash
-setfacl -m u:anchor-mcp:rX /var/lib/anchor-official-ledger-20261010
-setfacl -m u:anchor-mcp:rX /var/lib/anchor-official-ledger-20261010/affl-v2-official-ledger
-setfacl -m u:anchor-mcp:rX /var/lib/anchor-official-ledger-20261010/affl-v2-official-ledger/out
-setfacl -m u:anchor-mcp:r /var/lib/anchor-official-ledger-20261010/affl-v2-official-ledger/out/anchor_fake_fill_ledger_v2_official*.jsonl
-setfacl -d -m u:anchor-mcp:r /var/lib/anchor-official-ledger-20261010/affl-v2-official-ledger/out
-```
-
-Those commands follow the `/var/lib/anchor-official-ledger-20261010` symlink onto the private directory. They grant traverse on the live `out` directory and read on the live ledger files. They do not grant write, and they do not grant access to `runs/` or `baseline/`.
-
-The default ACL applies to new files. It is `r`, not `rw`. Do not restart `anchor-official-ledger.service` for this read. Restart `anchor-control-mcp.service` only in that later reviewed change, after the unit and ACL are in place.
+5. Install the example unit under `/etc/systemd/system/anchor-control-mcp.service`, then `systemctl daemon-reload` and enable it in a separate reviewed change. The example sets `ANCHOR_CONTROL_MCP_LEDGER_DIR=/var/lib/anchor-ledger-mirror`. `EnvironmentFile=` is later in the unit, so a value in `/etc/project-anchor/anchor-control-mcp.env` overrides that line. Leave the variable unset in the env file unless it is set to `/var/lib/anchor-ledger-mirror`. Do not set it to the ledger StateDirectory.
+6. Install the read-only mirror from [`ANCHOR_LEDGER_READONLY_MIRROR_V1.md`](ANCHOR_LEDGER_READONLY_MIRROR_V1.md). Do not `chmod` or `setfacl` `/var/lib/private`, `/var/lib/private/anchor-official-ledger-20261010`, or `/var/lib/anchor-official-ledger-20261010`. An ACL on that DynamicUser StateDirectory changed the displayed mode to `0710` and `anchor-official-ledger.service` then refused to start. The mirror directory is a new path, mode `0750` `root:anchor-mcp`. Restart `anchor-control-mcp.service` only in that later reviewed change, after the mirror unit has copied a file and the MCP unit points at the mirror. Do not restart `anchor-official-ledger.service` to make the MCP able to read.
 
 Render the example without installing it:
 
