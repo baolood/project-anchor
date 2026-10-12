@@ -1,7 +1,9 @@
 """Read-only Official V2 fake-fill ledger summary.
 
 The host writer keeps this ledger outside the MCP reports directory. The
-collector opens an allowlisted directory only, and only with read flags.
+collector opens an allowlisted directory only, and only the fixed
+``affl-v2-official-ledger/out/`` directory under that root, with read flags.
+Snapshot copies under ``runs/`` and ``baseline/`` are not opened.
 It does not create, rewrite, or truncate ledger files.
 """
 
@@ -23,6 +25,8 @@ from app.mcp.sanitize import looks_sensitive_path
 
 LEDGER_DIR_ENV = "ANCHOR_CONTROL_MCP_LEDGER_DIR"
 ALLOWLISTED_LEDGER_DIRS = (OFFICIAL_LEDGER_DIR, OFFICIAL_LEDGER_DIR_PRIVATE)
+# Live file only. runs/*/before and baseline are snapshots and are not read.
+LEDGER_OUT_RELATIVE = ("affl-v2-official-ledger", "out")
 LEDGER_NAME_RE = re.compile(
     r"^anchor_fake_fill_ledger_v2_official[A-Za-z0-9._-]*\.(jsonl|csv)$"
 )
@@ -73,6 +77,10 @@ class _TooLarge(Exception):
     """Combined ledger bytes exceeded the read cap."""
 
 
+class _OutRejected(Exception):
+    """The fixed out directory escaped the allowlisted root or is not that path."""
+
+
 def official_ledger_configured(env: Mapping[str, str]) -> bool:
     return bool((env.get(LEDGER_DIR_ENV) or "").strip())
 
@@ -105,7 +113,15 @@ def read_official_ledger(
     if not stat.S_ISDIR(info.st_mode):
         return _unavailable("ledger_dir_rejected")
     try:
-        names = sorted(os.listdir(resolved))
+        out_dir = _official_out_dir(resolved)
+    except PermissionError:
+        return _unavailable("ledger_unreadable")
+    except _OutRejected:
+        return _unavailable("ledger_out_rejected")
+    if out_dir is None:
+        return _unavailable("official_ledger_not_found")
+    try:
+        names = sorted(os.listdir(out_dir))
     except PermissionError:
         return _unavailable("ledger_unreadable")
     except OSError:
@@ -113,7 +129,7 @@ def read_official_ledger(
     matched = [name for name in names if LEDGER_NAME_RE.fullmatch(name)]
     if len(matched) > MAX_LEDGER_FILES:
         return _unavailable("official_ledger_too_many_files")
-    loaded, failure = _load_files(resolved, matched)
+    loaded, failure = _load_files(out_dir, matched)
     if failure is not None:
         return _unavailable(failure)
     if not loaded:
@@ -129,6 +145,49 @@ def _unavailable(reason: str) -> dict[str, Any]:
         "read_only": True,
         "redacted": True,
     }
+
+
+def _official_out_dir(root: Path) -> Path | None:
+    """Return the live out directory, or None when that fixed path is absent.
+
+    Symlinks are resolved one component at a time. The canonical path must
+    stay inside ``root`` and must be exactly ``affl-v2-official-ledger/out``.
+    A link to ``baseline/``, ``runs/*/before/``, or anywhere else is rejected.
+    """
+    root_real = Path(os.path.realpath(root))
+    if not root_real.is_dir():
+        raise _OutRejected()
+    current = root_real
+    walked: list[str] = []
+    for part in LEDGER_OUT_RELATIVE:
+        walked.append(part)
+        nxt = current / part
+        try:
+            info = os.lstat(nxt)
+        except FileNotFoundError:
+            return None
+        except PermissionError:
+            raise
+        except OSError as exc:
+            raise _OutRejected() from exc
+        if not (stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode)):
+            raise _OutRejected()
+        try:
+            nxt_real = Path(os.path.realpath(nxt))
+        except PermissionError:
+            raise
+        except OSError as exc:
+            raise _OutRejected() from exc
+        if not nxt_real.is_dir():
+            raise _OutRejected()
+        try:
+            rel = nxt_real.relative_to(root_real)
+        except ValueError as exc:
+            raise _OutRejected() from exc
+        if rel.parts != tuple(walked):
+            raise _OutRejected()
+        current = nxt_real
+    return current
 
 
 def _resolved_allowlist(allowlist: tuple[str, ...] | None) -> tuple[Path, ...]:
