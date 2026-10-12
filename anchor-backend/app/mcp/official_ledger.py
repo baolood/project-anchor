@@ -16,6 +16,7 @@ import os
 import re
 import stat
 from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -32,12 +33,31 @@ LEDGER_NAME_RE = re.compile(
 )
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,80}$")
 HASH_RE = re.compile(r"^[A-Za-z0-9]{1,128}$")
-ISO_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$")
+TIME_RE = re.compile(
+    r"^(?P<body>\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?)"
+    r"(?P<tz>Z|[+-]\d{2}:\d{2})?$"
+)
 EVENT_TYPE_RE = re.compile(r"^[A-Za-z0-9_]{1,40}$")
 PNL_RE = re.compile(r"^-?\d+(?:\.\d+)?$")
 MAX_LEDGER_BYTES = 64 * 1024 * 1024
 MAX_LEDGER_FILES = 32
-EVENT_FIELDS = ("event_id", "event_time", "event_type", "event_hash", "realized_pnl_cum")
+EVENT_FIELDS = (
+    "event_id",
+    "event_time",
+    "signal_available_at",
+    "fill_time_utc",
+    "signal_candle_open_utc",
+    "event_type",
+    "event_hash",
+    "realized_pnl_cum",
+)
+# Latest timestamp on the last row wins. Equal timestamps use this order.
+LAST_EVENT_TIME_FIELDS = (
+    "signal_available_at",
+    "fill_time_utc",
+    "signal_candle_open_utc",
+    "event_time",
+)
 POSITIONAL = (
     "event_id",
     "event_time",
@@ -50,10 +70,14 @@ POSITIONAL = (
 ALIASES = {
     "event_id": "event_id",
     "id": "event_id",
+    "ledger_event_id": "event_id",
     "event_time": "event_time",
     "time": "event_time",
     "timestamp": "event_time",
     "ts": "event_time",
+    "signal_available_at": "signal_available_at",
+    "fill_time_utc": "fill_time_utc",
+    "signal_candle_open_utc": "signal_candle_open_utc",
     "event_type": "event_type",
     "type": "event_type",
     "kind": "event_type",
@@ -63,6 +87,7 @@ ALIASES = {
     "hash": "event_hash",
     "record_hash": "event_hash",
     "chain_hash": "event_hash",
+    "row_hash": "event_hash",
     "realized_pnl_cum": "realized_pnl_cum",
     "realized_pnl_cumulative": "realized_pnl_cum",
     "net_pnl": "net_pnl",
@@ -291,6 +316,7 @@ def _summarize(loaded: list[tuple[str, bytes]]) -> dict[str, Any]:
         },
         "last_event_id": state.last_id,
         "last_event_time": state.last_time,
+        "last_event_time_field": state.last_time_field,
         "hash_chain_head": state.head,
         "realized_pnl_cum": state.pnl,
         "net_pnl_note": NET_PNL_NOTE,
@@ -307,6 +333,7 @@ class _State:
         self.unparsed = 0
         self.last_id: str | None = None
         self.last_time: str | None = None
+        self.last_time_field: str | None = None
         self.head: str | None = None
         self.pnl: str | None = None
         self.source: str | None = None
@@ -318,7 +345,7 @@ class _State:
         if event_type is not None:
             self.by_type[event_type] += 1
         self.last_id = _token(mapped.get("event_id"))
-        self.last_time = _iso(mapped.get("event_time"))
+        self.last_time, self.last_time_field = _latest_time(mapped)
         self.head = _hash(mapped.get("event_hash"))
         self.pnl = _pnl(mapped.get("realized_pnl_cum"))
 
@@ -432,10 +459,41 @@ def _hash(value: Any) -> str | None:
     return None
 
 
-def _iso(value: Any) -> str | None:
-    if isinstance(value, str) and ISO_RE.fullmatch(value.strip()):
-        return value.strip()
-    return None
+def _parse_time(value: Any) -> tuple[datetime, str] | None:
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    match = TIME_RE.fullmatch(text)
+    if match is None:
+        return None
+    body = match.group("body").replace(" ", "T")
+    tz = match.group("tz")
+    suffix = "+00:00" if tz is None or tz == "Z" else tz
+    try:
+        parsed = datetime.fromisoformat(body + suffix)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed, text
+
+
+def _latest_time(mapped: Mapping[str, Any]) -> tuple[str | None, str | None]:
+    """Pick the latest recognized time on this row and name the field used."""
+    best_at: datetime | None = None
+    best_text: str | None = None
+    best_field: str | None = None
+    for field in LAST_EVENT_TIME_FIELDS:
+        parsed = _parse_time(mapped.get(field))
+        if parsed is None:
+            continue
+        parsed_at, text = parsed
+        # Field order is the tie-break, so an equal timestamp does not replace.
+        if best_at is None or parsed_at > best_at:
+            best_at = parsed_at
+            best_text = text
+            best_field = field
+    return best_text, best_field
 
 
 def _event_type(value: Any) -> str | None:

@@ -260,6 +260,8 @@ def tool_definitions() -> list[dict[str, Any]]:
         "get_ledger_summary": (
             "Read the Official Fake-Fill ledger summary. Read-only. "
             "When ANCHOR_CONTROL_MCP_LEDGER_DIR is set, read only affl-v2-official-ledger/out under an allowlisted root. "
+            "Live rows use ledger_event_id, row_hash, and signal_available_at, fill_time_utc, or signal_candle_open_utc. "
+            "last_event_time is the latest of those times on the last row, and last_event_time_field names the source. "
             "Per-exit NET_PNL rows exclude entry costs. "
             "Does not write the ledger or fall back to report JSON while that env var is set."
         ),
