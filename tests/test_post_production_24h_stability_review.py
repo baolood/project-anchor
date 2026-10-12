@@ -79,7 +79,11 @@ class PostProduction24hStabilityReviewTest(unittest.TestCase):
                 report = module.build_review(report_dir, "24 hours ago", 12)
 
         self.assertEqual(report["result"], "PASS")
+        self.assertEqual(report["checks"]["monitoring_snapshot_pass"], "PASS")
         self.assertEqual(report["checks"]["minimum_24h_successes_observed"], "PASS")
+        self.assertEqual(report["evidence"]["exchange_confirmed_order_status"], "UNKNOWN")
+        self.assertEqual(report["evidence"]["exchange_reconciliation_supplied"], "NO")
+        self.assertNotEqual(report["evidence"]["exchange_confirmed_order_status"], "PASS")
         self.assertEqual(report["status"], "POST_PRODUCTION_24H_STABILITY_REVIEW_PASS")
         self.assertEqual(report["boundary"]["credential_file_read"], "NO")
         self.assertEqual(report["boundary"]["new_production_request_sent"], "NO")
@@ -184,6 +188,198 @@ class PostProduction24hStabilityReviewTest(unittest.TestCase):
         self.assertEqual(report["review_window"]["label"], "48h")
         self.assertEqual(report["checks"]["minimum_48h_successes_observed"], "PASS")
         self.assertEqual(report["next_single_task"], "continue_to_72h_read_only_observation")
+
+    def test_repo_recorded_only_snapshot_is_repo_level_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report_dir = Path(tmp)
+            write_json(
+                report_dir / "post_production_monitoring_run.json",
+                """
+                {
+                  "result": "PASS",
+                  "boundary": {
+                    "new_production_request_sent": "NO",
+                    "second_production_request_sent": "NO",
+                    "canary_rerun": "NO",
+                    "go_live": "NO-GO",
+                    "live_trading": "NO-GO"
+                  }
+                }
+                """,
+            )
+            write_json(
+                report_dir / "post_production_monitoring_snapshot.json",
+                """
+                {
+                  "result": "PASS_REPO_RECORDED_ONLY",
+                  "status": "MONITORING_REPO_RECORDED_ONLY_CONTINUOUS_TRADING_DISABLED",
+                  "checks": [
+                    {"name": "repo_recorded_exactly_one_order", "result": "PASS"},
+                    {"name": "exchange_confirmed_exactly_one_order", "result": "UNKNOWN"}
+                  ],
+                  "snapshot": {
+                    "exchange_reconciliation_supplied": "NO",
+                    "exchange_confirmed_order_status": "UNKNOWN"
+                  },
+                  "boundary": {
+                    "new_production_request_sent": "NO",
+                    "second_production_request_sent": "NO",
+                    "canary_rerun": "NO",
+                    "go_live": "NO-GO",
+                    "live_trading": "NO-GO"
+                  }
+                }
+                """,
+            )
+            write_json(report_dir / "post_production_monitoring_alert.json", '{"result":"CLEAR"}')
+            write_json(report_dir / "post_production_monitoring_alert_notification.json", "{}")
+            write_json(report_dir / "post_production_monitoring_timer_runtime_validation.json", '{"result":"PASS"}')
+            write_json(report_dir / "post_production_monitoring_timer_stability_validation.json", '{"result":"PASS"}')
+
+            with mock.patch.object(module, "systemctl_active", return_value="active"), mock.patch.object(
+                module, "systemctl_enabled", return_value="enabled"
+            ), mock.patch.object(module, "journal_success_count", return_value=(96, None)):
+                report = module.build_review(report_dir, "24 hours ago", 12)
+
+        self.assertEqual(report["checks"]["monitoring_snapshot_pass"], "PASS")
+        self.assertEqual(report["result"], "PASS")
+        self.assertEqual(report["evidence"]["snapshot_result"], "PASS_REPO_RECORDED_ONLY")
+        self.assertNotEqual(report["evidence"]["snapshot_result"], "PASS")
+        self.assertEqual(report["evidence"]["exchange_confirmed_order_status"], "UNKNOWN")
+        self.assertNotEqual(report["evidence"]["exchange_confirmed_order_status"], "PASS")
+
+    def test_historical_order_check_names_are_not_exchange_confirmation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report_dir = Path(tmp)
+            write_json(
+                report_dir / "post_production_monitoring_run.json",
+                """
+                {
+                  "result": "PASS",
+                  "boundary": {
+                    "new_production_request_sent": "NO",
+                    "second_production_request_sent": "NO",
+                    "canary_rerun": "NO",
+                    "go_live": "NO-GO",
+                    "live_trading": "NO-GO"
+                  }
+                }
+                """,
+            )
+            write_json(
+                report_dir / "post_production_monitoring_snapshot.json",
+                """
+                {
+                  "result": "PASS",
+                  "checks": [
+                    {"name": "exactly_one_order_confirmed", "result": "PASS"},
+                    {"name": "no_new_or_second_request", "result": "PASS"}
+                  ]
+                }
+                """,
+            )
+            write_json(report_dir / "post_production_monitoring_alert.json", '{"result":"CLEAR"}')
+            write_json(report_dir / "post_production_monitoring_alert_notification.json", "{}")
+            write_json(report_dir / "post_production_monitoring_timer_runtime_validation.json", '{"result":"PASS"}')
+            write_json(report_dir / "post_production_monitoring_timer_stability_validation.json", '{"result":"PASS"}')
+
+            with mock.patch.object(module, "systemctl_active", return_value="active"), mock.patch.object(
+                module, "systemctl_enabled", return_value="enabled"
+            ), mock.patch.object(module, "journal_success_count", return_value=(96, None)):
+                report = module.build_review(report_dir, "24 hours ago", 12)
+
+        self.assertEqual(report["checks"]["monitoring_snapshot_pass"], "PASS")
+        self.assertEqual(report["evidence"]["exchange_confirmed_order_status"], "UNKNOWN")
+        self.assertNotEqual(report["evidence"]["exchange_confirmed_order_status"], "PASS")
+
+    def test_reconciled_exchange_confirmation_is_reported_separately(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report_dir = Path(tmp)
+            write_json(
+                report_dir / "post_production_monitoring_run.json",
+                """
+                {
+                  "result": "PASS",
+                  "boundary": {
+                    "new_production_request_sent": "NO",
+                    "second_production_request_sent": "NO",
+                    "canary_rerun": "NO",
+                    "go_live": "NO-GO",
+                    "live_trading": "NO-GO"
+                  }
+                }
+                """,
+            )
+            write_json(
+                report_dir / "post_production_monitoring_snapshot.json",
+                """
+                {
+                  "result": "PASS",
+                  "snapshot": {
+                    "exchange_reconciliation_supplied": "YES",
+                    "exchange_confirmed_order_status": "PASS"
+                  }
+                }
+                """,
+            )
+            write_json(report_dir / "post_production_monitoring_alert.json", '{"result":"CLEAR"}')
+            write_json(report_dir / "post_production_monitoring_alert_notification.json", "{}")
+            write_json(report_dir / "post_production_monitoring_timer_runtime_validation.json", '{"result":"PASS"}')
+            write_json(report_dir / "post_production_monitoring_timer_stability_validation.json", '{"result":"PASS"}')
+
+            with mock.patch.object(module, "systemctl_active", return_value="active"), mock.patch.object(
+                module, "systemctl_enabled", return_value="enabled"
+            ), mock.patch.object(module, "journal_success_count", return_value=(96, None)):
+                report = module.build_review(report_dir, "24 hours ago", 12)
+
+        self.assertEqual(report["result"], "PASS")
+        self.assertEqual(report["checks"]["monitoring_snapshot_pass"], "PASS")
+        self.assertEqual(report["evidence"]["exchange_reconciliation_supplied"], "YES")
+        self.assertEqual(report["evidence"]["exchange_confirmed_order_status"], "PASS")
+
+    def test_blocked_snapshot_fails_repo_level_check(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report_dir = Path(tmp)
+            write_json(
+                report_dir / "post_production_monitoring_run.json",
+                """
+                {
+                  "result": "PASS",
+                  "boundary": {
+                    "new_production_request_sent": "NO",
+                    "second_production_request_sent": "NO",
+                    "canary_rerun": "NO",
+                    "go_live": "NO-GO",
+                    "live_trading": "NO-GO"
+                  }
+                }
+                """,
+            )
+            write_json(
+                report_dir / "post_production_monitoring_snapshot.json",
+                """
+                {
+                  "result": "BLOCKED",
+                  "snapshot": {
+                    "exchange_reconciliation_supplied": "YES",
+                    "exchange_confirmed_order_status": "FAIL"
+                  }
+                }
+                """,
+            )
+            write_json(report_dir / "post_production_monitoring_alert.json", '{"result":"CLEAR"}')
+            write_json(report_dir / "post_production_monitoring_alert_notification.json", "{}")
+            write_json(report_dir / "post_production_monitoring_timer_runtime_validation.json", '{"result":"PASS"}')
+            write_json(report_dir / "post_production_monitoring_timer_stability_validation.json", '{"result":"PASS"}')
+
+            with mock.patch.object(module, "systemctl_active", return_value="active"), mock.patch.object(
+                module, "systemctl_enabled", return_value="enabled"
+            ), mock.patch.object(module, "journal_success_count", return_value=(96, None)):
+                report = module.build_review(report_dir, "24 hours ago", 12)
+
+        self.assertEqual(report["checks"]["monitoring_snapshot_pass"], "FAIL")
+        self.assertEqual(report["evidence"]["exchange_confirmed_order_status"], "FAIL")
+        self.assertEqual(report["result"], "BLOCKED")
 
 
 if __name__ == "__main__":
