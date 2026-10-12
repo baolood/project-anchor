@@ -1,0 +1,54 @@
+{
+  "allowed_positions": {
+    "breakout_55_strength_1pct|PI_ETHUSD": {
+      "entry_price": 2492.70136,
+      "entry_time": "2026-10-10T16:00:00+00:00",
+      "fees": 0.4,
+      "instruction_id": "cbc0415be11bc10185c9a24cba81f263",
+      "side": -1,
+      "stop": 2517.6283736,
+      "target": 2455.3108396
+    },
+    "breakout_55|PI_ETHUSD": {
+      "entry_price": 2501.54959,
+      "entry_time": "2026-10-09T08:00:00+00:00",
+      "fees": 0.4,
+      "instruction_id": "b9fcd0c81df3da31c366517ea9b94689",
+      "side": -1,
+      "stop": 2526.5650859,
+      "target": 2464.02634615
+    },
+    "breakout_55|PI_XBTUSD": {
+      "entry_price": 82527.4912,
+      "entry_time": "2026-10-09T08:00:00+00:00",
+      "fees": 0.4,
+      "instruction_id": "d52785498af0b1ed8a7ada081a55a733",
+      "side": -1,
+      "stop": 83352.76611200001,
+      "target": 81289.578832
+    },
+    "ema_50_100_strength_1pct|PI_ETHUSD": {
+      "entry_price": 2492.70136,
+      "entry_time": "2026-10-10T16:00:00+00:00",
+      "fees": 0.4,
+      "instruction_id": "ecf8941289327a7aa7a560752bd445fc",
+      "side": -1,
+      "stop": 2517.6283736,
+      "target": 2455.3108396
+    }
+  },
+  "baseline_completed_rounds": 12,
+  "baseline_cursor_seconds": {
+    "breakout_55_strength_1pct|PI_ETHUSD": 1791691200.0,
+    "breakout_55_strength_1pct|PI_XBTUSD": 1791691200.0,
+    "breakout_55|PI_ETHUSD": 1791691200.0,
+    "breakout_55|PI_XBTUSD": 1791691200.0,
+    "ema_50_100_strength_1pct|PI_ETHUSD": 1791691200.0,
+    "ema_50_100_strength_1pct|PI_XBTUSD": 1791691200.0
+  },
+  "baseline_last_t3": "2026-10-11T08:21:28.946660+00:00",
+  "max_additional_rounds": 43,
+  "mode": "closeout_only",
+  "run_id": "anchor-d5-closeout-20261012",
+  "schema": 1
+}

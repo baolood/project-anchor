@@ -1,0 +1,27 @@
+[Unit]
+Description=Bounded public-only Anchor native forward simulation (12 total rounds)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+StateDirectory=anchor-native-dryrun-20261010
+StateDirectoryMode=0700
+WorkingDirectory=/var/lib/anchor-native-dryrun-20261010
+ExecStart=/usr/bin/python3 -B /var/lib/anchor-native-dryrun-20261010/cloud_loop.py --root /var/lib/anchor-native-dryrun-20261010
+Restart=no
+KillMode=control-group
+TimeoutStopSec=15
+RuntimeMaxSec=48h
+UMask=0077
+Environment=PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1 LANG=C.UTF-8
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectHome=yes
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadOnlyPaths=/var/lib/anchor-native-dryrun-20261010/bundle /var/lib/anchor-native-dryrun-20261010/manifest.json /var/lib/anchor-native-dryrun-20261010/checkpoints/initial /var/lib/anchor-native-dryrun-20261010/cloud_loop.py
+StandardOutput=journal
+StandardError=journal

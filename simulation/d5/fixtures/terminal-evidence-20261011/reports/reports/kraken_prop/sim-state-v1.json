@@ -1,0 +1,81 @@
+{
+  "applied_rounds": {
+    "00ac573f4ae14470a708438ed88905d6": "b72cb0f0c18b6a1c1b1033c828d7ca23",
+    "05987f34135e4f3188f02f13e94f280e": "0a704fb4fed90caf3ce4f82f1df9d3c9",
+    "1b648e86efa344c99f7ccdf30eff76bf": "b8371c71ac4ae9e1ab980f10bb4139de",
+    "43952c01f7b54275a32b55064214865e": "e90e64fb858c05ad86434597aaaf393a",
+    "43d903a6055d4df5b716842271db8548": "6a5648ee16177d9455a65d4e254c4799",
+    "a8be24168b2647889a545ea20ff51681": "dc7eb5bc85416136d1387495dc6eca76",
+    "c0eb2a76aecf49e08442dabd5009a266": "f1919f5e4fdb1aa4850e69cfde60ea58",
+    "c822023c68f04b2e9200c8c7db120fd5": "b75f8c3263b2aff25f6748cef06238b4",
+    "e8096b1f48b446c8a57c7e380ab62374": "f4065a6b840d3ad0cdde3c5553036521",
+    "e9390cc584854ccdb99556aa32aa710e": "001df1c3f7e73f04a63ec3539d3b7dfa",
+    "ebe0b44fb839435c850d183d5a66f867": "ea06be3cbddf681f166635566617835a",
+    "fbad59ad5cbb405092af08bbfe484f29": "7b08044e9ce72da9789c3622c987e217"
+  },
+  "cursor_seconds": {
+    "breakout_55_strength_1pct|PI_ETHUSD": 1791691200.0,
+    "breakout_55_strength_1pct|PI_XBTUSD": 1791691200.0,
+    "breakout_55|PI_ETHUSD": 1791691200.0,
+    "breakout_55|PI_XBTUSD": 1791691200.0,
+    "ema_50_100_strength_1pct|PI_ETHUSD": 1791691200.0,
+    "ema_50_100_strength_1pct|PI_XBTUSD": 1791691200.0
+  },
+  "last_observed_signal": {
+    "breakout_55_strength_1pct|PI_ETHUSD": -1,
+    "breakout_55_strength_1pct|PI_XBTUSD": 0,
+    "breakout_55|PI_ETHUSD": -1,
+    "breakout_55|PI_XBTUSD": -1,
+    "ema_50_100_strength_1pct|PI_ETHUSD": -1,
+    "ema_50_100_strength_1pct|PI_XBTUSD": 0
+  },
+  "log": [],
+  "pending": {
+    "breakout_55_strength_1pct|PI_ETHUSD": [],
+    "breakout_55_strength_1pct|PI_XBTUSD": [],
+    "breakout_55|PI_ETHUSD": [],
+    "breakout_55|PI_XBTUSD": [],
+    "ema_50_100_strength_1pct|PI_ETHUSD": [],
+    "ema_50_100_strength_1pct|PI_XBTUSD": []
+  },
+  "position": {
+    "breakout_55_strength_1pct|PI_ETHUSD": {
+      "entry_price": 2492.70136,
+      "entry_time": "2026-10-10T16:00:00+00:00",
+      "fees": 0.4,
+      "instruction_id": "cbc0415be11bc10185c9a24cba81f263",
+      "side": -1,
+      "stop": 2517.6283736,
+      "target": 2455.3108396
+    },
+    "breakout_55|PI_ETHUSD": {
+      "entry_price": 2501.54959,
+      "entry_time": "2026-10-09T08:00:00+00:00",
+      "fees": 0.4,
+      "instruction_id": "b9fcd0c81df3da31c366517ea9b94689",
+      "side": -1,
+      "stop": 2526.5650859,
+      "target": 2464.02634615
+    },
+    "breakout_55|PI_XBTUSD": {
+      "entry_price": 82527.4912,
+      "entry_time": "2026-10-09T08:00:00+00:00",
+      "fees": 0.4,
+      "instruction_id": "d52785498af0b1ed8a7ada081a55a733",
+      "side": -1,
+      "stop": 83352.76611200001,
+      "target": 81289.578832
+    },
+    "ema_50_100_strength_1pct|PI_ETHUSD": {
+      "entry_price": 2492.70136,
+      "entry_time": "2026-10-10T16:00:00+00:00",
+      "fees": 0.4,
+      "instruction_id": "ecf8941289327a7aa7a560752bd445fc",
+      "side": -1,
+      "stop": 2517.6283736,
+      "target": 2455.3108396
+    }
+  },
+  "trades": {},
+  "version": "FILL_RULE_AVAILABILITY_T3_STRICT_OPEN_V1"
+}

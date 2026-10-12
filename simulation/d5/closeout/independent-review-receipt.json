@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "reviewer": "<ADMIN_HOME>/d5_closeout_review",
+  "unresolved_P1_P2": 0,
+  "source_sha256": {
+    "closeout_loop.py": "960e43ebf7442dd9b212fad4aaa41a3254611d8ea9c98157b15ae74ff5a3148d",
+    "deploy_closeout.py": "0f01d14993357a7bf1af110edaa1298a7624d728fc467b8b5cddeba345b3e210",
+    "verify_closeout.py": "af8bf9a2fa8802f61e7ae235130718fc1bd215497a89795f4ff474244829d11c",
+    "bundle/scripts/availability_fill_v1.py": "467969ce7ccf5c36ff1d162a055fa5d845653e411ba7736f778c16a755a37724"
+  },
+  "resolved_issue": "Final report count bound 100 increased to128; maximum expected105"
+}
