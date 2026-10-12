@@ -11,11 +11,14 @@ from pathlib import Path
 from unittest import mock
 
 from app.mcp.commands import CommandResult
-from app.mcp.inventory import OFFICIAL_LEDGER_DIR, OFFICIAL_LEDGER_DIR_PRIVATE
+from datetime import datetime, timedelta, timezone
+
+from app.mcp.inventory import LEDGER_MIRROR_DIR
 from app.mcp.official_ledger import (
     ALLOWLISTED_LEDGER_DIRS,
     LEDGER_DIR_ENV,
-    LEDGER_OUT_RELATIVE,
+    LEDGER_NAME_RE,
+    MIRROR_STALE_AFTER_SEC,
     NET_PNL_NOTE,
     read_official_ledger,
 )
@@ -48,9 +51,33 @@ def _jsonl(*records: dict) -> str:
 
 
 def _out(root: Path) -> Path:
-    dest = root.joinpath(*LEDGER_OUT_RELATIVE)
-    dest.mkdir(parents=True, exist_ok=True)
-    return dest
+    """Mirror files live in the allowlisted directory itself."""
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def _seal(directory: Path, copied_at: str | None = None) -> None:
+    if not directory.is_dir():
+        return
+    stamp = copied_at or datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    for path in directory.iterdir():
+        if path.is_symlink() or not path.is_file() or not LEDGER_NAME_RE.fullmatch(path.name):
+            continue
+        blob = path.read_bytes()
+        digest = hashlib.sha256(blob).hexdigest()
+        (directory / f"{path.name}.sha256").write_text(f"{digest}  {path.name}\n", encoding="ascii")
+        meta = {"source_mtime": stamp, "source_size": len(blob), "copied_at": stamp}
+        (directory / f"{path.name}.meta.json").write_text(json.dumps(meta) + "\n", encoding="utf-8")
+
+
+def _read_mirror(ledger: Path, **kwargs: object):
+    copied_at = kwargs.get("copied_at")
+    _seal(ledger, copied_at if isinstance(copied_at, str) else None)
+    return read_official_ledger(
+        {LEDGER_DIR_ENV: str(kwargs.get("env_dir", ledger))},
+        allowlist=kwargs.get("allowlist") if isinstance(kwargs.get("allowlist"), tuple) else (str(ledger),),
+        now=kwargs.get("now") if isinstance(kwargs.get("now"), datetime) else None,
+    )
 
 
 def _event(event_id: str, event_hash: str, event_type: str = "GENESIS", pnl: str = "0") -> dict:
@@ -64,16 +91,11 @@ def _event(event_id: str, event_hash: str, event_type: str = "GENESIS", pnl: str
 
 
 class OfficialLedgerSummaryTests(unittest.TestCase):
-    def test_allowlist_is_the_two_official_directories(self) -> None:
-        self.assertEqual(
-            ALLOWLISTED_LEDGER_DIRS,
-            (
-                "/var/lib/anchor-official-ledger-20261010",
-                "/var/lib/private/anchor-official-ledger-20261010",
-            ),
-        )
-        self.assertEqual(OFFICIAL_LEDGER_DIR, ALLOWLISTED_LEDGER_DIRS[0])
-        self.assertEqual(OFFICIAL_LEDGER_DIR_PRIVATE, ALLOWLISTED_LEDGER_DIRS[1])
+    def test_allowlist_is_the_mirror_directory_only(self) -> None:
+        self.assertEqual(ALLOWLISTED_LEDGER_DIRS, ("/var/lib/anchor-ledger-mirror",))
+        self.assertEqual(LEDGER_MIRROR_DIR, ALLOWLISTED_LEDGER_DIRS[0])
+        self.assertNotIn("/var/lib/private/anchor-official-ledger-20261010", ALLOWLISTED_LEDGER_DIRS)
+        self.assertEqual(MIRROR_STALE_AFTER_SEC, 90 * 60)
 
     def test_jsonl_summary_counts_head_and_pnl_note(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -105,10 +127,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
             before = path.read_bytes()
             digest = hashlib.sha256(before).hexdigest()
             mode = path.stat().st_mode
-            summary = read_official_ledger(
-                {LEDGER_DIR_ENV: str(ledger)},
-                allowlist=(str(ledger),),
-            )
+            summary = _read_mirror(ledger)
             blob = json.dumps(summary)
             self.assertEqual(path.read_bytes(), before)
             self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), digest)
@@ -162,7 +181,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            summary = _read_mirror(ledger)
             self.assertEqual(summary["counts"]["events"], 2)
             self.assertEqual(summary["source"], later)
             self.assertEqual(summary["last_event_id"], "evt-2")
@@ -185,7 +204,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 ]
             )
             (_out(ledger) / name).write_text(body, encoding="utf-8")
-            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            summary = _read_mirror(ledger)
             self.assertTrue(summary["available"])
             self.assertEqual(summary["counts"]["events"], 1)
             self.assertEqual(summary["counts"]["header_row_mismatches"], 2)
@@ -208,7 +227,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 ]
             )
             (_out(ledger) / name).write_text(body, encoding="utf-8")
-            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            summary = _read_mirror(ledger)
             self.assertEqual(summary["counts"]["header_row_mismatches"], 1)
             self.assertEqual(summary["counts"]["events"], 2)
             self.assertEqual(summary["last_event_id"], "evt-2")
@@ -259,6 +278,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
+            _seal(ledger)
             summary = collect_ledger(
                 reports,
                 {LEDGER_DIR_ENV: str(ledger)},
@@ -366,7 +386,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 _jsonl({"event_id": "evt-json", "event_hash": "e" * 64, "event_type": "GENESIS"}),
                 encoding="utf-8",
             )
-            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            summary = _read_mirror(ledger)
             blob = json.dumps(summary)
             self.assertEqual(summary["counts"]["events"], 1)
             self.assertEqual(summary["last_event_id"], "evt-1")
@@ -383,6 +403,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 _jsonl({"event_id": "evt-1", "event_hash": HASH_A, "event_type": "GENESIS"}),
                 encoding="utf-8",
             )
+            _seal(ledger)
             with mock.patch("app.mcp.official_ledger.os.listdir", side_effect=PermissionError):
                 summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
             self.assertFalse(summary["available"])
@@ -405,7 +426,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 encoding="utf-8",
             )
             with mock.patch("app.mcp.official_ledger.MAX_LEDGER_BYTES", 8):
-                summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+                summary = _read_mirror(ledger)
             self.assertFalse(summary["available"])
             self.assertEqual(summary["reason"], "ledger_too_large")
             self.assertNotIn("hash_chain_head", summary)
@@ -426,7 +447,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 return real_open(path, flags, *args, **kwargs)
 
             with mock.patch("app.mcp.official_ledger.os.open", side_effect=spy):
-                summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+                summary = _read_mirror(ledger)
             self.assertTrue(summary["available"])
             self.assertTrue(flags_seen)
             for flags in flags_seen:
@@ -444,10 +465,6 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
             nested.mkdir()
             (nested / LEDGER_NAME).write_text(
                 _jsonl(_event("evt-nested", "e" * 64, pnl="8")),
-                encoding="utf-8",
-            )
-            (ledger / LEDGER_NAME).write_text(
-                _jsonl(_event("evt-top", "d" * 64, pnl="7")),
                 encoding="utf-8",
             )
             baseline = ledger / "baseline"
@@ -470,7 +487,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 return real_open(path, flags, *args, **kwargs)
 
             with mock.patch("app.mcp.official_ledger.os.open", side_effect=spy):
-                summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+                summary = _read_mirror(ledger)
             blob = json.dumps(summary)
             self.assertTrue(summary["available"])
             self.assertEqual(summary["counts"]["events"], 1)
@@ -482,7 +499,6 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 self.assertNotIn(marker, blob)
             self.assertTrue(opened)
             for path in opened:
-                self.assertIn(f"{LEDGER_OUT_RELATIVE[0]}/{LEDGER_OUT_RELATIVE[1]}", path)
                 self.assertNotIn("/baseline/", path)
                 self.assertNotIn("/runs/", path)
                 self.assertNotIn("/nested/", path)
@@ -509,7 +525,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 _jsonl(_event("evt-before", "c" * 64)),
                 encoding="utf-8",
             )
-            summary = read_official_ledger({LEDGER_DIR_ENV: str(public)}, allowlist=(str(public),))
+            summary = _read_mirror(real, env_dir=public, allowlist=(str(public),))
             blob = json.dumps(summary)
             self.assertTrue(summary["available"])
             self.assertEqual(summary["last_event_id"], "evt-live")
@@ -520,46 +536,111 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
             self.assertNotIn(str(real), blob)
             self.assertNotIn(str(public), blob)
 
-    def test_out_symlink_outside_root_is_rejected(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            base = Path(tmp)
-            ledger = base / "ledger"
-            outside = base / "outside"
-            outside.mkdir()
-            (outside / LEDGER_NAME).write_text(
-                _jsonl(_event("evt-outside", "f" * 64, pnl="9")),
-                encoding="utf-8",
-            )
-            parent = ledger / LEDGER_OUT_RELATIVE[0]
-            parent.mkdir(parents=True)
-            (parent / LEDGER_OUT_RELATIVE[1]).symlink_to(outside, target_is_directory=True)
-            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
-            blob = json.dumps(summary)
-            self.assertFalse(summary["available"])
-            self.assertEqual(summary["reason"], "ledger_out_rejected")
-            self.assertNotIn("evt-outside", blob)
-            self.assertNotIn("hash_chain_head", summary)
-
-    def test_out_symlink_to_baseline_is_rejected(self) -> None:
+    def test_sha256_mismatch_does_not_report_a_head(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             ledger = Path(tmp)
-            baseline = ledger / "baseline"
-            baseline.mkdir()
-            (baseline / LEDGER_NAME).write_text(
-                _jsonl(_event("evt-baseline", "b" * 64, pnl="2")),
+            (_out(ledger) / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-1", HASH_A, pnl="1")),
                 encoding="utf-8",
             )
-            parent = ledger / LEDGER_OUT_RELATIVE[0]
-            parent.mkdir()
-            (parent / LEDGER_OUT_RELATIVE[1]).symlink_to(baseline, target_is_directory=True)
+            _seal(ledger)
+            (ledger / f"{LEDGER_NAME}.sha256").write_text(f"{'ab' * 32}  {LEDGER_NAME}\n", encoding="ascii")
             summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
             self.assertFalse(summary["available"])
-            self.assertEqual(summary["reason"], "ledger_out_rejected")
-            self.assertNotIn("evt-baseline", json.dumps(summary))
-            self.assertEqual(
-                LEDGER_OUT_RELATIVE,
-                ("affl-v2-official-ledger", "out"),
+            self.assertEqual(summary["reason"], "ledger_mirror_hash_mismatch")
+            self.assertNotIn("hash_chain_head", summary)
+            self.assertNotIn(HASH_A, json.dumps(summary))
+
+    def test_stale_mirror_is_flagged_after_90_minutes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            (_out(ledger) / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-1", HASH_A, pnl="1")),
+                encoding="utf-8",
             )
+            now = datetime(2026, 10, 12, 12, 0, tzinfo=timezone.utc)
+            fresh = (now - timedelta(minutes=90)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            stale = (now - timedelta(minutes=90, seconds=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            fresh_summary = _read_mirror(ledger, copied_at=fresh, now=now)
+            self.assertTrue(fresh_summary["available"])
+            self.assertFalse(fresh_summary["mirror_stale"])
+            self.assertEqual(fresh_summary["mirror_age_sec"], 90 * 60)
+            self.assertEqual(fresh_summary["mirror_copied_at"], fresh)
+            self.assertEqual(fresh_summary["last_event_id"], "evt-1")
+            stale_summary = _read_mirror(ledger, copied_at=stale, now=now)
+            self.assertTrue(stale_summary["available"])
+            self.assertTrue(stale_summary["mirror_stale"])
+            self.assertEqual(stale_summary["mirror_age_sec"], 90 * 60 + 1)
+            self.assertEqual(stale_summary["mirror_stale_after_sec"], 90 * 60)
+            self.assertEqual(stale_summary["hash_chain_head"], HASH_A)
+
+    def test_missing_sha256_does_not_report_a_head(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            (_out(ledger) / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-1", HASH_A, pnl="1")),
+                encoding="utf-8",
+            )
+            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            self.assertFalse(summary["available"])
+            self.assertEqual(summary["reason"], "ledger_mirror_hash_missing")
+            self.assertNotIn("hash_chain_head", summary)
+            self.assertNotIn("mirror_sha256_ok", summary)
+
+    def test_sha256_symlink_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            (_out(ledger) / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-1", HASH_A, pnl="1")),
+                encoding="utf-8",
+            )
+            _seal(ledger)
+            sidecar = ledger / f"{LEDGER_NAME}.sha256"
+            sidecar.unlink()
+            sidecar.symlink_to(ledger / LEDGER_NAME)
+            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            self.assertFalse(summary["available"])
+            self.assertEqual(summary["reason"], "ledger_mirror_hash_rejected")
+            self.assertNotIn("hash_chain_head", summary)
+
+    def test_missing_meta_flags_stale_without_hiding_the_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            (_out(ledger) / LEDGER_NAME).write_text(
+                _jsonl(_event("evt-1", HASH_A, pnl="1")),
+                encoding="utf-8",
+            )
+            _seal(ledger)
+            meta_path = ledger / f"{LEDGER_NAME}.meta.json"
+            meta_path.unlink()
+            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            self.assertTrue(summary["available"])
+            self.assertTrue(summary["mirror_stale"])
+            self.assertIsNone(summary["mirror_copied_at"])
+            self.assertIsNone(summary["mirror_age_sec"])
+            self.assertTrue(summary["mirror_sha256_ok"])
+            self.assertEqual(summary["hash_chain_head"], HASH_A)
+            meta_path.write_text(
+                json.dumps(
+                    {
+                        "source_mtime": "not-a-time",
+                        "source_size": 1,
+                        "copied_at": "2026-10-12T00:00:00Z",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            checked = datetime(2026, 10, 12, 0, 1, tzinfo=timezone.utc)
+            sized = read_official_ledger(
+                {LEDGER_DIR_ENV: str(ledger)},
+                allowlist=(str(ledger),),
+                now=checked,
+            )
+            self.assertTrue(sized["available"])
+            self.assertTrue(sized["mirror_stale"])
+            self.assertIsNone(sized["mirror_source_mtime"])
+            self.assertEqual(sized["mirror_source_size"], 1)
+            self.assertNotIn("not-a-time", json.dumps(sized))
 
     def test_live_row_names_map_id_hash_and_latest_time(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -589,7 +670,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 "client_order_id": CLIENT_MARKER,
             }
             (_out(ledger) / LEDGER_NAME).write_text(_jsonl(earlier, last), encoding="utf-8")
-            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            summary = _read_mirror(ledger)
             blob = json.dumps(summary)
             self.assertTrue(summary["available"])
             self.assertEqual(summary["counts"]["events"], 2)
@@ -616,7 +697,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 "realized_pnl_cum": "2",
             }
             (_out(ledger) / LEDGER_NAME).write_text(_jsonl(row), encoding="utf-8")
-            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            summary = _read_mirror(ledger)
             self.assertEqual(summary["last_event_id"], "evt-102")
             self.assertEqual(summary["hash_chain_head"], HASH_A)
             self.assertEqual(summary["last_event_time"], "2026-10-12T01:00:00Z")
@@ -634,7 +715,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 "signal_available_at": "2026-10-12T00:05:00Z",
             }
             (_out(ledger) / LEDGER_NAME).write_text(_jsonl(row), encoding="utf-8")
-            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            summary = _read_mirror(ledger)
             self.assertEqual(summary["last_event_time"], "2026-10-12T00:05:00Z")
             self.assertEqual(summary["last_event_time_field"], "signal_available_at")
 
@@ -648,7 +729,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 "signal_candle_open_utc": "2026-10-12T00:15:00Z",
             }
             (_out(ledger) / LEDGER_NAME).write_text(_jsonl(row), encoding="utf-8")
-            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            summary = _read_mirror(ledger)
             self.assertEqual(summary["last_event_time"], "2026-10-12T00:15:00Z")
             self.assertEqual(summary["last_event_time_field"], "signal_candle_open_utc")
 
@@ -663,7 +744,7 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
                 ]
             )
             (_out(ledger) / name).write_text(body, encoding="utf-8")
-            summary = read_official_ledger({LEDGER_DIR_ENV: str(ledger)}, allowlist=(str(ledger),))
+            summary = _read_mirror(ledger)
             self.assertEqual(summary["last_event_id"], "evt-105")
             self.assertEqual(summary["hash_chain_head"], HASH_A)
             self.assertEqual(summary["realized_pnl_cum"], "3.5")

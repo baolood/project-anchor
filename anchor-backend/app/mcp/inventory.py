@@ -26,6 +26,7 @@ HOST_OBSERVE_LIMIT = 16
 REPORTS_DIR = "/var/lib/project-anchor/reports"
 OFFICIAL_LEDGER_DIR = "/var/lib/anchor-official-ledger-20261010"
 OFFICIAL_LEDGER_DIR_PRIVATE = "/var/lib/private/anchor-official-ledger-20261010"
+LEDGER_MIRROR_DIR = "/var/lib/anchor-ledger-mirror"
 
 # Inventory section 3. Long-running enabled production processes.
 # Comma-separated in the unit file; the parser also accepts the inventory's spaces.
