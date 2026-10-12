@@ -93,7 +93,7 @@ def _envelope(tool: str, payload: dict[str, Any], ctx: ToolContext) -> dict[str,
 
 def collect_anchor_status(ctx: ToolContext) -> dict[str, Any]:
     observation = collect_observation(ctx.reports_dir)
-    ledger = collect_ledger(ctx.reports_dir)
+    ledger = collect_ledger(ctx.reports_dir, ctx.env)
     services = collect_units("service", ctx.env, ctx.run_command)
     try:
         kill_switch = normalize_kill_switch(ctx.kill_switch())
@@ -122,7 +122,7 @@ def get_latest_observation(ctx: ToolContext) -> dict[str, Any]:
 
 
 def get_ledger_summary(ctx: ToolContext) -> dict[str, Any]:
-    return _envelope("get_ledger_summary", collect_ledger(ctx.reports_dir), ctx)
+    return _envelope("get_ledger_summary", collect_ledger(ctx.reports_dir, ctx.env), ctx)
 
 
 def get_services(ctx: ToolContext) -> dict[str, Any]:
@@ -172,7 +172,7 @@ def _kill_switch_check(kill: dict[str, Any]) -> dict[str, str]:
 def run_readonly_healthcheck(ctx: ToolContext) -> dict[str, Any]:
     status = collect_anchor_status(ctx)
     observation = collect_observation(ctx.reports_dir)
-    ledger = collect_ledger(ctx.reports_dir)
+    ledger = collect_ledger(ctx.reports_dir, ctx.env)
     services = collect_units("service", ctx.env, ctx.run_command)
     timers = collect_units("timer", ctx.env, ctx.run_command)
     errors = collect_errors(ctx.reports_dir, ctx.env, ctx.run_command, 20)
@@ -257,7 +257,12 @@ def tool_definitions() -> list[dict[str, Any]]:
             "exchange_confirmed_order_status is UNKNOWN unless the snapshot records an offline reconciliation file. "
             "A monitoring PASS without that file is projected as PASS_REPO_RECORDED_ONLY and does not page."
         ),
-        "get_ledger_summary": "Read the Official Fake-Fill / ledger summary from allowlisted report JSON. Read-only.",
+        "get_ledger_summary": (
+            "Read the Official Fake-Fill ledger summary. Read-only. "
+            "When ANCHOR_CONTROL_MCP_LEDGER_DIR is set, read only an allowlisted Official V2 directory. "
+            "Per-exit NET_PNL rows exclude entry costs. "
+            "Does not write the ledger or fall back to report JSON while that env var is set."
+        ),
         "get_services": (
             "Read allowlisted systemd service status. Does not start, stop, or restart units. "
             "Host sidecar responses include unit class. Only CORE_RUNTIME gates PASS."

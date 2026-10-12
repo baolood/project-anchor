@@ -33,6 +33,8 @@ Set both to the real Anchor service and timer units installed on that host befor
 
 Optional report directory: `ANCHOR_CONTROL_MCP_REPORTS_DIR`. When unset, the collector reads `<repo>/reports`.
 
+Optional Official V2 ledger directory: `ANCHOR_CONTROL_MCP_LEDGER_DIR`. When unset, `get_ledger_summary` keeps reading allowlisted fake-fill report JSON inside the reports directory. When set, the resolved path must be exactly `/var/lib/anchor-official-ledger-20261010` or `/var/lib/private/anchor-official-ledger-20261010`. Any other path, including a child directory, a relative path, or a sensitive path, is rejected and the tool does not fall back to report JSON. The reader opens only regular files named `anchor_fake_fill_ledger_v2_official*.jsonl` or `.csv`, with read-only flags, and skips symlinks. It does not write the ledger. A historical CSV whose header column count differs from a data row is parsed from that row's own columns. The summary includes event counts, last event id and time, hash-chain head, and `realized_pnl_cum`. Per-exit `NET_PNL` rows exclude entry costs. `realized_pnl_cum` is the ledger cumulative figure, not an exchange cash balance.
+
 ## Stage-1 tools
 
 Exactly these seven, all read-only:
@@ -41,7 +43,7 @@ Exactly these seven, all read-only:
 | --- | --- |
 | `get_anchor_status` | Process state from allowlisted `systemctl show` (long-running services `PASS` only when `ActiveState=active`; stopped `Result=success` is `FAILED`; `Type=oneshot` may be idle-healthy; otherwise `UNKNOWN` or `FAILED`), kill switch (`OPEN` when `ANCHOR_KILL_SWITCH=1` or Redis reads on; `CLOSED` only after a successful Redis read of off; `UNKNOWN` when Redis cannot be read), checklist marker counts, observation/ledger availability |
 | `get_latest_observation` | Latest Forward/observation sample (`forward_observation.json`, else the newest allowlisted monitoring report). Repo-recorded order checks are renamed away from exchange-confirmation labels. `exchange_confirmed_order_status` is `UNKNOWN` unless that snapshot records an offline reconciliation file; it is never inferred from a repo-recorded PASS. A monitoring artifact whose result would otherwise be plain `PASS` without that file is projected as `PASS_REPO_RECORDED_ONLY`. That label does not degrade `run_readonly_healthcheck` |
-| `get_ledger_summary` | Official Fake-Fill / ledger summary from allowlisted fake-fill report JSON |
+| `get_ledger_summary` | Official Fake-Fill summary. With `ANCHOR_CONTROL_MCP_LEDGER_DIR` unset, allowlisted fake-fill report JSON. With that env var set, Official V2 counts, last event id and time, hash-chain head, and `realized_pnl_cum` from the allowlisted ledger directory only. Per-exit `NET_PNL` rows exclude entry costs |
 | `get_services` | `systemctl show` for the service allowlist |
 | `get_timers` | `systemctl show` for the timer allowlist |
 | `get_recent_errors` | Sanitized journal errors for the service allowlist, plus sanitized artifact error strings |
@@ -60,7 +62,7 @@ The MCP surface must not:
 - expose SSH or an arbitrary shell
 - deploy, change live Nginx, or merge this branch by itself
 
-systemd access is a fixed argv allowlist (`systemctl show` and `journalctl -u <service> -p err`). Report JSON is read only from an allowlisted basename inside the reports directory. Symlinks that resolve outside that directory are ignored. Payloads are projected to status fields and then redacted.
+systemd access is a fixed argv allowlist (`systemctl show` and `journalctl -u <service> -p err`). Report JSON is read only from an allowlisted basename inside the reports directory. Symlinks that resolve outside that directory are ignored. The Official V2 ledger is read only when `ANCHOR_CONTROL_MCP_LEDGER_DIR` names an allowlisted directory, and only through read-only opens. Payloads are projected to status fields and then redacted.
 
 Live trading and go-live remain `NO-GO` in every tool envelope.
 
