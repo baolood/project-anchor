@@ -4,11 +4,18 @@
 This snapshot reads only repository evidence files. It does not read
 credentials, sign, open sockets, send requests, rerun canaries, or change
 runtime/go-live state.
+
+Order counts taken from stored reports are labeled as repo-recorded. Exchange
+confirmation is a separate field and stays UNKNOWN unless an offline
+reconciliation file is supplied. A repo-recorded pass with UNKNOWN exchange
+confirmation uses result PASS_REPO_RECORDED_ONLY. That is not a plain PASS
+and it is not a paging failure. This script never calls an exchange.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,19 +31,31 @@ EXECUTION_READINESS = REPORTS_DIR / "production_execution_readiness.json"
 RISK_LIMITS = ROOT / "config" / "production_risk_limits.template.json"
 JSON_OUT = REPORTS_DIR / "post_production_monitoring_snapshot.json"
 MD_OUT = REPORTS_DIR / "post_production_monitoring_snapshot.md"
+EXCHANGE_RECONCILIATION_ENV = "POST_PRODUCTION_EXCHANGE_RECONCILIATION_FILE"
+REPO_RECORDED_ONLY_RESULT = "PASS_REPO_RECORDED_ONLY"
+REPO_RECORDED_ONLY_STATUS = "MONITORING_REPO_RECORDED_ONLY_CONTINUOUS_TRADING_DISABLED"
+EXCHANGE_CONFIRMED_RESULT = "PASS"
+EXCHANGE_CONFIRMED_STATUS = "MONITORING_READY_CONTINUOUS_TRADING_DISABLED"
 
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
+def _path_label(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return path.name
+
+
 def read_json(path: Path) -> tuple[dict[str, Any], str | None]:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except Exception as exc:  # noqa: BLE001 - monitoring snapshot must fail closed.
-        return {}, f"{path.relative_to(ROOT)}:UNREADABLE:{type(exc).__name__}"
+        return {}, f"{_path_label(path)}:UNREADABLE:{type(exc).__name__}"
     if not isinstance(data, dict):
-        return {}, f"{path.relative_to(ROOT)}:NOT_OBJECT"
+        return {}, f"{_path_label(path)}:NOT_OBJECT"
     return data, None
 
 
@@ -55,7 +74,60 @@ def check(name: str, passed: bool, evidence: str) -> dict[str, str]:
     }
 
 
-def build_report() -> tuple[dict[str, Any], int]:
+def status_check(name: str, result: str, evidence: str) -> dict[str, str]:
+    if result not in {"PASS", "FAIL", "UNKNOWN"}:
+        raise ValueError(f"unsupported check result: {result}")
+    return {"name": name, "result": result, "evidence": evidence}
+
+
+def exchange_reconciliation_path(explicit: Path | None = None) -> Path | None:
+    """Optional offline file. Never opens a socket to an exchange."""
+    if explicit is not None:
+        return explicit
+    raw = os.environ.get(EXCHANGE_RECONCILIATION_ENV, "").strip()
+    if not raw:
+        return None
+    return Path(raw)
+
+
+def _exchange_evidence(subject: str, result: str, supplied: str) -> str:
+    if supplied != "YES":
+        return (
+            "no offline exchange reconciliation file was supplied; "
+            "exchange confirmation is UNKNOWN and is not PASS"
+        )
+    if result == "PASS":
+        return f"offline exchange reconciliation reports {subject}"
+    if result == "FAIL":
+        return f"offline exchange reconciliation does not report {subject}"
+    return f"offline exchange reconciliation left {subject} UNKNOWN"
+
+
+def interpret_exchange_reconciliation(path: Path | None) -> tuple[str, str, str, list[str]]:
+    """Return exactly-one result, no-second-request result, supplied flag, errors.
+
+    Missing file is UNKNOWN, never PASS. A supplied file that cannot be read
+    or does not match the offline schema is FAIL.
+    """
+    if path is None:
+        return "UNKNOWN", "UNKNOWN", "NO", []
+    data, error = read_json(path)
+    label = _path_label(path)
+    if error:
+        return "FAIL", "FAIL", "YES", [error]
+    if data.get("kind") != "offline_exchange_reconciliation":
+        return "FAIL", "FAIL", "YES", [f"{label}:NOT_OFFLINE_EXCHANGE_RECONCILIATION"]
+    filled = data.get("matching_filled_order_count")
+    symbol_count = data.get("symbol_order_count")
+    second = data.get("new_or_second_request_observed")
+    if type(filled) is not int or type(symbol_count) is not int or type(second) is not bool:
+        return "FAIL", "FAIL", "YES", [f"{label}:INVALID_FIELDS"]
+    exactly = "PASS" if filled == 1 and symbol_count == 1 else "FAIL"
+    no_second = "PASS" if second is False else "FAIL"
+    return exactly, no_second, "YES", []
+
+
+def build_report(exchange_reconciliation: Path | None = None) -> tuple[dict[str, Any], int]:
     send, send_error = read_json(SEND_RESULT)
     readonly_recon, readonly_error = read_json(READONLY_RECONCILIATION)
     decision, decision_error = read_json(OPERATIONS_DECISION)
@@ -80,6 +152,23 @@ def build_report() -> tuple[dict[str, Any], int]:
     )
     decision_summary = decision.get("summary") if isinstance(decision.get("summary"), dict) else {}
     readiness_blockers = readiness.get("blockers") if isinstance(readiness.get("blockers"), list) else []
+    repo_filled = order_recon.get("matching_filled_order_count")
+    repo_symbol_count = order_recon.get("symbol_order_count_in_window")
+    repo_no_second = (
+        boundary_value(decision, "new_production_request_sent") == "NO"
+        and boundary_value(decision, "second_production_request_sent") == "NO"
+        and boundary_value(readonly_recon, "second_production_request_sent") == "NO"
+    )
+    exchange_exactly, exchange_no_second, exchange_supplied, exchange_errors = (
+        interpret_exchange_reconciliation(exchange_reconciliation_path(exchange_reconciliation))
+    )
+    errors.extend(exchange_errors)
+    if exchange_exactly == "PASS" and exchange_no_second == "PASS":
+        exchange_order_status = "PASS"
+    elif exchange_exactly == "UNKNOWN" and exchange_no_second == "UNKNOWN":
+        exchange_order_status = "UNKNOWN"
+    else:
+        exchange_order_status = "FAIL"
 
     checks = [
         check(
@@ -95,10 +184,11 @@ def build_report() -> tuple[dict[str, Any], int]:
             "stored post-send read-only reconciliation is PASS",
         ),
         check(
-            "exactly_one_order_confirmed",
-            order_recon.get("matching_filled_order_count") == 1
-            and order_recon.get("symbol_order_count_in_window") == 1,
-            "exactly one matching BTCUSDT BUY order was found in the authorized window",
+            "repo_recorded_exactly_one_order",
+            repo_filled == 1 and repo_symbol_count == 1,
+            "repo-recorded count in stored post-send reconciliation is exactly one "
+            "matching filled order and one symbol order in the window; this is not "
+            "an exchange confirmation",
         ),
         check(
             "account_rows_visible_without_amounts",
@@ -137,11 +227,28 @@ def build_report() -> tuple[dict[str, Any], int]:
             "go-live and live trading remain blocked",
         ),
         check(
-            "no_new_or_second_request",
-            boundary_value(decision, "new_production_request_sent") == "NO"
-            and boundary_value(decision, "second_production_request_sent") == "NO"
-            and boundary_value(readonly_recon, "second_production_request_sent") == "NO",
-            "monitoring snapshot did not send or imply another request",
+            "repo_recorded_no_new_or_second_request",
+            repo_no_second,
+            "repo-recorded boundary flags say no new or second production request; "
+            "this is not an exchange confirmation",
+        ),
+        status_check(
+            "exchange_confirmed_exactly_one_order",
+            exchange_exactly,
+            _exchange_evidence(
+                "exactly one filled order",
+                exchange_exactly,
+                exchange_supplied,
+            ),
+        ),
+        status_check(
+            "exchange_confirmed_no_new_or_second_request",
+            exchange_no_second,
+            _exchange_evidence(
+                "no new or second request",
+                exchange_no_second,
+                exchange_supplied,
+            ),
         ),
         check(
             "no_secret_disclosure",
@@ -151,20 +258,36 @@ def build_report() -> tuple[dict[str, Any], int]:
             "stored evidence contains no secret disclosure",
         ),
     ]
-    failed = [item for item in checks if item["result"] != "PASS"]
-    result = "PASS" if not errors and not failed else "BLOCKED"
-    status = "MONITORING_READY_CONTINUOUS_TRADING_DISABLED" if result == "PASS" else "MONITORING_BLOCKED"
+    failed = [item for item in checks if item["result"] == "FAIL"]
+    if errors or failed:
+        result = "BLOCKED"
+        status = "MONITORING_BLOCKED"
+    elif exchange_order_status == "PASS":
+        result = EXCHANGE_CONFIRMED_RESULT
+        status = EXCHANGE_CONFIRMED_STATUS
+    else:
+        # Repo checks passed, but exchange confirmation is UNKNOWN. Do not
+        # report a plain PASS, and do not treat this as a paging failure.
+        result = REPO_RECORDED_ONLY_RESULT
+        status = REPO_RECORDED_ONLY_STATUS
     report = {
         "generated_at": utc_now(),
         "result": result,
+        "result_scope": "repo_recorded_evidence",
         "status": status,
         "errors": errors,
         "checks": checks,
         "snapshot": {
             "production_request_sent": "YES",
             "production_order_status": terminal.get("external_status"),
-            "matching_filled_order_count": order_recon.get("matching_filled_order_count"),
-            "symbol_order_count_in_window": order_recon.get("symbol_order_count_in_window"),
+            "repo_recorded_matching_filled_order_count": repo_filled,
+            "repo_recorded_symbol_order_count_in_window": repo_symbol_count,
+            "matching_filled_order_count": repo_filled,
+            "symbol_order_count_in_window": repo_symbol_count,
+            "exchange_reconciliation_supplied": exchange_supplied,
+            "exchange_confirmed_order_status": exchange_order_status,
+            "exchange_confirmed_exactly_one_order": exchange_exactly,
+            "exchange_confirmed_no_new_or_second_request": exchange_no_second,
             "usdt_balance_row_present": account_recon.get("usdt_balance_row_present"),
             "btc_balance_row_present": account_recon.get("btc_balance_row_present"),
             "balance_amounts_recorded": account_recon.get("balance_amounts_recorded"),
@@ -183,12 +306,18 @@ def build_report() -> tuple[dict[str, Any], int]:
             "operations_decision": str(OPERATIONS_DECISION.relative_to(ROOT)),
             "execution_readiness": str(EXECUTION_READINESS.relative_to(ROOT)),
             "risk_limits": str(RISK_LIMITS.relative_to(ROOT)),
+            "exchange_reconciliation": (
+                _path_label(exchange_reconciliation_path(exchange_reconciliation))
+                if exchange_supplied == "YES"
+                else "not_supplied"
+            ),
         },
         "boundary": {
             "credential_file_read": "NO",
             "secret_value_disclosed": "NO",
             "production_signing_executed": "NO",
             "production_http_network_attempted": "NO",
+            "exchange_api_called": "NO",
             "new_production_request_sent": "NO",
             "second_production_request_sent": "NO",
             "canary_rerun": "NO",
@@ -198,7 +327,7 @@ def build_report() -> tuple[dict[str, Any], int]:
         },
         "next_gate": "POST_PRODUCTION_MONITORING_SURFACE_OR_FREEZE",
     }
-    return report, 0 if result == "PASS" else 1
+    return report, 0 if result in {EXCHANGE_CONFIRMED_RESULT, REPO_RECORDED_ONLY_RESULT} else 1
 
 
 def markdown(report: dict[str, Any]) -> str:

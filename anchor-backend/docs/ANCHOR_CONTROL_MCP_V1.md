@@ -40,7 +40,7 @@ Exactly these seven, all read-only:
 | Tool | What it returns |
 | --- | --- |
 | `get_anchor_status` | Process state from allowlisted `systemctl show` (long-running services `PASS` only when `ActiveState=active`; stopped `Result=success` is `FAILED`; `Type=oneshot` may be idle-healthy; otherwise `UNKNOWN` or `FAILED`), kill switch (`OPEN` when `ANCHOR_KILL_SWITCH=1` or Redis reads on; `CLOSED` only after a successful Redis read of off; `UNKNOWN` when Redis cannot be read), checklist marker counts, observation/ledger availability |
-| `get_latest_observation` | Latest Forward/observation sample (`forward_observation.json`, else the newest allowlisted monitoring report) |
+| `get_latest_observation` | Latest Forward/observation sample (`forward_observation.json`, else the newest allowlisted monitoring report). Repo-recorded order checks are renamed away from exchange-confirmation labels. `exchange_confirmed_order_status` is `UNKNOWN` unless that snapshot records an offline reconciliation file; it is never inferred from a repo-recorded PASS. A monitoring artifact whose result would otherwise be plain `PASS` without that file is projected as `PASS_REPO_RECORDED_ONLY`. That label does not degrade `run_readonly_healthcheck` |
 | `get_ledger_summary` | Official Fake-Fill / ledger summary from allowlisted fake-fill report JSON |
 | `get_services` | `systemctl show` for the service allowlist |
 | `get_timers` | `systemctl show` for the timer allowlist |

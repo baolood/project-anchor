@@ -49,6 +49,8 @@ class PostProductionMonitoringRunnerTest(unittest.TestCase):
         self.assertEqual(report["boundary"]["new_production_request_sent"], "NO")
         self.assertEqual(report["boundary"]["go_live"], "NO-GO")
         self.assertEqual(report["boundary"]["live_trading"], "NO-GO")
+        self.assertEqual(report["exchange_confirmed_order_status"], "UNKNOWN")
+        self.assertNotEqual(report["exchange_confirmed_order_status"], "PASS")
         alert = runner.build_alert_report(report)
         self.assertEqual(alert["result"], "CLEAR")
         self.assertEqual(alert["status"], "POST_PRODUCTION_MONITORING_ALERT_CLEAR")
@@ -57,6 +59,29 @@ class PostProductionMonitoringRunnerTest(unittest.TestCase):
         self.assertEqual(state["last_notification_decision"], "SUPPRESS")
         self.assertEqual(notification["result"], "SUPPRESSED")
         self.assertEqual(notification["boundary"]["new_production_request_sent"], "NO")
+
+    def test_repo_recorded_only_snapshot_does_not_page(self):
+        snapshot = _snapshot(
+            result="PASS_REPO_RECORDED_ONLY",
+            status="MONITORING_REPO_RECORDED_ONLY_CONTINUOUS_TRADING_DISABLED",
+        )
+        snapshot["snapshot"]["exchange_confirmed_order_status"] = "UNKNOWN"
+        snapshot["snapshot"]["exchange_reconciliation_supplied"] = "NO"
+
+        report, exit_code = runner.build_run_report(snapshot, 0)
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(report["result"], "PASS")
+        self.assertEqual(report["snapshot_result"], "PASS_REPO_RECORDED_ONLY")
+        self.assertNotEqual(report["snapshot_result"], "PASS")
+        self.assertEqual(report["exchange_confirmed_order_status"], "UNKNOWN")
+        alert = runner.build_alert_report(report)
+        self.assertEqual(alert["result"], "CLEAR")
+        self.assertEqual(alert["severity"], "none")
+        self.assertNotEqual(alert["severity"], "page")
+        state, notification = runner.build_alert_notification(alert, {})
+        self.assertEqual(state["last_notification_decision"], "SUPPRESS")
+        self.assertEqual(notification["result"], "SUPPRESSED")
 
     def test_runner_blocks_if_snapshot_failed(self):
         report, exit_code = runner.build_run_report(_snapshot(result="BLOCKED"), 1)

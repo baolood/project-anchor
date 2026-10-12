@@ -157,15 +157,82 @@ def _newest(
     return chosen[1], chosen[2]
 
 
+_REPO_RECORDED_CHECK_ALIASES = {
+    "exactly_one_order_confirmed": "repo_recorded_exactly_one_order",
+    "no_new_or_second_request": "repo_recorded_no_new_or_second_request",
+}
+_EXCHANGE_CHECK_NAMES = {
+    "exchange_confirmed_exactly_one_order",
+    "exchange_confirmed_no_new_or_second_request",
+}
+_MONITORING_OBSERVATION_SOURCES = {
+    "post_production_monitoring_snapshot.json",
+    "post_production_monitoring_run.json",
+}
+REPO_RECORDED_ONLY_RESULT = "PASS_REPO_RECORDED_ONLY"
+
+
+def _snapshot_block(data: dict[str, Any]) -> dict[str, Any]:
+    snapshot = data.get("snapshot")
+    return snapshot if isinstance(snapshot, dict) else {}
+
+
+def _exchange_reconciliation_supplied(data: dict[str, Any]) -> bool:
+    return _snapshot_block(data).get("exchange_reconciliation_supplied") == "YES"
+
+
+def _exchange_confirmed_order_status(data: dict[str, Any]) -> str:
+    """Repo-recorded PASS checks are not exchange confirmation.
+
+    UNKNOWN unless the snapshot says an offline reconciliation file was supplied
+    and carries PASS, FAIL, or UNKNOWN. A PASS copied from an old
+    exactly_one_order_confirmed check is never promoted.
+    """
+    if not _exchange_reconciliation_supplied(data):
+        return "UNKNOWN"
+    status = _token(_snapshot_block(data).get("exchange_confirmed_order_status"))
+    if status in {"PASS", "FAIL", "UNKNOWN"}:
+        return status
+    return "UNKNOWN"
+
+
+def _projected_result(data: dict[str, Any], source: str) -> str | None:
+    """Surface PASS_REPO_RECORDED_ONLY when exchange confirmation is UNKNOWN.
+
+    Forward observations keep their stored result. A monitoring snapshot or run
+    that would otherwise read as a plain PASS, without an offline exchange
+    reconciliation, is relabeled. BLOCKED and other non-PASS results stay.
+    """
+    result = _token(data.get("result"))
+    if source not in _MONITORING_OBSERVATION_SOURCES:
+        return result
+    snapshot_result = _token(data.get("snapshot_result"))
+    if result not in {None, "PASS", REPO_RECORDED_ONLY_RESULT}:
+        return result
+    if result == REPO_RECORDED_ONLY_RESULT or snapshot_result == REPO_RECORDED_ONLY_RESULT:
+        return REPO_RECORDED_ONLY_RESULT
+    if _exchange_reconciliation_supplied(data):
+        return result
+    if result == "PASS" or snapshot_result == "PASS":
+        return REPO_RECORDED_ONLY_RESULT
+    return result
+
+
 def project_observation(data: dict[str, Any], source: str) -> dict[str, Any]:
     boundary = data.get("boundary") if isinstance(data.get("boundary"), dict) else {}
+    supplied = _exchange_reconciliation_supplied(data)
     checks: list[dict[str, str | None]] = []
     raw_checks = data.get("checks")
     if isinstance(raw_checks, list):
         for item in raw_checks:
             if not isinstance(item, dict) or not isinstance(item.get("name"), str):
                 continue
-            checks.append({"name": item["name"][:80], "result": _token(item.get("result"))})
+            name = item["name"][:80]
+            result = _token(item.get("result"))
+            name = _REPO_RECORDED_CHECK_ALIASES.get(name, name)
+            if name in _EXCHANGE_CHECK_NAMES and not supplied:
+                result = "UNKNOWN"
+            checks.append({"name": name, "result": result})
             if len(checks) >= 20:
                 break
     errors = data.get("errors")
@@ -175,12 +242,14 @@ def project_observation(data: dict[str, Any], source: str) -> dict[str, Any]:
         "source": source,
         "available": True,
         "generated_at": _iso(data.get("generated_at")),
-        "result": _token(data.get("result")),
+        "result": _projected_result(data, source),
         "next_gate": _token(data.get("next_gate")),
         "snapshot_result": _token(data.get("snapshot_result")),
         "go_live": _token(boundary.get("go_live")),
         "live_trading": _token(boundary.get("live_trading")),
         "runtime_modified": _token(boundary.get("runtime_modified")),
+        "exchange_reconciliation_supplied": "YES" if supplied else "NO",
+        "exchange_confirmed_order_status": _exchange_confirmed_order_status(data),
         "checks": checks,
         "error_count": error_count,
         "redacted": True,
