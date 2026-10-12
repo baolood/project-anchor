@@ -14,6 +14,8 @@ import json
 import os
 import stat
 import sys
+import time
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -34,6 +36,8 @@ DIR_MODE = 0o750
 FILE_MODE = 0o640
 MIRROR_GROUP = "anchor-mcp"
 PROJECT_ROOT = "/path/to/project-anchor"
+STABLE_FOR_SEC = 2.0
+STABLE_MAX_WAIT_SEC = 30.0
 
 
 class MirrorError(Exception):
@@ -76,13 +80,13 @@ WantedBy=multi-user.target
 def render_timer_unit() -> str:
     backend = f"{PROJECT_ROOT}/anchor-backend"
     return f"""[Unit]
-Description=Run the Official V2 ledger read-only mirror every 10 minutes
+Description=Run the Official V2 ledger read-only mirror outside the ledger write minute
 Documentation=file:{backend}/docs/ANCHOR_LEDGER_READONLY_MIRROR_V1.md
 After=anchor-official-ledger.service
 
 [Timer]
 OnBootSec=2min
-OnCalendar=*:0/10
+OnCalendar=*:00,20,30,40,50
 AccuracySec=30s
 Persistent=true
 Unit=anchor-ledger-readonly-mirror.service
@@ -99,12 +103,38 @@ OnSuccess=anchor-ledger-readonly-mirror.service
 """
 
 
-def mirror_ledger(source_root: str | Path, dest: str | Path, group: str = MIRROR_GROUP) -> None:
-    """Copy the one live ledger file. Raises MirrorError without writing the source."""
+def mirror_ledger(
+    source_root: str | Path,
+    dest: str | Path,
+    group: str = MIRROR_GROUP,
+    *,
+    stable_for: float = STABLE_FOR_SEC,
+    max_wait: float = STABLE_MAX_WAIT_SEC,
+    sleep: Callable[[float], None] = time.sleep,
+    monotonic: Callable[[], float] = time.monotonic,
+    stat_source: Callable[[Path], os.stat_result] | None = None,
+) -> str:
+    """Copy the one live ledger file. Raises MirrorError without writing the source.
+
+    Returns ``copied`` or ``skipped``. A skip happens when the source size or
+    mtime is still changing. The source is not modified in either case.
+    """
     source_real = _resolve_dir(source_root)
     dest_real = _prepare_dest(dest, source_real, group)
     source_file = _resolve_source_file(source_real)
+    sample = _wait_until_stable(
+        source_file,
+        stable_for=stable_for,
+        max_wait=max_wait,
+        sleep=sleep,
+        monotonic=monotonic,
+        stat_source=os.stat if stat_source is None else stat_source,
+    )
+    if sample is None:
+        return "skipped"
     blob, source_stat = _read_source(source_file)
+    if stable_for > 0 and (source_stat.st_size, source_stat.st_mtime_ns) != sample:
+        return "skipped"
     digest = hashlib.sha256(blob).hexdigest()
     copied_at = _utc_now()
     source_mtime = datetime.fromtimestamp(source_stat.st_mtime, timezone.utc).replace(microsecond=0)
@@ -122,6 +152,7 @@ def mirror_ledger(source_root: str | Path, dest: str | Path, group: str = MIRROR
         group,
     )
     _fsync_dir(dest_real)
+    return "copied"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -131,11 +162,49 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--group", default=MIRROR_GROUP)
     args = parser.parse_args(argv)
     try:
-        mirror_ledger(args.source_root, args.dest, args.group)
+        outcome = mirror_ledger(args.source_root, args.dest, args.group)
     except MirrorError as exc:
         print(f"ledger mirror failed: {exc}", file=sys.stderr)
         return 1
+    if outcome == "skipped":
+        print("ledger mirror skipped: source size or mtime still changing", file=sys.stderr)
     return 0
+
+
+def _wait_until_stable(
+    path: Path,
+    *,
+    stable_for: float,
+    max_wait: float,
+    sleep: Callable[[float], None],
+    monotonic: Callable[[], float],
+    stat_source: Callable[[Path], os.stat_result],
+) -> tuple[int, int] | None:
+    """Return ``(size, mtime_ns)`` once both have stayed the same for ``stable_for`` seconds."""
+    if stable_for <= 0:
+        info = stat_source(path)
+        return (info.st_size, info.st_mtime_ns)
+    deadline = monotonic() + max_wait
+
+    def sample() -> tuple[int, int]:
+        info = stat_source(path)
+        return (info.st_size, info.st_mtime_ns)
+
+    last = sample()
+    stable_since = monotonic()
+    while True:
+        now = monotonic()
+        current = sample()
+        if current != last:
+            last = current
+            stable_since = now
+        elif now - stable_since >= stable_for:
+            return last
+        if now >= deadline:
+            return None
+        remaining = min(0.2, stable_for - (now - stable_since), deadline - now)
+        if remaining > 0:
+            sleep(remaining)
 
 
 def _resolve_dir(path: str | Path) -> Path:

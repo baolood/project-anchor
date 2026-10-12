@@ -17,9 +17,9 @@ import os
 import re
 import stat
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 from app.mcp.inventory import LEDGER_MIRROR_DIR
 from app.mcp.sanitize import looks_sensitive_path
@@ -92,7 +92,17 @@ ALIASES = {
     "realized_pnl_cum": "realized_pnl_cum",
     "realized_pnl_cumulative": "realized_pnl_cum",
     "net_pnl": "net_pnl",
+    "observation_id": "observation_id",
+    "written_at": "written_at",
+    "recorded_at": "recorded_at",
 }
+PENDING_EVENT = "PENDING_NEXT_BAR"
+BAR_NOT_YET_CLOSED = "BAR_NOT_YET_CLOSED"
+DATA_GAP = "DATA_GAP"
+FILL_BAR = timedelta(hours=1)
+# A later row of one of these types, with fill_time_utc, resolves the fill bar.
+RESOLVING_EVENTS = frozenset({"OPEN", "REVERSE_ENTRY", "REVERSE_EXIT", "FLAT_EXIT", "NO_FILL"})
+PENDING_WRITE_FIELDS = ("event_time", "written_at", "recorded_at")
 NET_PNL_NOTE = (
     "Per-exit NET_PNL rows exclude entry costs. "
     "realized_pnl_cum is the ledger cumulative figure, not an exchange cash balance."
@@ -363,6 +373,7 @@ def _summarize(loaded: list[tuple[str, bytes]]) -> dict[str, Any]:
         "net_pnl_note": NET_PNL_NOTE,
         "fill_status": "OFFICIAL_V2",
         "redacted": True,
+        "pending_observations": classify_pending_observations(state.rows),
     }
 
 
@@ -378,6 +389,7 @@ class _State:
         self.head: str | None = None
         self.pnl: str | None = None
         self.source: str | None = None
+        self.rows: list[dict[str, Any]] = []
 
     def add(self, mapped: dict[str, Any], source: str) -> None:
         self.events += 1
@@ -389,6 +401,91 @@ class _State:
         self.last_time, self.last_time_field = _latest_time(mapped)
         self.head = _hash(mapped.get("event_hash"))
         self.pnl = _pnl(mapped.get("realized_pnl_cum"))
+        self.rows.append(mapped)
+
+
+def classify_pending_observations(events: Sequence[Mapping[str, Any]]) -> dict[str, int]:
+    """Collapse repeated PENDING_NEXT_BAR rows for one observation into one count.
+
+    BAR_NOT_YET_CLOSED: a later row resolves the fill bar, and the earliest
+    pending write time is before that bar's open plus one hour.
+    DATA_GAP: the pending was written at or after that instant, or no later
+    row resolves the fill bar. This does not write the ledger.
+    """
+    groups: dict[tuple[Any, ...], dict[str, Any]] = {}
+    order: list[tuple[Any, ...]] = []
+    for index, event in enumerate(events):
+        event_type = event.get("event_type")
+        if event_type != PENDING_EVENT and event_type not in RESOLVING_EVENTS:
+            continue
+        key = _observation_key(event, index)
+        group = groups.get(key)
+        if group is None:
+            group = {
+                "raw": 0,
+                "earliest_write": None,
+                "saw_pending": False,
+                "fill_open": None,
+            }
+            groups[key] = group
+            order.append(key)
+        if event_type == PENDING_EVENT:
+            group["raw"] += 1
+            group["saw_pending"] = True
+            written = _pending_write_time(event)
+            earliest = group["earliest_write"]
+            if written is not None and (earliest is None or written < earliest):
+                group["earliest_write"] = written
+        elif group["saw_pending"] and group["fill_open"] is None:
+            parsed = _parse_time(event.get("fill_time_utc"))
+            if parsed is not None:
+                group["fill_open"] = parsed[0]
+    raw_rows = 0
+    observations = 0
+    not_yet_closed = 0
+    data_gap = 0
+    for key in order:
+        group = groups[key]
+        if not group["saw_pending"]:
+            continue
+        raw_rows += group["raw"]
+        observations += 1
+        fill_open = group["fill_open"]
+        written = group["earliest_write"]
+        if fill_open is not None and written is not None and written < fill_open + FILL_BAR:
+            not_yet_closed += 1
+        else:
+            data_gap += 1
+    return {
+        "raw_rows": raw_rows,
+        "observations": observations,
+        BAR_NOT_YET_CLOSED: not_yet_closed,
+        DATA_GAP: data_gap,
+    }
+
+
+def _observation_key(event: Mapping[str, Any], index: int) -> tuple[Any, ...]:
+    observation = event.get("observation_id")
+    if isinstance(observation, str):
+        text = observation.strip()
+        if TOKEN_RE.fullmatch(text):
+            return ("observation", text)
+    signal = event.get("signal_available_at")
+    candle = event.get("signal_candle_open_utc")
+    if isinstance(signal, str) and isinstance(candle, str) and signal.strip() and candle.strip():
+        return ("signal", signal.strip(), candle.strip())
+    return ("row", index)
+
+
+def _pending_write_time(event: Mapping[str, Any]) -> datetime | None:
+    earliest: datetime | None = None
+    for field in PENDING_WRITE_FIELDS:
+        parsed = _parse_time(event.get(field))
+        if parsed is None:
+            continue
+        if earliest is None or parsed[0] < earliest:
+            earliest = parsed[0]
+    return earliest
 
 
 def _canon_key(value: str) -> str | None:
