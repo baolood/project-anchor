@@ -14,6 +14,7 @@ from app.mcp.commands import CommandResult
 from datetime import datetime, timedelta, timezone
 
 from app.mcp.inventory import LEDGER_MIRROR_DIR
+from app.mcp.ledger_run_index import BOUNDARY_NAME, boundaries_from_commits, parse_committed_runs
 from app.mcp.official_ledger import (
     ALLOWLISTED_LEDGER_DIRS,
     LEDGER_DIR_ENV,
@@ -751,3 +752,223 @@ class OfficialLedgerSummaryTests(unittest.TestCase):
             self.assertEqual(summary["last_event_time"], "2026-10-12T00:02:00Z")
             self.assertEqual(summary["last_event_time_field"], "fill_time_utc")
             self.assertEqual(summary["counts"]["header_row_mismatches"], 0)
+
+
+OBS_A = "obs-pending-a"
+OBS_B = "obs-pending-b"
+HASH_C = "c" * 64
+HASH_D = "d" * 64
+HASH_E = "e" * 64
+FILL_OPEN = "2026-10-12T11:00:00Z"
+SIGNAL_AT = "2026-10-12T10:05:00Z"
+CANDLE_OPEN = "2026-10-12T10:00:00Z"
+WHEN = datetime(2026, 10, 12, 15, 0, tzinfo=timezone.utc)
+
+
+def _committed(at: str, run_seq: int, ledger_events: int) -> str:
+    """Host events.jsonl committed line: run_seq and cumulative ledger_events."""
+    item = {
+        "at": at,
+        "commits": ledger_events,
+        "event": "committed",
+        "ledger_events": ledger_events,
+        "run_seq": run_seq,
+        "source_lines": ledger_events,
+    }
+    return json.dumps(item, sort_keys=True)
+
+
+def _pending_row(event_id: str, event_hash: str, observation: str, **extra: object) -> dict:
+    row = {
+        "ledger_event_id": event_id,
+        "row_hash": event_hash,
+        "event_type": "PENDING_NEXT_BAR",
+        "observation_id": observation,
+        "signal_available_at": SIGNAL_AT,
+        "signal_candle_open_utc": CANDLE_OPEN,
+        "order_id": ORDER_MARKER,
+        "event_time": "2026-10-12T13:00:00Z",
+    }
+    row.update(extra)
+    return row
+
+
+def _resolve_row(event_id: str, event_hash: str, observation: str, fill_time: str | None = FILL_OPEN) -> dict:
+    row = {
+        "ledger_event_id": event_id,
+        "row_hash": event_hash,
+        "event_type": "OPEN",
+        "signal_available_at": SIGNAL_AT,
+        "signal_candle_open_utc": CANDLE_OPEN,
+        "realized_pnl_cum": "0",
+        "order_id": ORDER_MARKER,
+        "observation_id": observation,
+    }
+    if fill_time is not None:
+        row["fill_time_utc"] = fill_time
+    return row
+
+
+def _write_boundaries(directory: Path, events_text: str) -> None:
+    boundaries = boundaries_from_commits(parse_committed_runs(events_text))
+    if not boundaries:
+        raise AssertionError("fixture events.jsonl is not a usable run index")
+    blob = "".join(json.dumps(item, sort_keys=True) + "\n" for item in boundaries).encode("utf-8")
+    (directory / BOUNDARY_NAME).write_bytes(blob)
+    digest = hashlib.sha256(blob).hexdigest()
+    (directory / f"{BOUNDARY_NAME}.sha256").write_text(f"{digest}  {BOUNDARY_NAME}\n", encoding="ascii")
+
+
+class PendingObservationReadTests(unittest.TestCase):
+    def test_run_commit_time_collapses_repeated_pending_rows(self) -> None:
+        events = "\n".join(
+            [
+                _committed("2026-10-12T10:10:01.250000+00:00", 1, 2),
+                _committed("2026-10-12T10:20:01+00:00", 2, 4),
+                _committed("2026-10-12T12:10:01+00:00", 3, 5),
+            ]
+        ) + "\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            rows = [
+                _pending_row("le-0001", HASH_A, OBS_A),
+                _pending_row("le-0002", HASH_B, OBS_A),
+                _pending_row("le-0003", HASH_C, OBS_A),
+                _pending_row("le-0004", HASH_D, OBS_A),
+                _resolve_row("le-0005", HASH_E, OBS_A),
+            ]
+            path = _out(ledger) / LEDGER_NAME
+            path.write_text(_jsonl(*rows), encoding="utf-8")
+            before = path.read_bytes()
+            _write_boundaries(ledger, events)
+            summary = _read_mirror(ledger, now=WHEN)
+            blob = json.dumps(summary)
+            self.assertEqual(path.read_bytes(), before)
+            self.assertEqual(
+                summary["pending_observations"],
+                {
+                    "raw_rows": 4,
+                    "observations": 1,
+                    "runs_waited": 2,
+                    "PRE_INDEX": 0,
+                    "BAR_NOT_YET_CLOSED": 1,
+                    "DATA_GAP": 0,
+                    "IN_FLIGHT": 0,
+                },
+            )
+            self.assertEqual(summary["counts"]["by_type"]["PENDING_NEXT_BAR"], 4)
+            self.assertEqual(summary["counts"]["events"], 5)
+            self.assertEqual(summary["hash_chain_head"], HASH_E)
+            self.assertNotIn(OBS_A, blob)
+            self.assertNotIn(ORDER_MARKER, blob)
+            self.assertNotIn("run-000001", blob)
+
+    def test_commit_at_or_after_bar_close_is_a_data_gap(self) -> None:
+        for committed in ("2026-10-12T12:00:00Z", "2026-10-12T12:10:00Z"):
+            with self.subTest(committed=committed):
+                events = _committed(committed, 1, 1) + "\n" + _committed("2026-10-12T12:20:00Z", 2, 2) + "\n"
+                with tempfile.TemporaryDirectory() as tmp:
+                    ledger = Path(tmp)
+                    rows = [
+                        _pending_row("le-0001", HASH_A, OBS_A),
+                        _resolve_row("le-0002", HASH_B, OBS_A),
+                    ]
+                    (_out(ledger) / LEDGER_NAME).write_text(_jsonl(*rows), encoding="utf-8")
+                    _write_boundaries(ledger, events)
+                    summary = _read_mirror(ledger, now=WHEN)
+                    self.assertEqual(summary["pending_observations"]["DATA_GAP"], 1)
+                    self.assertEqual(summary["pending_observations"]["BAR_NOT_YET_CLOSED"], 0)
+                    self.assertEqual(summary["pending_observations"]["IN_FLIGHT"], 0)
+
+    def test_unresolved_bar_still_open_is_in_flight(self) -> None:
+        events = _committed("2026-10-12T10:10:01+00:00", 1, 1) + "\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            (_out(ledger) / LEDGER_NAME).write_text(
+                _jsonl(_pending_row("le-0001", HASH_A, OBS_A)),
+                encoding="utf-8",
+            )
+            _write_boundaries(ledger, events)
+            early = _read_mirror(ledger, now=datetime(2026, 10, 12, 11, 30, tzinfo=timezone.utc))
+            closed = _read_mirror(ledger, now=datetime(2026, 10, 12, 12, 0, tzinfo=timezone.utc))
+            self.assertEqual(early["pending_observations"]["IN_FLIGHT"], 1)
+            self.assertEqual(early["pending_observations"]["DATA_GAP"], 0)
+            self.assertEqual(closed["pending_observations"]["IN_FLIGHT"], 0)
+            self.assertEqual(closed["pending_observations"]["DATA_GAP"], 1)
+
+    def test_pending_row_past_the_last_commit_is_not_given_a_write_time(self) -> None:
+        events = _committed("2026-10-12T10:10:01+00:00", 1, 1) + "\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            rows = [
+                _pending_row("le-0001", HASH_A, OBS_A),
+                _pending_row("le-0002", HASH_B, OBS_A),
+            ]
+            path = _out(ledger) / LEDGER_NAME
+            path.write_text(_jsonl(*rows), encoding="utf-8")
+            before = path.read_bytes()
+            _write_boundaries(ledger, events)
+            summary = _read_mirror(ledger, now=datetime(2026, 10, 12, 11, 30, tzinfo=timezone.utc))
+            self.assertEqual(path.read_bytes(), before)
+            self.assertEqual(summary["counts"]["by_type"]["PENDING_NEXT_BAR"], 2)
+            self.assertEqual(summary["counts"]["events"], 2)
+            self.assertEqual(
+                summary["pending_observations"],
+                {"raw_rows": 2, "observations": 1, "runs_waited": 2},
+            )
+            self.assertNotIn("IN_FLIGHT", summary["pending_observations"])
+            self.assertNotIn("PRE_INDEX", summary["pending_observations"])
+
+    def test_missing_run_boundaries_reports_counts_without_labels(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            rows = [
+                _pending_row("le-0001", HASH_A, OBS_A),
+                _pending_row("le-0002", HASH_B, OBS_A),
+                _pending_row("le-0003", HASH_C, OBS_B),
+            ]
+            (_out(ledger) / LEDGER_NAME).write_text(_jsonl(*rows), encoding="utf-8")
+            summary = _read_mirror(ledger, now=WHEN)
+            self.assertEqual(
+                summary["pending_observations"],
+                {"raw_rows": 3, "observations": 2, "runs_waited": 3},
+            )
+            self.assertNotIn("BAR_NOT_YET_CLOSED", summary["pending_observations"])
+            self.assertNotIn("DATA_GAP", summary["pending_observations"])
+            self.assertNotIn("IN_FLIGHT", summary["pending_observations"])
+
+    def test_resolving_row_before_the_pending_does_not_count(self) -> None:
+        events = "\n".join(
+            [_committed("2026-10-12T09:10:01+00:00", 1, 1), _committed("2026-10-12T10:10:01+00:00", 2, 2)]
+        ) + "\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            rows = [
+                _resolve_row("le-0001", HASH_A, OBS_A),
+                _pending_row("le-0002", HASH_B, OBS_A),
+            ]
+            (_out(ledger) / LEDGER_NAME).write_text(_jsonl(*rows), encoding="utf-8")
+            _write_boundaries(ledger, events)
+            summary = _read_mirror(ledger, now=datetime(2026, 10, 12, 11, 30, tzinfo=timezone.utc))
+            self.assertEqual(summary["pending_observations"]["IN_FLIGHT"], 1)
+            self.assertEqual(summary["pending_observations"]["BAR_NOT_YET_CLOSED"], 0)
+
+    def test_ledger_without_pending_rows_reports_zero_counts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            (_out(ledger) / LEDGER_NAME).write_text(_jsonl(_event("evt-1", HASH_A)), encoding="utf-8")
+            summary = _read_mirror(ledger)
+            self.assertEqual(
+                summary["pending_observations"],
+                {
+                    "raw_rows": 0,
+                    "observations": 0,
+                    "runs_waited": 0,
+                    "PRE_INDEX": 0,
+                    "BAR_NOT_YET_CLOSED": 0,
+                    "DATA_GAP": 0,
+                    "IN_FLIGHT": 0,
+                },
+            )
+
+

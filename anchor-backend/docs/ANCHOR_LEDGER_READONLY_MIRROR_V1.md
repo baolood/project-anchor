@@ -14,7 +14,7 @@ Source, under the ledger root (`/var/lib/anchor-official-ledger-20261010`, which
 affl-v2-official-ledger/out/anchor_fake_fill_ledger_v2_official.jsonl
 ```
 
-Nothing else. `runs/*/before/`, `baseline/`, and a same-named file at the top of the root are not copied.
+The mirror also copies `events.jsonl` when that file is a regular file at the ledger root, and it writes `run-boundaries.jsonl`. A committed line in `events.jsonl` carries `run_seq` and cumulative `ledger_events`. Run N owns ledger lines `(ledger_events of run N-1, ledger_events of run N]`. A boundary line records that span and the committed `at`. The before-snapshot `runs/run-NNNNNN/before/affl-v2-official-ledger/out/anchor_fake_fill_ledger_v2_official.jsonl` is opened read-only and is not copied. Run 1's snapshot is counted in full: that row count is run 1's start offset, and its last `ledger_event_id` must equal the live row at that index. Rows at or below the offset are `PRE_INDEX`. Later snapshots are a last-line cross-check against the previous run's last id. A mismatch, or a `run_seq` series that does not start at 1 and stay contiguous, does not publish `run-boundaries.jsonl`. The flat path `runs/run-NNNNNN/before/anchor_fake_fill_ledger_v2_official.jsonl` is not read. `baseline/`, a same-named file at the top of the root, and `BLOCKED.json` are not copied. The same 2 second stability rule applies to the live ledger, to `events.jsonl`, and to each nested before-snapshot that is read: if any of them is still changing after 30 seconds, the copier skips and does not publish a partial mirror. The timer is `OnCalendar=*:00,20,30,40,50`. The copy runs only after the watched files have been unchanged for 2 seconds.
 
 Destination directory: `/var/lib/anchor-ledger-mirror`
 
@@ -24,10 +24,12 @@ Destination directory: `/var/lib/anchor-ledger-mirror`
 | `anchor_fake_fill_ledger_v2_official.jsonl` | `0640` | `root:anchor-mcp` |
 | `anchor_fake_fill_ledger_v2_official.jsonl.sha256` | `0640` | `root:anchor-mcp` |
 | `anchor_fake_fill_ledger_v2_official.jsonl.meta.json` | `0640` | `root:anchor-mcp` |
+| `events.jsonl` and `events.jsonl.sha256`, when the source file exists | `0640` | `root:anchor-mcp` |
+| `run-boundaries.jsonl` and `run-boundaries.jsonl.sha256`, when `events.jsonl` is a contiguous `run_seq` index from 1 and every present before-snapshot matches | `0640` | `root:anchor-mcp` |
 
 The `.sha256` file is `sha256sum` form: 64 hex digits, two spaces, the ledger basename, and a newline. The metadata JSON has `source_mtime` (UTC), `source_size` (bytes), and `copied_at` (UTC).
 
-The copy writes a temp file in the destination directory, `fsync`s it, and `rename`s it into place. The source is opened `O_RDONLY|O_NOFOLLOW`. The destination must not sit inside the source tree, and the source must not sit inside the destination.
+The copy writes a temp file in the destination directory, `fsync`s it, and `rename`s it into place. The source is opened `O_RDONLY|O_NOFOLLOW`. Before that open, the copier waits until the source size and mtime have stayed unchanged for 2 seconds, and it skips the copy if they are still changing after 30 seconds. The destination must not sit inside the source tree, and the source must not sit inside the destination.
 
 ## Units
 
@@ -37,7 +39,7 @@ Examples, rendered by `app.mcp.ledger_mirror`:
 - [`systemd/anchor-ledger-readonly-mirror.timer.example`](systemd/anchor-ledger-readonly-mirror.timer.example)
 - [`systemd/anchor-official-ledger.service.d/readonly-mirror.conf.example`](systemd/anchor-official-ledger.service.d/readonly-mirror.conf.example)
 
-The service and the timer are ordered `After=anchor-official-ledger.service`. The timer runs `OnCalendar=*:0/10` (every 10 minutes), `OnBootSec=2min`, `Persistent=true`. The drop-in adds only `OnSuccess=anchor-ledger-readonly-mirror.service` on the ledger unit so a completed ledger run starts a copy. `OnSuccess=` can be set more than once; this drop-in adds a dependency and does not replace another `OnSuccess=`.
+The service and the timer are ordered `After=anchor-official-ledger.service`. The timer runs `OnCalendar=*:00,20,30,40,50`, `OnBootSec=2min`, `Persistent=true`. Minute 10 is omitted because that is when `anchor-official-ledger.service` writes the source file. The drop-in adds only `OnSuccess=anchor-ledger-readonly-mirror.service` on the ledger unit so a completed ledger run starts a copy, which then waits for the source to stay unchanged for 2 seconds. `OnSuccess=` can be set more than once; this drop-in adds a dependency and does not replace another `OnSuccess=`.
 
 The service is `User=root`, `ProtectSystem=strict`, `ReadOnlyPaths=` on both ledger roots, `ReadWritePaths=/var/lib/anchor-ledger-mirror`, `PrivateNetwork=yes`, and `RestrictAddressFamilies=AF_UNIX`. It does not set `StateDirectory=` or `DynamicUser=`. It does not `chmod` or `setfacl` the ledger StateDirectory.
 
