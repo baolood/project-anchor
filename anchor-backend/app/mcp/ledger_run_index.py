@@ -1,16 +1,14 @@
 """Join Official V2 pending rows to the ledger run that appended them.
 
 Live ledger rows have no write-time field. The append time is the ``at``
-value on a committed line in ``events.jsonl``, matched to
-``runs/run-NNNNNN/before/`` by run number.
+value on a committed line in ``<ledger root>/events.jsonl``. A host line is::
 
-``simulation/d5/original/cloud-package/cloud_loop.py`` ``event()`` writes
-``events.jsonl`` as one JSON object per line (``sort_keys=True``) with
-``at``, ``event``, and the extra fields. A finished generation calls
-``event(root, "committed", round_index=..., round_id=..., next_due=...,
-status=...)``. The host ledger root uses ``runs/run-NNNNNN`` (six digits)
-and keeps the pre-run ledger under ``before/``. This module does not write
-either tree.
+    {"at":"2026-10-12T23:10:01.432083+00:00","commits":366,"event":"committed","ledger_events":1015,"run_seq":70,"source_lines":370}
+
+``ledger_events`` is the cumulative ledger-row count after that run. Run N
+owns ledger lines ``(ledger_events of run N-1, ledger_events of run N]``.
+Run 1 owns ``(0, ledger_events]``. ``run_seq`` is the run number. This
+module does not write the ledger and does not invent rows.
 """
 
 from __future__ import annotations
@@ -22,20 +20,20 @@ from typing import Any, Mapping, Sequence
 
 EVENTS_NAME = "events.jsonl"
 BOUNDARY_NAME = "run-boundaries.jsonl"
-RUN_DIR_RE = re.compile(r"^run-(?P<index>\d{6})$")
+RUN_DIR_RE = re.compile(r"^run-(?P<seq>\d{6})$")
 PENDING_EVENT = "PENDING_NEXT_BAR"
-MAX_RUN_INDEX = 999999
+MAX_RUN_SEQ = 999999
+_ID_KEYS = ("ledger_event_id", "event_id")
 
 
 def parse_committed_runs(text: str) -> list[dict[str, Any]]:
-    """Return committed runs from an ``events.jsonl`` body, earliest line first.
+    """Return committed runs from an ``events.jsonl`` body, in file order.
 
-    A line counts only when ``event`` is ``committed`` and ``at`` is a string.
-    The run number is ``run_index`` when that key is present, otherwise
-    ``round_index``. The first committed line for a number wins.
+    A line counts only when ``event`` is ``committed``, ``at`` is a
+    non-empty string, ``run_seq`` is an int, and ``ledger_events`` is an
+    int. ``run_index`` and ``round_index`` are not read.
     """
-    found: dict[int, str] = {}
-    order: list[int] = []
+    found: list[dict[str, Any]] = []
     for line in text.splitlines():
         stripped = line.strip()
         if not stripped:
@@ -46,24 +44,66 @@ def parse_committed_runs(text: str) -> list[dict[str, Any]]:
             continue
         if not isinstance(obj, dict) or obj.get("event") != "committed":
             continue
-        index = _run_index(obj)
+        seq = _whole_number(obj.get("run_seq"))
+        events = _whole_number(obj.get("ledger_events"))
         at = obj.get("at")
-        if index is None or not isinstance(at, str) or not at.strip():
+        if seq is None or events is None or not isinstance(at, str) or not at.strip():
             continue
-        if index not in found:
-            found[index] = at.strip()
-            order.append(index)
-    return [
-        {"run_index": index, "run": f"run-{index:06d}", "committed_at": found[index]}
-        for index in order
-    ]
+        if seq < 1 or seq > MAX_RUN_SEQ:
+            continue
+        found.append(
+            {
+                "run_seq": seq,
+                "run": f"run-{seq:06d}",
+                "committed_at": at.strip(),
+                "ledger_events": events,
+            }
+        )
+    return found
+
+
+def boundaries_from_commits(commits: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]] | None:
+    """Return line spans, or None when the committed lines are not a usable index.
+
+    A usable index is ``run_seq`` 1..N with no gaps or duplicates, and
+    ``ledger_events`` never decreases. Run 1 starts at 0. A file whose first
+    committed ``run_seq`` is not 1 cannot name ``ledger_events`` of run 0.
+    """
+    if not commits:
+        return []
+    boundaries: list[dict[str, Any]] = []
+    previous_seq = 0
+    previous_events = 0
+    for commit in commits:
+        seq = commit.get("run_seq")
+        end = commit.get("ledger_events")
+        at = commit.get("committed_at")
+        run = commit.get("run")
+        if type(seq) is not int or type(end) is not int or not isinstance(at, str) or not isinstance(run, str):
+            return None
+        if seq != previous_seq + 1 or seq > MAX_RUN_SEQ or run != f"run-{seq:06d}":
+            return None
+        if end < previous_events:
+            return None
+        boundaries.append(
+            {
+                "run": run,
+                "run_seq": seq,
+                "committed_at": at,
+                "ledger_events_before": previous_events,
+                "ledger_events": end,
+            }
+        )
+        previous_seq = seq
+        previous_events = end
+    return boundaries
 
 
 def last_event_id_from_snapshot(blob: bytes) -> tuple[bool, str | None]:
     """Return ``(ok, ledger_event_id)`` from the last line of a before-snapshot.
 
-    An empty snapshot is ``(True, None)``. A tail that is not one JSON object
-    is ``(False, None)``.
+    An empty snapshot is ``(True, None)``. A tail that is not one JSON object,
+    or an object with no id, is ``(False, None)``.
     """
     if not blob.strip():
         return True, None
@@ -76,37 +116,42 @@ def last_event_id_from_snapshot(blob: bytes) -> tuple[bool, str | None]:
         return False, None
     if not isinstance(obj, dict):
         return False, None
-    for key in ("ledger_event_id", "event_id"):
-        value = obj.get(key)
-        if isinstance(value, str) and value.strip():
-            return True, value.strip()
-    return False, None
+    event_id = _row_event_id(obj)
+    if event_id is None:
+        return False, None
+    return True, event_id
 
 
-def build_boundaries(
-    commits: Sequence[Mapping[str, Any]],
-    tails: Mapping[str, str | None],
-) -> list[dict[str, Any]]:
-    """Keep committed runs whose ``run-NNNNNN`` directory had a readable before-snapshot."""
-    boundaries: list[dict[str, Any]] = []
-    for commit in commits:
-        name = commit.get("run")
-        if not isinstance(name, str) or name not in tails:
+def ledger_line_ids(blob: bytes) -> list[str | None] | None:
+    """Return one id per non-empty JSON object line, in order.
+
+    ``None`` as the list means a non-empty line is not one JSON object, so
+    the caller must not treat the file as a line index. A row with no id is
+    an entry of ``None`` inside the list.
+    """
+    try:
+        text = blob.decode("utf-8-sig")
+    except UnicodeError:
+        return None
+    ids: list[str | None] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped:
             continue
-        index = commit.get("run_index")
-        at = commit.get("committed_at")
-        if type(index) is not int or not isinstance(at, str):
-            continue
-        boundaries.append(
-            {
-                "run": name,
-                "run_index": index,
-                "committed_at": at,
-                "last_ledger_event_id_before": tails[name],
-            }
-        )
-    boundaries.sort(key=lambda item: item["run_index"])
-    return boundaries
+        try:
+            obj = json.loads(stripped)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(obj, dict):
+            return None
+        ids.append(_row_event_id(obj))
+    return ids
+
+
+def snapshot_matches(expected_last_id: str | None, blob: bytes) -> bool:
+    """A before-snapshot matches when its last id is the previous run's last id."""
+    ok, found = last_event_id_from_snapshot(blob)
+    return ok and found == expected_last_id
 
 
 def write_times_for_rows(
@@ -115,35 +160,32 @@ def write_times_for_rows(
 ) -> dict[str, tuple[str, str]] | None:
     """Map each pending row's event id to ``(committed_at, run)``.
 
-    ``None`` means a pending row cannot be placed in a run, so the caller
-    must not label ``BAR_NOT_YET_CLOSED`` or ``DATA_GAP``.
+    Line numbers are 1-based positions in ``rows``. Run N owns
+    ``(ledger_events_before, ledger_events]``. ``None`` means a pending row
+    cannot be placed, so the caller must not label it.
     """
     if not boundaries:
         return None if _has_pending(rows) else {}
-    ids: list[str | None] = []
-    for row in rows:
-        ids.append(_event_id(row))
     spans: list[tuple[int, int, Mapping[str, Any]]] = []
-    ordered = sorted(boundaries, key=lambda item: int(item["run_index"]))
-    for index, boundary in enumerate(ordered):
-        start = _before_index(ids, boundary.get("last_ledger_event_id_before"))
-        if start is None:
+    previous_end = 0
+    previous_seq = 0
+    for boundary in boundaries:
+        start = boundary.get("ledger_events_before")
+        end = boundary.get("ledger_events")
+        seq = boundary.get("run_seq")
+        if type(start) is not int or type(end) is not int or type(seq) is not int:
             return None
-        if index + 1 < len(ordered):
-            end = _before_index(ids, ordered[index + 1].get("last_ledger_event_id_before"))
-            if end is None:
-                return None
-        else:
-            end = len(ids) - 1
-        if end < start:
+        if seq != previous_seq + 1 or start != previous_end or end < start:
             return None
         spans.append((start, end, boundary))
+        previous_end = end
+        previous_seq = seq
     writes: dict[str, tuple[str, str]] = {}
-    for index, row in enumerate(rows):
+    for index, row in enumerate(rows, start=1):
         if row.get("event_type") != PENDING_EVENT:
             continue
-        event_id = ids[index]
-        if event_id is None:
+        event_id = _event_id(row)
+        if event_id is None or event_id in writes:
             return None
         owner = _span_owner(spans, index)
         if owner is None:
@@ -156,16 +198,18 @@ def write_times_for_rows(
     return writes
 
 
-def _run_index(obj: Mapping[str, Any]) -> int | None:
-    if "run_index" in obj:
-        value = obj.get("run_index")
-    else:
-        value = obj.get("round_index")
-    if type(value) is not int or isinstance(value, bool):
-        return None
-    if value < 0 or value > MAX_RUN_INDEX:
+def _whole_number(value: Any) -> int | None:
+    if type(value) is not int:
         return None
     return value
+
+
+def _row_event_id(obj: Mapping[str, Any]) -> str | None:
+    for key in _ID_KEYS:
+        value = obj.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
 
 
 def _event_id(row: Mapping[str, Any]) -> str | None:
@@ -173,17 +217,6 @@ def _event_id(row: Mapping[str, Any]) -> str | None:
     if isinstance(value, str) and value.strip():
         return value.strip()
     return None
-
-
-def _before_index(ids: Sequence[str | None], before: Any) -> int | None:
-    if before is None:
-        return -1
-    if not isinstance(before, str):
-        return None
-    try:
-        return list(ids).index(before)
-    except ValueError:
-        return None
 
 
 def _span_owner(

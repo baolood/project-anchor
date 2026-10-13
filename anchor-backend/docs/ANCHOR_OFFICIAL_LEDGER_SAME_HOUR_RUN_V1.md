@@ -6,20 +6,21 @@ Do not add `OnSuccess=anchor-official-ledger.service` to `project-anchor-jev-for
 
 `BLOCKED.json` on the ledger root is a risk. A blocked run is not a clean retry: leaving that file in place can stop a later run, and deleting ledger bytes to clear it would rewrite history. Do not `chmod` or `setfacl` the StateDirectory.
 
-The sealed entry point `/var/lib/anchor-official-ledger-20261010/cloud_official_once.py` is not in this checkout and is not edited. The run index below is the structure this repository can actually read.
+The sealed entry point `/var/lib/anchor-official-ledger-20261010/cloud_official_once.py` is not in this checkout and is not edited. The run index below is the host `events.jsonl` shape this repository reads.
 
 ## Where the append time lives
 
-Live ledger rows have no write-time field. `event_time`, `written_at`, and `recorded_at` on a ledger row are not the time the run appended it.
+Live ledger rows have no write-time field. `event_time`, `written_at`, and `recorded_at` on a ledger row are not the time the run appended it. A row names its id `ledger_event_id`, its hash `row_hash`, and its signal time `signal_available_at`.
 
-`simulation/d5/original/cloud-package/cloud_loop.py` function `event()` appends one JSON object per line to `<root>/events.jsonl` (`json.dumps(..., sort_keys=True)`). A finished generation is:
+`<ledger root>/events.jsonl` is one JSON object per line. A committed line is:
 
-```python
-event(root, "committed", round_index=index, round_id=ids[-1],
-      next_due=control["next_due"], status=control["status"])
+```json
+{"at":"2026-10-12T23:10:01.432083+00:00","commits":366,"event":"committed","ledger_events":1015,"run_seq":70,"source_lines":370}
 ```
 
-That line has `event` = `committed`, timestamp `at`, and integer `round_index`. `run_index` is accepted the same way when a line uses that key instead. The Official V2 root names the matching directory `runs/run-NNNNNN` (six digits). Host snapshots already live at `runs/<name>/before/anchor_fake_fill_ledger_v2_official.jsonl`. The mirror reads the last line of that before-snapshot and does not copy the snapshot. `committed_at` in `run-boundaries.jsonl` is the `at` text from the matching committed line.
+The run number is `run_seq`. `ledger_events` is the cumulative ledger-row count after that run. Run N owns ledger lines `(ledger_events of run N-1, ledger_events of run N]`. Run 1 owns `(0, ledger_events]`. A committed series that does not start at `run_seq` 1, or that skips a number, does not label pending rows. The matching directory is `runs/run-NNNNNN` (six digits). Its before-snapshot is `runs/run-NNNNNN/before/affl-v2-official-ledger/out/anchor_fake_fill_ledger_v2_official.jsonl`. The mirror reads that snapshot's last line only as a cross-check and does not copy it. `committed_at` in `run-boundaries.jsonl` is the `at` text from the matching committed line.
+
+The fill bar is the next 1h bar after `signal_available_at`: the first hour that opens strictly after that timestamp. `10:05` opens `11:00` and closes `12:00`. `BAR_NOT_YET_CLOSED` means a later row resolves that bar and the earliest committed time is before the close. `DATA_GAP` means the pending was committed at or after that close, or the bar has closed and was never resolved. `IN_FLIGHT` means the observation is still unresolved and that close is still after the read clock.
 
 `runs_waited` is the number of distinct runs that appended a `PENDING_NEXT_BAR` row, summed across observations. When a pending row cannot be placed in a run, the summary omits `BAR_NOT_YET_CLOSED`, `DATA_GAP`, and `IN_FLIGHT`, and `runs_waited` is the raw pending-row count.
 

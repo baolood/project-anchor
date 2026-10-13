@@ -14,7 +14,7 @@ from app.mcp.commands import CommandResult
 from datetime import datetime, timedelta, timezone
 
 from app.mcp.inventory import LEDGER_MIRROR_DIR
-from app.mcp.ledger_run_index import BOUNDARY_NAME, build_boundaries, parse_committed_runs
+from app.mcp.ledger_run_index import BOUNDARY_NAME, boundaries_from_commits, parse_committed_runs
 from app.mcp.official_ledger import (
     ALLOWLISTED_LEDGER_DIRS,
     LEDGER_DIR_ENV,
@@ -765,15 +765,15 @@ CANDLE_OPEN = "2026-10-12T10:00:00Z"
 WHEN = datetime(2026, 10, 12, 15, 0, tzinfo=timezone.utc)
 
 
-def _committed(at: str, round_index: int) -> str:
-    """Same keys and sort order as cloud_loop.event(..., "committed", ...)."""
+def _committed(at: str, run_seq: int, ledger_events: int) -> str:
+    """Host events.jsonl committed line: run_seq and cumulative ledger_events."""
     item = {
         "at": at,
+        "commits": ledger_events,
         "event": "committed",
-        "next_due": None,
-        "round_id": "ab" * 16,
-        "round_index": round_index,
-        "status": "waiting",
+        "ledger_events": ledger_events,
+        "run_seq": run_seq,
+        "source_lines": ledger_events,
     }
     return json.dumps(item, sort_keys=True)
 
@@ -809,8 +809,10 @@ def _resolve_row(event_id: str, event_hash: str, observation: str, fill_time: st
     return row
 
 
-def _write_boundaries(directory: Path, events_text: str, tails: dict[str, str | None]) -> None:
-    boundaries = build_boundaries(parse_committed_runs(events_text), tails)
+def _write_boundaries(directory: Path, events_text: str) -> None:
+    boundaries = boundaries_from_commits(parse_committed_runs(events_text))
+    if not boundaries:
+        raise AssertionError("fixture events.jsonl is not a usable run index")
     blob = "".join(json.dumps(item, sort_keys=True) + "\n" for item in boundaries).encode("utf-8")
     (directory / BOUNDARY_NAME).write_bytes(blob)
     digest = hashlib.sha256(blob).hexdigest()
@@ -821,12 +823,11 @@ class PendingObservationReadTests(unittest.TestCase):
     def test_run_commit_time_collapses_repeated_pending_rows(self) -> None:
         events = "\n".join(
             [
-                _committed("2026-10-12T10:10:01.250000+00:00", 1),
-                _committed("2026-10-12T10:20:01+00:00", 2),
-                _committed("2026-10-12T12:10:01+00:00", 3),
+                _committed("2026-10-12T10:10:01.250000+00:00", 1, 2),
+                _committed("2026-10-12T10:20:01+00:00", 2, 4),
+                _committed("2026-10-12T12:10:01+00:00", 3, 5),
             ]
         ) + "\n"
-        tails = {"run-000001": None, "run-000002": "le-0002", "run-000003": "le-0004"}
         with tempfile.TemporaryDirectory() as tmp:
             ledger = Path(tmp)
             rows = [
@@ -839,7 +840,7 @@ class PendingObservationReadTests(unittest.TestCase):
             path = _out(ledger) / LEDGER_NAME
             path.write_text(_jsonl(*rows), encoding="utf-8")
             before = path.read_bytes()
-            _write_boundaries(ledger, events, tails)
+            _write_boundaries(ledger, events)
             summary = _read_mirror(ledger, now=WHEN)
             blob = json.dumps(summary)
             self.assertEqual(path.read_bytes(), before)
@@ -864,8 +865,7 @@ class PendingObservationReadTests(unittest.TestCase):
     def test_commit_at_or_after_bar_close_is_a_data_gap(self) -> None:
         for committed in ("2026-10-12T12:00:00Z", "2026-10-12T12:10:00Z"):
             with self.subTest(committed=committed):
-                events = _committed(committed, 1) + "\n" + _committed("2026-10-12T12:20:00Z", 2) + "\n"
-                tails = {"run-000001": None, "run-000002": "le-0001"}
+                events = _committed(committed, 1, 1) + "\n" + _committed("2026-10-12T12:20:00Z", 2, 2) + "\n"
                 with tempfile.TemporaryDirectory() as tmp:
                     ledger = Path(tmp)
                     rows = [
@@ -873,22 +873,21 @@ class PendingObservationReadTests(unittest.TestCase):
                         _resolve_row("le-0002", HASH_B, OBS_A),
                     ]
                     (_out(ledger) / LEDGER_NAME).write_text(_jsonl(*rows), encoding="utf-8")
-                    _write_boundaries(ledger, events, tails)
+                    _write_boundaries(ledger, events)
                     summary = _read_mirror(ledger, now=WHEN)
                     self.assertEqual(summary["pending_observations"]["DATA_GAP"], 1)
                     self.assertEqual(summary["pending_observations"]["BAR_NOT_YET_CLOSED"], 0)
                     self.assertEqual(summary["pending_observations"]["IN_FLIGHT"], 0)
 
     def test_unresolved_bar_still_open_is_in_flight(self) -> None:
-        events = _committed("2026-10-12T10:10:01+00:00", 1) + "\n"
-        tails = {"run-000001": None}
+        events = _committed("2026-10-12T10:10:01+00:00", 1, 1) + "\n"
         with tempfile.TemporaryDirectory() as tmp:
             ledger = Path(tmp)
             (_out(ledger) / LEDGER_NAME).write_text(
                 _jsonl(_pending_row("le-0001", HASH_A, OBS_A)),
                 encoding="utf-8",
             )
-            _write_boundaries(ledger, events, tails)
+            _write_boundaries(ledger, events)
             early = _read_mirror(ledger, now=datetime(2026, 10, 12, 11, 30, tzinfo=timezone.utc))
             closed = _read_mirror(ledger, now=datetime(2026, 10, 12, 12, 0, tzinfo=timezone.utc))
             self.assertEqual(early["pending_observations"]["IN_FLIGHT"], 1)
@@ -896,7 +895,29 @@ class PendingObservationReadTests(unittest.TestCase):
             self.assertEqual(closed["pending_observations"]["IN_FLIGHT"], 0)
             self.assertEqual(closed["pending_observations"]["DATA_GAP"], 1)
 
-    def test_missing_run_index_reports_counts_without_labels(self) -> None:
+    def test_pending_row_past_the_last_commit_is_not_given_a_write_time(self) -> None:
+        events = _committed("2026-10-12T10:10:01+00:00", 1, 1) + "\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp)
+            rows = [
+                _pending_row("le-0001", HASH_A, OBS_A),
+                _pending_row("le-0002", HASH_B, OBS_A),
+            ]
+            path = _out(ledger) / LEDGER_NAME
+            path.write_text(_jsonl(*rows), encoding="utf-8")
+            before = path.read_bytes()
+            _write_boundaries(ledger, events)
+            summary = _read_mirror(ledger, now=datetime(2026, 10, 12, 11, 30, tzinfo=timezone.utc))
+            self.assertEqual(path.read_bytes(), before)
+            self.assertEqual(summary["counts"]["by_type"]["PENDING_NEXT_BAR"], 2)
+            self.assertEqual(summary["counts"]["events"], 2)
+            self.assertEqual(
+                summary["pending_observations"],
+                {"raw_rows": 2, "observations": 1, "runs_waited": 2},
+            )
+            self.assertNotIn("IN_FLIGHT", summary["pending_observations"])
+
+    def test_missing_run_boundaries_reports_counts_without_labels(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             ledger = Path(tmp)
             rows = [
@@ -916,9 +937,8 @@ class PendingObservationReadTests(unittest.TestCase):
 
     def test_resolving_row_before_the_pending_does_not_count(self) -> None:
         events = "\n".join(
-            [_committed("2026-10-12T09:10:01+00:00", 1), _committed("2026-10-12T10:10:01+00:00", 2)]
+            [_committed("2026-10-12T09:10:01+00:00", 1, 1), _committed("2026-10-12T10:10:01+00:00", 2, 2)]
         ) + "\n"
-        tails = {"run-000001": None, "run-000002": "le-0001"}
         with tempfile.TemporaryDirectory() as tmp:
             ledger = Path(tmp)
             rows = [
@@ -926,7 +946,7 @@ class PendingObservationReadTests(unittest.TestCase):
                 _pending_row("le-0002", HASH_B, OBS_A),
             ]
             (_out(ledger) / LEDGER_NAME).write_text(_jsonl(*rows), encoding="utf-8")
-            _write_boundaries(ledger, events, tails)
+            _write_boundaries(ledger, events)
             summary = _read_mirror(ledger, now=datetime(2026, 10, 12, 11, 30, tzinfo=timezone.utc))
             self.assertEqual(summary["pending_observations"]["IN_FLIGHT"], 1)
             self.assertEqual(summary["pending_observations"]["BAR_NOT_YET_CLOSED"], 0)

@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from app.mcp.inventory import LEDGER_MIRROR_DIR
-from app.mcp.ledger_run_index import BOUNDARY_NAME, write_times_for_rows
+from app.mcp.ledger_run_index import BOUNDARY_NAME, MAX_RUN_SEQ, write_times_for_rows
 from app.mcp.sanitize import looks_sensitive_path
 
 
@@ -368,24 +368,45 @@ def _load_run_boundaries(root: Path) -> list[dict[str, Any]] | None:
         if not isinstance(obj, dict):
             return None
         run = obj.get("run")
-        index = obj.get("run_index")
+        seq = obj.get("run_seq")
         at = obj.get("committed_at")
-        before = obj.get("last_ledger_event_id_before")
-        if not isinstance(run, str) or not isinstance(at, str) or type(index) is not int:
+        end = obj.get("ledger_events")
+        before = obj.get("ledger_events_before")
+        if not isinstance(run, str) or not isinstance(at, str) or not at.strip():
             return None
-        if f"run-{index:06d}" != run:
+        if type(seq) is not int or type(end) is not int or type(before) is not int:
             return None
-        if before is not None and not isinstance(before, str):
+        if seq < 1 or seq > MAX_RUN_SEQ or f"run-{seq:06d}" != run:
+            return None
+        if before < 0 or end < before:
             return None
         boundaries.append(
             {
                 "run": run,
-                "run_index": index,
-                "committed_at": at,
-                "last_ledger_event_id_before": before,
+                "run_seq": seq,
+                "committed_at": at.strip(),
+                "ledger_events_before": before,
+                "ledger_events": end,
             }
         )
+    if not _boundary_chain(boundaries):
+        return None
     return boundaries
+
+
+def _boundary_chain(boundaries: Sequence[Mapping[str, Any]]) -> bool:
+    """True when run_seq is 1..N and each span starts where the previous one ended."""
+    previous_seq = 0
+    previous_end = 0
+    for boundary in boundaries:
+        seq = boundary["run_seq"]
+        before = boundary["ledger_events_before"]
+        end = boundary["ledger_events"]
+        if seq != previous_seq + 1 or before != previous_end:
+            return False
+        previous_seq = seq
+        previous_end = end
+    return True
 
 
 def _summarize(

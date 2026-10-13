@@ -38,6 +38,20 @@ def _live(root: Path) -> Path:
     return root.joinpath(*SOURCE_RELATIVE)
 
 
+def _nested_snapshot(root: Path, run: str) -> Path:
+    path = (
+        root
+        / "runs"
+        / run
+        / "before"
+        / "affl-v2-official-ledger"
+        / "out"
+        / LEDGER_BASENAME
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 def _plant(root: Path, payload: bytes) -> Path:
     live = _live(root)
     live.parent.mkdir(parents=True, exist_ok=True)
@@ -358,6 +372,7 @@ class LedgerMirrorTests(unittest.TestCase):
     def test_copies_the_run_index_and_not_the_before_snapshot(self) -> None:
         marker = b"SNAPSHOT-MARKER-NOT-COPIED"
         blocked = b"BLOCKED-MARKER-NOT-COPIED"
+        old_path_marker = b"OLD-PATH-WRONG-ID"
         first = (
             json.dumps(
                 {
@@ -393,22 +408,22 @@ class LedgerMirrorTests(unittest.TestCase):
                 json.dumps(
                     {
                         "at": "2026-10-12T10:10:01.250000+00:00",
+                        "commits": 1,
                         "event": "committed",
-                        "next_due": None,
-                        "round_id": "ab" * 16,
-                        "round_index": 1,
-                        "status": "waiting",
+                        "ledger_events": 1,
+                        "run_seq": 1,
+                        "source_lines": 1,
                     },
                     sort_keys=True,
                 ),
                 json.dumps(
                     {
                         "at": "2026-10-12T12:10:01+00:00",
+                        "commits": 2,
                         "event": "committed",
-                        "next_due": None,
-                        "round_id": "cd" * 16,
-                        "round_index": 2,
-                        "status": "waiting",
+                        "ledger_events": 2,
+                        "run_seq": 2,
+                        "source_lines": 2,
                     },
                     sort_keys=True,
                 ),
@@ -421,16 +436,17 @@ class LedgerMirrorTests(unittest.TestCase):
             live_path = _plant(source, live)
             (source / EVENTS_NAME).write_text(committed, encoding="utf-8")
             (source / "BLOCKED.json").write_bytes(blocked)
-            empty = source / "runs" / "run-000001" / "before"
-            empty.mkdir(parents=True)
-            (empty / LEDGER_BASENAME).write_bytes(b"")
-            before = source / "runs" / "run-000002" / "before"
-            before.mkdir(parents=True)
-            snapshot = before / LEDGER_BASENAME
+            empty = _nested_snapshot(source, "run-000001")
+            empty.write_bytes(b"")
+            wrong_flat = source / "runs" / "run-000002" / "before" / LEDGER_BASENAME
+            wrong_flat.parent.mkdir(parents=True, exist_ok=True)
+            wrong_flat.write_bytes(old_path_marker + b"\n")
+            snapshot = _nested_snapshot(source, "run-000002")
             snapshot.write_bytes(marker + b"\n" + first)
             source_bytes = snapshot.read_bytes()
             mirror_ledger(source, dest, stable_for=0)
             self.assertEqual(snapshot.read_bytes(), source_bytes)
+            self.assertEqual(wrong_flat.read_bytes(), old_path_marker + b"\n")
             self.assertEqual(live_path.read_bytes(), live)
             copied_events = (dest / EVENTS_NAME).read_text(encoding="utf-8")
             self.assertEqual(copied_events, committed)
@@ -443,21 +459,24 @@ class LedgerMirrorTests(unittest.TestCase):
                 [
                     {
                         "committed_at": "2026-10-12T10:10:01.250000+00:00",
-                        "last_ledger_event_id_before": None,
+                        "ledger_events": 1,
+                        "ledger_events_before": 0,
                         "run": "run-000001",
-                        "run_index": 1,
+                        "run_seq": 1,
                     },
                     {
                         "committed_at": "2026-10-12T12:10:01+00:00",
-                        "last_ledger_event_id_before": "le-0001",
+                        "ledger_events": 2,
+                        "ledger_events_before": 1,
                         "run": "run-000002",
-                        "run_index": 2,
+                        "run_seq": 2,
                     },
                 ],
             )
             published = b"".join(path.read_bytes() for path in dest.rglob("*") if path.is_file())
             self.assertNotIn(marker, published)
             self.assertNotIn(blocked, published)
+            self.assertNotIn(old_path_marker, published)
             summary = read_official_ledger(
                 {LEDGER_DIR_ENV: str(dest)},
                 allowlist=(str(dest),),
@@ -466,7 +485,75 @@ class LedgerMirrorTests(unittest.TestCase):
             self.assertEqual(summary["pending_observations"]["BAR_NOT_YET_CLOSED"], 1)
             self.assertEqual(summary["pending_observations"]["DATA_GAP"], 0)
             self.assertEqual(summary["counts"]["by_type"]["PENDING_NEXT_BAR"], 1)
+            self.assertEqual(summary["counts"]["events"], 2)
             self.assertNotIn("obs-1", json.dumps(summary))
+
+    def test_snapshot_mismatch_drops_boundaries_and_keeps_every_ledger_row(self) -> None:
+        row = (
+            json.dumps(
+                {
+                    "event_type": "PENDING_NEXT_BAR",
+                    "ledger_event_id": "le-0001",
+                    "row_hash": "a" * 64,
+                    "signal_available_at": "2026-10-12T10:05:00Z",
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        ).encode("utf-8")
+        committed = (
+            json.dumps(
+                {
+                    "at": "2026-10-12T10:10:01+00:00",
+                    "commits": 1,
+                    "event": "committed",
+                    "ledger_events": 1,
+                    "run_seq": 1,
+                    "source_lines": 1,
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "ledger-root"
+            dest = base / "mirror"
+            live = _plant(source, row)
+            (source / EVENTS_NAME).write_text(committed, encoding="utf-8")
+            snapshot = _nested_snapshot(source, "run-000001")
+            snapshot.write_bytes(b'{"ledger_event_id":"not-the-empty-before"}\n')
+            mirror_ledger(source, dest, stable_for=0)
+            self.assertEqual(live.read_bytes(), row)
+            self.assertEqual((dest / LEDGER_BASENAME).read_bytes(), row)
+            self.assertFalse((dest / BOUNDARY_NAME).exists())
+            summary = read_official_ledger(
+                {LEDGER_DIR_ENV: str(dest)},
+                allowlist=(str(dest),),
+                now=datetime(2026, 10, 12, 11, 30, tzinfo=timezone.utc),
+            )
+            self.assertEqual(summary["counts"]["events"], 1)
+            self.assertEqual(
+                summary["pending_observations"],
+                {"raw_rows": 1, "observations": 1, "runs_waited": 1},
+            )
+
+    def test_run_seq_without_a_predecessor_does_not_publish_boundaries(self) -> None:
+        host = (
+            '{"at":"2026-10-12T23:10:01.432083+00:00","commits":366,'
+            '"event":"committed","ledger_events":1015,"run_seq":70,"source_lines":370}\n'
+        )
+        row = b'{"event_type":"PENDING_NEXT_BAR","ledger_event_id":"le-0001"}\n'
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "ledger-root"
+            dest = base / "mirror"
+            _plant(source, row)
+            (source / EVENTS_NAME).write_text(host, encoding="utf-8")
+            mirror_ledger(source, dest, stable_for=0)
+            self.assertEqual((dest / EVENTS_NAME).read_text(encoding="utf-8"), host)
+            self.assertEqual((dest / LEDGER_BASENAME).read_bytes(), row)
+            self.assertFalse((dest / BOUNDARY_NAME).exists())
 
     def test_skips_while_events_jsonl_is_still_changing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

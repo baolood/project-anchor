@@ -18,6 +18,7 @@ import time
 from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from app.mcp.inventory import (
     LEDGER_MIRROR_DIR,
@@ -28,9 +29,10 @@ from app.mcp.ledger_run_index import (
     BOUNDARY_NAME,
     EVENTS_NAME,
     RUN_DIR_RE,
-    build_boundaries,
-    last_event_id_from_snapshot,
+    boundaries_from_commits,
+    ledger_line_ids,
     parse_committed_runs,
+    snapshot_matches,
 )
 
 
@@ -40,6 +42,13 @@ SOURCE_RELATIVE = (
     "anchor_fake_fill_ledger_v2_official.jsonl",
 )
 LEDGER_BASENAME = SOURCE_RELATIVE[-1]
+# Before-snapshot of one run. The flat before/<ledger> path is not this file.
+BEFORE_SNAPSHOT_RELATIVE = (
+    "before",
+    "affl-v2-official-ledger",
+    "out",
+    LEDGER_BASENAME,
+)
 DIR_MODE = 0o750
 FILE_MODE = 0o640
 MIRROR_GROUP = "anchor-mcp"
@@ -173,7 +182,7 @@ def mirror_ledger(
         (json.dumps(meta, sort_keys=True) + "\n").encode("utf-8"),
         group,
     )
-    _publish_run_index(dest_real, source_real, index_blobs, group)
+    _publish_run_index(dest_real, source_real, index_blobs, blob, group)
     _fsync_dir(dest_real)
     return "copied"
 
@@ -214,7 +223,7 @@ def _index_paths(root: Path) -> list[Path]:
     for name in names:
         if RUN_DIR_RE.fullmatch(name) is None:
             continue
-        before = _regular_inside(root, ("runs", name, "before", LEDGER_BASENAME))
+        before = _regular_inside(root, ("runs", name, *BEFORE_SNAPSHOT_RELATIVE))
         if before is not None:
             paths.append(before)
     return paths
@@ -246,32 +255,83 @@ def _regular_inside(root: Path, parts: tuple[str, ...]) -> Path | None:
     return resolved
 
 
-def _publish_run_index(dest: Path, source: Path, blobs: dict[Path, bytes], group: str) -> None:
+def _publish_run_index(
+    dest: Path,
+    source: Path,
+    blobs: dict[Path, bytes],
+    live_blob: bytes,
+    group: str,
+) -> None:
+    """Copy ``events.jsonl`` and publish line spans. Snapshots are not copied.
+
+    Spans come from cumulative ``ledger_events``. A before-snapshot is only a
+    cross-check: when the nested file exists, its last id must be the last id
+    of the previous run. A mismatch, or a ``run_seq`` that does not start at 1
+    and stay contiguous, removes any previously published boundaries.
+    """
     events_path = _regular_inside(source, (EVENTS_NAME,))
     if events_path is None or events_path not in blobs:
+        _remove_published(dest, BOUNDARY_NAME)
+        _remove_published(dest, f"{BOUNDARY_NAME}.sha256")
         return
     events_blob = blobs[events_path]
-    commits = parse_committed_runs(events_blob.decode("utf-8", errors="replace"))
-    tails: dict[str, str | None] = {}
-    for commit in commits:
-        name = str(commit["run"])
-        before = _regular_inside(source, ("runs", name, "before", LEDGER_BASENAME))
-        if before is None or before not in blobs:
-            continue
-        ok, event_id = last_event_id_from_snapshot(blobs[before])
-        if not ok:
-            continue
-        tails[name] = event_id
-    lines = [
-        json.dumps(boundary, sort_keys=True)
-        for boundary in build_boundaries(commits, tails)
-    ]
-    boundary_blob = ("" if not lines else "\n".join(lines) + "\n").encode("utf-8")
     _atomic_write(dest, EVENTS_NAME, events_blob, group)
     _atomic_write(dest, f"{EVENTS_NAME}.sha256", _sha_line(events_blob, EVENTS_NAME), group)
-    if lines:
-        _atomic_write(dest, BOUNDARY_NAME, boundary_blob, group)
-        _atomic_write(dest, f"{BOUNDARY_NAME}.sha256", _sha_line(boundary_blob, BOUNDARY_NAME), group)
+    commits = parse_committed_runs(events_blob.decode("utf-8", errors="replace"))
+    boundaries = boundaries_from_commits(commits)
+    if boundaries and not _snapshots_agree(source, blobs, live_blob, boundaries):
+        boundaries = None
+    if not boundaries:
+        _remove_published(dest, BOUNDARY_NAME)
+        _remove_published(dest, f"{BOUNDARY_NAME}.sha256")
+        return
+    lines = [json.dumps(boundary, sort_keys=True) for boundary in boundaries]
+    boundary_blob = ("\n".join(lines) + "\n").encode("utf-8")
+    _atomic_write(dest, BOUNDARY_NAME, boundary_blob, group)
+    _atomic_write(dest, f"{BOUNDARY_NAME}.sha256", _sha_line(boundary_blob, BOUNDARY_NAME), group)
+
+
+def _snapshots_agree(
+    source: Path,
+    blobs: dict[Path, bytes],
+    live_blob: bytes,
+    boundaries: list[dict[str, Any]],
+) -> bool:
+    ids = ledger_line_ids(live_blob)
+    if ids is None or boundaries[-1]["ledger_events"] > len(ids):
+        return False
+    for boundary in boundaries:
+        before = _regular_inside(source, ("runs", str(boundary["run"]), *BEFORE_SNAPSHOT_RELATIVE))
+        if before is None:
+            continue
+        if before not in blobs:
+            return False
+        before_count = boundary["ledger_events_before"]
+        if before_count == 0:
+            expected = None
+        else:
+            expected = ids[before_count - 1]
+            if not isinstance(expected, str):
+                return False
+        if not snapshot_matches(expected, blobs[before]):
+            return False
+    return True
+
+
+def _remove_published(directory: Path, name: str) -> None:
+    path = directory / name
+    try:
+        info = os.lstat(path)
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise MirrorError("mirror cleanup failed") from exc
+    if stat.S_ISDIR(info.st_mode):
+        raise MirrorError("mirror cleanup failed")
+    try:
+        os.unlink(path)
+    except OSError as exc:
+        raise MirrorError("mirror cleanup failed") from exc
 
 
 def _sha_line(blob: bytes, name: str) -> bytes:

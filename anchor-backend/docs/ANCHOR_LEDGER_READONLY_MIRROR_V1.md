@@ -14,7 +14,7 @@ Source, under the ledger root (`/var/lib/anchor-official-ledger-20261010`, which
 affl-v2-official-ledger/out/anchor_fake_fill_ledger_v2_official.jsonl
 ```
 
-The mirror also copies `events.jsonl` when that file is a regular file at the ledger root, and it writes `run-boundaries.jsonl`. A boundary line is the committed `at` from `events.jsonl` plus the last `ledger_event_id` in `runs/run-NNNNNN/before/anchor_fake_fill_ledger_v2_official.jsonl`. Those before-snapshots are opened read-only, last line only, and are not copied. `baseline/`, a same-named file at the top of the root, and `BLOCKED.json` are not copied. The same 2 second stability rule applies to `events.jsonl` and to each before-snapshot that is read: if any of them is still changing after 30 seconds, the copier skips and does not publish a partial mirror.
+The mirror also copies `events.jsonl` when that file is a regular file at the ledger root, and it writes `run-boundaries.jsonl`. A committed line in `events.jsonl` carries `run_seq` and cumulative `ledger_events`. Run N owns ledger lines `(ledger_events of run N-1, ledger_events of run N]`. A boundary line records that span and the committed `at`. The before-snapshot `runs/run-NNNNNN/before/affl-v2-official-ledger/out/anchor_fake_fill_ledger_v2_official.jsonl` is opened read-only, last line only, and is not copied. It is a cross-check: when the file exists, its last id must be the last id of the previous run (an empty file for run 1). A mismatch, or a `run_seq` series that does not start at 1 and stay contiguous, does not publish `run-boundaries.jsonl`. The flat path `runs/run-NNNNNN/before/anchor_fake_fill_ledger_v2_official.jsonl` is not read. `baseline/`, a same-named file at the top of the root, and `BLOCKED.json` are not copied. The same 2 second stability rule applies to the live ledger, to `events.jsonl`, and to each nested before-snapshot that is read: if any of them is still changing after 30 seconds, the copier skips and does not publish a partial mirror. The timer is `OnCalendar=*:00,20,30,40,50`. The copy runs only after the watched files have been unchanged for 2 seconds.
 
 Destination directory: `/var/lib/anchor-ledger-mirror`
 
@@ -25,7 +25,7 @@ Destination directory: `/var/lib/anchor-ledger-mirror`
 | `anchor_fake_fill_ledger_v2_official.jsonl.sha256` | `0640` | `root:anchor-mcp` |
 | `anchor_fake_fill_ledger_v2_official.jsonl.meta.json` | `0640` | `root:anchor-mcp` |
 | `events.jsonl` and `events.jsonl.sha256`, when the source file exists | `0640` | `root:anchor-mcp` |
-| `run-boundaries.jsonl` and `run-boundaries.jsonl.sha256`, when a committed run has a before-snapshot | `0640` | `root:anchor-mcp` |
+| `run-boundaries.jsonl` and `run-boundaries.jsonl.sha256`, when `events.jsonl` is a contiguous `run_seq` index from 1 and every present before-snapshot matches | `0640` | `root:anchor-mcp` |
 
 The `.sha256` file is `sha256sum` form: 64 hex digits, two spaces, the ledger basename, and a newline. The metadata JSON has `source_mtime` (UTC), `source_size` (bytes), and `copied_at` (UTC).
 
