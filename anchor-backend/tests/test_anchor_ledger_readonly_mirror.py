@@ -488,6 +488,116 @@ class LedgerMirrorTests(unittest.TestCase):
             self.assertEqual(summary["counts"]["events"], 2)
             self.assertNotIn("obs-1", json.dumps(summary))
 
+    def test_nonempty_run1_before_snapshot_is_the_pre_index_offset(self) -> None:
+        """Run 1 starts at the before-snapshot row count, not at 0.
+
+        The host snapshot has 808 rows ending at le-000808, and run 1
+        committed ledger_events 812. This fixture uses the same rule at a
+        smaller count: the last snapshot id must equal the live row there.
+        """
+        def row(event_id: str, event_type: str, observation: str, **extra: object) -> bytes:
+            payload: dict[str, object] = {
+                "event_type": event_type,
+                "ledger_event_id": event_id,
+                "observation_id": observation,
+                "row_hash": "a" * 64,
+                "signal_available_at": "2026-10-12T10:05:00Z",
+                "signal_candle_open_utc": "2026-10-12T10:00:00Z",
+            }
+            payload.update(extra)
+            return (json.dumps(payload, sort_keys=True) + "\n").encode("utf-8")
+
+        first = row("le-0001", "PENDING_NEXT_BAR", "obs-pre-1")
+        second = row("le-0002", "PENDING_NEXT_BAR", "obs-pre-2")
+        third = row("le-0003", "PENDING_NEXT_BAR", "obs-indexed")
+        fourth = row(
+            "le-0004",
+            "OPEN",
+            "obs-indexed",
+            fill_time_utc="2026-10-12T11:00:00Z",
+        )
+        live = first + second + third + fourth
+        committed = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "at": "2026-10-12T10:10:01+00:00",
+                        "commits": 3,
+                        "event": "committed",
+                        "ledger_events": 3,
+                        "run_seq": 1,
+                        "source_lines": 3,
+                    },
+                    sort_keys=True,
+                ),
+                json.dumps(
+                    {
+                        "at": "2026-10-12T12:10:01+00:00",
+                        "commits": 4,
+                        "event": "committed",
+                        "ledger_events": 4,
+                        "run_seq": 2,
+                        "source_lines": 4,
+                    },
+                    sort_keys=True,
+                ),
+            ]
+        ) + "\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "ledger-root"
+            dest = base / "mirror"
+            live_path = _plant(source, live)
+            (source / EVENTS_NAME).write_text(committed, encoding="utf-8")
+            snapshot = _nested_snapshot(source, "run-000001")
+            snapshot.write_bytes(first + second)
+            mirror_ledger(source, dest, stable_for=0)
+            self.assertEqual(live_path.read_bytes(), live)
+            self.assertEqual(snapshot.read_bytes(), first + second)
+            boundaries = [
+                json.loads(line)
+                for line in (dest / BOUNDARY_NAME).read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertEqual(boundaries[0]["ledger_events_before"], 2)
+            self.assertEqual(boundaries[0]["ledger_events"], 3)
+            self.assertEqual(boundaries[0]["run_seq"], 1)
+            self.assertFalse((dest / "runs").exists())
+            summary = read_official_ledger(
+                {LEDGER_DIR_ENV: str(dest)},
+                allowlist=(str(dest),),
+                now=datetime(2026, 10, 12, 15, 0, tzinfo=timezone.utc),
+            )
+            pending = summary["pending_observations"]
+            self.assertEqual(pending["PRE_INDEX"], 2)
+            self.assertEqual(pending["BAR_NOT_YET_CLOSED"], 1)
+            self.assertEqual(pending["DATA_GAP"], 0)
+            self.assertEqual(pending["IN_FLIGHT"], 0)
+            self.assertEqual(pending["observations"], 3)
+            self.assertEqual(summary["counts"]["events"], 4)
+            self.assertNotIn("obs-pre-1", json.dumps(summary))
+
+    def test_run1_snapshot_last_id_must_match_the_live_row(self) -> None:
+        live = (
+            b'{"event_type":"PENDING_NEXT_BAR","ledger_event_id":"le-000808"}\n'
+            b'{"event_type":"PENDING_NEXT_BAR","ledger_event_id":"le-000809"}\n'
+        )
+        committed = (
+            '{"at":"2026-10-12T10:10:01+00:00","commits":2,"event":"committed",'
+            '"ledger_events":2,"run_seq":1,"source_lines":2}\n'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "ledger-root"
+            dest = base / "mirror"
+            planted = _plant(source, live)
+            (source / EVENTS_NAME).write_text(committed, encoding="utf-8")
+            snapshot = _nested_snapshot(source, "run-000001")
+            snapshot.write_bytes(b'{"ledger_event_id":"le-not-000808"}\n')
+            mirror_ledger(source, dest, stable_for=0)
+            self.assertEqual(planted.read_bytes(), live)
+            self.assertEqual((dest / LEDGER_BASENAME).read_bytes(), live)
+            self.assertFalse((dest / BOUNDARY_NAME).exists())
+
     def test_snapshot_mismatch_drops_boundaries_and_keeps_every_ledger_row(self) -> None:
         row = (
             json.dumps(

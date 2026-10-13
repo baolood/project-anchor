@@ -159,7 +159,8 @@ def mirror_ledger(
         return "skipped"
     index_blobs: dict[Path, bytes] = {}
     for path in index_paths:
-        limit = None if path.name == EVENTS_NAME else SNAPSHOT_TAIL_BYTES
+        # Run 1's before snapshot is counted in full. Later snapshots only need a last id.
+        limit = None if path.name == EVENTS_NAME or _is_run1_before(path) else SNAPSHOT_TAIL_BYTES
         index_blob, index_stat = _read_source(path, limit=limit)
         if stable_for > 0 and (index_stat.st_size, index_stat.st_mtime_ns) != sample[path]:
             return "skipped"
@@ -264,10 +265,11 @@ def _publish_run_index(
 ) -> None:
     """Copy ``events.jsonl`` and publish line spans. Snapshots are not copied.
 
-    Spans come from cumulative ``ledger_events``. A before-snapshot is only a
-    cross-check: when the nested file exists, its last id must be the last id
-    of the previous run. A mismatch, or a ``run_seq`` that does not start at 1
-    and stay contiguous, removes any previously published boundaries.
+    Spans come from cumulative ``ledger_events``. Run 1's start is the row
+    count of its nested before snapshot, and that snapshot's last id must
+    match the live row at that index. Later snapshots are a last-id
+    cross-check. A mismatch, or a ``run_seq`` that does not start at 1 and
+    stay contiguous, removes any previously published boundaries.
     """
     events_path = _regular_inside(source, (EVENTS_NAME,))
     if events_path is None or events_path not in blobs:
@@ -278,7 +280,12 @@ def _publish_run_index(
     _atomic_write(dest, EVENTS_NAME, events_blob, group)
     _atomic_write(dest, f"{EVENTS_NAME}.sha256", _sha_line(events_blob, EVENTS_NAME), group)
     commits = parse_committed_runs(events_blob.decode("utf-8", errors="replace"))
-    boundaries = boundaries_from_commits(commits)
+    provisional = boundaries_from_commits(commits)
+    if not provisional:
+        boundaries = provisional
+    else:
+        offset = _run1_before_offset(source, blobs, live_blob, provisional[0]["ledger_events"])
+        boundaries = None if offset is None else boundaries_from_commits(commits, pre_index_rows=offset)
     if boundaries and not _snapshots_agree(source, blobs, live_blob, boundaries):
         boundaries = None
     if not boundaries:
@@ -289,6 +296,42 @@ def _publish_run_index(
     boundary_blob = ("\n".join(lines) + "\n").encode("utf-8")
     _atomic_write(dest, BOUNDARY_NAME, boundary_blob, group)
     _atomic_write(dest, f"{BOUNDARY_NAME}.sha256", _sha_line(boundary_blob, BOUNDARY_NAME), group)
+
+
+def _is_run1_before(path: Path) -> bool:
+    tail = ("run-000001", *BEFORE_SNAPSHOT_RELATIVE)
+    return path.parts[-len(tail) :] == tail
+
+
+def _run1_before_offset(
+    source: Path,
+    blobs: dict[Path, bytes],
+    live_blob: bytes,
+    run1_ledger_events: int,
+) -> int | None:
+    """Row count of run 1's before snapshot, after the last id matches the live row.
+
+    A missing or empty snapshot is offset 0. A snapshot whose last
+    ``ledger_event_id`` is not the live row at that count is ``None``.
+    """
+    path = _regular_inside(source, ("runs", "run-000001", *BEFORE_SNAPSHOT_RELATIVE))
+    if path is None or path not in blobs:
+        return 0
+    snapshot_ids = ledger_line_ids(blobs[path])
+    if snapshot_ids is None:
+        return None
+    offset = len(snapshot_ids)
+    if offset == 0:
+        return 0
+    if offset > run1_ledger_events:
+        return None
+    last = snapshot_ids[-1]
+    if not isinstance(last, str):
+        return None
+    live_ids = ledger_line_ids(live_blob)
+    if live_ids is None or len(live_ids) < offset or live_ids[offset - 1] != last:
+        return None
+    return offset
 
 
 def _snapshots_agree(
