@@ -7,8 +7,11 @@ value on a committed line in ``<ledger root>/events.jsonl``. A host line is::
 
 ``ledger_events`` is the cumulative ledger-row count after that run. Run N
 owns ledger lines ``(ledger_events of run N-1, ledger_events of run N]``.
-Run 1 owns ``(0, ledger_events]``. ``run_seq`` is the run number. This
-module does not write the ledger and does not invent rows.
+Run 1 owns ``(pre_index_rows, ledger_events]``. ``pre_index_rows`` is the
+row count of ``runs/run-000001/before/affl-v2-official-ledger/out/anchor_fake_fill_ledger_v2_official.jsonl``
+(0 when that snapshot is empty). Rows at or below that count are ``PRE_INDEX``.
+``run_seq`` is the run number. This module does not write the ledger and
+does not invent rows.
 """
 
 from __future__ import annotations
@@ -62,15 +65,22 @@ def parse_committed_runs(text: str) -> list[dict[str, Any]]:
     return found
 
 
-def boundaries_from_commits(commits: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]] | None:
+def boundaries_from_commits(
+    commits: Sequence[Mapping[str, Any]],
+    *,
+    pre_index_rows: int = 0,
+) -> list[dict[str, Any]] | None:
     """Return line spans, or None when the committed lines are not a usable index.
 
     A usable index is ``run_seq`` 1..N with no gaps or duplicates, and
-    ``ledger_events`` never decreases. Run 1 starts at 0. A file whose first
-    committed ``run_seq`` is not 1 cannot name ``ledger_events`` of run 0.
+    ``ledger_events`` never decreases. ``pre_index_rows`` is run 1's start
+    offset. Run 1 owns ``(pre_index_rows, ledger_events]``. A file whose
+    first committed ``run_seq`` is not 1 is not an index.
     """
+    if type(pre_index_rows) is not int or pre_index_rows < 0:
+        return None
     if not commits:
-        return []
+        return [] if pre_index_rows == 0 else None
     boundaries: list[dict[str, Any]] = []
     previous_seq = 0
     previous_events = 0
@@ -83,14 +93,15 @@ def boundaries_from_commits(commits: Sequence[Mapping[str, Any]]) -> list[dict[s
             return None
         if seq != previous_seq + 1 or seq > MAX_RUN_SEQ or run != f"run-{seq:06d}":
             return None
-        if end < previous_events:
+        start = pre_index_rows if seq == 1 else previous_events
+        if end < start:
             return None
         boundaries.append(
             {
                 "run": run,
                 "run_seq": seq,
                 "committed_at": at,
-                "ledger_events_before": previous_events,
+                "ledger_events_before": start,
                 "ledger_events": end,
             }
         )
@@ -157,36 +168,51 @@ def snapshot_matches(expected_last_id: str | None, blob: bytes) -> bool:
 def write_times_for_rows(
     rows: Sequence[Mapping[str, Any]],
     boundaries: Sequence[Mapping[str, Any]],
-) -> dict[str, tuple[str, str]] | None:
-    """Map each pending row's event id to ``(committed_at, run)``.
+) -> tuple[dict[str, tuple[str, str]], set[str]] | None:
+    """Return ``(writes, pre_index_ids)`` for pending rows.
 
-    Line numbers are 1-based positions in ``rows``. Run N owns
-    ``(ledger_events_before, ledger_events]``. ``None`` means a pending row
-    cannot be placed, so the caller must not label it.
+    ``writes`` maps an indexed pending row's event id to
+    ``(committed_at, run)``. ``pre_index_ids`` are pending rows at or below
+    run 1's ``ledger_events_before``. Line numbers are 1-based positions in
+    ``rows``. ``None`` means a pending row is neither pre-index nor inside a
+    run, so the caller must not label any of them.
     """
     if not boundaries:
-        return None if _has_pending(rows) else {}
+        if _has_pending(rows):
+            return None
+        return {}, set()
     spans: list[tuple[int, int, Mapping[str, Any]]] = []
-    previous_end = 0
+    previous_end: int | None = None
     previous_seq = 0
+    pre_offset = 0
     for boundary in boundaries:
         start = boundary.get("ledger_events_before")
         end = boundary.get("ledger_events")
         seq = boundary.get("run_seq")
         if type(start) is not int or type(end) is not int or type(seq) is not int:
             return None
-        if seq != previous_seq + 1 or start != previous_end or end < start:
+        if seq != previous_seq + 1 or end < start:
+            return None
+        if previous_end is None:
+            if start < 0:
+                return None
+            pre_offset = start
+        elif start != previous_end:
             return None
         spans.append((start, end, boundary))
         previous_end = end
         previous_seq = seq
     writes: dict[str, tuple[str, str]] = {}
+    pre_index: set[str] = set()
     for index, row in enumerate(rows, start=1):
         if row.get("event_type") != PENDING_EVENT:
             continue
         event_id = _event_id(row)
-        if event_id is None or event_id in writes:
+        if event_id is None or event_id in writes or event_id in pre_index:
             return None
+        if index <= pre_offset:
+            pre_index.add(event_id)
+            continue
         owner = _span_owner(spans, index)
         if owner is None:
             return None
@@ -195,7 +221,7 @@ def write_times_for_rows(
         if not isinstance(at, str) or not isinstance(run, str):
             return None
         writes[event_id] = (at, run)
-    return writes
+    return writes, pre_index
 
 
 def _whole_number(value: Any) -> int | None:

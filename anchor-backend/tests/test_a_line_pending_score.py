@@ -123,12 +123,70 @@ class ALinePendingScoreTests(unittest.TestCase):
                 "raw_rows": 5,
                 "observations": 2,
                 "runs_waited": 2,
+                "PRE_INDEX": 0,
                 "BAR_NOT_YET_CLOSED": 1,
                 "DATA_GAP": 1,
                 "IN_FLIGHT": 0,
             },
         )
         self.assertNotIn(OBS, str(scored))
+
+    def test_pre_index_observations_stay_unlabeled(self) -> None:
+        """Host run 1 starts after a non-empty before snapshot.
+
+        That snapshot is 808 rows ending at ledger_event_id le-000808, and
+        run 1 committed ledger_events 812. Rows at or below 808 are PRE_INDEX.
+        On that ledger the observation totals are PRE_INDEX 80,
+        BAR_NOT_YET_CLOSED 28, DATA_GAP 0, IN_FLIGHT 0, total 108.
+        """
+        pre_count = 80
+        indexed = 28
+        events = "\n".join(
+            [
+                _committed("2026-10-12T10:10:01.250000+00:00", 1, pre_count + indexed),
+                _committed("2026-10-12T11:10:01+00:00", 2, pre_count + indexed * 2),
+            ]
+        ) + "\n"
+        boundaries = boundaries_from_commits(parse_committed_runs(events), pre_index_rows=pre_count)
+        self.assertIsNotNone(boundaries)
+        assert boundaries is not None
+        self.assertEqual(boundaries[0]["ledger_events_before"], pre_count)
+        self.assertEqual(boundaries[0]["ledger_events"], pre_count + indexed)
+        rows: list[dict] = []
+        for number in range(1, pre_count + 1):
+            rows.append(_row("PENDING_NEXT_BAR", f"le-pre-{number}", observation_id=f"obs-pre-{number}"))
+        for number in range(1, indexed + 1):
+            rows.append(_row("PENDING_NEXT_BAR", f"le-idx-{number}", observation_id=f"obs-idx-{number}"))
+        for number in range(1, indexed + 1):
+            rows.append(
+                _row(
+                    "OPEN",
+                    f"le-open-{number}",
+                    observation_id=f"obs-idx-{number}",
+                    fill_time_utc=FILL_OPEN,
+                )
+            )
+        scored = score_a_line(rows, boundaries=boundaries, now=NOW)
+        pending = scored["pending_observations"]
+        self.assertEqual(pending["PRE_INDEX"], 80)
+        self.assertEqual(pending["BAR_NOT_YET_CLOSED"], 28)
+        self.assertEqual(pending["DATA_GAP"], 0)
+        self.assertEqual(pending["IN_FLIGHT"], 0)
+        self.assertEqual(pending["observations"], 108)
+        self.assertEqual(
+            pending["observations"],
+            pending["PRE_INDEX"] + pending["BAR_NOT_YET_CLOSED"] + pending["DATA_GAP"] + pending["IN_FLIGHT"],
+        )
+        self.assertFalse(scored["ledger_modified"])
+
+    def test_pre_index_offset_cannot_pass_run1_ledger_events(self) -> None:
+        events = _committed("2026-10-12T10:10:01+00:00", 1, 812) + "\n"
+        self.assertIsNone(boundaries_from_commits(parse_committed_runs(events), pre_index_rows=813))
+        kept = boundaries_from_commits(parse_committed_runs(events), pre_index_rows=808)
+        self.assertIsNotNone(kept)
+        assert kept is not None
+        self.assertEqual(kept[0]["ledger_events_before"], 808)
+        self.assertEqual(kept[0]["ledger_events"], 812)
 
     def test_score_without_run_boundaries_has_no_labels(self) -> None:
         scored = score_a_line([_row("PENDING_NEXT_BAR", "le-1")], now=NOW)
@@ -142,6 +200,7 @@ class ALinePendingScoreTests(unittest.TestCase):
         self.assertIn("IN_FLIGHT", description)
         self.assertIn("runs_waited", description)
         self.assertIn("BAR_NOT_YET_CLOSED", description)
+        self.assertIn("PRE_INDEX", description)
 
 
 class SameHourRunDocTests(unittest.TestCase):

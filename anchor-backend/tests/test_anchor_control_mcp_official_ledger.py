@@ -850,6 +850,7 @@ class PendingObservationReadTests(unittest.TestCase):
                     "raw_rows": 4,
                     "observations": 1,
                     "runs_waited": 2,
+                    "PRE_INDEX": 0,
                     "BAR_NOT_YET_CLOSED": 1,
                     "DATA_GAP": 0,
                     "IN_FLIGHT": 0,
@@ -916,6 +917,7 @@ class PendingObservationReadTests(unittest.TestCase):
                 {"raw_rows": 2, "observations": 1, "runs_waited": 2},
             )
             self.assertNotIn("IN_FLIGHT", summary["pending_observations"])
+            self.assertNotIn("PRE_INDEX", summary["pending_observations"])
 
     def test_missing_run_boundaries_reports_counts_without_labels(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -962,6 +964,7 @@ class PendingObservationReadTests(unittest.TestCase):
                     "raw_rows": 0,
                     "observations": 0,
                     "runs_waited": 0,
+                    "PRE_INDEX": 0,
                     "BAR_NOT_YET_CLOSED": 0,
                     "DATA_GAP": 0,
                     "IN_FLIGHT": 0,

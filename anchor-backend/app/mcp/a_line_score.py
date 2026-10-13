@@ -2,7 +2,8 @@
 
 Repeated PENDING_NEXT_BAR rows for one observation count once. Write time
 is the committed ``at`` of the ``run_seq`` that owns the row's line in the
-cumulative ``ledger_events`` spans. This module does not open the ledger
+cumulative ``ledger_events`` spans. Rows at or below run 1's before-snapshot
+offset are ``PRE_INDEX``. This module does not open the ledger
 StateDirectory and does not write a ledger.
 """
 

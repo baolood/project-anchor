@@ -99,6 +99,7 @@ PENDING_EVENT = "PENDING_NEXT_BAR"
 BAR_NOT_YET_CLOSED = "BAR_NOT_YET_CLOSED"
 DATA_GAP = "DATA_GAP"
 IN_FLIGHT = "IN_FLIGHT"
+PRE_INDEX = "PRE_INDEX"
 FILL_BAR = timedelta(hours=1)
 # A later row of one of these types, with fill_time_utc, resolves the fill bar.
 RESOLVING_EVENTS = frozenset({"OPEN", "REVERSE_ENTRY", "REVERSE_EXIT", "FLAT_EXIT", "NO_FILL"})
@@ -395,14 +396,23 @@ def _load_run_boundaries(root: Path) -> list[dict[str, Any]] | None:
 
 
 def _boundary_chain(boundaries: Sequence[Mapping[str, Any]]) -> bool:
-    """True when run_seq is 1..N and each span starts where the previous one ended."""
+    """True when run_seq is 1..N and each later span starts where the previous one ended.
+
+    Run 1 may start after a pre-index offset. That offset is
+    ``ledger_events_before`` on the first boundary.
+    """
     previous_seq = 0
-    previous_end = 0
+    previous_end: int | None = None
     for boundary in boundaries:
         seq = boundary["run_seq"]
         before = boundary["ledger_events_before"]
         end = boundary["ledger_events"]
-        if seq != previous_seq + 1 or before != previous_end:
+        if seq != previous_seq + 1:
+            return False
+        if previous_end is None:
+            if before < 0:
+                return False
+        elif before != previous_end:
             return False
         previous_seq = seq
         previous_end = end
@@ -484,27 +494,39 @@ def pending_observation_summary(
     """Collapse repeated PENDING_NEXT_BAR rows. Does not write the ledger.
 
     Write time is the committed ``at`` of the run that appended the row.
-    A ledger field such as ``event_time`` is not that time. When a pending
-    row cannot be placed in a run, the result has only ``raw_rows``,
-    ``observations``, and ``runs_waited``.
+    A ledger field such as ``event_time`` is not that time. Rows at or below
+    run 1's before-snapshot offset are ``PRE_INDEX`` and stay unlabeled.
+    When some other pending row cannot be placed in a run, the result has
+    only ``raw_rows``, ``observations``, and ``runs_waited``.
     """
     writes = None
+    pre_index_ids: set[str] | None = None
     if boundaries is not None:
-        writes = write_times_for_rows(events, boundaries)
-    return classify_pending_observations(events, write_times=writes, now=now)
+        placed = write_times_for_rows(events, boundaries)
+        if placed is not None:
+            writes, pre_index_ids = placed
+    return classify_pending_observations(
+        events,
+        write_times=writes,
+        pre_index_ids=pre_index_ids,
+        now=now,
+    )
 
 
 def classify_pending_observations(
     events: Sequence[Mapping[str, Any]],
     *,
     write_times: Mapping[str, tuple[str, str]] | None = None,
+    pre_index_ids: set[str] | None = None,
     now: datetime | None = None,
 ) -> dict[str, int]:
     """Collapse repeated PENDING_NEXT_BAR rows for one observation into one count.
 
-    ``write_times`` maps event id to ``(committed_at, run)``. Labels are
-    omitted when a pending row has no entry. ``IN_FLIGHT`` is an unresolved
-    observation whose fill-bar close is still after ``now``.
+    ``write_times`` maps event id to ``(committed_at, run)``. ``pre_index_ids``
+    are pending rows at or below run 1's before-snapshot offset. Those
+    observations are ``PRE_INDEX`` and are not given a time label. Other
+    labels are omitted when a pending row has no entry. ``IN_FLIGHT`` is an
+    unresolved observation whose fill-bar close is still after ``now``.
     """
     checked = now or datetime.now(timezone.utc)
     if checked.tzinfo is None:
@@ -526,6 +548,7 @@ def classify_pending_observations(
                 "fill_open": None,
                 "signal": None,
                 "unplaced": False,
+                "pre_rows": 0,
             }
             groups[key] = group
             order.append(key)
@@ -535,15 +558,20 @@ def classify_pending_observations(
             signal = _parse_time(event.get("signal_available_at"))
             if signal is not None and group["signal"] is None:
                 group["signal"] = signal[0]
-            placed = _placed_write(event, write_times)
-            if placed is None:
-                group["unplaced"] = True
+            event_id = event.get("event_id")
+            text_id = event_id.strip() if isinstance(event_id, str) else ""
+            if pre_index_ids is not None and text_id in pre_index_ids:
+                group["pre_rows"] += 1
             else:
-                written, run = placed
-                group["runs"].add(run)
-                earliest = group["earliest_write"]
-                if earliest is None or written < earliest:
-                    group["earliest_write"] = written
+                placed = _placed_write(event, write_times)
+                if placed is None:
+                    group["unplaced"] = True
+                else:
+                    written, run = placed
+                    group["runs"].add(run)
+                    earliest = group["earliest_write"]
+                    if earliest is None or written < earliest:
+                        group["earliest_write"] = written
         elif group["saw_pending"] and group["fill_open"] is None:
             parsed = _parse_time(event.get("fill_time_utc"))
             if parsed is not None:
@@ -554,6 +582,7 @@ def classify_pending_observations(
     not_yet_closed = 0
     data_gap = 0
     in_flight = 0
+    pre_index = 0
     unlabeled = write_times is None
     for key in order:
         group = groups[key]
@@ -561,6 +590,9 @@ def classify_pending_observations(
             continue
         raw_rows += group["raw"]
         observations += 1
+        if group["pre_rows"] == group["raw"] and not group["unplaced"] and not group["runs"]:
+            pre_index += 1
+            continue
         if group["unplaced"] or not group["runs"]:
             unlabeled = True
         runs_waited += len(group["runs"]) if group["runs"] else group["raw"]
@@ -578,6 +610,7 @@ def classify_pending_observations(
             "raw_rows": 0,
             "observations": 0,
             "runs_waited": 0,
+            PRE_INDEX: 0,
             BAR_NOT_YET_CLOSED: 0,
             DATA_GAP: 0,
             IN_FLIGHT: 0,
@@ -592,6 +625,7 @@ def classify_pending_observations(
         "raw_rows": raw_rows,
         "observations": observations,
         "runs_waited": runs_waited,
+        PRE_INDEX: pre_index,
         BAR_NOT_YET_CLOSED: not_yet_closed,
         DATA_GAP: data_gap,
         IN_FLIGHT: in_flight,

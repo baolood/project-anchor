@@ -264,6 +264,7 @@ def tool_definitions() -> list[dict[str, Any]]:
             "last_event_time is the latest of those times on the last row, and last_event_time_field names the source. "
             "Repeated PENDING_NEXT_BAR rows for one observation count once. "
             "Write time is the committed time of the run_seq whose cumulative ledger_events span contains the row. "
+            "Rows at or below run 1's before-snapshot offset are PRE_INDEX and are not given a time label. "
             "BAR_NOT_YET_CLOSED, DATA_GAP, and IN_FLIGHT are set only when that run is known. "
             "The fill bar is the next 1h bar after signal_available_at. "
             "IN_FLIGHT means that bar has not closed and the observation is still unresolved. "
