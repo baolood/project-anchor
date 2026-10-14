@@ -1,0 +1,19 @@
+{
+  "schema_id": "funding_cache_v1",
+  "symbol": "PF_XBTUSD",
+  "formal_scoring_chain": "NOT_ON_FORMAL_SCORING_CHAIN",
+  "cache_write_in_this_package": "NO",
+  "future_relative_path": "affl-v2-official-ledger/funding/PF_XBTUSD_historicalfundingrates.jsonl",
+  "zero_fill_missing": "FORBIDDEN",
+  "fields": [
+    "fetched_at_utc",
+    "symbol",
+    "source_url",
+    "response_sha256",
+    "timestamp",
+    "fundingRate",
+    "relativeFundingRate",
+    "auth"
+  ],
+  "auth": "NONE"
+}
