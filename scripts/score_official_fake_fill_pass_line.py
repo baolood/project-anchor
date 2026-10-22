@@ -34,6 +34,17 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--t-score", default=None, help="Grading time, ISO-8601 with a timezone.")
     parser.add_argument("--governance", default=None, help="Optional governance JSONL. Absence is not zero incidents.")
     parser.add_argument("--random-seed", default=None, help="Pre-registered seed. Omit until freeze records one.")
+    parser.add_argument(
+        "--funding-cache",
+        default=None,
+        help="EXTERNAL_PUBLIC_FUNDING_V1 JSON cache. The scorer does not fetch rates.",
+    )
+    parser.add_argument(
+        "--line",
+        default=None,
+        choices=("A", "B"),
+        help="A is the research baseline (C6 and C7 not applicable). B scores C6 and C7.",
+    )
     parser.add_argument("--out", default="-", help="Report path, or - for stdout. Cannot be the ledger path.")
     return parser
 
@@ -58,6 +69,8 @@ def main(argv: list[str] | None = None) -> int:
             t_score=args.t_score,
             governance_path=args.governance,
             random_seed=args.random_seed,
+            funding_cache=args.funding_cache,
+            line=args.line,
         )
     except ScoringRefusal as exc:
         print(str(exc), file=sys.stderr)

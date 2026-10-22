@@ -4,10 +4,11 @@
 **Document ID:** `ANCHOR_OFFICIAL_PASS_LINE_V1_1_FINAL_DRAFT`  
 **Supersedes, once frozen:** `ANCHOR_OFFICIAL_PASS_LINE_V1` (freeze candidate R2, 2026-09-30, never signed)  
 **Prepared:** 2026-10-22  
-**Purpose:** Gate for whether Anchor may *request* a minimal-capital live Pilot.  
-**Not a purpose:** Proof of long-term profitability. A grade. Authorization to trade.  
+**Purpose:** Research baseline for Line A, and the Pilot-request gate only when Line B passes, including C6 and C7.  
+**Not a purpose:** Proof of long-term profitability. A grade of the pre-T0 book. Authorization to trade.  
 **Universe:** Official Fake-Fill ledger V2, kind `official_fake_fill_v2`, file `anchor_fake_fill_ledger_v2_official.jsonl`.  
-**Line scored:** **Line A**, the sealed series already on disk. Stop-loss and ex-ante risk belong to a future **Line B** with its own records.  
+**Line A:** The sealed series already on disk. Graded on C1, C2, C3, C4, C5, C8, C9, C10, and R0. A Line A pass is not Pilot eligibility and is not real-money eligibility by itself.  
+**Line B:** The separate stop-loss series (PR #417, `affl_v2_c6_protective_v1` / `official_ledger_c6_v1`). C6 (per-trade risk 0.5%) and C7 (daily loss 2%) apply only here. Real-money eligibility requires Line B passing, including C6 and C7.  
 **Live trading:** **NO-GO**. Passing this document does not authorize orders, testnet sends, or a Pilot. Pilot start remains a separate Founder EXECUTE.  
 **This change:** docs and an offline scorer only. It does not deploy, does not open the ledger StateDirectory, and does not append or rewrite ledger rows.
 
@@ -41,13 +42,14 @@ V1.1 adds one pre-registered comparison, **R0**. It is not a change to any numbe
 
 A conversational summary of the 2026-09-30 draft still said "expectancy > 0". The R2 text that this draft follows had already replaced that metric with profit factor > 1.10. Section 8 records the recommendations that were **not** applied.
 
-Binding rules carried forward from V1:
+Binding rules carried forward from V1, with the Line A / Line B split added in this draft:
 
-1. All of C1–C10 and R0 must PASS. One FAIL fails the exam. There is no waiver.
-2. C1 and C2 are conjunctive. Ninety days alone, or fifty trades alone, is not enough.
-3. An official criterion that cannot be computed from recorded fields is **NOT_SCORABLE**. That blocks eligibility (`overall = NOT_ELIGIBLE`). It is not a filled-in zero and it is not a back-calculated risk percentage. V1's sentence "unscorable ⇒ FAIL for Pilot eligibility" still describes the block. The machine status stays `NOT_SCORABLE` so a missing field is not disguised as a measured FAIL.
-4. After freeze, moving a threshold requires a new document version and a new T0. Keeping old scores while changing the bar is forbidden.
-5. Trading remains NO-GO under this document alone.
+1. Line A research result: C1, C2, C3, C4, C5, C8, C9, C10, and R0 must PASS. One FAIL fails that result. There is no waiver. C6 and C7 are `NOT_APPLICABLE` on Line A (`LINE_B_ONLY`). They do not block the research baseline, and they are not treated as passed.
+2. Line A passing does **not** make the book Pilot-eligible for real money. Real-money eligibility requires a separate Line B result in which every criterion, including C6 and C7, is PASS. The scorer sets `pilot_eligible` false on every Line A report.
+3. C1 and C2 are conjunctive. Ninety days alone, or fifty trades alone, is not enough.
+4. An official criterion that cannot be computed from recorded fields, or from the verified public-funding cache where §5 allows it, is **NOT_SCORABLE**. That blocks the result it belongs to (`overall = NOT_ELIGIBLE`). It is not a filled-in zero and it is not a back-calculated risk percentage. V1's sentence "unscorable ⇒ FAIL for Pilot eligibility" still describes the Line B block. The machine status stays `NOT_SCORABLE` so a missing field is not disguised as a measured FAIL.
+5. After freeze, moving a threshold requires a new document version and a new T0. Keeping old scores while changing the bar is forbidden.
+6. Trading remains NO-GO under this document alone. Line A research PASS does not change that.
 
 ---
 
@@ -71,11 +73,11 @@ The scorer prints `T0_NOT_FROZEN` for every windowed criterion until both timest
 
 ## 2. Line A and Line B
 
-**Line A** is the Official V2 series already written: `OPEN`, `FLAT_EXIT`, `REVERSE_ENTRY`, `REVERSE_EXIT`, `NO_FILL`, `PENDING_NEXT_BAR`, `OBSERVATION_COMMIT`, `FLAT_MARK`, and any other row the writer appended. Its history is sealed.
+**Line A** is the Official V2 series already written: `OPEN`, `FLAT_EXIT`, `REVERSE_ENTRY`, `REVERSE_EXIT`, `NO_FILL`, `PENDING_NEXT_BAR`, `OBSERVATION_COMMIT`, `FLAT_MARK`, and any other row the writer appended. Its history is sealed. It is a research baseline. C6 and C7 do not apply to it.
 
-**Line B** is any later series that records a real preset stop, `equity_at_open`, and `risk_amount` at the open, under a new `strategy_version` and a new schema. PR #417 (`affl_v2_c6_protective_v1` / `official_ledger_c6_v1`) is a candidate for that series. It is open, not merged, and not attached to the Official writer. Its rows must not be appended onto the Line A file and must not be used to rewrite Line A.
+**Line B** is any later series that records a real preset stop, `equity_at_open`, and `risk_amount` at the open, under a new `strategy_version` and a new schema. PR #417 (`affl_v2_c6_protective_v1` / `official_ledger_c6_v1`) is a candidate for that series. It is open, not merged, and not attached to the Official writer. Its rows must not be appended onto the Line A file and must not be used to rewrite Line A. C6 and C7 are scored only on Line B. The 0.5% and 2% thresholds are unchanged.
 
-The scorer will read Line B fields when they are actually present on the copy it is given. It will not invent them for Line A.
+The scorer reads Line B when `--line B` is set, or when the copy's schema / strategy marker is `official_ledger_c6_v1` or `affl_v2_c6_protective_v1` and no Line A marker is mixed in. It does not invent stop, equity-at-open, or risk fields for Line A. A Line A research PASS is not a Line B pass.
 
 ---
 
@@ -108,9 +110,9 @@ Any later capital-allocation rule, including "shrink quantity so risk stays insi
 
 ## 5. How each criterion is computed
 
-Statuses are `PASS`, `FAIL`, or `NOT_SCORABLE`. Money is decimal text. Missing funding is the string `MISSING`.
+Statuses are `PASS`, `FAIL`, `NOT_SCORABLE`, or, for C6 and C7 on Line A only, `NOT_APPLICABLE`. Money is decimal text. Missing funding is the string `MISSING`.
 
-Pairing is file order, which is append order. `OPEN` or `REVERSE_ENTRY` while flat starts a leg. The next `FLAT_EXIT`, `REVERSE_EXIT`, or `HARD_STOP_EXIT` closes it. A second open while a leg is open, or an exit while flat, makes pairing unfair: C2–C4, C6, C8, and R0 stay `NOT_SCORABLE` with reason `PAIRING_NOT_FAIR`. The rows are not dropped.
+Pairing is file order, which is append order. `OPEN` or `REVERSE_ENTRY` while flat starts a leg. The next `FLAT_EXIT`, `REVERSE_EXIT`, or `HARD_STOP_EXIT` closes it. A second open while a leg is open, or an exit while flat, makes pairing unfair: C2–C4, C8, and R0 stay `NOT_SCORABLE` with reason `PAIRING_NOT_FAIR`. On Line B, C6 does too. The rows are not dropped.
 
 ### C1 — Observation window
 
@@ -133,18 +135,42 @@ Per counted trade:
 exit_leg = exit.NET_PNL_EX_FUNDING
            (exit.net_pnl only when it is the same number)
 net_ex_funding = exit_leg − entry.fee_paid − entry.slippage_cost
-official_net   = net_ex_funding + exit.funding_pnl
-                 only when exit.FUNDING_DATA_STATUS = PRESENT
-                 and exit.funding_pnl is a finite number
+official_net   = net_ex_funding + funding_pnl
+                 only when that trade's funding status is PRESENT
 ```
 
 The exit leg excludes entry costs. `realized_pnl_cum` is not this sum. A stored `0` is a real zero only when status is `PRESENT` and the amount is `0`. Null, absent, `MISSING`, or `PARTIAL` stays `MISSING` and is not added.
 
+Funding becomes PRESENT in either of two ways:
+
+1. The exit row already has `FUNDING_DATA_STATUS = PRESENT` and a finite `funding_pnl`. That amount is ledger-recorded. If a public cache is also supplied and its amount for the same hold differs by more than `1e-8`, the trade is `FUNDING_LEDGER_EXTERNAL_DISAGREE`. The two amounts are not averaged.
+2. The exit row is `MISSING` and every settlement inside the hold is present in a verified `EXTERNAL_PUBLIC_FUNDING_V1` cache. The scorer then uses the derived amount and labels the source `EXTERNAL_PUBLIC_FUNDING_V1`. That label means derived from public rates, not written on the ledger.
+
+`PARTIAL` and `NO_INTERVAL` on the ledger are not replaced by the cache.
+
+**Public funding method.** Cache file `eval_scoring/public_funding.py`, fetched only by `scripts/fetch_public_funding_cache.py`. The scorer never fetches. Locked URL:
+
+`https://futures.kraken.com/derivatives/api/v3/historical-funding-rates?symbol=SYMBOL`
+
+Checked on 2026-10-22 for `PF_XBTUSD`. The v3 unhyphenated path is HTTP 404. The v4 hyphenated and v4 unhyphenated paths also return the same shape. The cache records the URL that was fetched.
+
+- `fundingRate` is absolute USD that a 1-contract short receives for one full hour. Positive means longs pay shorts. Negative reverses that.
+- `relativeFundingRate` is audit-only. It is not multiplied by notional or by the entry price. Doing so would use the wrong price: the absolute rate already embeds spot at calculation time.
+- `timestamp` is the start of the hour the rate applies to. The window is `[timestamp, timestamp + 1 hour)`. The next stamp is not the period length, so a gap is not hidden.
+- A held leg is `[entry fill_time_utc, exit fill_time_utc)`. Overlap is prorated. Kraken realizes funding at the hour end or when the position changes, so a partial hour closed before the clock settlement still counts.
+- Only clock hours that overlap that hold are summed. One missing hour makes the whole leg `MISSING`. No partial sum is kept. A cached rate of `0` is a real zero.
+- Payout = `short_sign × quantity × contract_size × fundingRate × overlap_hours`. Short sign is +1 for a short and −1 for a long.
+- `contract_size` is stored on the cache from `https://futures.kraken.com/derivatives/api/v3/instruments`. For `PF_XBTUSD` that field was `1` on 2026-10-22 (base BTC, quote USD, tick size 1). Ledger `quantity` is multiplied by the stored size. The scorer does not look up a size at score time.
+- The instrument is the ledger `market` / `symbol` / `instrument` / `product_id` when those keys exist. A row value that disagrees with the cache symbol is `FUNDING_INSTRUMENT_MISMATCH`. Several instruments on one file, with the market absent on the leg, is `FUNDING_MULTIPLE_INSTRUMENTS`. If no row carries an instrument, the cache symbol is used and the report says `CACHE_SYMBOL_LEDGER_MARKET_ABSENT`. That is a label, not a silent assumption.
+- The cache embeds `rates_sha256` over the canonical sorted rate list (timestamp, fundingRate, and relativeFundingRate when present). A mismatch is a refusal, not a score. The report also records the SHA-256 of the cache file bytes, the source URL, and `fetched_at`.
+
+The live public history has occasional multi-hour gaps. A leg held across a gap stays `MISSING` until a cache actually contains that hour. Do not interpolate.
+
 When `gross_pnl` and all four fee and slippage amounts are present, the scorer recomputes `gross_pnl − entry fee − entry slippage − exit fee − exit slippage`. Disagreement beyond `1e-8` yields `NET_AND_GROSS_INCONSISTENT`. The two figures are not averaged.
 
-**Line A today:** `NOT_SCORABLE` / `NOT_SCORABLE_ON_LINE_A`. The 2026-09-30 preflight found `funding_pnl` null and `FUNDING_DATA_STATUS = MISSING` on every event, with `NET_PNL_STATUS = EX_FUNDING`. Fee and slippage keys exist. The scorer still prints `diagnostic_ex_funding`, marked `not_a_score: true`. That diagnostic is not C3.
+**Line A without a covering cache, and with ledger funding still `MISSING`:** `NOT_SCORABLE` / `NOT_SCORABLE_ON_LINE_A`. The 2026-09-30 preflight found `funding_pnl` null and `FUNDING_DATA_STATUS = MISSING` on every event, with `NET_PNL_STATUS = EX_FUNDING`. Fee and slippage keys exist. The scorer still prints `diagnostic_ex_funding`, marked `not_a_score: true`. That diagnostic is not C3.
 
-**PASS** only when every counted trade has a PRESENT funding amount and the summed official net is `> 0`.
+**With funding PRESENT on every counted trade:** C3, C4, C8, and R0 are scorable. **PASS** only when the summed official net is `> 0`. If any counted trade is still `MISSING`, those four stay `NOT_SCORABLE`.
 
 ### C4 — Profit factor
 
@@ -156,7 +182,7 @@ PF = sum(positive official nets) / abs(sum(negative official nets))
 
 No losing trade, a positive winning pool, and C3 PASS: V1 special case PASS, value `UNDEFINED_NO_LOSSES`. A zero winning pool FAILs. `PF = 1.10` FAILs. The bar is strict `>`.
 
-**Line A today:** `NOT_SCORABLE` / `C3_NET_UNAVAILABLE`, because the official net needs funding.
+**Line A:** scorable once every counted trade has PRESENT funding, from the ledger or from a complete public cache. Otherwise `NOT_SCORABLE` / `C3_NET_UNAVAILABLE`.
 
 ### C5 — Maximum drawdown
 
@@ -179,8 +205,9 @@ risk_pct = entry.risk_amount / entry.equity_at_open
 
 The entry must also contain `preset_stop_price`. The stop price is not turned into a risk amount by this program. Outcome PnL is not a stop. `net_liquidation_equity` on the OPEN row is not `equity_at_open`.
 
-**Line A today:** `NOT_SCORABLE` / `NOT_SCORABLE_ON_LINE_A`. The preflight found no stop key and no risk key in the JSONL or in `LedgerEvent`.  
-**FAIL** only when the three fields are present and some counted trade is above 0.5%. Equality with 0.5% passes.
+**Applies to Line B only.** The threshold stays 0.5%. On Line A the status is `NOT_APPLICABLE` / `LINE_B_ONLY`, including before T0 is frozen. That is not a pass, and it is not a research-baseline failure. The preflight found no stop key and no risk key on Line A; those fields are not back-calculated.
+
+**Line B:** `FAIL` when the three fields are present and some counted trade is above 0.5%. Equality with 0.5% passes. Missing fields on Line B are `NOT_SCORABLE` / `EX_ANTE_FIELDS_MISSING`.
 
 ### C7 — Daily equity drop
 
@@ -195,7 +222,7 @@ A CST day counts only under `MARK_RULE_C7_V1`:
 
 `FLAT_MARK` rows without that rule are not a day low. Using them would understate the drop and would be a guess.
 
-**Line A today:** `NOT_SCORABLE` / `NOT_SCORABLE_ON_LINE_A`.
+**Applies to Line B only.** The threshold stays 2%. On Line A the status is `NOT_APPLICABLE` / `LINE_B_ONLY`. Line A is not failed for lacking `MARK_RULE_C7_V1` marks, and it is not passed on that criterion either. On Line B, absent marks are `NOT_SCORABLE` / `MARK_RULE_C7_V1_ABSENT`. A measured daily loss above 2% is `FAIL`.
 
 ### C8 — Profit concentration
 
@@ -203,7 +230,7 @@ A CST day counts only under `MARK_RULE_C7_V1`:
 share = max(winning official nets) / sum(positive official nets)
 ```
 
-**Line A today:** `NOT_SCORABLE`, same funding block as C3.  
+**Line A:** same funding rule as C3. Scorable when every counted trade has PRESENT funding. Otherwise `NOT_SCORABLE`.  
 **PASS** when the pool is positive and `share ≤ 0.25`.
 
 ### C9 — Governance incidents
@@ -246,7 +273,7 @@ PASS when official Anchor net > expected random-direction net
 
 With funding present and equal to zero, that comparison is positive gross. It is weaker than C3 whenever costs are positive. It is still required, so a cost-identity error cannot hide inside the net. After §9 records a seed, the same net must also beat the median of 1000 seeded books. The seed is `SHA256(seed | sim | entry ledger_event_id)`; the low bit of the digest picks the same side or the opposite side, and funding flips with the side. Until a seed is frozen, `seeded_comparison` is `NOT_FROZEN` and the expected book is the binding comparison.
 
-**Line A today:** `NOT_SCORABLE` / `NOT_SCORABLE_ON_LINE_A`, because the official net includes funding. `diagnostic_ex_funding` may still say whether the ex-funding book beats the expected null. That object is `not_a_score: true`.
+**Line A:** scorable when every counted trade has PRESENT funding, including funding taken from a verified `EXTERNAL_PUBLIC_FUNDING_V1` cache. Otherwise `NOT_SCORABLE` / `NOT_SCORABLE_ON_LINE_A`. `diagnostic_ex_funding` may still say whether the ex-funding book beats the expected null. That object is `not_a_score: true`. R0 remains binding on the Line A research baseline.
 
 ---
 
@@ -285,7 +312,9 @@ The summary's own note: per-exit `NET_PNL` excludes entry costs, and `realized_p
 
 A few minutes earlier the file had 1664 events and 460 `PENDING_NEXT_BAR` rows. `FLAT_MARK` (152) was already inside that 1664. The two newer rows are more pending bars. This draft does not delete them.
 
-The MCP summary does not return row keys. The field inventory in the gap document is the 2026-09-30 preflight of the live JSONL (41 keys, no stop, no `equity_at_open`, no `risk_amount`, funding null). This environment did not re-dump the 1666-row file. The scorer uses only keys present on the copy it is given.
+The MCP summary does not return row keys. The field inventory in the gap document is the 2026-09-30 preflight of the live JSONL (41 keys, no stop, no `equity_at_open`, no `risk_amount`, funding null). This environment did not re-dump the file. The scorer uses only keys present on the copy it is given.
+
+A later read-only summary at `2026-10-22T11:58:11Z` showed 1667 events, `PENDING_NEXT_BAR` 463, last id `le-001667`, hash head `c79ecbf70cb2821e517c0f84b31164386d0a3c173da5d61979735ca10a982469`, and the same `realized_pnl_cum`. The mirror sidecar checked. That call still returns no rows, so the scorer was not run on the Official file. The one new row since the table above is another pending bar. It is not deleted here. None of these figures is a grade.
 
 ---
 
@@ -293,20 +322,20 @@ The MCP summary does not return row keys. The field inventory in the gap documen
 
 These do **not** change the thresholds in §0.
 
-1. Keep C3's requirement that funding be present. Do not adopt "ex-funding counts as the official net." That would lower the exam. Today's honest status is `NOT_SCORABLE`, not a zero.
+1. Keep C3's requirement that funding be present. Do not adopt "ex-funding counts as the official net." A verified `EXTERNAL_PUBLIC_FUNDING_V1` cache can supply the missing ledger amount. A settlement the cache does not contain stays `MISSING`, not zero.
 2. Keep 0.5%, 8%, 2%, 25%, 90 days, 50 trades, and profit factor 1.10. The pre-T0 cumulative figure is negative and is not a reason to move any bar.
 3. Keep the V1 no-loss special case for C4, and keep it conjunctive with C1 and C2.
 4. Before freeze, vendor the writer's `row_hash` canonicalization into this repository so C10's payload check can become a real PASS/FAIL. Until then, leave payload recomputation `NOT_SCORABLE`.
 5. Add a pre-registered block-bootstrap report on the post-T0 official nets. Publish it beside the grade. Do not turn it into a new numeric gate in this draft.
 6. For R0, consider also requiring Anchor's official net to beat the 95th percentile of the seeded random books, not only the expected book and the median. Not applied. The binding comparison remains the one in §5.
-7. Do not loosen C7's 2% because sparse `FLAT_MARK` rows miss the intraday low. Leave C7 unscorable until `MARK_RULE_C7_V1` marks exist.
+7. Do not loosen C7's 2%. C7 applies only to Line B. Sparse Line A `FLAT_MARK` rows are not a reason to score Line A on C7, and they are not a reason to lower the Line B bar. Line B stays unscorable until `MARK_RULE_C7_V1` marks exist.
 8. Do not alias `OPEN.net_liquidation_equity` to `equity_at_open`. The readiness note called that a proxy. This draft refuses the alias.
 
 ---
 
 ## 9. Freeze signature (blank on purpose)
 
-I freeze **PROJECT ANCHOR OFFICIAL EVALUATION PASS LINE V1.1** as the sole bar for requesting a minimal-capital live Pilot, until a numbered successor is frozen. Scoring starts at T0. Only trades whose signal (when recorded), entry, and close are all inside `[T0, T_score]` count. Line A rows are not rewritten. Line B, if opened later, starts at its own T_alloc and its own files. Passing does not authorize live trading.
+I freeze **PROJECT ANCHOR OFFICIAL EVALUATION PASS LINE V1.1** as the research baseline for Line A and as the sole bar for requesting a minimal-capital live Pilot once Line B passes, including C6 and C7, until a numbered successor is frozen. Scoring starts at T0. Only trades whose signal (when recorded), entry, and close are all inside `[T0, T_score]` count. Line A rows are not rewritten. Line A passing does not make the book Pilot-eligible for real money. Line B, if opened later, starts at its own T_alloc and its own files. Passing does not authorize live trading.
 
 | Field | Value |
 |-------|--------|
@@ -329,8 +358,13 @@ From a checkout of this repository, against a **copy** of the JSONL. Do not poin
 
 ```bash
 cd /path/to/project-anchor
+python3 scripts/fetch_public_funding_cache.py \
+  --symbol PF_XBTUSD \
+  --out /path/to/copy/external_public_funding_v1.json
 python3 scripts/score_official_fake_fill_pass_line.py \
   --ledger /path/to/copy/anchor_fake_fill_ledger_v2_official.jsonl \
+  --funding-cache /path/to/copy/external_public_funding_v1.json \
+  --line A \
   --t0 'YYYY-MM-DDTHH:MM:SS+08:00' \
   --t-score 'YYYY-MM-DDTHH:MM:SS+08:00' \
   --governance /path/to/copy/governance.jsonl \
@@ -338,13 +372,15 @@ python3 scripts/score_official_fake_fill_pass_line.py \
   --out /path/to/score-report.json
 ```
 
-Omit `--t0` and `--t-score` before freeze. The report will mark the windowed criteria `T0_NOT_FROZEN`. Exit status 0 means a report was written. The grade is the JSON field `overall`. Exit status 2 means the path was refused or a timestamp did not parse.
+`--line` defaults to A unless the copy itself carries the Line B schema. `--funding-cache` is optional. Without it, ledger `MISSING` funding stays `MISSING`. The scorer does not fetch. Omit `--t0` and `--t-score` before freeze. Windowed research criteria then say `T0_NOT_FROZEN`. C6 and C7 on Line A say `LINE_B_ONLY` even then.
+
+Exit status 0 means a report was written. On Line A the grade is `research_baseline` (also copied to `overall`). `pilot_eligible` stays false. On Line B, `overall` includes C6 and C7, and `pilot_eligible` is true only when that overall is PASS. Exit status 2 means the path was refused, a timestamp did not parse, or the funding-cache hash did not match.
 
 Tests:
 
 ```bash
 cd /path/to/project-anchor
-python3 -m unittest tests.test_score_official_fake_fill_pass_line
+python3 -m unittest tests.test_score_official_fake_fill_pass_line tests.test_public_funding_v1
 ```
 
 ---
@@ -357,8 +393,8 @@ Checked in this checkout and against open PRs #416 and #417. None of these facts
 |------|------------------------|
 | V1 R2 text uses profit factor > 1.10. A short summary of that draft still said expectancy > 0. | This draft follows R2. |
 | V1 says a missing required field fails eligibility. | The scorer emits `NOT_SCORABLE` and `overall = NOT_ELIGIBLE`. It does not print a fake measured FAIL. |
-| Readiness note G1 said a missing stop makes C6 fail, and called `OPEN.net_liquidation_equity` a proxy for `equity_at_open`. | C6 is `NOT_SCORABLE_ON_LINE_A`. The proxy is not accepted. |
-| PR #416 is open and states `FORMAL_SCORING_CHAIN=NOT_ON_FORMAL_SCORING_CHAIN`, `OFFICIAL_SIGN_LOCK=NO`, and missing funding stays `EX_FUNDING`. | Funding is still `MISSING` for Line A. That PR does not close C3, C7, or C9. |
+| Readiness note G1 said a missing stop makes C6 fail, and called `OPEN.net_liquidation_equity` a proxy for `equity_at_open`. | C6 is Line B only. On Line A it is `NOT_APPLICABLE`. The proxy is not accepted. The 0.5% bar is unchanged. |
+| PR #416 is open and states `FORMAL_SCORING_CHAIN=NOT_ON_FORMAL_SCORING_CHAIN`, `OFFICIAL_SIGN_LOCK=NO`, and missing funding stays `EX_FUNDING`. | This draft does not adopt that PR. Public funding is a separate derived input, `EXTERNAL_PUBLIC_FUNDING_V1`, and a missing settlement stays `MISSING`. That PR does not close C9 or C10. |
 | PR #417 is open, `DEPLOY=NO`, new `strategy_version`, and it does not load a prior Official ledger. | That is Line B material. It is not merged and must not be backfilled onto Line A. |
 | `affl_v2` writer code is not in this GitHub repository. | The hash recipe and the fee formula are taken from the preflight and from the ledger's own per-exit note, not from a local engine import. |
 | Legacy equity CSV header is 6 columns and the body is 10. | The scorer does not read that CSV. |

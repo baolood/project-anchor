@@ -5,6 +5,12 @@ with zeros, and it does not rewrite Line A rows under a later rule.
 
 Numeric gates C1–C8 and C9's zero-incident bar are the V1 R2 thresholds.
 They are not refit to a ledger outcome.
+
+C6 and C7 are Line B criteria. On Line A they are NOT_APPLICABLE and do not
+enter the research baseline. A Line A research PASS is not Pilot eligibility.
+
+Public funding, when a verified cache is supplied, is labeled
+EXTERNAL_PUBLIC_FUNDING_V1. It is derived. It is not a ledger write.
 """
 
 from __future__ import annotations
@@ -20,7 +26,37 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 from zoneinfo import ZoneInfo
 
+from eval_scoring.public_funding import SCHEMA as FUNDING_SCHEMA
+from eval_scoring.public_funding import FundingBook, FundingCacheError, leg_funding, load_funding_cache_bytes
+
 PASS_LINE_ID = "ANCHOR_OFFICIAL_PASS_LINE_V1_1_FINAL_DRAFT"
+RESEARCH_CRITERIA = (
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
+    "C8",
+    "C9",
+    "C10",
+    "R0_RANDOM_DIRECTION",
+)
+PILOT_CRITERIA = (
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
+    "C6",
+    "C7",
+    "C8",
+    "C9",
+    "C10",
+    "R0_RANDOM_DIRECTION",
+)
+LINE_B_MARKERS = frozenset({"official_ledger_c6_v1", "affl_v2_c6_protective_v1"})
+LINE_A_MARKERS = frozenset({"official_fake_fill_v2"})
+INSTRUMENT_KEYS = ("market", "symbol", "instrument", "product_id")
 WINDOW_DAYS_MIN = 90
 CLOSED_TRADES_MIN = 50
 PF_MIN = Decimal("1.10")
@@ -70,6 +106,8 @@ def score_ledger_file(
     t_score: str | None = None,
     governance_path: Path | str | None = None,
     random_seed: str | None = None,
+    funding_cache: Path | str | None = None,
+    line: str | None = None,
 ) -> dict[str, Any]:
     """Read one regular-file JSONL copy and return a score report."""
     ledger_path = Path(path)
@@ -81,6 +119,17 @@ def score_ledger_file(
         governance, governance_unparsed = _parse_jsonl(governance_blob)
         if governance_unparsed:
             raise ScoringRefusal("governance file has unparsed rows")
+    book: FundingBook | None = None
+    cache_blob: bytes | None = None
+    cache_name: str | None = None
+    if funding_cache is not None:
+        cache_path = Path(funding_cache)
+        cache_blob = _read_only_bytes(cache_path)
+        cache_name = cache_path.name
+        try:
+            book = load_funding_book(cache_blob)
+        except FundingCacheError as exc:
+            raise ScoringRefusal(str(exc)) from exc
     report = score_rows(
         rows,
         unparsed=unparsed,
@@ -88,6 +137,8 @@ def score_ledger_file(
         t_score=t_score,
         governance_rows=governance,
         random_seed=random_seed,
+        funding_book=book,
+        line=line,
     )
     report["input"] = {
         "sha256": hashlib.sha256(blob).hexdigest(),
@@ -96,7 +147,20 @@ def score_ledger_file(
         "read_only": True,
         "bytes_written": 0,
     }
+    if cache_blob is not None:
+        report["funding"]["cache_file"] = {
+            "sha256": hashlib.sha256(cache_blob).hexdigest(),
+            "bytes": len(cache_blob),
+            "basename": cache_name,
+            "read_only": True,
+            "bytes_written": 0,
+        }
     return report
+
+
+def load_funding_book(blob: bytes) -> FundingBook:
+    """Verify an EXTERNAL_PUBLIC_FUNDING_V1 cache. Does not fetch."""
+    return load_funding_cache_bytes(blob)
 
 
 def score_rows(
@@ -107,6 +171,8 @@ def score_rows(
     t_score: str | None = None,
     governance_rows: Sequence[Mapping[str, Any]] | None = None,
     random_seed: str | None = None,
+    funding_book: FundingBook | None = None,
+    line: str | None = None,
 ) -> dict[str, Any]:
     """Score already-parsed ledger objects. `rows` are not mutated."""
     parsed_t0 = _parse_time(t0) if t0 else None
@@ -117,6 +183,7 @@ def score_rows(
         raise ScoringRefusal("t_score is not an ISO-8601 timestamp")
     if parsed_t0 is not None and parsed_score is not None and parsed_score < parsed_t0:
         raise ScoringRefusal("t_score is earlier than t0")
+    resolved_line = _resolve_line(rows, line)
 
     counts: dict[str, int] = {}
     for row in rows:
@@ -127,7 +194,10 @@ def score_rows(
     paired, integrity_errors, open_unclosed = _pair(rows)
     window_ready = parsed_t0 is not None and parsed_score is not None
     selected, excluded = _select_window(paired, parsed_t0, parsed_score)
-    economics = [_economics(trade) for trade in selected]
+    file_instruments = _file_instruments(rows)
+    economics = [
+        _economics(trade, funding_book, file_instruments) for trade in selected
+    ]
 
     criteria: dict[str, Any] = {}
     criteria["C1"] = _score_c1(parsed_t0, parsed_score, window_ready, t0, t_score)
@@ -135,8 +205,8 @@ def score_rows(
     criteria["C3"] = _score_c3(economics, window_ready, integrity_errors, unparsed)
     criteria["C4"] = _score_c4(economics, criteria["C3"], window_ready, integrity_errors, unparsed)
     criteria["C5"] = _score_c5(rows, parsed_t0, parsed_score, window_ready)
-    criteria["C6"] = _score_c6(selected, window_ready, integrity_errors, unparsed)
-    criteria["C7"] = _score_c7(rows, parsed_t0, parsed_score, window_ready)
+    criteria["C6"] = _score_c6(selected, window_ready, integrity_errors, unparsed, resolved_line)
+    criteria["C7"] = _score_c7(rows, parsed_t0, parsed_score, window_ready, resolved_line)
     criteria["C8"] = _score_c8(economics, window_ready, integrity_errors, unparsed)
     criteria["C9"] = _score_c9(governance_rows, parsed_t0, parsed_score, window_ready)
     criteria["C10"] = _score_c10(rows, unparsed)
@@ -144,20 +214,24 @@ def score_rows(
         economics, window_ready, integrity_errors, unparsed, random_seed
     )
 
-    blocking = [
-        name
-        for name, item in criteria.items()
-        if item["status"] != "PASS"
-    ]
-    if any(item["status"] == "FAIL" for item in criteria.values()):
-        overall = "FAIL"
-        overall_reason = "SCORABLE_CRITERION_FAILED"
-    elif blocking:
-        overall = "NOT_ELIGIBLE"
-        overall_reason = "CRITERION_NOT_SCORABLE"
+    research_status, research_reason, research_blocking = _rollup(criteria, RESEARCH_CRITERIA)
+    pilot_status, pilot_reason, pilot_blocking = _rollup(criteria, PILOT_CRITERIA)
+    if resolved_line == "A":
+        overall = research_status
+        overall_reason = research_reason
+        blocking = research_blocking
+        overall_scope = "LINE_A_RESEARCH_BASELINE"
+        pilot_eligible = False
+        pilot_eligible_reason = "LINE_A_PASS_IS_NOT_REAL_MONEY_ELIGIBILITY"
     else:
-        overall = "PASS"
-        overall_reason = "ALL_CRITERIA_PASS"
+        overall = pilot_status
+        overall_reason = pilot_reason
+        blocking = pilot_blocking
+        overall_scope = "LINE_B_PILOT"
+        pilot_eligible = pilot_status == "PASS"
+        pilot_eligible_reason = (
+            "LINE_B_PASSED_INCLUDING_C6_C7" if pilot_eligible else "LINE_B_NOT_ELIGIBLE"
+        )
 
     return {
         "program": "score_official_fake_fill_pass_line",
@@ -165,6 +239,7 @@ def score_rows(
         "frozen": False,
         "thresholds_changed": False,
         "live_trading": "NO-GO",
+        "line": resolved_line,
         "line_a_rewritten": False,
         "rows_retained": len(rows),
         "unparsed": unparsed,
@@ -178,12 +253,18 @@ def score_rows(
         "t0": t0,
         "t_score": t_score,
         "funding_zero_filled": False,
+        "funding": _funding_report(funding_book, economics, file_instruments),
         "program_latency_used_as_fill": False,
         "fill_latency_seconds": _latency_report(paired),
         "criteria": criteria,
         "closed_trades": [_trade_public(trade, econ) for trade, econ in zip(selected, economics)],
+        "research_baseline": research_status,
+        "research_baseline_reason": research_reason,
+        "pilot_eligible": pilot_eligible,
+        "pilot_eligible_reason": pilot_eligible_reason,
         "overall": overall,
         "overall_reason": overall_reason,
+        "overall_scope": overall_scope,
         "blocking_criteria": blocking,
     }
 
@@ -246,8 +327,10 @@ def _score_c3(
     base["value"] = _dec(total)
     base["method"] = (
         "Per trade: exit NET_PNL_EX_FUNDING minus entry fee_paid minus entry "
-        "slippage_cost, plus exit funding_pnl only when FUNDING_DATA_STATUS is PRESENT. "
-        "A null funding amount stays MISSING."
+        "slippage_cost, plus funding only when that funding is PRESENT. "
+        "Ledger PRESENT funding is used when it agrees with the public cache. "
+        "A cache amount is used only when the ledger status is MISSING, and it is "
+        "labeled EXTERNAL_PUBLIC_FUNDING_V1. A missing settlement stays MISSING."
     )
     if total > 0:
         return _pass(base)
@@ -333,13 +416,18 @@ def _score_c6(
     ready: bool,
     integrity_errors: Sequence[str],
     unparsed: int,
+    line: str,
 ) -> dict[str, Any]:
     base = _criterion("C6", "ex_ante_risk_pct", f"<= {MAX_RISK_PCT}")
+    base["applies_to"] = "LINE_B"
     base["method"] = (
-        "risk_pct is the recorded risk_amount / recorded equity_at_open on the entry row. "
-        "preset_stop_price must be present. Outcome PnL is not a stop. "
-        "OPEN.net_liquidation_equity is not equity_at_open."
+        "Line B only. risk_pct is the recorded risk_amount / recorded equity_at_open "
+        "on the entry row. preset_stop_price must be present. Outcome PnL is not a stop. "
+        "OPEN.net_liquidation_equity is not equity_at_open. "
+        "Line A is NOT_APPLICABLE and is not a research-baseline block."
     )
+    if line == "A":
+        return _not_applicable(base, "LINE_B_ONLY")
     if not ready:
         return _not_scorable(base, "T0_NOT_FROZEN")
     if unparsed or integrity_errors:
@@ -352,7 +440,7 @@ def _score_c6(
         equity = _money(trade.entry, "equity_at_open")
         risk = _money(trade.entry, "risk_amount")
         if stop is None or stop == "" or equity is None or risk is None or equity <= 0:
-            return _not_scorable(base, "NOT_SCORABLE_ON_LINE_A")
+            return _not_scorable(base, "EX_ANTE_FIELDS_MISSING")
         risk_pct = risk / equity
         if worst is None or risk_pct > worst:
             worst = risk_pct
@@ -368,21 +456,27 @@ def _score_c7(
     t0: datetime | None,
     t_score: datetime | None,
     ready: bool,
+    line: str,
 ) -> dict[str, Any]:
     base = _criterion("C7", "max_cst_daily_loss", f"<= {MAX_DAILY_LOSS}")
+    base["applies_to"] = "LINE_B"
     base["method"] = (
-        "Same-day (day_open - day_low) / day_open. The T0 calendar day uses equity at T0. "
+        "Line B only. Same-day (day_open - day_low) / day_open. "
+        "The T0 calendar day uses equity at T0. "
         "Later CST days use a MARK_RULE_C7_V1 mark at 00:00 Asia/Shanghai. "
         "day_low is the minimum of BAR_1H and FILL marks. OHLC_ADVERSE_PROXY is excluded. "
-        "FLAT_MARK rows without that rule are not a day low."
+        "FLAT_MARK rows without that rule are not a day low. "
+        "Line A is NOT_APPLICABLE and is not a research-baseline block."
     )
+    if line == "A":
+        return _not_applicable(base, "LINE_B_ONLY")
     if not ready:
         return _not_scorable(base, "T0_NOT_FROZEN")
     assert t0 is not None and t_score is not None
     marks = [_c7_mark(row) for row in rows]
     marks = [item for item in marks if item is not None]
     if not marks:
-        return _not_scorable(base, "NOT_SCORABLE_ON_LINE_A")
+        return _not_scorable(base, "MARK_RULE_C7_V1_ABSENT")
     worst: Decimal | None = None
     day = t0.astimezone(CST).date()
     last_day = t_score.astimezone(CST).date()
@@ -639,7 +733,11 @@ def _seeded_median(economics: Sequence[Mapping[str, Any]], seed: str, *, officia
     return (nets[mid - 1] + nets[mid]) / 2
 
 
-def _economics(trade: ClosedTrade) -> dict[str, Any]:
+def _economics(
+    trade: ClosedTrade,
+    book: FundingBook | None,
+    file_instruments: frozenset[str],
+) -> dict[str, Any]:
     entry_fee = _money(trade.entry, "fee_paid")
     entry_slip = _money(trade.entry, "slippage_cost")
     exit_fee = _money(trade.exit, "fee_paid")
@@ -659,7 +757,9 @@ def _economics(trade: ClosedTrade) -> dict[str, Any]:
         if abs(reconstructed - net_ex) > MONEY_TOLERANCE:
             inconsistent = True
             net_ex = None
-    funding_status, funding_pnl = _funding(trade.exit)
+    resolved = _resolve_funding(trade, book, file_instruments)
+    funding_status = resolved["funding_status"]
+    funding_pnl = resolved["funding_pnl"]
     net_incl: Decimal | None = None
     if net_ex is not None and funding_status == "PRESENT" and funding_pnl is not None:
         net_incl = net_ex + funding_pnl
@@ -687,6 +787,8 @@ def _economics(trade: ClosedTrade) -> dict[str, Any]:
         "net_incl_funding": net_incl,
         "funding_status": funding_status,
         "funding_pnl": funding_pnl,
+        "funding_source": resolved["funding_source"],
+        "funding_detail": resolved["funding_detail"],
         "gross": gross,
         "gross_source": gross_source,
         "costs": costs,
@@ -729,6 +831,134 @@ def _funding(exit_row: Mapping[str, Any]) -> tuple[str, Decimal | None]:
     return "MISSING", None
 
 
+def _resolve_funding(
+    trade: ClosedTrade,
+    book: FundingBook | None,
+    file_instruments: frozenset[str],
+) -> dict[str, Any]:
+    """Combine ledger funding with an optional public cache.
+
+    Ledger PRESENT wins when it agrees with the cache. Disagreement is not
+    averaged. Ledger MISSING may be replaced by a complete public window.
+    A missing hour inside the hold stays MISSING for the whole leg.
+    """
+    ledger_status, ledger_amount = _funding(trade.exit)
+    if book is None:
+        return {
+            "funding_status": ledger_status,
+            "funding_pnl": ledger_amount,
+            "funding_source": "LEDGER_RECORDED" if ledger_status == "PRESENT" else None,
+            "funding_detail": {"external": "NO_CACHE"},
+        }
+    instrument_status, instrument_label = _instrument_status(trade, book, file_instruments)
+    if instrument_status != "OK":
+        if ledger_status == "PRESENT":
+            return {
+                "funding_status": "PRESENT",
+                "funding_pnl": ledger_amount,
+                "funding_source": "LEDGER_RECORDED",
+                "funding_detail": {
+                    "external": "NOT_APPLIED",
+                    "reason": instrument_status,
+                    "instrument_source": instrument_label,
+                },
+            }
+        return {
+            "funding_status": instrument_status,
+            "funding_pnl": None,
+            "funding_source": None,
+            "funding_detail": {
+                "external": "NOT_APPLIED",
+                "reason": instrument_status,
+                "instrument_source": instrument_label,
+            },
+        }
+    external = _external_leg(trade, book)
+    detail = {
+        "instrument_source": instrument_label,
+        "cache_symbol": book.symbol,
+        "external_status": external["status"],
+        "settlements": external["settlements"],
+        "missing_settlements": external["missing_settlements"],
+        "hours": _dec(external["hours"]) if external["status"] == "PRESENT" else MISSING,
+    }
+    if ledger_status == "PRESENT" and ledger_amount is not None:
+        if external["status"] == "PRESENT" and external["amount"] is not None:
+            if abs(external["amount"] - ledger_amount) > MONEY_TOLERANCE:
+                return {
+                    "funding_status": "LEDGER_EXTERNAL_DISAGREE",
+                    "funding_pnl": None,
+                    "funding_source": None,
+                    "funding_detail": {
+                        **detail,
+                        "ledger_funding_pnl": _dec(ledger_amount),
+                        "external_funding_pnl": _dec(external["amount"]),
+                    },
+                }
+        return {
+            "funding_status": "PRESENT",
+            "funding_pnl": ledger_amount,
+            "funding_source": "LEDGER_RECORDED",
+            "funding_detail": detail,
+        }
+    if ledger_status in {"PARTIAL", "NO_INTERVAL"}:
+        return {
+            "funding_status": ledger_status,
+            "funding_pnl": None,
+            "funding_source": None,
+            "funding_detail": {**detail, "external": "NOT_APPLIED_OVER_LEDGER_PARTIAL"},
+        }
+    if external["status"] == "PRESENT" and external["amount"] is not None:
+        return {
+            "funding_status": "PRESENT",
+            "funding_pnl": external["amount"],
+            "funding_source": FUNDING_SCHEMA,
+            "funding_detail": detail,
+        }
+    return {
+        "funding_status": "MISSING",
+        "funding_pnl": None,
+        "funding_source": None,
+        "funding_detail": detail,
+    }
+
+
+def _external_leg(trade: ClosedTrade, book: FundingBook) -> dict[str, Any]:
+    entry_at = _parse_time(trade.entry.get("fill_time_utc"))
+    exit_at = _parse_time(trade.exit.get("fill_time_utc"))
+    quantity = _money(trade.entry, "quantity")
+    exit_quantity = _money(trade.exit, "quantity") if "quantity" in trade.exit else quantity
+    side = _side_sign(trade.entry)
+    empty = {
+        "status": "MISSING",
+        "amount": None,
+        "hours": Decimal(0),
+        "settlements": 0,
+        "missing_settlements": 0,
+    }
+    if entry_at is None or exit_at is None or side is None:
+        return empty
+    if quantity is None or quantity <= 0:
+        return empty
+    if exit_quantity is not None and abs(exit_quantity - quantity) > MONEY_TOLERANCE:
+        return empty
+    # Long pays a positive rate, so the short-receives flag is the opposite of the price sign.
+    leg = leg_funding(
+        book,
+        entry_at=entry_at,
+        exit_at=exit_at,
+        quantity=quantity,
+        short_receives_positive=side < 0,
+    )
+    return {
+        "status": leg.status,
+        "amount": leg.amount,
+        "hours": leg.hours,
+        "settlements": leg.settlements,
+        "missing_settlements": len(leg.missing_periods),
+    }
+
+
 def _gross_from_fills(trade: ClosedTrade) -> Decimal | None:
     entry_px = _money(trade.entry, "effective_price")
     exit_px = _money(trade.exit, "effective_price")
@@ -743,7 +973,16 @@ def _gross_from_fills(trade: ClosedTrade) -> Decimal | None:
 def _first_cost_block(economics: Sequence[Mapping[str, Any]]) -> str | None:
     if any(item["inconsistent"] for item in economics):
         return "NET_AND_GROSS_INCONSISTENT"
-    if any(item["funding_status"] != "PRESENT" for item in economics):
+    for item in economics:
+        status = item["funding_status"]
+        if status == "PRESENT":
+            continue
+        if status == "LEDGER_EXTERNAL_DISAGREE":
+            return "FUNDING_LEDGER_EXTERNAL_DISAGREE"
+        if status == "INSTRUMENT_MISMATCH":
+            return "FUNDING_INSTRUMENT_MISMATCH"
+        if status == "MULTIPLE_INSTRUMENTS":
+            return "FUNDING_MULTIPLE_INSTRUMENTS"
         return "NOT_SCORABLE_ON_LINE_A"
     if any(item["net_incl_funding"] is None for item in economics):
         return "COSTS_MISSING"
@@ -889,6 +1128,7 @@ def _trade_public(trade: ClosedTrade, econ: Mapping[str, Any]) -> dict[str, Any]
         "net_ex_funding": _dec(econ["net_ex_funding"]) if econ["net_ex_funding"] is not None else MISSING,
         "funding_status": econ["funding_status"],
         "funding_pnl": _dec(econ["funding_pnl"]) if econ["funding_pnl"] is not None else MISSING,
+        "funding_source": econ["funding_source"],
         "official_net": _dec(econ["net_incl_funding"]) if econ["net_incl_funding"] is not None else MISSING,
         "quantity": trade.entry.get("quantity"),
     }
@@ -922,6 +1162,140 @@ def _not_scorable(base: dict[str, Any], reason: str) -> dict[str, Any]:
     base["status"] = "NOT_SCORABLE"
     base["reason"] = reason
     return base
+
+
+def _not_applicable(base: dict[str, Any], reason: str) -> dict[str, Any]:
+    base["status"] = "NOT_APPLICABLE"
+    base["reason"] = reason
+    return base
+
+
+def _rollup(
+    criteria: Mapping[str, Mapping[str, Any]],
+    names: Sequence[str],
+) -> tuple[str, str, list[str]]:
+    blocking = [name for name in names if criteria[name]["status"] != "PASS"]
+    if any(criteria[name]["status"] == "FAIL" for name in names):
+        return "FAIL", "SCORABLE_CRITERION_FAILED", blocking
+    if blocking:
+        return "NOT_ELIGIBLE", "CRITERION_NOT_SCORABLE", blocking
+    return "PASS", "ALL_CRITERIA_PASS", []
+
+
+def _resolve_line(rows: Sequence[Mapping[str, Any]], requested: str | None) -> str:
+    if requested is not None:
+        label = requested.strip().upper()
+        if label not in {"A", "B"}:
+            raise ScoringRefusal("line must be A or B")
+        return label
+    seen: set[str] = set()
+    for row in rows:
+        for key in ("schema", "ledger_schema", "kind", "strategy_version"):
+            value = row.get(key)
+            if not isinstance(value, str):
+                continue
+            text = value.strip()
+            if text in LINE_B_MARKERS:
+                seen.add("B")
+            elif text in LINE_A_MARKERS:
+                seen.add("A")
+    if seen == {"B"}:
+        return "B"
+    if seen == {"A", "B"}:
+        raise ScoringRefusal("ledger copy mixes Line A and Line B schema markers")
+    return "A"
+
+
+def _file_instruments(rows: Sequence[Mapping[str, Any]]) -> frozenset[str]:
+    found: set[str] = set()
+    for row in rows:
+        instrument = _row_instrument(row)
+        if instrument and instrument != "CONFLICT":
+            found.add(instrument)
+    return frozenset(found)
+
+
+def _row_instrument(row: Mapping[str, Any]) -> str | None:
+    values: list[str] = []
+    for key in INSTRUMENT_KEYS:
+        value = row.get(key)
+        if isinstance(value, str) and value.strip():
+            values.append(value.strip())
+    unique = set(values)
+    if not unique:
+        return None
+    if len(unique) > 1:
+        return "CONFLICT"
+    return next(iter(unique))
+
+
+def _instrument_status(
+    trade: ClosedTrade,
+    book: FundingBook,
+    file_instruments: frozenset[str],
+) -> tuple[str, str]:
+    entry_instrument = _row_instrument(trade.entry)
+    exit_instrument = _row_instrument(trade.exit)
+    if entry_instrument == "CONFLICT" or exit_instrument == "CONFLICT":
+        return "INSTRUMENT_MISMATCH", "ROW_FIELDS_DISAGREE"
+    if entry_instrument and exit_instrument and entry_instrument != exit_instrument:
+        return "INSTRUMENT_MISMATCH", "ENTRY_EXIT_DISAGREE"
+    instrument = entry_instrument or exit_instrument
+    if instrument is None:
+        if len(file_instruments) > 1:
+            return "MULTIPLE_INSTRUMENTS", "LEDGER_MARKET_ABSENT_FILE_HAS_MANY"
+        if len(file_instruments) == 1:
+            instrument = next(iter(file_instruments))
+            if instrument != book.symbol:
+                return "INSTRUMENT_MISMATCH", "FILE_INSTRUMENT_DIFFERS_FROM_CACHE"
+            return "OK", "LEDGER_MARKET_ABSENT_FILE_HAS_ONE_INSTRUMENT"
+        return "OK", "CACHE_SYMBOL_LEDGER_MARKET_ABSENT"
+    if instrument != book.symbol:
+        return "INSTRUMENT_MISMATCH", "LEDGER_ROW"
+    return "OK", "LEDGER_ROW"
+
+
+def _funding_report(
+    book: FundingBook | None,
+    economics: Sequence[Mapping[str, Any]],
+    file_instruments: frozenset[str],
+) -> dict[str, Any]:
+    labels = sorted(
+        {
+            str(item["funding_detail"].get("instrument_source"))
+            for item in economics
+            if isinstance(item.get("funding_detail"), Mapping)
+            and item["funding_detail"].get("instrument_source")
+        }
+    )
+    sources = sorted({item["funding_source"] for item in economics if item.get("funding_source")})
+    report: dict[str, Any] = {
+        "zero_filled": False,
+        "derived": book is not None,
+        "ledger_recorded": "LEDGER_RECORDED" in sources,
+        "sources_used": sources,
+        "ledger_instruments": sorted(file_instruments),
+        "instrument_sources": labels,
+    }
+    if book is None:
+        report["label"] = None
+        report["cache"] = None
+        return report
+    report["label"] = FUNDING_SCHEMA
+    report["cache"] = {
+        "schema": book.schema,
+        "symbol": book.symbol,
+        "source_url": book.source_url,
+        "fetched_at": book.fetched_at,
+        "contract_size": _dec(book.contract_size),
+        "contract_size_source": book.contract_size_source,
+        "convention": book.convention,
+        "rates_sha256": book.rates_sha256,
+        "rate_count": len(book.rates),
+        "derived": True,
+        "ledger_recorded": False,
+    }
+    return report
 
 
 def _read_only_bytes(path: Path) -> bytes:

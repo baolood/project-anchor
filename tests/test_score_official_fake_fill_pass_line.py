@@ -194,8 +194,26 @@ class PassLineScorerTest(unittest.TestCase):
         self.assertEqual(criteria["C4"]["status"], "PASS")
         self.assertEqual(criteria["C4"]["value"], "2")
         self.assertEqual(criteria["C5"]["status"], "PASS")
-        self.assertEqual(criteria["C6"]["status"], "PASS")
-        self.assertEqual(criteria["C7"]["status"], "PASS")
+        self.assertEqual(criteria["C6"]["status"], "NOT_APPLICABLE")
+        self.assertEqual(criteria["C6"]["reason"], "LINE_B_ONLY")
+        self.assertEqual(criteria["C7"]["status"], "NOT_APPLICABLE")
+        self.assertEqual(criteria["C7"]["reason"], "LINE_B_ONLY")
+        self.assertEqual(report["line"], "A")
+        self.assertEqual(report["overall_scope"], "LINE_A_RESEARCH_BASELINE")
+        self.assertFalse(report["pilot_eligible"])
+        self.assertEqual(report["pilot_eligible_reason"], "LINE_A_PASS_IS_NOT_REAL_MONEY_ELIGIBILITY")
+        line_b = score_rows(
+            _passing_rows(),
+            t0=T0,
+            t_score=T_SCORE,
+            governance_rows=_governance(),
+            random_seed="freeze-seed-v1",
+            line="B",
+        )
+        self.assertEqual(line_b["criteria"]["C6"]["status"], "PASS")
+        self.assertEqual(line_b["criteria"]["C7"]["status"], "PASS")
+        self.assertEqual(line_b["line"], "B")
+        self.assertFalse(line_b["pilot_eligible"])
         self.assertEqual(criteria["C8"]["status"], "PASS")
         self.assertEqual(criteria["C9"]["status"], "PASS")
         self.assertEqual(criteria["C9"]["value"]["UNAUTHORIZED_PRIVILEGE"], 0)
@@ -280,9 +298,13 @@ class PassLineScorerTest(unittest.TestCase):
         rows[0]["net_liquidation_equity"] = "10000"
         report = score_rows(rows, t0=T0, t_score=T_SCORE)
         c6 = report["criteria"]["C6"]
-        self.assertEqual(c6["status"], "NOT_SCORABLE")
-        self.assertEqual(c6["reason"], "NOT_SCORABLE_ON_LINE_A")
+        self.assertEqual(c6["status"], "NOT_APPLICABLE")
+        self.assertEqual(c6["reason"], "LINE_B_ONLY")
         self.assertIsNone(c6["value"])
+        line_b = score_rows(rows, t0=T0, t_score=T_SCORE, line="B")
+        self.assertEqual(line_b["criteria"]["C6"]["status"], "NOT_SCORABLE")
+        self.assertEqual(line_b["criteria"]["C6"]["reason"], "EX_ANTE_FIELDS_MISSING")
+        self.assertIsNone(line_b["criteria"]["C6"]["value"])
 
     def test_recorded_risk_above_cap_fails(self) -> None:
         rows = _chain(
@@ -292,8 +314,11 @@ class PassLineScorerTest(unittest.TestCase):
             ]
         )
         rows[0]["risk_amount"] = "51"
-        report = score_rows(rows, t0=T0, t_score=T_SCORE)
+        line_a = score_rows(rows, t0=T0, t_score=T_SCORE)
+        self.assertEqual(line_a["criteria"]["C6"]["status"], "NOT_APPLICABLE")
+        report = score_rows(rows, t0=T0, t_score=T_SCORE, line="B")
         self.assertEqual(report["criteria"]["C6"]["status"], "FAIL")
+        self.assertEqual(report["criteria"]["C6"]["reason"], "RISK_PCT_ABOVE_0_5_PERCENT")
 
     def test_inconsistent_exit_net_and_gross_are_not_averaged(self) -> None:
         rows = _chain(
@@ -344,14 +369,21 @@ class PassLineScorerTest(unittest.TestCase):
             ]
         )
         report = score_rows(rows, t0=T0, t_score="2026-01-02T00:00:00Z")
-        self.assertEqual(report["criteria"]["C7"]["status"], "NOT_SCORABLE")
-        self.assertEqual(report["criteria"]["C7"]["reason"], "NOT_SCORABLE_ON_LINE_A")
+        self.assertEqual(report["criteria"]["C7"]["status"], "NOT_APPLICABLE")
+        self.assertEqual(report["criteria"]["C7"]["reason"], "LINE_B_ONLY")
         self.assertIsNone(report["criteria"]["C7"]["value"])
+        line_b = score_rows(rows, t0=T0, t_score="2026-01-02T00:00:00Z", line="B")
+        self.assertEqual(line_b["criteria"]["C7"]["status"], "NOT_SCORABLE")
+        self.assertEqual(line_b["criteria"]["C7"]["reason"], "MARK_RULE_C7_V1_ABSENT")
+        self.assertIsNone(line_b["criteria"]["C7"]["value"])
 
     def test_daily_loss_above_two_percent_fails_when_marks_exist(self) -> None:
         rows = _chain([_mark(T0, "10000"), _mark("2026-01-01T06:00:00Z", "9700")])
-        report = score_rows(rows, t0=T0, t_score="2026-01-01T12:00:00Z")
+        line_a = score_rows(rows, t0=T0, t_score="2026-01-01T12:00:00Z")
+        self.assertEqual(line_a["criteria"]["C7"]["status"], "NOT_APPLICABLE")
+        report = score_rows(rows, t0=T0, t_score="2026-01-01T12:00:00Z", line="B")
         self.assertEqual(report["criteria"]["C7"]["status"], "FAIL")
+        self.assertEqual(report["criteria"]["C7"]["reason"], "DAILY_LOSS_ABOVE_2_PERCENT")
 
     def test_concentration_above_25_percent_fails(self) -> None:
         rows = []
@@ -469,10 +501,14 @@ class PassLineScorerTest(unittest.TestCase):
 
     def test_without_t0_post_freeze_criteria_are_not_scorable(self) -> None:
         report = score_rows(_passing_rows())
-        for name in ("C1", "C2", "C3", "C6", "R0_RANDOM_DIRECTION"):
+        for name in ("C1", "C2", "C3", "R0_RANDOM_DIRECTION"):
             self.assertEqual(report["criteria"][name]["status"], "NOT_SCORABLE")
             self.assertEqual(report["criteria"][name]["reason"], "T0_NOT_FROZEN")
+        self.assertEqual(report["criteria"]["C6"]["status"], "NOT_APPLICABLE")
+        self.assertEqual(report["criteria"]["C6"]["reason"], "LINE_B_ONLY")
+        self.assertEqual(report["criteria"]["C7"]["reason"], "LINE_B_ONLY")
         self.assertEqual(report["overall"], "NOT_ELIGIBLE")
+        self.assertFalse(report["pilot_eligible"])
 
     def test_ledger_copy_is_not_modified_and_sealed_paths_are_refused(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
