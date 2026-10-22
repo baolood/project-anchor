@@ -40,6 +40,10 @@ from eval_scoring.public_funding import SCHEMA as FUNDING_SCHEMA
 from eval_scoring.public_funding import FundingBook, FundingCacheError, leg_funding, load_funding_cache_bytes
 
 PASS_LINE_ID = "ANCHOR_OFFICIAL_PASS_LINE_V1_1_FINAL_DRAFT"
+FROZEN_T0 = "2026-10-22T20:27:21+08:00"
+GOVERNANCE_REGISTER_PATH = (
+    Path(__file__).resolve().parents[1] / "governance" / "ANCHOR_C9_GOVERNANCE_REGISTER.jsonl"
+)
 RESEARCH_CRITERIA = (
     "C1",
     "C2",
@@ -187,6 +191,8 @@ def score_rows(
     header_rows_skipped: int = 0,
 ) -> dict[str, Any]:
     """Score already-parsed ledger objects. `rows` are not mutated."""
+    if t0 is None:
+        t0 = FROZEN_T0
     parsed_t0 = _parse_time(t0) if t0 else None
     parsed_score = _parse_time(t_score) if t_score else None
     if t0 and parsed_t0 is None:
@@ -248,7 +254,8 @@ def score_rows(
     return {
         "program": "score_official_fake_fill_pass_line",
         "pass_line_id": PASS_LINE_ID,
-        "frozen": False,
+        "frozen": True,
+        "frozen_t0": FROZEN_T0,
         "thresholds_changed": False,
         "live_trading": "NO-GO",
         "line": resolved_line,

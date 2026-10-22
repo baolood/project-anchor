@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 
-from eval_scoring.line_a_pass_line import ScoringRefusal, score_ledger_file, score_rows
+from eval_scoring.line_a_pass_line import FROZEN_T0, ScoringRefusal, score_ledger_file, score_rows
 from eval_scoring.official_v2_row_hash import (
     GENESIS_PREV_HASH,
     GOVERNANCE_GENESIS_PREV_HASH,
@@ -225,7 +225,8 @@ class PassLineScorerTest(unittest.TestCase):
         self.assertTrue(line_b["pilot_eligible"])
         self.assertEqual(line_b["pilot_eligible_reason"], "LINE_B_PASSED_INCLUDING_C6_C7")
         self.assertEqual(line_b["live_trading"], "NO-GO")
-        self.assertFalse(line_b["frozen"])
+        self.assertTrue(line_b["frozen"])
+        self.assertEqual(line_b["frozen_t0"], FROZEN_T0)
         self.assertEqual(report["research_baseline"], "PASS")
         self.assertEqual(report["overall"], "PASS")
         self.assertEqual(criteria["C8"]["status"], "PASS")
@@ -667,6 +668,21 @@ class PassLineScorerTest(unittest.TestCase):
         report = score_rows(_chain([_mark(T0)]), t0=T0, t_score=T_SCORE, governance_rows=rows)
         self.assertEqual(report["criteria"]["C9"]["status"], "NOT_SCORABLE")
         self.assertEqual(report["criteria"]["C9"]["reason"], "GOVERNANCE_COVERAGE_NOT_ATTESTED")
+
+    def test_live_governance_register_starts_empty(self) -> None:
+        live = PROJECT_ROOT / "governance" / "ANCHOR_C9_GOVERNANCE_REGISTER.jsonl"
+        self.assertTrue(live.is_file())
+        self.assertEqual(live.read_bytes(), b"")
+        self.assertEqual(FROZEN_T0, "2026-10-22T20:27:21+08:00")
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp) / "copy.jsonl"
+            _write_jsonl(ledger, _chain([_mark(T0)]))
+            report = score_ledger_file(ledger, t0=T0, t_score=T_SCORE, governance_path=live)
+        self.assertEqual(report["criteria"]["C9"]["status"], "NOT_SCORABLE")
+        self.assertEqual(report["criteria"]["C9"]["reason"], "EMPTY_GOVERNANCE_REGISTER")
+        self.assertTrue(report["frozen"])
+        self.assertEqual(report["frozen_t0"], FROZEN_T0)
+        self.assertEqual(report["live_trading"], "NO-GO")
 
     def test_template_register_is_not_a_passing_attestation(self) -> None:
         self.assertTrue(C9_TEMPLATE.is_file())

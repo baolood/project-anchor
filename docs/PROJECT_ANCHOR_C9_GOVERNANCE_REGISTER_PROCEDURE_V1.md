@@ -1,9 +1,10 @@
 # C9 治理登记册操作说明 V1
 
 **文档编号：** `ANCHOR_C9_GOVERNANCE_REGISTER_PROCEDURE_V1`  
-**状态：** 操作说明。不是成绩，不是冻结。  
+**状态：** 操作说明。合格线已 FROZEN。本说明不是成绩。  
 **适用：** A 线研究基线，以及 B 线试点资格。阈值仍是四类违规都为 0。  
-**模板：** `docs/templates/ANCHOR_C9_GOVERNANCE_REGISTER_TEMPLATE.jsonl`  
+**正式登记册：** `governance/ANCHOR_C9_GOVERNANCE_REGISTER.jsonl`。从 T0 起是空文件，尚无任何一行。下一行追加时，`prev_hash` 用 `GOVERNANCE_GENESIS`。  
+**模板：** `docs/templates/ANCHOR_C9_GOVERNANCE_REGISTER_TEMPLATE.jsonl`。模板行留在文档里，不在正式登记册里。  
 **哈希：** 与账本同一套 Official V2 算法，见 `eval_scoring/official_v2_row_hash.py`。创世值是 `GOVERNANCE_GENESIS`，不是账本的 `GENESIS`。
 
 ## 中文
@@ -37,7 +38,7 @@
 - 违规数为 0，但没有盖住窗口的创始人证明：`NOT_SCORABLE` / `GOVERNANCE_COVERAGE_NOT_ATTESTED`。
 - **PASS** 只有一种：窗口内违规数为 0，并且有一行 `founder_signed` 为布尔 `true` 的 `ATTEST_COVERAGE` 盖住整个窗口。
 
-模板里的那一行 `founder_signed` 是 `false`，窗口也不是真实 T0。打分时它不会得到 PASS。T0 当天删掉模板行，从 `gov-000001` 起写真实登记册。
+模板里的那一行 `founder_signed` 是 `false`，窗口也不是真实 T0。打分时它不会得到 PASS。模板文件仍留在 `docs/templates/`。正式登记册是 `governance/ANCHOR_C9_GOVERNANCE_REGISTER.jsonl`。T0 起该文件为空，模板行没有写进去。第一行真正追加时，`prev_hash` 为 `GOVERNANCE_GENESIS`。现在还没有追加。
 
 写入用只追加。算哈希时不要改账本文件。若成交账本的 writer 改了哈希算法，先重新核对 `eval_scoring/official_v2_row_hash.py`，再继续给登记册签名。
 
@@ -53,4 +54,4 @@ Hashing uses the Official V2 recipe with genesis `GOVERNANCE_GENESIS`. The first
 
 Missing file: `NOT_SCORABLE` / `GOVERNANCE_REGISTER_ABSENT`. Empty file: `NOT_SCORABLE` / `EMPTY_GOVERNANCE_REGISTER`. A broken hash is **FAIL**, not a silent zero. A breach inside the window is **FAIL** even when the attestation is absent. Zero breaches without a covering Founder row stay `NOT_SCORABLE` / `GOVERNANCE_COVERAGE_NOT_ATTESTED`. **PASS** means zero in-window breaches and one covering attestation.
 
-The template row is hashed and has `founder_signed: false`. Delete it when the real register starts at T0. Re-check the vendored hash module if the trade-ledger writer changes.
+The template row is hashed and has `founder_signed: false`. It stays in `docs/templates/`. The live register is `governance/ANCHOR_C9_GOVERNANCE_REGISTER.jsonl`. That file is empty from T0, so the template row is not in it. The first appended row uses `prev_hash` `GOVERNANCE_GENESIS`. Nothing has been appended. Re-check the vendored hash module if the trade-ledger writer changes.

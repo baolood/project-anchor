@@ -1,8 +1,8 @@
 # PROJECT ANCHOR OFFICIAL EVALUATION PASS LINE V1.1
 
-**Document status:** FINAL DRAFT. Not frozen. Not binding.  
+**Document status:** FROZEN.  
 **Document ID:** `ANCHOR_OFFICIAL_PASS_LINE_V1_1_FINAL_DRAFT`  
-**Supersedes, once frozen:** `ANCHOR_OFFICIAL_PASS_LINE_V1` (freeze candidate R2, 2026-09-30, never signed)  
+**Supersedes:** `ANCHOR_OFFICIAL_PASS_LINE_V1` (freeze candidate R2, 2026-09-30, never signed)  
 **Prepared:** 2026-10-22  
 **Purpose:** Research baseline for Line A, and the Pilot-request gate only when Line B passes, including C6 and C7.  
 **Not a purpose:** Proof of long-term profitability. A grade of the pre-T0 book. Authorization to trade.  
@@ -14,7 +14,7 @@
 
 Scorer: `scripts/score_official_fake_fill_pass_line.py`  
 Field inventory: `docs/PROJECT_ANCHOR_OFFICIAL_FAKE_FILL_LINE_A_SCORING_FIELD_GAP_V1.md`  
-Sign-off page (Chinese first; freeze fields blank): `docs/PROJECT_ANCHOR_OFFICIAL_EVALUATION_PASS_LINE_V1_1_SIGN_OFF.md`  
+Sign-off page (FROZEN; SHA fields say `see freeze record`): `docs/PROJECT_ANCHOR_OFFICIAL_EVALUATION_PASS_LINE_V1_1_SIGN_OFF.md`  
 C9 register procedure: `docs/PROJECT_ANCHOR_C9_GOVERNANCE_REGISTER_PROCEDURE_V1.md`
 
 ---
@@ -60,7 +60,7 @@ Binding rules carried forward from V1, with the Line A / Line B split added in t
 | Clock | Meaning |
 |-------|---------|
 | Genesis | Account start of the existing book. The 2026-09-30 readiness note records a legacy equity seed at `2026-09-27T15:41:34Z`, label `LEDGER_GENESIS`, starting equity `10000`. That instant is **not** T0. |
-| T0 | Asia/Shanghai wall time when the Founder freezes this file. Blank until §9 is signed. |
+| T0 | `2026-10-22T20:27:21+08:00`. Asia/Shanghai wall time of the freeze commit. |
 | T_score | Grading timestamp declared by the Founder. |
 | Counted trade | One paired open→close whose `signal_available_at` (when the key exists), entry `fill_time_utc`, and exit `fill_time_utc` are all inside `[T0, T_score]`. |
 | Pre-freeze evidence | Every row before T0, including the book that already exists on 2026-10-22. Retained. Not graded. |
@@ -69,7 +69,7 @@ Binding rules carried forward from V1, with the Line A / Line B split added in t
 
 A trade opened before T0 and closed after T0 is contamination. It stays in the file and is excluded from C2–C8 and R0.
 
-The scorer prints `T0_NOT_FROZEN` for every windowed criterion until both timestamps are supplied. Supplying them on the command line does not freeze this document.
+The scorer's default `--t0` is this frozen value. `T_score` is still supplied at grading. A windowed criterion stays `T0_NOT_FROZEN` until `T_score` is supplied. An explicit `--t0` on one run does not move this frozen T0. The R0 seed was left blank. The expected random-direction book remains the binding comparison.
 
 ---
 
@@ -356,22 +356,22 @@ These do **not** change the thresholds in §0.
 
 ---
 
-## 9. Freeze signature (blank on purpose)
+## 9. Freeze signature (FROZEN)
 
 I freeze **PROJECT ANCHOR OFFICIAL EVALUATION PASS LINE V1.1** as the research baseline for Line A and as the sole bar for requesting a minimal-capital live Pilot once Line B passes, including C6 and C7, until a numbered successor is frozen. Scoring starts at T0. Only trades whose signal (when recorded), entry, and close are all inside `[T0, T_score]` count. Line A rows are not rewritten. Line A passing does not make the book Pilot-eligible for real money. Line B, if opened later, starts at its own T_alloc and its own files. Passing does not authorize live trading.
 
 | Field | Value |
 |-------|--------|
-| Freeze time T0 (Asia/Shanghai) | ____________________ |
-| T_alloc for any new capital-allocation rule | ____________________ (blank if none) |
-| Founder name | ____________________ |
-| Signature / mark | ____________________ |
-| Document SHA-256 (**required at freeze**) | ____________________ |
-| Git commit SHA of this frozen file (**required at freeze**) | ____________________ |
-| R0 random-direction seed (**required at freeze if seeded median is in force**) | ____________________ |
-| `T0_FROZEN` | `NO` until this table is filled and the hash is committed |
+| Freeze time T0 (Asia/Shanghai) | `2026-10-22T20:27:21+08:00` |
+| T_alloc for any new capital-allocation rule | blank (no new allocation rule) |
+| Founder name | baolood herid |
+| Signature / mark | Founder chat confirmation 2026-10-22 20:24 Asia/Shanghai via Grok Bot |
+| Document SHA-256 (**required at freeze**) | see freeze record |
+| Git commit SHA of this frozen file (**required at freeze**) | see freeze record |
+| R0 random-direction seed (**required at freeze if seeded median is in force**) | blank |
+| `T0_FROZEN` | `YES` |
 
-The scorer's `frozen` field stays `false`. Filling this table in a later commit is the freeze. This draft does not fill it.
+The scorer's `frozen` field is `true`. Its `frozen_t0` is the T0 above. The sign-off page SHA-256 and this freeze commit's SHA are in the freeze record, not in this table. Thresholds are unchanged. Live trading stays NO-GO.
 
 ---
 
@@ -395,7 +395,7 @@ python3 scripts/score_official_fake_fill_pass_line.py \
   --out /path/to/score-report.json
 ```
 
-`--line` defaults to A unless the copy itself carries the Line B schema. `--funding-cache` is optional. Without it, ledger `MISSING` funding stays `MISSING`. The scorer does not fetch. Omit `--t0` and `--t-score` before freeze. Windowed research criteria then say `T0_NOT_FROZEN`. C6 and C7 on Line A say `LINE_B_ONLY` even then.
+`--line` defaults to A unless the copy itself carries the Line B schema. `--funding-cache` is optional. Without it, ledger `MISSING` funding stays `MISSING`. The scorer does not fetch. `--t0` defaults to `2026-10-22T20:27:21+08:00`. Omit `--t-score` until grading; windowed research criteria then say `T0_NOT_FROZEN`. `--governance` defaults to `governance/ANCHOR_C9_GOVERNANCE_REGISTER.jsonl`, which is empty. An empty register is `NOT_SCORABLE`, not zero. `--random-seed` stays unset. C6 and C7 on Line A say `LINE_B_ONLY`.
 
 Exit status 0 means a report was written. On Line A the grade is `research_baseline` (also copied to `overall`). `pilot_eligible` stays false. On Line B, `overall` includes C6 and C7, and `pilot_eligible` is true only when that overall is PASS. Exit status 2 means the path was refused, a timestamp did not parse, or the funding-cache hash did not match.
 

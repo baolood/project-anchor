@@ -1,6 +1,6 @@
 # 官方评估合格线 V1.1 签署页
 
-**状态：** 草稿。未冻结。本页不填冻结栏。  
+**状态：** FROZEN。阈值未改。实盘仍是 NO-GO。  
 **文档编号：** `ANCHOR_OFFICIAL_PASS_LINE_V1_1_SIGN_OFF`  
 **完整条文：** `docs/PROJECT_ANCHOR_OFFICIAL_EVALUATION_PASS_LINE_V1_1_FINAL_DRAFT.md`  
 **阈值：** 与 V1 R2 相同，本页不改。  
@@ -29,24 +29,24 @@ C10 的来源：Mac Official runner 包 `affl-v2-official-auto-ingest-runtime.tg
 
 ## English mirror
 
-This page is a draft. Thresholds are unchanged. Freeze fields stay blank. Live trading stays NO-GO. A Line A pass is the research baseline and is not real-money eligibility. Real-money eligibility requires Line B, including C6 and C7, and still does not authorize orders. Pre-T0 rows and the 808-row recompute are evidence, not a grade.
+This page is FROZEN. Thresholds are unchanged. Live trading stays NO-GO. A Line A pass is the research baseline and is not real-money eligibility. Real-money eligibility requires Line B, including C6 and C7, and still does not authorize orders. Pre-T0 rows and the 808-row recompute are evidence, not a grade.
 
 C1: at least 90 days, from the freeze timestamps. C2: at least 50 closed trades fully inside the window, paired in file order. C3: net after fee, funding, and slippage is greater than 0; a missing funding amount stays missing. C4: profit factor greater than 1.10. C5: recomputed max drawdown at most 8%. C6: ex-ante risk at most 0.5%, Line B only. C7: daily loss at most 2%, Line B only. C8: best winner at most 25% of the positive pool. C9: zero governance breaches plus a Founder attestation covering the window; empty or missing register is not scorable. C10: every row hash recomputes, the chain links from `GENESIS`, ids are contiguous from 1, and nothing is unparsed. R0: official net beats the expected random-direction net.
 
 ## 冻结清单
 
-填写下表、记下哈希、并另一次提交，才是冻结。本草稿不填。
+本页已冻结。两个 SHA 栏写 `see freeze record`。签署页正文的 SHA-256 与本提交的 commit SHA 记在下一份冻结记录里，本提交不把它们写回本页。
 
 | 项 | 值 |
 |----|----|
-| 本签署页 SHA-256 | ____________________ |
-| 对应 git commit SHA | ____________________ |
-| T0（Asia/Shanghai） | ____________________ |
-| T_alloc（若没有新的资金分配规则则留空） | ____________________ |
-| 创始人姓名 | ____________________ |
-| 签名 | ____________________ |
-| R0 随机种子（若启用种子中位数） | ____________________ |
-| `T0_FROZEN` | `NO` |
+| 本签署页 SHA-256 | see freeze record |
+| 对应 git commit SHA | see freeze record |
+| T0（Asia/Shanghai） | 2026-10-22T20:27:21+08:00 |
+| T_alloc（若没有新的资金分配规则则留空） | blank (no new allocation rule) |
+| 创始人姓名 | baolood herid |
+| 签名 | Founder chat confirmation 2026-10-22 20:24 Asia/Shanghai via Grok Bot |
+| R0 随机种子（若启用种子中位数） | blank |
+| `T0_FROZEN` | `YES` |
 
 冻结时要做的事：
 

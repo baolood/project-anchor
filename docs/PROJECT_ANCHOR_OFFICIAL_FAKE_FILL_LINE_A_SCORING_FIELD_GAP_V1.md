@@ -1,7 +1,7 @@
 # Official Fake-Fill Line A scoring-field gap
 
 **Document ID:** `ANCHOR_OFFICIAL_FAKE_FILL_LINE_A_SCORING_FIELD_GAP_V1`  
-**Status:** inventory for the V1.1 pass-line draft. Not a grade.  
+**Status:** inventory. Not a grade. The pass line is FROZEN at T0 `2026-10-22T20:27:21+08:00`.  
 **Pass line:** `docs/PROJECT_ANCHOR_OFFICIAL_EVALUATION_PASS_LINE_V1_1_FINAL_DRAFT.md`  
 **Scorer:** `scripts/score_official_fake_fill_pass_line.py`  
 **Line A source of key names:** 2026-09-30 read-only preflight of `anchor_fake_fill_ledger_v2_official.jsonl` (41 top-level keys; flat objects; no nested trade struct). The preflight covered about 150 events. The file later grew. This inventory was not re-dumped from the 1666-row mirror, because that summary API does not return row keys. The scorer trusts the keys on the copy it reads.

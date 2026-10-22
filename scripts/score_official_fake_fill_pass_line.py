@@ -22,6 +22,8 @@ if str(ROOT) not in sys.path:
 
 from eval_scoring.line_a_pass_line import (  # noqa: E402
     FORBIDDEN_PATH_MARKERS,
+    FROZEN_T0,
+    GOVERNANCE_REGISTER_PATH,
     ScoringRefusal,
     score_ledger_file,
 )
@@ -30,10 +32,22 @@ from eval_scoring.line_a_pass_line import (  # noqa: E402
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ledger", required=True, help="Regular-file JSONL copy. Not the live StateDirectory.")
-    parser.add_argument("--t0", default=None, help="Freeze time, ISO-8601 with a timezone.")
+    parser.add_argument(
+        "--t0",
+        default=FROZEN_T0,
+        help="Freeze time, ISO-8601 with a timezone. Default is the frozen T0.",
+    )
     parser.add_argument("--t-score", default=None, help="Grading time, ISO-8601 with a timezone.")
-    parser.add_argument("--governance", default=None, help="Optional governance JSONL. Absence is not zero incidents.")
-    parser.add_argument("--random-seed", default=None, help="Pre-registered seed. Omit until freeze records one.")
+    parser.add_argument(
+        "--governance",
+        default=str(GOVERNANCE_REGISTER_PATH),
+        help="Governance JSONL. The default file is empty until a row is appended. An empty file is not zero incidents.",
+    )
+    parser.add_argument(
+        "--random-seed",
+        default=None,
+        help="Pre-registered seed. The freeze left this blank. The expected random-direction book is the binding comparison.",
+    )
     parser.add_argument(
         "--funding-cache",
         default=None,
