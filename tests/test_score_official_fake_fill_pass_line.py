@@ -14,30 +14,45 @@ from decimal import Decimal
 from pathlib import Path
 
 from eval_scoring.line_a_pass_line import ScoringRefusal, score_ledger_file, score_rows
+from eval_scoring.official_v2_row_hash import (
+    GENESIS_PREV_HASH,
+    GOVERNANCE_GENESIS_PREV_HASH,
+    seal_chain,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCORER = PROJECT_ROOT / "scripts" / "score_official_fake_fill_pass_line.py"
+C9_TEMPLATE = PROJECT_ROOT / "docs" / "templates" / "ANCHOR_C9_GOVERNANCE_REGISTER_TEMPLATE.jsonl"
 T0 = "2026-01-01T00:00:00Z"
 T_SCORE = "2026-04-01T00:00:00Z"
 CST = timezone(timedelta(hours=8))
 
 
-def _hash(number: int) -> str:
-    return f"{number:064d}"
-
-
 def _chain(rows: list[dict]) -> list[dict]:
-    previous = "GENESIS"
-    chained: list[dict] = []
+    prepared: list[dict] = []
     for index, row in enumerate(rows, start=1):
         item = dict(row)
         item["ledger_event_id"] = f"le-{index:06d}"
-        item["prev_hash"] = previous
-        item["row_hash"] = _hash(index)
-        previous = item["row_hash"]
-        chained.append(item)
-    return chained
+        prepared.append(item)
+    return seal_chain(prepared, GENESIS_PREV_HASH)
+
+
+def _attest(**overrides: object) -> dict:
+    row: dict = {
+        "record_type": "ATTEST_COVERAGE",
+        "id": "gov-000001",
+        "time_utc": "2026-04-01T00:00:00Z",
+        "criterion": "C9",
+        "rule": "C9",
+        "description": "test coverage attestation",
+        "recorder": "founder-test",
+        "window_start": "2025-01-01T00:00:00Z",
+        "window_end": "2027-01-01T00:00:00Z",
+        "founder_signed": True,
+    }
+    row.update(overrides)
+    return row
 
 
 def _open(at: str, *, signal: str | None = None, equity: str = "10000") -> dict:
@@ -161,14 +176,7 @@ def _passing_rows() -> list[dict]:
 
 
 def _governance() -> list[dict]:
-    return [
-        {
-            "record_type": "ATTEST_COVERAGE",
-            "window_start": "2025-01-01T00:00:00Z",
-            "window_end": "2027-01-01T00:00:00Z",
-            "source": "test-register",
-        }
-    ]
+    return seal_chain([_attest()], GOVERNANCE_GENESIS_PREV_HASH)
 
 
 def _write_jsonl(path: Path, rows: list[dict]) -> None:
@@ -213,13 +221,20 @@ class PassLineScorerTest(unittest.TestCase):
         self.assertEqual(line_b["criteria"]["C6"]["status"], "PASS")
         self.assertEqual(line_b["criteria"]["C7"]["status"], "PASS")
         self.assertEqual(line_b["line"], "B")
-        self.assertFalse(line_b["pilot_eligible"])
+        self.assertEqual(line_b["overall"], "PASS")
+        self.assertTrue(line_b["pilot_eligible"])
+        self.assertEqual(line_b["pilot_eligible_reason"], "LINE_B_PASSED_INCLUDING_C6_C7")
+        self.assertEqual(line_b["live_trading"], "NO-GO")
+        self.assertFalse(line_b["frozen"])
+        self.assertEqual(report["research_baseline"], "PASS")
+        self.assertEqual(report["overall"], "PASS")
         self.assertEqual(criteria["C8"]["status"], "PASS")
         self.assertEqual(criteria["C9"]["status"], "PASS")
         self.assertEqual(criteria["C9"]["value"]["UNAUTHORIZED_PRIVILEGE"], 0)
         self.assertEqual(criteria["C10"]["structural_status"], "PASS")
-        self.assertEqual(criteria["C10"]["status"], "NOT_SCORABLE")
-        self.assertEqual(criteria["C10"]["payload_digest_status"], "NOT_SCORABLE")
+        self.assertEqual(criteria["C10"]["status"], "PASS")
+        self.assertEqual(criteria["C10"]["payload_digest_status"], "PASS")
+        self.assertEqual(criteria["C10"]["value"], "RECOMPUTED_LINK_OK")
         self.assertEqual(criteria["R0_RANDOM_DIRECTION"]["status"], "PASS")
         self.assertFalse(report["thresholds_changed"])
         self.assertEqual(report["live_trading"], "NO-GO")
@@ -408,7 +423,7 @@ class PassLineScorerTest(unittest.TestCase):
     def test_absent_governance_register_is_not_zero_incidents(self) -> None:
         report = score_rows(_chain([_mark(T0)]), t0=T0, t_score=T_SCORE, governance_rows=None)
         self.assertEqual(report["criteria"]["C9"]["status"], "NOT_SCORABLE")
-        self.assertEqual(report["criteria"]["C9"]["reason"], "NOT_SCORABLE_ON_LINE_A")
+        self.assertEqual(report["criteria"]["C9"]["reason"], "GOVERNANCE_REGISTER_ABSENT")
         self.assertIsNone(report["criteria"]["C9"]["value"])
 
     def test_empty_governance_file_is_not_zero_incidents(self) -> None:
@@ -419,19 +434,29 @@ class PassLineScorerTest(unittest.TestCase):
             _write_jsonl(ledger, _chain([_mark(T0)]))
             governance.write_text("", encoding="utf-8")
             report = score_ledger_file(ledger, t0=T0, t_score=T_SCORE, governance_path=governance)
-        self.assertEqual(report["criteria"]["C9"]["reason"], "GOVERNANCE_COVERAGE_NOT_ATTESTED")
-        self.assertNotEqual(report["criteria"]["C9"]["status"], "PASS")
+        self.assertEqual(report["criteria"]["C9"]["status"], "NOT_SCORABLE")
+        self.assertEqual(report["criteria"]["C9"]["reason"], "EMPTY_GOVERNANCE_REGISTER")
 
-    def test_governance_incident_fails(self) -> None:
-        rows = _governance() + [
-            {
-                "record_type": "INCIDENT",
-                "incident_class": "LEDGER_TAMPER",
-                "at": "2026-02-01T00:00:00Z",
-            }
-        ]
+    def test_governance_breach_fails(self) -> None:
+        rows = seal_chain(
+            [
+                _attest(),
+                {
+                    "record_type": "BREACH",
+                    "id": "gov-000002",
+                    "time_utc": "2026-02-01T00:00:00Z",
+                    "criterion": "LEDGER_TAMPER",
+                    "rule": "LEDGER_TAMPER",
+                    "description": "a sealed breach inside the window",
+                    "recorder": "founder-test",
+                },
+            ],
+            GOVERNANCE_GENESIS_PREV_HASH,
+        )
         report = score_rows(_chain([_mark(T0)]), t0=T0, t_score=T_SCORE, governance_rows=rows)
         self.assertEqual(report["criteria"]["C9"]["status"], "FAIL")
+        self.assertEqual(report["criteria"]["C9"]["reason"], "GOVERNANCE_BREACH_PRESENT")
+        self.assertEqual(report["criteria"]["C9"]["value"]["LEDGER_TAMPER"], 1)
 
     def test_hash_break_duplicate_and_id_gap_fail_structural_integrity(self) -> None:
         broken = _chain([_mark(T0), _mark("2026-01-02T00:00:00Z")])
@@ -439,9 +464,11 @@ class PassLineScorerTest(unittest.TestCase):
         self.assertEqual(score_rows(broken)["criteria"]["C10"]["reason"], "HASH_CHAIN_BREAK")
         duplicated = _chain([_mark(T0), _mark("2026-01-02T00:00:00Z")])
         duplicated[1]["ledger_event_id"] = duplicated[0]["ledger_event_id"]
+        duplicated = seal_chain(duplicated, GENESIS_PREV_HASH)
         self.assertEqual(score_rows(duplicated)["criteria"]["C10"]["reason"], "DUPLICATE_LEDGER_EVENT_ID")
         gapped = _chain([_mark(T0), _mark("2026-01-02T00:00:00Z")])
         gapped[1]["ledger_event_id"] = "le-000004"
+        gapped = seal_chain(gapped, GENESIS_PREV_HASH)
         self.assertEqual(score_rows(gapped)["criteria"]["C10"]["reason"], "LEDGER_EVENT_ID_GAP")
 
     def test_unparsed_row_fails_integrity_and_blocks_trade_count(self) -> None:
@@ -574,6 +601,101 @@ class PassLineScorerTest(unittest.TestCase):
             _write_jsonl(ledger, _chain([_mark(T0)]))
             with self.assertRaises(ScoringRefusal):
                 score_ledger_file(ledger)
+
+    def test_payload_tamper_is_row_hash_mismatch(self) -> None:
+        rows = _chain([_mark(T0)])
+        rows[0]["net_liquidation_equity"] = "1"
+        report = score_rows(rows, t0=T0, t_score=T_SCORE)
+        self.assertEqual(report["criteria"]["C10"]["status"], "FAIL")
+        self.assertEqual(report["criteria"]["C10"]["reason"], "ROW_HASH_MISMATCH")
+
+    def test_first_prev_hash_must_be_genesis(self) -> None:
+        rows = _chain([_mark(T0)])
+        rows[0]["prev_hash"] = "NOT_GENESIS"
+        report = score_rows(rows, t0=T0, t_score=T_SCORE)
+        self.assertEqual(report["criteria"]["C10"]["reason"], "HASH_CHAIN_BREAK")
+
+    def test_leading_header_is_skipped_and_not_hashed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp) / "copy.jsonl"
+            body = "".join(json.dumps(row) + "\n" for row in _chain([_mark(T0)]))
+            ledger.write_text(
+                "ledger_event_id,event_type,row_hash,prev_hash\n" + body,
+                encoding="utf-8",
+            )
+            report = score_ledger_file(ledger, t0=T0, t_score=T_SCORE)
+        self.assertEqual(report["criteria"]["C10"]["status"], "PASS")
+        self.assertEqual(report["criteria"]["C10"]["header_rows_skipped"], 1)
+        self.assertEqual(report["criteria"]["C10"]["rows_checked"], 1)
+
+    def test_mid_file_non_json_fails_unparsed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp) / "copy.jsonl"
+            rows = _chain([_mark(T0), _mark("2026-01-02T00:00:00Z")])
+            ledger.write_text(
+                json.dumps(rows[0]) + "\nnot a row\n" + json.dumps(rows[1]) + "\n",
+                encoding="utf-8",
+            )
+            report = score_ledger_file(ledger, t0=T0, t_score=T_SCORE)
+        self.assertEqual(report["criteria"]["C10"]["status"], "FAIL")
+        self.assertEqual(report["criteria"]["C10"]["reason"], "UNPARSED_ROWS")
+        self.assertEqual(report["unparsed"], 1)
+
+    def test_json_object_is_not_treated_as_a_header(self) -> None:
+        rows = _chain([_mark(T0)])
+        self.assertTrue(json.dumps(rows[0]).startswith("{"))
+        report = score_rows(rows, t0=T0, t_score=T_SCORE)
+        self.assertEqual(report["criteria"]["C10"]["status"], "PASS")
+        self.assertEqual(report["criteria"]["C10"]["header_rows_skipped"], 0)
+
+    def test_governance_payload_tamper_is_not_zero_breaches(self) -> None:
+        rows = _governance()
+        rows[0]["description"] = "changed after the hash"
+        report = score_rows(_chain([_mark(T0)]), t0=T0, t_score=T_SCORE, governance_rows=rows)
+        self.assertEqual(report["criteria"]["C9"]["status"], "FAIL")
+        self.assertEqual(report["criteria"]["C9"]["reason"], "GOVERNANCE_ROW_HASH_MISMATCH")
+
+    def test_governance_link_break_fails(self) -> None:
+        rows = _governance()
+        rows[0]["prev_hash"] = "GENESIS"
+        report = score_rows(_chain([_mark(T0)]), t0=T0, t_score=T_SCORE, governance_rows=rows)
+        self.assertEqual(report["criteria"]["C9"]["status"], "FAIL")
+        self.assertEqual(report["criteria"]["C9"]["reason"], "GOVERNANCE_HASH_CHAIN_BREAK")
+
+    def test_string_true_is_not_a_founder_signature(self) -> None:
+        rows = seal_chain([_attest(founder_signed="true")], GOVERNANCE_GENESIS_PREV_HASH)
+        report = score_rows(_chain([_mark(T0)]), t0=T0, t_score=T_SCORE, governance_rows=rows)
+        self.assertEqual(report["criteria"]["C9"]["status"], "NOT_SCORABLE")
+        self.assertEqual(report["criteria"]["C9"]["reason"], "GOVERNANCE_COVERAGE_NOT_ATTESTED")
+
+    def test_template_register_is_not_a_passing_attestation(self) -> None:
+        self.assertTrue(C9_TEMPLATE.is_file())
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp) / "copy.jsonl"
+            _write_jsonl(ledger, _chain([_mark(T0)]))
+            report = score_ledger_file(ledger, t0=T0, t_score=T_SCORE, governance_path=C9_TEMPLATE)
+        self.assertEqual(report["criteria"]["C9"]["status"], "NOT_SCORABLE")
+        self.assertEqual(report["criteria"]["C9"]["reason"], "GOVERNANCE_COVERAGE_NOT_ATTESTED")
+        self.assertNotEqual(report["criteria"]["C9"]["status"], "PASS")
+
+    def test_breach_fails_without_a_covering_attestation(self) -> None:
+        rows = seal_chain(
+            [
+                {
+                    "record_type": "BREACH",
+                    "id": "gov-000001",
+                    "time_utc": "2026-02-01T00:00:00Z",
+                    "criterion": "OTHER",
+                    "description": "rule named only in criterion",
+                    "recorder": "operator",
+                }
+            ],
+            GOVERNANCE_GENESIS_PREV_HASH,
+        )
+        report = score_rows(_chain([_mark(T0)]), t0=T0, t_score=T_SCORE, governance_rows=rows)
+        self.assertEqual(report["criteria"]["C9"]["status"], "FAIL")
+        self.assertEqual(report["criteria"]["C9"]["reason"], "GOVERNANCE_BREACH_PRESENT")
+        self.assertEqual(report["criteria"]["C9"]["value"]["OTHER"], 1)
 
 
 if __name__ == "__main__":

@@ -13,7 +13,9 @@
 **This change:** docs and an offline scorer only. It does not deploy, does not open the ledger StateDirectory, and does not append or rewrite ledger rows.
 
 Scorer: `scripts/score_official_fake_fill_pass_line.py`  
-Field inventory: `docs/PROJECT_ANCHOR_OFFICIAL_FAKE_FILL_LINE_A_SCORING_FIELD_GAP_V1.md`
+Field inventory: `docs/PROJECT_ANCHOR_OFFICIAL_FAKE_FILL_LINE_A_SCORING_FIELD_GAP_V1.md`  
+Sign-off page (Chinese first; freeze fields blank): `docs/PROJECT_ANCHOR_OFFICIAL_EVALUATION_PASS_LINE_V1_1_SIGN_OFF.md`  
+C9 register procedure: `docs/PROJECT_ANCHOR_C9_GOVERNANCE_REGISTER_PROCEDURE_V1.md`
 
 ---
 
@@ -235,31 +237,52 @@ share = max(winning official nets) / sum(positive official nets)
 
 ### C9 — Governance incidents
 
-Incident counts are not columns on the trade ledger. An absent register, an empty file, or a file without an `ATTEST_COVERAGE` row whose window covers `[T0, T_score]` is `NOT_SCORABLE`. It is not four zeros.
+Incident counts are not columns on the trade ledger. They live in a separate append-only JSONL that starts at T0. The procedure, the field list, and the template are `docs/PROJECT_ANCHOR_C9_GOVERNANCE_REGISTER_PROCEDURE_V1.md` and `docs/templates/ANCHOR_C9_GOVERNANCE_REGISTER_TEMPLATE.jsonl`. PR #416 names future host paths and does not create this register. That PR is not on the formal scoring chain. Do not append governance rows onto the trade ledger.
 
-When a register is supplied, the scorer counts `INCIDENT` rows in the window for:
+Each row is `BREACH` or `ATTEST_COVERAGE`. The hash is the same Official V2 recipe as C10, with its own genesis `GOVERNANCE_GENESIS` (not `GENESIS`). Ids are `gov-N`, start at 1, and step by 1.
+
+An absent file is `NOT_SCORABLE` / `GOVERNANCE_REGISTER_ABSENT`. An empty file is `NOT_SCORABLE` / `EMPTY_GOVERNANCE_REGISTER`. Neither is four zeros.
+
+A hash-chain break or a row-hash mismatch is **FAIL** (`GOVERNANCE_HASH_CHAIN_BREAK` or `GOVERNANCE_ROW_HASH_MISMATCH`). A duplicate id or an id gap is **FAIL**. A known breach is **FAIL** even when the covering attestation is missing, so a breach cannot hide as `NOT_SCORABLE`.
+
+The scorer counts `BREACH` rows whose `time_utc` is inside `[T0, T_score]`:
 
 - `UNAUTHORIZED_PRIVILEGE`
 - `UNAUTHORIZED_LIVE_ORDER`
 - `LEDGER_TAMPER`
 - `RISK_GATE_BYPASS`
+- any other named rule, counted as `OTHER`
 
-**Line A today:** `NOT_SCORABLE` / `NOT_SCORABLE_ON_LINE_A`.  
-PR #416 names future source paths and does not create the register. That PR is not on the formal scoring chain.
+**PASS** only when every one of those counts is 0 and one `ATTEST_COVERAGE` row has JSON boolean `founder_signed: true` (the string `"true"` does not count) with `window_start ≤ T0` and `window_end ≥ T_score`. Zero breaches without that Founder row is `NOT_SCORABLE` / `GOVERNANCE_COVERAGE_NOT_ATTESTED`.
+
+The threshold text stays `0/0/0/0`. The register starts empty at T0. It is not backfilled from pre-T0 notes.
 
 ### C10 — Ledger integrity
 
-Structural checks, which can FAIL today:
+**PASS** only when all of the following hold:
 
-- every row has `prev_hash` and `row_hash`
-- each later `prev_hash` equals the previous `row_hash`
-- `ledger_event_id` is unique
-- ids of the form `le-N` step by 1
-- zero unparsed JSON lines
+- zero unparsed lines
+- at least one event row
+- every recomputed `row_hash` matches the stored `row_hash`
+- each `prev_hash` equals the previous row's `row_hash`, and the first event row's `prev_hash` is `GENESIS`
+- `ledger_event_id` is present, unique, matches `le-N`, starts at 1, and steps by 1
 
-A break, a duplicate, a gap, or an unparsed line is **FAIL**.
+A payload change that is not re-hashed is **FAIL** / `ROW_HASH_MISMATCH`. A broken link is **FAIL** / `HASH_CHAIN_BREAK`. A duplicate id is **FAIL** / `DUPLICATE_LEDGER_EVENT_ID`. A gap, or a first id that is not 1, is **FAIL** / `LEDGER_EVENT_ID_GAP`. An id that is not `le-N` is **FAIL** / `LEDGER_EVENT_ID_NOT_CONTIGUOUS`. An unparsed line is **FAIL** / `UNPARSED_ROWS`. An empty event list is `NOT_SCORABLE` / `EMPTY_LEDGER`.
 
-Payload digest recomputation is **NOT_SCORABLE** / `PAYLOAD_HASH_ALGORITHM_NOT_IN_REPO`. The writer that canonicalizes `row_hash` is not in this GitHub checkout. A self-consistent chain does not by itself prove the payload was not rebuilt. The published C10 status therefore stays `NOT_SCORABLE` when the structure holds, with `structural_status: PASS` and `payload_digest_status: NOT_SCORABLE`.
+The recipe is vendored, read-only, in `eval_scoring/official_v2_row_hash.py`. It is the `canonical_json` / `sha256_hex` / `_row_body_for_hash` / `compute_row_hash` text from `affl_v2/engine.py` in the Mac Official runner bundle `affl-v2-official-auto-ingest-runtime.tgz`.
+
+| Source | SHA-256 |
+|--------|---------|
+| Bundle `engine.py` | `299569516edda10e6464246457a5d3e6149ac56900fac04be90fd5fbcef1d1c8` |
+| r2.2 deploy-candidate `engine.py` | `cd40e5a4186dd3314450388b91a30f06176d97040236a111f5a2093de3506e45` |
+
+Those four functions are byte-identical across the two files. `GENESIS_PREV_HASH` is `affl_v2/config.py` line 130: `GENESIS`. Canonical JSON is `json.dumps(..., sort_keys=True, ensure_ascii=False, separators=(",", ":"))`, then SHA-256 of the UTF-8 text. The hash body is every field except `row_hash`, with `prev_hash` set to the chain previous. Re-check the vendored copy if the writer changes. A later writer hash is not this recipe.
+
+Evidence, recorded from the Founder on 2026-10-22: this recipe, recomputed read-only over a 2026-10-10 copy of the ledger (808 rows), matched 808/808 `row_hash` values and found 0 link breaks. This checkout does not contain that copy. The scorer did not repeat that count. That recompute is not a grade, and it is not a freeze.
+
+**Header row.** MCP `header_row_mismatches` is the equity-CSV width check in `anchor-backend/app/mcp/official_ledger.py`. A later read-only summary reported `header_row_mismatches: 0`. This scorer does not open that CSV. On a JSONL copy, the parser skips at most one leading non-JSON line when a comma-separated cell is `ledger_event_id`, `event_type`, `row_hash`, `prev_hash`, `event_id`, or `event_hash`. That line is not hashed. The report field is `header_rows_skipped`. The first JSON event must still chain from `GENESIS`. A later non-JSON line is unparsed and C10 FAILs. A JSON object is never a header.
+
+When the checks pass, `structural_status` and `payload_digest_status` are both `PASS`, and `value` is `RECOMPUTED_LINK_OK`.
 
 ### R0 — Random direction, pre-registered
 
@@ -325,7 +348,7 @@ These do **not** change the thresholds in §0.
 1. Keep C3's requirement that funding be present. Do not adopt "ex-funding counts as the official net." A verified `EXTERNAL_PUBLIC_FUNDING_V1` cache can supply the missing ledger amount. A settlement the cache does not contain stays `MISSING`, not zero.
 2. Keep 0.5%, 8%, 2%, 25%, 90 days, 50 trades, and profit factor 1.10. The pre-T0 cumulative figure is negative and is not a reason to move any bar.
 3. Keep the V1 no-loss special case for C4, and keep it conjunctive with C1 and C2.
-4. Before freeze, vendor the writer's `row_hash` canonicalization into this repository so C10's payload check can become a real PASS/FAIL. Until then, leave payload recomputation `NOT_SCORABLE`.
+4. The writer's `row_hash` canonicalization is now vendored for C10. Re-check `eval_scoring/official_v2_row_hash.py` against `affl_v2/engine.py` if the writer changes, and record the new file SHA-256 before any freeze that relies on it. Do not treat a writer change as already covered by the 2026-10-22 citation.
 5. Add a pre-registered block-bootstrap report on the post-T0 official nets. Publish it beside the grade. Do not turn it into a new numeric gate in this draft.
 6. For R0, consider also requiring Anchor's official net to beat the 95th percentile of the seeded random books, not only the expected book and the median. Not applied. The binding comparison remains the one in §5.
 7. Do not loosen C7's 2%. C7 applies only to Line B. Sparse Line A `FLAT_MARK` rows are not a reason to score Line A on C7, and they are not a reason to lower the Line B bar. Line B stays unscorable until `MARK_RULE_C7_V1` marks exist.
@@ -396,7 +419,7 @@ Checked in this checkout and against open PRs #416 and #417. None of these facts
 | Readiness note G1 said a missing stop makes C6 fail, and called `OPEN.net_liquidation_equity` a proxy for `equity_at_open`. | C6 is Line B only. On Line A it is `NOT_APPLICABLE`. The proxy is not accepted. The 0.5% bar is unchanged. |
 | PR #416 is open and states `FORMAL_SCORING_CHAIN=NOT_ON_FORMAL_SCORING_CHAIN`, `OFFICIAL_SIGN_LOCK=NO`, and missing funding stays `EX_FUNDING`. | This draft does not adopt that PR. Public funding is a separate derived input, `EXTERNAL_PUBLIC_FUNDING_V1`, and a missing settlement stays `MISSING`. That PR does not close C9 or C10. |
 | PR #417 is open, `DEPLOY=NO`, new `strategy_version`, and it does not load a prior Official ledger. | That is Line B material. It is not merged and must not be backfilled onto Line A. |
-| `affl_v2` writer code is not in this GitHub repository. | The hash recipe and the fee formula are taken from the preflight and from the ledger's own per-exit note, not from a local engine import. |
+| `affl_v2` writer code is not imported by this repository. The hash functions are a read-only vendor of `affl_v2/engine.py` (bundle SHA-256 `299569516edda10e6464246457a5d3e6149ac56900fac04be90fd5fbcef1d1c8`; r2.2 candidate SHA-256 `cd40e5a4186dd3314450388b91a30f06176d97040236a111f5a2093de3506e45`). Genesis is `GENESIS` from `affl_v2/config.py` line 130. | C10 recomputes with that copy. Re-vendor if the writer changes. The fee formula is still the ledger's own per-exit note: exit net excludes entry costs. |
 | Legacy equity CSV header is 6 columns and the body is 10. | The scorer does not read that CSV. |
 | `docs/GO_LIVE_CHECKLIST.md` records live trading **NO-GO**. The live MCP status on 2026-10-22 also reports `live_trading: NO-GO` and `go_live: NO-GO`. | Consistent with this draft. A pass line PASS would still not authorize orders. |
 | MCP `net_pnl_note` says per-exit NET_PNL excludes entry costs. | The C3 formula subtracts entry `fee_paid` and entry `slippage_cost`. |

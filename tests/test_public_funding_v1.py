@@ -235,7 +235,8 @@ class PublicFundingScorerTest(unittest.TestCase):
         for name in ("C3", "C4", "C8", "R0_RANDOM_DIRECTION"):
             self.assertEqual(report["criteria"][name]["status"], "PASS", name)
         self.assertFalse(report["pilot_eligible"])
-        self.assertIn("C10", report["blocking_criteria"])
+        self.assertNotIn("C10", report["blocking_criteria"])
+        self.assertIn("C2", report["blocking_criteria"])
         self.assertNotIn("C6", report["blocking_criteria"])
         self.assertNotIn("C7", report["blocking_criteria"])
 

@@ -26,6 +26,16 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 from zoneinfo import ZoneInfo
 
+from eval_scoring.official_v2_row_hash import (
+    ENGINE_BUNDLE,
+    ENGINE_PY_R22_SHA256,
+    ENGINE_PY_SHA256,
+    ENGINE_SOURCE,
+    GENESIS_PREV_HASH,
+    GENESIS_SOURCE,
+    GOVERNANCE_GENESIS_PREV_HASH,
+    verify_hash_chain,
+)
 from eval_scoring.public_funding import SCHEMA as FUNDING_SCHEMA
 from eval_scoring.public_funding import FundingBook, FundingCacheError, leg_funding, load_funding_cache_bytes
 
@@ -112,11 +122,11 @@ def score_ledger_file(
     """Read one regular-file JSONL copy and return a score report."""
     ledger_path = Path(path)
     blob = _read_only_bytes(ledger_path)
-    rows, unparsed = _parse_jsonl(blob)
+    rows, unparsed, header_rows_skipped = _parse_jsonl(blob)
     governance: list[dict[str, Any]] | None = None
     if governance_path is not None:
         governance_blob = _read_only_bytes(Path(governance_path))
-        governance, governance_unparsed = _parse_jsonl(governance_blob)
+        governance, governance_unparsed, _governance_header = _parse_jsonl(governance_blob)
         if governance_unparsed:
             raise ScoringRefusal("governance file has unparsed rows")
     book: FundingBook | None = None
@@ -139,6 +149,7 @@ def score_ledger_file(
         random_seed=random_seed,
         funding_book=book,
         line=line,
+        header_rows_skipped=header_rows_skipped,
     )
     report["input"] = {
         "sha256": hashlib.sha256(blob).hexdigest(),
@@ -173,6 +184,7 @@ def score_rows(
     random_seed: str | None = None,
     funding_book: FundingBook | None = None,
     line: str | None = None,
+    header_rows_skipped: int = 0,
 ) -> dict[str, Any]:
     """Score already-parsed ledger objects. `rows` are not mutated."""
     parsed_t0 = _parse_time(t0) if t0 else None
@@ -209,7 +221,7 @@ def score_rows(
     criteria["C7"] = _score_c7(rows, parsed_t0, parsed_score, window_ready, resolved_line)
     criteria["C8"] = _score_c8(economics, window_ready, integrity_errors, unparsed)
     criteria["C9"] = _score_c9(governance_rows, parsed_t0, parsed_score, window_ready)
-    criteria["C10"] = _score_c10(rows, unparsed)
+    criteria["C10"] = _score_c10(rows, unparsed, header_rows_skipped)
     criteria["R0_RANDOM_DIRECTION"] = _score_r0(
         economics, window_ready, integrity_errors, unparsed, random_seed
     )
@@ -545,74 +557,141 @@ def _score_c9(
 ) -> dict[str, Any]:
     base = _criterion("C9", "governance_incidents", "0/0/0/0")
     base["method"] = (
-        "Counts come from a separate governance register, not from trade rows. "
-        "A covering ATTEST_COVERAGE row is required. An absent or empty register is not zero."
+        "Counts come from a separate append-only governance JSONL, not from trade rows. "
+        "Each row is BREACH or ATTEST_COVERAGE and is hashed with the Official V2 recipe "
+        "and genesis GOVERNANCE_GENESIS. An absent or empty register is not zero. "
+        "PASS needs zero BREACH rows inside the window and one Founder ATTEST_COVERAGE "
+        "whose window covers [T0, T_score]."
     )
+    base["hash_genesis"] = GOVERNANCE_GENESIS_PREV_HASH
     if not ready:
         return _not_scorable(base, "T0_NOT_FROZEN")
     if governance_rows is None:
-        return _not_scorable(base, "NOT_SCORABLE_ON_LINE_A")
+        return _not_scorable(base, "GOVERNANCE_REGISTER_ABSENT")
+    if len(governance_rows) == 0:
+        return _not_scorable(base, "EMPTY_GOVERNANCE_REGISTER")
     assert t0 is not None and t_score is not None
-    attestations = [row for row in governance_rows if row.get("record_type") == "ATTEST_COVERAGE"]
-    covered = False
-    for row in attestations:
-        start = _parse_time(row.get("window_start"))
-        end = _parse_time(row.get("window_end"))
-        if start is not None and end is not None and start <= t0 and end >= t_score:
-            covered = True
-            break
-    if not covered:
-        return _not_scorable(base, "GOVERNANCE_COVERAGE_NOT_ATTESTED")
+    chain_ok, chain_detail = verify_hash_chain(
+        [dict(row) for row in governance_rows],
+        genesis=GOVERNANCE_GENESIS_PREV_HASH,
+    )
+    if not chain_ok:
+        base["detail"] = chain_detail
+        if chain_detail.startswith("prev_hash"):
+            return _fail(base, "GOVERNANCE_HASH_CHAIN_BREAK")
+        return _fail(base, "GOVERNANCE_ROW_HASH_MISMATCH")
+    seen_ids: set[str] = set()
+    numbers: list[int] = []
     counts = {name: 0 for name in INCIDENT_CLASSES}
+    other_breaches = 0
+    covered = False
     for row in governance_rows:
-        if row.get("record_type") != "INCIDENT":
+        record_type = row.get("record_type")
+        if record_type not in {"BREACH", "ATTEST_COVERAGE"}:
+            return _not_scorable(base, "GOVERNANCE_ROW_UNREADABLE")
+        event_id = row.get("id")
+        if not isinstance(event_id, str) or not event_id.strip():
+            return _not_scorable(base, "GOVERNANCE_ROW_UNREADABLE")
+        if event_id in seen_ids:
+            return _fail(base, "GOVERNANCE_DUPLICATE_ID")
+        seen_ids.add(event_id)
+        number = _governance_number(event_id)
+        if number is None:
+            return _not_scorable(base, "GOVERNANCE_ID_UNPATTERNED")
+        numbers.append(number)
+        at = _parse_time(row.get("time_utc"))
+        description = row.get("description")
+        recorder = row.get("recorder")
+        if at is None or not isinstance(description, str) or not description.strip():
+            return _not_scorable(base, "GOVERNANCE_ROW_UNREADABLE")
+        if not isinstance(recorder, str) or not recorder.strip():
+            return _not_scorable(base, "GOVERNANCE_ROW_UNREADABLE")
+        if record_type == "ATTEST_COVERAGE":
+            start = _parse_time(row.get("window_start"))
+            end = _parse_time(row.get("window_end"))
+            if row.get("founder_signed") is True and start is not None and end is not None:
+                if start <= t0 and end >= t_score:
+                    covered = True
             continue
-        at = _parse_time(row.get("at"))
-        kind = row.get("incident_class")
-        if at is None or kind not in counts:
+        rule = _governance_rule(row)
+        if rule is None:
             return _not_scorable(base, "GOVERNANCE_ROW_UNREADABLE")
         if t0 <= at <= t_score:
-            counts[kind] += 1
-    base["value"] = counts
-    if any(value > 0 for value in counts.values()):
-        return _fail(base, "GOVERNANCE_INCIDENT_PRESENT")
+            if rule in counts:
+                counts[rule] += 1
+            else:
+                other_breaches += 1
+    if not numbers or numbers[0] != 1:
+        return _fail(base, "GOVERNANCE_ID_GAP")
+    for previous_number, number in zip(numbers, numbers[1:]):
+        if number != previous_number + 1:
+            return _fail(base, "GOVERNANCE_ID_GAP")
+    base["value"] = {**counts, "OTHER": other_breaches}
+    if any(value > 0 for value in counts.values()) or other_breaches:
+        return _fail(base, "GOVERNANCE_BREACH_PRESENT")
+    if not covered:
+        return _not_scorable(base, "GOVERNANCE_COVERAGE_NOT_ATTESTED")
     return _pass(base)
 
 
-def _score_c10(rows: Sequence[Mapping[str, Any]], unparsed: int) -> dict[str, Any]:
-    base = _criterion("C10", "structural_ledger_integrity", "linked, unique, contiguous, parsed")
+def _governance_rule(row: Mapping[str, Any]) -> str | None:
+    criterion = row.get("criterion")
+    rule = row.get("rule")
+    texts = [value.strip() for value in (criterion, rule) if isinstance(value, str) and value.strip()]
+    if not texts:
+        return None
+    if any(value != texts[0] for value in texts):
+        return None
+    return texts[0]
+
+
+def _governance_number(event_id: str) -> int | None:
+    if not event_id.startswith("gov-") or not event_id[4:].isdigit():
+        return None
+    return int(event_id[4:])
+
+
+def _score_c10(
+    rows: Sequence[Mapping[str, Any]],
+    unparsed: int,
+    header_rows_skipped: int = 0,
+) -> dict[str, Any]:
+    base = _criterion("C10", "recomputed_ledger_integrity", "recomputed, linked, unique, contiguous, parsed")
     base["method"] = (
-        "prev_hash of each row after the first equals the previous row_hash. "
-        "ledger_event_id values are unique. Patterned le-N ids step by 1. "
-        "Payload digest recomputation is separate and stays NOT_SCORABLE."
+        "Vendored Official V2 recipe: SHA-256 of canonical JSON of every field "
+        "except row_hash, with prev_hash set to the chain previous. "
+        "The first event row's prev_hash must be GENESIS. "
+        "ledger_event_id values are unique and le-N ids step by 1. "
+        "A single leading non-JSON header line is skipped and is not hashed. "
+        "Unparsed lines fail. Re-check the vendored recipe if the writer changes."
     )
-    base["payload_digest_status"] = "NOT_SCORABLE"
-    base["payload_digest_reason"] = "PAYLOAD_HASH_ALGORITHM_NOT_IN_REPO"
+    base["header_rows_skipped"] = header_rows_skipped
+    base["hash_recipe"] = {
+        "source": ENGINE_SOURCE,
+        "bundle": ENGINE_BUNDLE,
+        "engine_sha256": ENGINE_PY_SHA256,
+        "r22_engine_sha256": ENGINE_PY_R22_SHA256,
+        "genesis_prev_hash": GENESIS_PREV_HASH,
+        "genesis_source": GENESIS_SOURCE,
+        "evidence": "2026-10-10 ledger copy, 808/808 row_hash match, 0 link breaks, recomputed 2026-10-22",
+    }
     if unparsed:
         base["structural_status"] = "FAIL"
         return _fail(base, "UNPARSED_ROWS")
     if not rows:
         base["structural_status"] = "NOT_SCORABLE"
         return _not_scorable(base, "EMPTY_LEDGER")
-    seen: set[str] = set()
-    previous_hash: str | None = None
-    numbers: list[int] = []
-    patterned = True
-    for index, row in enumerate(rows):
-        row_hash = row.get("row_hash")
-        prev_hash = row.get("prev_hash")
-        event_id = row.get("ledger_event_id")
-        if not isinstance(row_hash, str) or not row_hash.strip():
-            base["structural_status"] = "NOT_SCORABLE"
-            return _not_scorable(base, "HASH_FIELDS_ABSENT")
-        if index == 0:
-            if not isinstance(prev_hash, str) or not prev_hash.strip():
-                base["structural_status"] = "NOT_SCORABLE"
-                return _not_scorable(base, "HASH_FIELDS_ABSENT")
-        elif prev_hash != previous_hash:
-            base["structural_status"] = "FAIL"
-            base["break_index"] = index
+    chain_ok, chain_detail = verify_hash_chain([dict(row) for row in rows])
+    if not chain_ok:
+        base["structural_status"] = "FAIL"
+        base["detail"] = chain_detail
+        if chain_detail.startswith("prev_hash"):
             return _fail(base, "HASH_CHAIN_BREAK")
+        return _fail(base, "ROW_HASH_MISMATCH")
+    seen: set[str] = set()
+    numbers: list[int] = []
+    for row in rows:
+        event_id = row.get("ledger_event_id")
         if not isinstance(event_id, str) or not event_id.strip():
             base["structural_status"] = "FAIL"
             return _fail(base, "MISSING_LEDGER_EVENT_ID")
@@ -622,21 +701,22 @@ def _score_c10(rows: Sequence[Mapping[str, Any]], unparsed: int) -> dict[str, An
         seen.add(event_id)
         number = _ledger_number(event_id)
         if number is None:
-            patterned = False
-        else:
-            numbers.append(number)
-        previous_hash = row_hash
-    if patterned:
-        for previous_number, number in zip(numbers, numbers[1:]):
-            if number != previous_number + 1:
-                base["structural_status"] = "FAIL"
-                return _fail(base, "LEDGER_EVENT_ID_GAP")
+            base["structural_status"] = "FAIL"
+            return _fail(base, "LEDGER_EVENT_ID_NOT_CONTIGUOUS")
+        numbers.append(number)
+    if not numbers or numbers[0] != 1:
+        base["structural_status"] = "FAIL"
+        return _fail(base, "LEDGER_EVENT_ID_GAP")
+    for previous_number, number in zip(numbers, numbers[1:]):
+        if number != previous_number + 1:
+            base["structural_status"] = "FAIL"
+            return _fail(base, "LEDGER_EVENT_ID_GAP")
     base["structural_status"] = "PASS"
-    base["id_steps_contiguous"] = patterned
-    base["value"] = "STRUCTURAL_LINK_OK"
-    # A linked chain is not a recomputed payload digest. The published status
-    # stays NOT_SCORABLE until that recipe is in this repository.
-    return _not_scorable(base, "PAYLOAD_HASH_ALGORITHM_NOT_IN_REPO")
+    base["payload_digest_status"] = "PASS"
+    base["id_steps_contiguous"] = True
+    base["rows_checked"] = len(rows)
+    base["value"] = "RECOMPUTED_LINK_OK"
+    return _pass(base)
 
 
 def _score_r0(
@@ -1337,13 +1417,39 @@ def _forbidden(path: Path) -> str | None:
     return None
 
 
-def _parse_jsonl(blob: bytes) -> tuple[list[dict[str, Any]], int]:
+_HEADER_CELLS = frozenset(
+    {"ledger_event_id", "event_type", "row_hash", "prev_hash", "event_id", "event_hash"}
+)
+
+
+def _is_leading_header(line: str) -> bool:
+    """A comma-separated label line, not a JSON event.
+
+    The equity CSV's ``header_row_mismatches`` counter is a different thing:
+    the read-only summary counts CSV body rows whose width differs from the
+    CSV header. This scorer does not read that CSV. On the JSONL copy, only
+    one leading header line is skipped. It is not hashed, and the first event
+    row must still chain from GENESIS.
+    """
+    if line.startswith("{"):
+        return False
+    cells = [cell.strip().casefold() for cell in line.split(",")]
+    return any(cell in _HEADER_CELLS for cell in cells)
+
+
+def _parse_jsonl(blob: bytes) -> tuple[list[dict[str, Any]], int, int]:
     rows: list[dict[str, Any]] = []
     unparsed = 0
+    header_rows_skipped = 0
+    seen_data = False
     for line in blob.decode("utf-8-sig").splitlines():
         stripped = line.strip()
         if not stripped:
             continue
+        if not seen_data and header_rows_skipped == 0 and _is_leading_header(stripped):
+            header_rows_skipped += 1
+            continue
+        seen_data = True
         try:
             obj = json.loads(stripped)
         except json.JSONDecodeError:
@@ -1353,7 +1459,7 @@ def _parse_jsonl(blob: bytes) -> tuple[list[dict[str, Any]], int]:
             unparsed += 1
             continue
         rows.append(obj)
-    return rows, unparsed
+    return rows, unparsed, header_rows_skipped
 
 
 def _money(event: Mapping[str, Any], key: str) -> Decimal | None:

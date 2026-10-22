@@ -31,8 +31,8 @@
 | `net_liquidation_equity` | Yes | Yes, as curve points for C5 only | JSONL events | **Line A.** C5 recomputes peak-to-trough on `[T0, T_score]`. Fills use `fill_time_utc`. Other rows use `signal_available_at`. |
 | Stored `drawdown` | Yes | No for the post-T0 maximum | Row value can include a pre-T0 peak | **Line A.** Ignore the stored column. Recompute C5. |
 | CST `day_open` / `day_low` | No | No | `MARK_RULE_C7_V1` marks are not on Line A | **Line B only (C7).** On Line A, C7 is `NOT_APPLICABLE`, not a research failure and not a pass. On Line B the 2% bar is unchanged and stays `NOT_SCORABLE` until the marks exist. `FLAT_MARK` is not an intraday low. An `OHLC_ADVERSE_PROXY` labeled `NOT_TICK_LOW` is not the day low. |
-| Governance incident counts | No | No | Not on the trade ledger | **Separate register.** Absence is not `0`. C9 needs `ATTEST_COVERAGE` over `[T0, T_score]` plus any `INCIDENT` rows. PR #416 lists future paths and does not create the register. |
-| `prev_hash`, `row_hash` | Yes | Linkage only | JSONL | **Line A.** Structural chain is checked. A break FAILs. Payload recomputation is `NOT_SCORABLE` until the writer canonicalization is in this repository. |
+| Governance incident counts | No | No | Separate append-only JSONL, not the trade ledger. Procedure: `docs/PROJECT_ANCHOR_C9_GOVERNANCE_REGISTER_PROCEDURE_V1.md`. Template: `docs/templates/ANCHOR_C9_GOVERNANCE_REGISTER_TEMPLATE.jsonl`. | **Line A and Line B.** Absence or an empty file is `NOT_SCORABLE`, not `0`. PASS needs zero in-window `BREACH` rows and one Founder `ATTEST_COVERAGE` with JSON boolean `founder_signed: true` covering `[T0, T_score]`. Same hash recipe, genesis `GOVERNANCE_GENESIS`. PR #416 lists future paths and does not create the register. |
+| `prev_hash`, `row_hash` | Yes | Yes, by the vendored Official V2 recipe | JSONL | **Line A and Line B.** C10 PASSes only when every row recomputes, links from `GENESIS`, `le-N` ids start at 1 and step by 1, and nothing is unparsed. Recipe: `eval_scoring/official_v2_row_hash.py`. Re-check it if the writer changes. |
 | `ledger_event_id` | Yes | Identity of the row, not of the trade | JSONL | **Line A.** Unique, and `le-N` must step by 1. A gap FAILs C10. The id is not rewritten to hide a missing row. |
 | `realized_pnl_cum` | Yes | No as C3 | Last-row cumulative | **Line A.** Includes the pre-T0 book and is not the paired post-T0 official net. |
 | `observation_id`, `source_record_hash`, `causal_rule`, `reason_code`, `sample_class` | Yes | Trace labels | JSONL | **Line A.** Retained. `sample_class` in the preflight was `FORWARD_LIVE_SHADOW`. These labels are not PnL. |
@@ -43,11 +43,11 @@
 
 | Work | Where it lives | What it must not do |
 |------|----------------|---------------------|
-| Fees, slippage, pairing, ex-funding diagnostic, structural hash link, public-funding cache | Line A scorer, read-only, on a file copy plus an `EXTERNAL_PUBLIC_FUNDING_V1` cache | Zero-fill funding. Rewrite rows. Treat `realized_pnl_cum` as C3. Fetch from inside the scorer. |
+| Fees, slippage, pairing, ex-funding diagnostic, recomputed hash link, public-funding cache | Line A scorer, read-only, on a file copy plus an `EXTERNAL_PUBLIC_FUNDING_V1` cache | Zero-fill funding. Rewrite rows. Treat `realized_pnl_cum` as C3. Fetch from inside the scorer. |
 | Preset stop, `equity_at_open`, `risk_amount`, `risk_pct`, `HARD_STOP_EXIT`, C6, C7 | Line B, new `strategy_version`, new file or new rows after T_alloc | Backfill Line A. Choose the stop from Official PnL. Treat a Line A research pass as real-money eligibility. |
 | Funding cache | Hashed public input. Derived, not ledger-recorded. PR #416 remains off the formal scoring chain | Store a gap as `0`. Score `PARTIAL`. Average a ledger amount with the public amount. |
 | `MARK_RULE_C7_V1` equity marks | New equity series. Do not repair the legacy 6/10-column CSV in place | Call an OHLC adverse extreme the tick low. |
-| C9 register | A governance file outside the trade ledger | Treat a missing file as four zeros. |
+| C9 register | A governance file outside the trade ledger, hashed with genesis `GOVERNANCE_GENESIS` | Treat a missing or empty file as four zeros. Append it onto the trade ledger. Treat the template row as a real attestation. |
 | Capital-allocation / 0.5% sizing | Line B at an explicit T_alloc | Resize historical `quantity`. |
 
 ## What the scorer refuses to open
@@ -70,8 +70,12 @@ With a T0, on a Line A file that still matches the preflight and has no public-f
 | C6 | `NOT_APPLICABLE` / `LINE_B_ONLY` | Not a Line A criterion. Threshold 0.5% is unchanged and is scored only on Line B |
 | C7 | `NOT_APPLICABLE` / `LINE_B_ONLY` | Not a Line A criterion. Threshold 2% is unchanged and is scored only on Line B |
 | C8 | Same block as C3 | Needs the funding-inclusive net |
-| C9 | `NOT_SCORABLE_ON_LINE_A` | No incident register on the trade file. Still a research-baseline gap |
-| C10 | Structural link can FAIL; published status stays `NOT_SCORABLE` when the link holds | Payload hash recipe is not in this repo. Still a research-baseline gap |
+| C9 | Scorable when a separate register is supplied. Absent = `GOVERNANCE_REGISTER_ABSENT`. Empty = `EMPTY_GOVERNANCE_REGISTER`. Both are `NOT_SCORABLE`, not zero. PASS = 0 in-window breaches plus a Founder attestation covering the window | The Official register does not exist yet. It starts at T0. This checkout did not score one |
+| C10 | Scorable. PASS only if every `row_hash` recomputes, the link from `GENESIS` holds, `le-N` ids are contiguous from 1, and unparsed lines are 0 | The Official JSONL rows are not in this checkout. The 808/808 recompute below is the Founder's evidence, not a grade produced here |
 | R0 | Same block as C3 | Binding on Line A once funding is PRESENT. Ex-funding diagnostic is labeled `not_a_score` |
 
 Line A `overall` is the research baseline. It is `NOT_ELIGIBLE` until C1, C2, C3, C4, C5, C8, C9, C10, and R0 are `PASS`. `pilot_eligible` stays false. A Line A pass is not real-money eligibility. That still requires Line B, including C6 and C7. None of this is a license to invent the missing fields.
+
+Hash evidence, not a grade: on 2026-10-22 the Founder recomputed the vendored recipe read-only over a 2026-10-10 copy of the ledger (808 rows). Result: 808/808 `row_hash` match, 0 link breaks. This checkout does not contain that copy, so the scorer did not repeat the count. Bundle `engine.py` SHA-256 `299569516edda10e6464246457a5d3e6149ac56900fac04be90fd5fbcef1d1c8`. r2.2 candidate `engine.py` SHA-256 `cd40e5a4186dd3314450388b91a30f06176d97040236a111f5a2093de3506e45`. The four hash functions are byte-identical. Genesis is `GENESIS`.
+
+A JSONL copy may begin with one label line. The scorer skips that one leading non-JSON line when a cell is `ledger_event_id`, `event_type`, `row_hash`, `prev_hash`, `event_id`, or `event_hash`, does not hash it, and reports `header_rows_skipped`. The first event row must still have `prev_hash` = `GENESIS`. A later non-JSON line FAILs C10. MCP `header_row_mismatches` is a different counter: it counts equity-CSV rows whose width differs from the CSV header. The scorer does not read that CSV. A 2026-10-22 summary reported `header_row_mismatches: 0`. Re-check the vendored hash file if the writer changes.
