@@ -1,0 +1,35 @@
+{
+  "description": "SYNTHETIC partial hold: one missing hour between known prints \u2014 must NOT zero-fill",
+  "symbol": "PF_XBTUSD",
+  "synthetic": true,
+  "hold": {
+    "entry_time_utc": "2026-01-15T00:30:00Z",
+    "exit_time_utc": "2026-01-15T04:30:00Z",
+    "side": "LONG",
+    "position_notional_usd": 10000.0
+  },
+  "rates_available": [
+    {
+      "timestamp": "2026-01-15T01:00:00Z",
+      "relativeFundingRate": 1e-05
+    },
+    {
+      "timestamp": "2026-01-15T02:00:00Z",
+      "relativeFundingRate": -2e-05
+    },
+    {
+      "timestamp": "2026-01-15T04:00:00Z",
+      "relativeFundingRate": 1.5e-05
+    }
+  ],
+  "gaps": [
+    {
+      "missing_timestamps": [
+        "2026-01-15T03:00:00Z"
+      ],
+      "policy": "NEVER_ZERO_FILL"
+    }
+  ],
+  "expected_status": "PARTIAL",
+  "expected_funding_pnl": null
+}
