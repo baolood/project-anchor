@@ -1,0 +1,18 @@
+{
+  "fixture_status": "SYNTHETIC_NOT_A_LIVE_FETCH",
+  "symbol": "PF_XBTUSD",
+  "use_as_official_pnl": "NO",
+  "note": "Round figures for the completeness tests. Not a Kraken print and not an exam score.",
+  "rows": [
+    {
+      "timestamp": "2026-01-01T04:00:00Z",
+      "fundingRate": "0.50",
+      "relativeFundingRate": "0.001"
+    },
+    {
+      "timestamp": "2026-01-01T08:00:00Z",
+      "fundingRate": "-0.25",
+      "relativeFundingRate": "-0.002"
+    }
+  ]
+}
