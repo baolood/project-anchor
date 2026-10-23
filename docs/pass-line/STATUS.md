@@ -32,7 +32,7 @@ This package does **not** freeze PASS LINE. It does not sign §9 again and it do
 
 ## Header note
 
-SCHEMA additions for this helper use the 13-column equity file in `EQUITY_V21_DUAL_WRITE.md`. Unmerged Gate B PR #416 drafts a wider 17-column header under the same filename and `schema_version`. This PR does not adopt that header and does not edit that branch. Do not enable either writer on a host until that difference is reconciled.
+The on-disk equity file stays the 13-column header in `EQUITY_V21_DUAL_WRITE.md`. The 17 names from the Gate B draft (`trade_id`, `equity_at_open`, `mark_kind`, `mark_honesty_label`, and the shared columns) are the in-memory view `equity_v2_1_view` in `eval_recording/equity_schema.py`. That view is not a second file and not a second `schema_version`. Host enablement stays unauthorized. `DEPLOY=NO`.
 
 ## Scoring note
 

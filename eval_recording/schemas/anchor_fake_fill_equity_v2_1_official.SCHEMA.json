@@ -1,0 +1,81 @@
+{
+  "schema_id": "equity_v2_1",
+  "filename": "anchor_fake_fill_equity_v2_1_official.csv",
+  "formal_scoring_chain": "NOT_ON_FORMAL_SCORING_CHAIN",
+  "on_disk_only": true,
+  "legacy_do_not_rewrite": [
+    "anchor_fake_fill_equity_v2_official.csv"
+  ],
+  "legacy_headers": {
+    "columns_6": [
+      "timestamp_utc",
+      "equity",
+      "realized_pnl",
+      "unrealized_pnl",
+      "position",
+      "event"
+    ],
+    "columns_10": [
+      "timestamp_utc",
+      "observation_id",
+      "position",
+      "realized_pnl",
+      "unrealized_pnl",
+      "net_liquidation_equity",
+      "drawdown",
+      "exposure",
+      "cash_reserve",
+      "active_notional"
+    ]
+  },
+  "header": [
+    "schema_version",
+    "timestamp_utc",
+    "observation_id",
+    "position",
+    "realized_pnl",
+    "unrealized_pnl",
+    "net_liquidation_equity",
+    "drawdown",
+    "exposure",
+    "cash_reserve",
+    "active_notional",
+    "mark_rule_id",
+    "sample_class"
+  ],
+  "header_sha256": "226754902e95af1ac52fb923c949d62dfe7da14dfeb065a8743f588e7471f8e7",
+  "mark_rule_id_on_disk": ["MARK_RULE_C7_V1", "UNBOUND", ""],
+  "sample_class_on_disk": "caller-supplied text",
+  "scoring_view": {
+    "view_id": "equity_v2_1_view",
+    "written": false,
+    "columns": [
+      "schema_version",
+      "timestamp_utc",
+      "observation_id",
+      "trade_id",
+      "position",
+      "realized_pnl",
+      "unrealized_pnl",
+      "net_liquidation_equity",
+      "equity_at_open",
+      "drawdown",
+      "exposure",
+      "cash_reserve",
+      "active_notional",
+      "mark_rule_id",
+      "mark_kind",
+      "mark_honesty_label",
+      "sample_class"
+    ],
+    "derivation": {
+      "trade_id": "Joined from the latest C6 OPEN or REVERSE_ENTRY ex-ante trade_id with no matching exit at the row timestamp. Empty when position is FLAT.",
+      "equity_at_open": "Joined from that same C6 OPEN or REVERSE_ENTRY ex-ante equity_at_open. Empty when position is FLAT.",
+      "mark_kind": "GENESIS when observation_id is LEDGER_GENESIS. FILL when observation_id equals an entry or exit event observation_id (OPEN, REVERSE_ENTRY, FLAT_EXIT, REVERSE_EXIT, HARD_STOP_EXIT). BAR_1H otherwise. equity_v2_1 has no OHLC proxy rows.",
+      "mark_honesty_label": "Always RECORDED_MARK. A NOT_TICK_LOW proxy label needs a later additive schema version and a new filename.",
+      "mark_rule_id": "MARK_RULE_C7_V1 passes through. UNBOUND or empty is shown as C7_NOT_READY and is not relabeled MARK_RULE_C7_V1.",
+      "sample_class": "Copied from the on-disk row. The scoring filter requires FORWARD_LIVE_SHADOW.",
+      "other_columns": "Copied from the 13-column on-disk row."
+    }
+  }
+}

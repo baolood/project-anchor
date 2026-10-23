@@ -41,8 +41,8 @@ schema_version,timestamp_utc,observation_id,position,realized_pnl,unrealized_pnl
 
 A new file is born with the header plus one genesis row. Later calls append. A second genesis row is refused. Header width and body width are both 13.
 
-## Not in this helper
+## Scoring view
 
-The unmerged Gate B draft names extra columns (`trade_id`, `equity_at_open`, `mark_kind`, `mark_honesty_label`) on this same filename. Those columns are not written here. Reconcile that draft before any host enablement.
+`eval_recording/equity_schema.py` reads this 13-column file. `project_scoring_view` adds `trade_id`, `equity_at_open`, `mark_kind`, and `mark_honesty_label` in memory. The view id is `equity_v2_1_view`. Those fields are not written into `anchor_fake_fill_equity_v2_1_official.csv`.
 
-This helper does not score drawdown and does not rewrite historical Line A rows into the new file.
+This helper does not score drawdown and does not rewrite historical Line A rows into the new file. Host enablement stays off.
