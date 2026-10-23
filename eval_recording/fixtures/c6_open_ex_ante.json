@@ -1,0 +1,26 @@
+{
+  "fixture_status": "SYNTHETIC_NOT_A_LEDGER",
+  "use_as_official_ledger": "NO",
+  "deploy": "NO",
+  "note": "C6-shaped OPEN and FLAT_EXIT for the equity_v2_1 scoring view. Ex-ante trade_id and equity_at_open are the join source. This file is not written into a ledger.",
+  "events": [
+    {
+      "event_type": "OPEN",
+      "observation_id": "obs-open",
+      "ledger_event_id": "le-000007",
+      "at": "2026-04-20T01:00:00Z",
+      "fill_time_utc": "2026-04-20T01:00:00Z",
+      "trade_id": "tr_le-000007",
+      "equity_at_open": "10000"
+    },
+    {
+      "event_type": "FLAT_EXIT",
+      "observation_id": "obs-exit",
+      "ledger_event_id": "le-000008",
+      "at": "2026-04-20T03:00:00Z",
+      "fill_time_utc": "2026-04-20T03:00:00Z",
+      "trade_id": "tr_le-000007",
+      "equity_at_open": "10000"
+    }
+  ]
+}
