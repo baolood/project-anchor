@@ -1,0 +1,19 @@
+{
+  "description": "No rates in hold window \u2192 MISSING",
+  "symbol": "PF_XBTUSD",
+  "synthetic": true,
+  "hold": {
+    "entry_time_utc": "2024-01-01T00:00:00Z",
+    "exit_time_utc": "2024-01-01T08:00:00Z",
+    "side": "SHORT",
+    "position_notional_usd": 5000.0
+  },
+  "rates_available": [],
+  "gaps": [
+    {
+      "note": "entire hold before cache coverage"
+    }
+  ],
+  "expected_status": "MISSING",
+  "expected_funding_pnl": null
+}
