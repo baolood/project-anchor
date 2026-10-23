@@ -1,5 +1,6 @@
 """Unit classes from the 2026-09-29 Vultr read-only production inventory.
 
+The timer allowlist matches the 2026-10-23 founder drop-in on the Vultr host.
 CORE_RUNTIME is the only class that gates overall PASS. EVALUATION,
 AUXILIARY, and INTENTIONALLY_DISABLED are reported and do not.
 """
@@ -37,32 +38,33 @@ RECOMMENDED_SERVICE_UNITS = (
     "project-anchor-whisper.service",
     "project-anchor-word-converter.service",
 )
-# Inventory section 3. Actively scheduled timers. None of these are CORE_RUNTIME.
+# 2026-10-23 founder allowlist. Order matches the live drop-in
+# anchor-control-mcp.service.d/20-timer-allowlist.conf. None of these are CORE_RUNTIME.
+# Retired from this list: shadow-paper v1.1, evidence-reporter v1, JEV forward shadow v1,
+# and JEV candidate review v1.
 RECOMMENDED_TIMER_UNITS = (
     "project-anchor-post-production-monitoring.timer",
-    "project-anchor-kraken-public-shadow-paper-v1-1.timer",
-    "project-anchor-evidence-reporter-v1.timer",
-    "project-anchor-jev-forward-shadow-v1.timer",
-    "project-anchor-jev-candidate-review-v1.timer",
     "project-anchor-kraken-forward.timer",
+    "project-anchor-jev-forward-shadow-v2.timer",
+    "anchor-official-ledger.timer",
+    "anchor-ledger-readonly-mirror.timer",
 )
 HOST_DEFAULT_SERVICES = RECOMMENDED_SERVICE_UNITS
 HOST_DEFAULT_TIMERS = RECOMMENDED_TIMER_UNITS
 
-# Shown in addition to the allowlist. Still fixed names, still systemctl show only.
-# Omitted on purpose: the failed shadow-paper monitor, turtle timer, and Track B history.
+# Shown in addition to the service allowlist. Still fixed names, still systemctl show only.
+# Retired from the observe lists on 2026-10-23: shadow-paper v1.1, evidence-reporter v1,
+# JEV forward shadow v1, and JEV candidate review v1. Also omitted: the failed shadow-paper
+# monitor, turtle timer, and Track B history. Those names stay in EXACT_CLASSES.
 OBSERVE_SERVICES = RECOMMENDED_SERVICE_UNITS + (
-    "project-anchor-kraken-public-shadow-paper-v1-1.service",
     "project-anchor-post-production-monitoring.service",
-    "project-anchor-evidence-reporter-v1.service",
-    "project-anchor-jev-forward-shadow-v1.service",
-    "project-anchor-jev-candidate-review-v1.service",
     "project-anchor-kraken-forward.service",
     "project-anchor-jev-forward-shadow-v2.service",
+    "anchor-official-ledger.service",
+    "anchor-ledger-readonly-mirror.service",
 )
-OBSERVE_TIMERS = RECOMMENDED_TIMER_UNITS + (
-    "project-anchor-jev-forward-shadow-v2.timer",
-)
+# Every timer this sidecar watches is already on the 2026-10-23 allowlist.
+OBSERVE_TIMERS = RECOMMENDED_TIMER_UNITS
 
 # Exact units from the read-only inventory, with the role recorded there.
 EXACT_CLASSES: dict[str, tuple[str, str]] = {
@@ -88,11 +90,11 @@ EXACT_CLASSES: dict[str, tuple[str, str]] = {
     ),
     "project-anchor-kraken-public-shadow-paper-v1-1.service": (
         CLASS_EVALUATION,
-        "Inventory: timer-driven shadow paper V1.1 runtime",
+        "2026-10-23: disabled on the host and removed from the default allowlist; historical shadow paper V1.1 runtime",
     ),
     "project-anchor-kraken-public-shadow-paper-v1-1.timer": (
         CLASS_EVALUATION,
-        "Inventory: schedules the shadow paper V1.1 runtime",
+        "2026-10-23: disabled on the host and removed from the default allowlist; historical shadow paper V1.1 timer",
     ),
     "project-anchor-kraken-public-shadow-paper-v1-1-monitor.service": (
         CLASS_EVALUATION,
@@ -100,27 +102,27 @@ EXACT_CLASSES: dict[str, tuple[str, str]] = {
     ),
     "project-anchor-evidence-reporter-v1.service": (
         CLASS_AUXILIARY,
-        "Inventory: low-cost evidence reporter oneshot",
+        "2026-10-23: removed from the default allowlist and observe list; historical evidence reporter oneshot",
     ),
     "project-anchor-evidence-reporter-v1.timer": (
         CLASS_AUXILIARY,
-        "Inventory: schedules the evidence reporter",
+        "2026-10-23: removed from the default allowlist; historical evidence reporter timer",
     ),
     "project-anchor-jev-candidate-review-v1.service": (
         CLASS_EVALUATION,
-        "Inventory: JEV candidate review shadow oneshot",
+        "2026-10-23: removed from the default allowlist and observe list; historical JEV candidate review oneshot",
     ),
     "project-anchor-jev-candidate-review-v1.timer": (
         CLASS_EVALUATION,
-        "Inventory: schedules JEV candidate review",
+        "2026-10-23: removed from the default allowlist; historical JEV candidate review timer",
     ),
     "project-anchor-jev-forward-shadow-v1.service": (
         CLASS_EVALUATION,
-        "Inventory: JEV forward shadow V1 oneshot",
+        "2026-10-23: removed from the default allowlist and observe list; historical JEV forward shadow V1 oneshot",
     ),
     "project-anchor-jev-forward-shadow-v1.timer": (
         CLASS_EVALUATION,
-        "Inventory: schedules JEV forward shadow V1",
+        "2026-10-23: removed from the default allowlist; historical JEV forward shadow V1 timer",
     ),
     "project-anchor-jev-forward-shadow-v2.service": (
         CLASS_INTENTIONALLY_DISABLED,
@@ -128,7 +130,7 @@ EXACT_CLASSES: dict[str, tuple[str, str]] = {
     ),
     "project-anchor-jev-forward-shadow-v2.timer": (
         CLASS_EVALUATION,
-        "Inventory: timer is armed while the v2 service stays execute-gated; omitted from the default timer allowlist",
+        "2026-10-23 allowlist: Official Ledger feed timer; observed, does not gate PASS",
     ),
     "project-anchor-kraken-forward.service": (
         CLASS_EVALUATION,
@@ -150,6 +152,22 @@ EXACT_CLASSES: dict[str, tuple[str, str]] = {
         CLASS_EVALUATION,
         "Inventory: inactive historical turtle shadow timer; excluded from the default allowlist",
     ),
+    "anchor-official-ledger.service": (
+        CLASS_EVALUATION,
+        "2026-10-23 allowlist: Official Ledger writer oneshot; observed, does not gate PASS",
+    ),
+    "anchor-official-ledger.timer": (
+        CLASS_EVALUATION,
+        "2026-10-23 allowlist: schedules the Official Ledger writer; observed, does not gate PASS",
+    ),
+    "anchor-ledger-readonly-mirror.service": (
+        CLASS_EVALUATION,
+        "2026-10-23 allowlist: read-only ledger mirror oneshot; observed, does not gate PASS",
+    ),
+    "anchor-ledger-readonly-mirror.timer": (
+        CLASS_EVALUATION,
+        "2026-10-23 allowlist: schedules the read-only ledger mirror; observed, does not gate PASS",
+    ),
     "docker.service": (
         CLASS_AUXILIARY,
         "Inventory: Docker containers are not systemd MCP targets; backend health is the loopback HTTP probe",
@@ -163,6 +181,16 @@ FAMILY_RULES: tuple[tuple[str, str, str], ...] = (
         "jev-forward-shadow-v2",
         CLASS_INTENTIONALLY_DISABLED,
         "Inventory: jev-forward-shadow-v2 is execute-gated and not required for health PASS",
+    ),
+    (
+        "official-ledger",
+        CLASS_EVALUATION,
+        "2026-10-23: official ledger units are evaluation and do not gate PASS",
+    ),
+    (
+        "ledger-readonly-mirror",
+        CLASS_EVALUATION,
+        "2026-10-23: ledger mirror units are evaluation and do not gate PASS",
     ),
     (
         "word-converter",
