@@ -56,7 +56,7 @@ Only `CORE_RUNTIME` gates the process, service, and timer portions of `run_reado
 
 The same health check still requires the existing non-unit gates: kill switch `CLOSED` from a successful Redis read, an observation result of `PASS`, `OK`, or `PASS_REPO_RECORDED_ONLY`, a ledger summary with `available` true, and no sanitized errors from core units. On the host sidecar, enabled `backend_http` (`/health` on `127.0.0.1:8000`) is also required. When `ANCHOR_CONTROL_MCP_LEDGER_DIR` is set, the ledger gate is the Official V2 directory and does not fall back to report JSON.
 
-Classes below use the 2026-09-29 Vultr read-only inventory (host `vultr`, no production change). Docker container names are not systemd units. The backend on `127.0.0.1:8000` is covered by the HTTP probe, not by `docker.service`. An allowlisted name that matches nothing here stays `CORE_RUNTIME`.
+Classes below started from the 2026-09-29 Vultr read-only inventory (host `vultr`). The timer allowlist was replaced on 2026-10-23 by the founder drop-in already live on that host. This repository change records that list. It does not install the drop-in, restart the sidecar, or edit the ledger StateDirectory. Docker container names are not systemd units. The backend on `127.0.0.1:8000` is covered by the HTTP probe, not by `docker.service`. An allowlisted name that matches nothing here stays `CORE_RUNTIME`. The ledger units below are classified so they do not become that fallback.
 
 | Unit | Class | Inventory role |
 | --- | --- | --- |
@@ -65,20 +65,22 @@ Classes below use the 2026-09-29 Vultr read-only inventory (host `vultr`, no pro
 | `project-anchor-payment-webhook.service` | `AUXILIARY` | Payment webhook adapter on `127.0.0.1:8001` |
 | `project-anchor-whisper.service` | `AUXILIARY` | Voice server on `127.0.0.1:8088` |
 | `project-anchor-word-converter.service` | `AUXILIARY` | Document converter on `127.0.0.1:8791` |
-| `project-anchor-kraken-public-shadow-paper-v1-1.service` and `.timer` | `EVALUATION` | Timer-driven shadow paper runtime |
-| `project-anchor-evidence-reporter-v1.service` and `.timer` | `AUXILIARY` | Evidence reporter |
-| `project-anchor-jev-candidate-review-v1.service` and `.timer` | `EVALUATION` | JEV candidate review shadow |
-| `project-anchor-jev-forward-shadow-v1.service` and `.timer` | `EVALUATION` | JEV forward shadow V1 |
-| `project-anchor-jev-forward-shadow-v2.service` | `INTENTIONALLY_DISABLED` | Unit file disabled until execute order. Not required for PASS |
-| `project-anchor-jev-forward-shadow-v2.timer` | `EVALUATION` | Armed while the service is execute-gated. Not in the default timer list |
+| `project-anchor-kraken-public-shadow-paper-v1-1.service` and `.timer` | `EVALUATION` | Disabled on the host 2026-10-23. Not in the default lists |
+| `project-anchor-evidence-reporter-v1.service` and `.timer` | `AUXILIARY` | Removed from the 2026-10-23 default lists |
+| `project-anchor-jev-candidate-review-v1.service` and `.timer` | `EVALUATION` | Removed from the 2026-10-23 default lists |
+| `project-anchor-jev-forward-shadow-v1.service` and `.timer` | `EVALUATION` | Removed from the 2026-10-23 default lists |
+| `project-anchor-jev-forward-shadow-v2.service` | `INTENTIONALLY_DISABLED` | Observed. Not required for PASS |
+| `project-anchor-jev-forward-shadow-v2.timer` | `EVALUATION` | Official Ledger feed. On the 2026-10-23 default timer list. Does not gate PASS |
 | `project-anchor-kraken-forward.service` | `EVALUATION` | Forward collector. Unit file disabled; optional oneshot |
-| `project-anchor-kraken-forward.timer` | `EVALUATION` | Still active/waiting, so it is in the default timer list |
-| `project-anchor-post-production-monitoring.service` and `.timer` | `AUXILIARY` | Read-only monitoring refresh |
+| `project-anchor-kraken-forward.timer` | `EVALUATION` | Still on the default timer list |
+| `project-anchor-post-production-monitoring.service` and `.timer` | `AUXILIARY` | Read-only monitoring refresh. Timer stays on the default list |
+| `anchor-official-ledger.service` and `.timer` | `EVALUATION` | Official Ledger writer. Timer is on the default list. Oneshot and timer stay `expectation: observed` and do not gate PASS |
+| `anchor-ledger-readonly-mirror.service` and `.timer` | `EVALUATION` | Read-only mirror of the ledger file. Timer is on the default list. Oneshot and timer stay `expectation: observed` and do not gate PASS |
 | `project-anchor-kraken-public-shadow-paper-v1-1-monitor.service` | `EVALUATION` | Failed at inventory time. Excluded from the default lists |
 | `project-anchor-kraken-turtle-eth-1h-shadow.timer` | `EVALUATION` | Inactive historical timer. Excluded from the default lists |
 | `docker.service` | `AUXILIARY` | Not an inventoried systemd control target |
 
-Name rules cover the same roles when the exact unit is not in the table: `whisper`, `word-converter`, `commercial`, and `payment` are `AUXILIARY`. `shadow`, `paper`, `turtle`, `track-b`, `prop-pe`, and `recovery` are `EVALUATION`. `jev-forward-shadow-v2` stays `INTENTIONALLY_DISABLED`.
+Name rules cover the same roles when the exact unit is not in the table: `whisper`, `word-converter`, `commercial`, and `payment` are `AUXILIARY`. `shadow`, `paper`, `turtle`, `track-b`, `prop-pe`, and `recovery` are `EVALUATION`. `official-ledger` and `ledger-readonly-mirror` are `EVALUATION`. `jev-forward-shadow-v2` stays `INTENTIONALLY_DISABLED` unless the exact timer row above matches first.
 
 Journal errors are collected only for `CORE_RUNTIME` services. On this inventory that is `nginx.service`. A disabled, evaluation, or auxiliary unit cannot fail `recent_errors`.
 
@@ -88,10 +90,12 @@ These match the inventory's production lists. Spaces match the inventory text. C
 
 ```bash
 ANCHOR_CONTROL_MCP_SERVICE_UNITS="nginx.service project-anchor-commercial-api.service project-anchor-payment-webhook.service project-anchor-whisper.service project-anchor-word-converter.service"
-ANCHOR_CONTROL_MCP_TIMER_UNITS="project-anchor-post-production-monitoring.timer project-anchor-kraken-public-shadow-paper-v1-1.timer project-anchor-evidence-reporter-v1.timer project-anchor-jev-forward-shadow-v1.timer project-anchor-jev-candidate-review-v1.timer project-anchor-kraken-forward.timer"
+ANCHOR_CONTROL_MCP_TIMER_UNITS="project-anchor-post-production-monitoring.timer project-anchor-kraken-forward.timer project-anchor-jev-forward-shadow-v2.timer anchor-official-ledger.timer anchor-ledger-readonly-mirror.timer"
 ```
 
-Of those services, only `nginx.service` gates PASS. The four product services are read and classified `AUXILIARY`. None of the recommended timers gate PASS. `project-anchor-jev-forward-shadow-v2.service` is observed and does not gate PASS. The failed shadow-paper monitor and the inactive turtle timer are classified and left out of the default lists.
+Of those services, only `nginx.service` gates PASS. The four product services are read and classified `AUXILIARY`. None of the recommended timers gate PASS. `project-anchor-jev-forward-shadow-v2.timer` stays on the list because it is the Official Ledger feed. `anchor-official-ledger.timer` and `anchor-ledger-readonly-mirror.timer` are `EVALUATION` with `expectation: observed`. An idle oneshot or an inactive timer in that class does not fail PASS. `project-anchor-jev-forward-shadow-v2.service` is observed and does not gate PASS. Shadow paper v1.1, evidence reporter v1, JEV forward shadow v1, and JEV candidate review v1 are classified and left out of the default lists. The failed shadow-paper monitor and the inactive turtle timer stay out as well.
+
+The sidecar does not read `RECOMMENDED_TIMER_UNITS` on each request when `ANCHOR_CONTROL_MCP_TIMER_UNITS` is set. `configured_units` uses that environment value, and uses `HOST_DEFAULT_TIMERS` (the same tuple) only when the variable is empty or invalid. Host mode then appends any `OBSERVE_TIMERS` name that is not already selected, up to 16 names. systemd applies a drop-in `Environment=` after the main unit file, and `EnvironmentFile=` overrides `Environment=` when the file sets the same key. The live host drop-in `anchor-control-mcp.service.d/20-timer-allowlist.conf` therefore supplies the running process. A process that still imports the previous observe tuple keeps showing the retired timers after that drop-in list. `render_service_unit()` writes `RECOMMENDED_TIMER_UNITS` into the example unit. This sync keeps the next render from putting the retired timers back, and it stops appending them. `get_timers` also reports `recommended_timer_units` from the Python tuple, separate from the units it actually shows. Unclassified names in that shown list are `CORE_RUNTIME`. The ledger rows above exist so those allowlisted timers do not gate PASS.
 
 Reports directory from the inventory: `/var/lib/project-anchor/reports`.
 

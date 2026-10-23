@@ -24,6 +24,9 @@ from app.mcp.inventory import (
     CLASS_EVALUATION,
     CLASS_INTENTIONALLY_DISABLED,
     GATING_CLASSES,
+    HOST_DEFAULT_TIMERS,
+    OBSERVE_SERVICES,
+    OBSERVE_TIMERS,
     RECOMMENDED_SERVICE_UNITS,
     RECOMMENDED_TIMER_UNITS,
     classify_unit,
@@ -139,9 +142,42 @@ class InventoryClassificationTests(unittest.TestCase):
                 "project-anchor-word-converter.service",
             ),
         )
-        self.assertEqual(len(RECOMMENDED_TIMER_UNITS), 6)
-        self.assertNotIn("project-anchor-jev-forward-shadow-v2.timer", RECOMMENDED_TIMER_UNITS)
-        self.assertNotIn("project-anchor-kraken-turtle-eth-1h-shadow.timer", RECOMMENDED_TIMER_UNITS)
+        self.assertEqual(
+            RECOMMENDED_TIMER_UNITS,
+            (
+                "project-anchor-post-production-monitoring.timer",
+                "project-anchor-kraken-forward.timer",
+                "project-anchor-jev-forward-shadow-v2.timer",
+                "anchor-official-ledger.timer",
+                "anchor-ledger-readonly-mirror.timer",
+            ),
+        )
+        self.assertEqual(HOST_DEFAULT_TIMERS, RECOMMENDED_TIMER_UNITS)
+        self.assertEqual(OBSERVE_TIMERS, RECOMMENDED_TIMER_UNITS)
+        retired_timers = (
+            "project-anchor-kraken-public-shadow-paper-v1-1.timer",
+            "project-anchor-evidence-reporter-v1.timer",
+            "project-anchor-jev-forward-shadow-v1.timer",
+            "project-anchor-jev-candidate-review-v1.timer",
+            "project-anchor-kraken-turtle-eth-1h-shadow.timer",
+        )
+        for name in retired_timers:
+            self.assertNotIn(name, RECOMMENDED_TIMER_UNITS)
+            self.assertNotIn(name, OBSERVE_TIMERS)
+        retired_services = (
+            "project-anchor-kraken-public-shadow-paper-v1-1.service",
+            "project-anchor-evidence-reporter-v1.service",
+            "project-anchor-jev-forward-shadow-v1.service",
+            "project-anchor-jev-candidate-review-v1.service",
+        )
+        for name in retired_services:
+            self.assertNotIn(name, OBSERVE_SERVICES)
+        for name in (
+            "project-anchor-jev-forward-shadow-v2.service",
+            "anchor-official-ledger.service",
+            "anchor-ledger-readonly-mirror.service",
+        ):
+            self.assertIn(name, OBSERVE_SERVICES)
         expected = {
             "nginx.service": CLASS_CORE_RUNTIME,
             "docker.service": CLASS_AUXILIARY,
@@ -170,6 +206,19 @@ class InventoryClassificationTests(unittest.TestCase):
         disabled = classify_unit("project-anchor-jev-forward-shadow-v2.service")
         self.assertEqual(disabled["expectation"], "not_required")
         self.assertIs(disabled["gates_overall_pass"], False)
+        for name in (
+            "project-anchor-jev-forward-shadow-v2.timer",
+            "anchor-official-ledger.service",
+            "anchor-official-ledger.timer",
+            "anchor-ledger-readonly-mirror.service",
+            "anchor-ledger-readonly-mirror.timer",
+            "anchor-official-ledger-extra.timer",
+            "anchor-ledger-readonly-mirror-extra.service",
+        ):
+            classified = classify_unit(name)
+            self.assertEqual(classified["unit_class"], CLASS_EVALUATION, name)
+            self.assertIs(classified["gates_overall_pass"], False, name)
+            self.assertEqual(classified["expectation"], "observed", name)
         services, warning = configured_units(" ".join(RECOMMENDED_SERVICE_UNITS), ".service", ())
         self.assertIsNone(warning)
         self.assertEqual(tuple(services), RECOMMENDED_SERVICE_UNITS)
@@ -224,7 +273,24 @@ class HostHealthTests(unittest.TestCase):
         self.assertEqual(list(services["recommended_service_units"]), list(RECOMMENDED_SERVICE_UNITS))
         self.assertEqual(services["gating_classes"], [CLASS_CORE_RUNTIME])
         self.assertEqual(list(timers["recommended_timer_units"]), list(RECOMMENDED_TIMER_UNITS))
-        self.assertNotIn("project-anchor-jev-forward-shadow-v2.timer", timers["recommended_timer_units"])
+        self.assertIn("project-anchor-jev-forward-shadow-v2.timer", timers["recommended_timer_units"])
+        by_timer = {item["name"]: item for item in timers["units"]}
+        for name in (
+            "project-anchor-jev-forward-shadow-v2.timer",
+            "anchor-official-ledger.timer",
+            "anchor-ledger-readonly-mirror.timer",
+        ):
+            self.assertIn(name, timers["expected_units"])
+            self.assertEqual(by_timer[name]["unit_class"], CLASS_EVALUATION)
+            self.assertIs(by_timer[name]["gates_overall_pass"], False)
+            self.assertEqual(by_timer[name]["expectation"], "observed")
+        self.assertFalse(by_timer["anchor-official-ledger.timer"]["healthy"])
+        self.assertFalse(by_timer["anchor-ledger-readonly-mirror.timer"]["healthy"])
+        self.assertIn("anchor-official-ledger.service", status["process"]["ignored_for_pass"])
+        self.assertIn("anchor-ledger-readonly-mirror.service", status["process"]["ignored_for_pass"])
+        self.assertEqual(by_name["anchor-official-ledger.service"]["unit_class"], CLASS_EVALUATION)
+        self.assertEqual(by_name["anchor-official-ledger.service"]["expectation"], "observed")
+        self.assertIs(by_name["anchor-ledger-readonly-mirror.service"]["gates_overall_pass"], False)
         self.assertEqual(health["verdict"], "PASS")
         self.assertIn("backend_http", [item["name"] for item in health["checks"]])
         journal_units = [call[2] for call in runner.calls if call[0] == "journalctl"]
