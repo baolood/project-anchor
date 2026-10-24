@@ -47,6 +47,7 @@ from ops.fault_alarm.probe import (
     mf4_fault,
     oneshot_fault,
     plan_notifications,
+    resolve_repo,
     run_probe,
     save_state,
     timer_fault,
@@ -617,6 +618,13 @@ class PayloadTests(unittest.TestCase):
             found = _selected_env(path, ("REDIS_URL", "ANCHOR_KILL_SWITCH"))
         self.assertEqual(found, {"REDIS_URL": "redis://127.0.0.1:6379/0", "ANCHOR_KILL_SWITCH": "0"})
         self.assertNotIn("mcp-token-value", json.dumps(found))
+
+    def test_unreadable_host_checkout_falls_back_to_the_source_tree(self) -> None:
+        with mock.patch.dict(os.environ, {"ANCHOR_FAULT_REPO_ROOT": ""}, clear=False), mock.patch.object(
+            Path, "is_file", side_effect=PermissionError(13, "Permission denied")
+        ):
+            resolved = resolve_repo(None)
+        self.assertEqual(resolved, ROOT)
 
     def test_main_dry_run_does_not_post(self) -> None:
         with _TempDir() as root:

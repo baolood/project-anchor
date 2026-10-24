@@ -934,7 +934,12 @@ def resolve_repo(explicit: str | None = None) -> Path:
         return Path(env)
     deployed = Path(DEFAULT_REPO)
     marker = deployed / "anchor-backend" / "app" / "mcp" / "inventory.py"
-    if marker.is_file():
+    try:
+        deployed_present = marker.is_file()
+    except OSError:
+        # /root is mode 0700 on a GitHub runner. An unreadable path is not the host checkout.
+        deployed_present = False
+    if deployed_present:
         return deployed
     return Path(__file__).resolve().parents[2]
 
