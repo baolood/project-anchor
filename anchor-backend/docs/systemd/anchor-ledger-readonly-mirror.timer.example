@@ -1,11 +1,11 @@
 [Unit]
-Description=Run the Official V2 ledger read-only mirror every 10 minutes
+Description=Run the Official V2 ledger read-only mirror outside the ledger write minute
 Documentation=file:/path/to/project-anchor/anchor-backend/docs/ANCHOR_LEDGER_READONLY_MIRROR_V1.md
 After=anchor-official-ledger.service
 
 [Timer]
 OnBootSec=2min
-OnCalendar=*:0/10
+OnCalendar=*:00,20,30,40,50
 AccuracySec=30s
 Persistent=true
 Unit=anchor-ledger-readonly-mirror.service

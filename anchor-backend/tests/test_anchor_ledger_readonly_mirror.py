@@ -9,6 +9,8 @@ import stat
 import tempfile
 import unittest
 from datetime import datetime, timezone
+
+from app.mcp.official_ledger import LEDGER_DIR_ENV, read_official_ledger
 from pathlib import Path
 from unittest import mock
 
@@ -19,11 +21,13 @@ from app.mcp.ledger_mirror import (
     LEDGER_BASENAME,
     SOURCE_RELATIVE,
     MirrorError,
+    _wait_until_stable,
     mirror_ledger,
     render_service_unit,
     render_success_drop_in,
     render_timer_unit,
 )
+from app.mcp.ledger_run_index import BOUNDARY_NAME, EVENTS_NAME
 
 
 DOCS = Path(__file__).resolve().parents[1] / "docs" / "systemd"
@@ -32,6 +36,20 @@ READ_FLAGS = os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC
 
 def _live(root: Path) -> Path:
     return root.joinpath(*SOURCE_RELATIVE)
+
+
+def _nested_snapshot(root: Path, run: str) -> Path:
+    path = (
+        root
+        / "runs"
+        / run
+        / "before"
+        / "affl-v2-official-ledger"
+        / "out"
+        / LEDGER_BASENAME
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def _plant(root: Path, payload: bytes) -> Path:
@@ -70,7 +88,7 @@ class LedgerMirrorTests(unittest.TestCase):
                 real_chmod(path, mode)
 
             with mock.patch("app.mcp.ledger_mirror.os.chmod", side_effect=spy_chmod):
-                mirror_ledger(source, dest)
+                mirror_ledger(source, dest, stable_for=0)
             self.assertEqual(live.read_bytes(), payload)
             self.assertEqual(live.stat().st_mode, file_mode)
             self.assertEqual(live.stat().st_mtime_ns, file_mtime)
@@ -141,7 +159,7 @@ class LedgerMirrorTests(unittest.TestCase):
                 mock.patch("app.mcp.ledger_mirror.os.fsync", side_effect=spy_fsync),
                 mock.patch("app.mcp.ledger_mirror.os.replace", side_effect=spy_replace),
             ):
-                mirror_ledger(source, dest)
+                mirror_ledger(source, dest, stable_for=0)
             source_opens = [flags for path, flags in opens if path == str(live)]
             self.assertEqual(source_opens, [READ_FLAGS])
             write_bits = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND
@@ -232,13 +250,96 @@ class LedgerMirrorTests(unittest.TestCase):
                 mock.patch("app.mcp.ledger_mirror.grp.getgrnam", return_value=group) as getgrnam,
                 mock.patch("app.mcp.ledger_mirror.os.chown", side_effect=spy_chown),
             ):
-                mirror_ledger(source, dest, group="anchor-mcp")
+                mirror_ledger(source, dest, group="anchor-mcp", stable_for=0)
             getgrnam.assert_called_with("anchor-mcp")
             self.assertGreaterEqual(len(chowns), 4)
             for path, uid, gid in chowns:
                 self.assertEqual((uid, gid), (0, 42))
                 self.assertTrue(path.startswith(str(dest)))
                 self.assertFalse(path.startswith(str(source)))
+
+    def test_skips_while_source_size_or_mtime_is_changing(self) -> None:
+        payload = b"live-bytes\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "ledger-root"
+            dest = base / "mirror"
+            live = _plant(source, payload)
+            before_mode = live.stat().st_mode
+            before_mtime = live.stat().st_mtime_ns
+            clock = {"t": 0.0}
+            calls = {"n": 0}
+
+            def monotonic() -> float:
+                return clock["t"]
+
+            def sleep(seconds: float) -> None:
+                clock["t"] += seconds
+
+            def stat_source(path: Path):
+                calls["n"] += 1
+                return mock.Mock(st_size=calls["n"], st_mtime_ns=calls["n"])
+
+            outcome = mirror_ledger(
+                source,
+                dest,
+                stable_for=2,
+                max_wait=1,
+                sleep=sleep,
+                monotonic=monotonic,
+                stat_source=stat_source,
+            )
+            self.assertEqual(outcome, "skipped")
+            self.assertFalse((dest / LEDGER_BASENAME).exists())
+            self.assertEqual(live.read_bytes(), payload)
+            self.assertEqual(live.stat().st_mode, before_mode)
+            self.assertEqual(live.stat().st_mtime_ns, before_mtime)
+
+    def test_copies_after_size_and_mtime_are_stable_for_two_seconds(self) -> None:
+        payload = b"stable-live\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "ledger-root"
+            dest = base / "mirror"
+            _plant(source, payload)
+            clock = {"t": 0.0}
+
+            def monotonic() -> float:
+                return clock["t"]
+
+            def sleep(seconds: float) -> None:
+                clock["t"] += seconds
+
+            outcome = mirror_ledger(source, dest, stable_for=2, max_wait=5, sleep=sleep, monotonic=monotonic)
+            self.assertEqual(outcome, "copied")
+            self.assertGreaterEqual(clock["t"], 2)
+            self.assertEqual((dest / LEDGER_BASENAME).read_bytes(), payload)
+
+    def test_stability_window_resets_when_mtime_changes(self) -> None:
+        clock = {"t": 0.0}
+        mtime = {"n": 5}
+
+        def monotonic() -> float:
+            return clock["t"]
+
+        def sleep(seconds: float) -> None:
+            clock["t"] += seconds
+
+        def stat_source(path: Path):
+            if clock["t"] >= 1:
+                mtime["n"] = 9
+            return mock.Mock(st_size=10, st_mtime_ns=mtime["n"])
+
+        sample = _wait_until_stable(
+            Path("/tmp/ledger-source"),
+            stable_for=2,
+            max_wait=10,
+            sleep=sleep,
+            monotonic=monotonic,
+            stat_source=stat_source,
+        )
+        self.assertEqual(sample, (10, 9))
+        self.assertGreaterEqual(clock["t"], 3)
 
     def test_units_are_hardened_and_match_the_examples(self) -> None:
         service = render_service_unit()
@@ -260,10 +361,346 @@ class LedgerMirrorTests(unittest.TestCase):
         self.assertIn("User=root", service)
         self.assertIn("ProtectSystem=strict", service)
         self.assertIn("RestrictAddressFamilies=AF_UNIX", service)
-        self.assertIn("OnCalendar=*:0/10", timer)
+        self.assertIn("OnCalendar=*:00,20,30,40,50", timer)
+        self.assertNotIn("*:0/10", timer)
+        calendar = next(line for line in timer.splitlines() if line.startswith("OnCalendar="))
+        self.assertNotIn("10", calendar.split("=", 1)[1])
         self.assertEqual(drop_in, "[Unit]\nOnSuccess=anchor-ledger-readonly-mirror.service\n")
         for forbidden in ("setfacl", "chmod", "AF_INET", "StateDirectory=", "DynamicUser="):
             self.assertNotIn(forbidden, combined)
+
+    def test_copies_the_run_index_and_not_the_before_snapshot(self) -> None:
+        marker = b"SNAPSHOT-MARKER-NOT-COPIED"
+        blocked = b"BLOCKED-MARKER-NOT-COPIED"
+        old_path_marker = b"OLD-PATH-WRONG-ID"
+        first = (
+            json.dumps(
+                {
+                    "event_type": "PENDING_NEXT_BAR",
+                    "ledger_event_id": "le-0001",
+                    "observation_id": "obs-1",
+                    "row_hash": "a" * 64,
+                    "signal_available_at": "2026-10-12T10:05:00Z",
+                    "signal_candle_open_utc": "2026-10-12T10:00:00Z",
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        ).encode("utf-8")
+        second = (
+            json.dumps(
+                {
+                    "event_type": "OPEN",
+                    "fill_time_utc": "2026-10-12T11:00:00Z",
+                    "ledger_event_id": "le-0002",
+                    "observation_id": "obs-1",
+                    "row_hash": "b" * 64,
+                    "signal_available_at": "2026-10-12T10:05:00Z",
+                    "signal_candle_open_utc": "2026-10-12T10:00:00Z",
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        ).encode("utf-8")
+        live = first + second
+        committed = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "at": "2026-10-12T10:10:01.250000+00:00",
+                        "commits": 1,
+                        "event": "committed",
+                        "ledger_events": 1,
+                        "run_seq": 1,
+                        "source_lines": 1,
+                    },
+                    sort_keys=True,
+                ),
+                json.dumps(
+                    {
+                        "at": "2026-10-12T12:10:01+00:00",
+                        "commits": 2,
+                        "event": "committed",
+                        "ledger_events": 2,
+                        "run_seq": 2,
+                        "source_lines": 2,
+                    },
+                    sort_keys=True,
+                ),
+            ]
+        ) + "\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "ledger-root"
+            dest = base / "mirror"
+            live_path = _plant(source, live)
+            (source / EVENTS_NAME).write_text(committed, encoding="utf-8")
+            (source / "BLOCKED.json").write_bytes(blocked)
+            empty = _nested_snapshot(source, "run-000001")
+            empty.write_bytes(b"")
+            wrong_flat = source / "runs" / "run-000002" / "before" / LEDGER_BASENAME
+            wrong_flat.parent.mkdir(parents=True, exist_ok=True)
+            wrong_flat.write_bytes(old_path_marker + b"\n")
+            snapshot = _nested_snapshot(source, "run-000002")
+            snapshot.write_bytes(marker + b"\n" + first)
+            source_bytes = snapshot.read_bytes()
+            mirror_ledger(source, dest, stable_for=0)
+            self.assertEqual(snapshot.read_bytes(), source_bytes)
+            self.assertEqual(wrong_flat.read_bytes(), old_path_marker + b"\n")
+            self.assertEqual(live_path.read_bytes(), live)
+            copied_events = (dest / EVENTS_NAME).read_text(encoding="utf-8")
+            self.assertEqual(copied_events, committed)
+            boundaries = [
+                json.loads(line)
+                for line in (dest / BOUNDARY_NAME).read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertEqual(
+                boundaries,
+                [
+                    {
+                        "committed_at": "2026-10-12T10:10:01.250000+00:00",
+                        "ledger_events": 1,
+                        "ledger_events_before": 0,
+                        "run": "run-000001",
+                        "run_seq": 1,
+                    },
+                    {
+                        "committed_at": "2026-10-12T12:10:01+00:00",
+                        "ledger_events": 2,
+                        "ledger_events_before": 1,
+                        "run": "run-000002",
+                        "run_seq": 2,
+                    },
+                ],
+            )
+            published = b"".join(path.read_bytes() for path in dest.rglob("*") if path.is_file())
+            self.assertNotIn(marker, published)
+            self.assertNotIn(blocked, published)
+            self.assertNotIn(old_path_marker, published)
+            summary = read_official_ledger(
+                {LEDGER_DIR_ENV: str(dest)},
+                allowlist=(str(dest),),
+                now=datetime(2026, 10, 12, 15, 0, tzinfo=timezone.utc),
+            )
+            self.assertEqual(summary["pending_observations"]["BAR_NOT_YET_CLOSED"], 1)
+            self.assertEqual(summary["pending_observations"]["DATA_GAP"], 0)
+            self.assertEqual(summary["counts"]["by_type"]["PENDING_NEXT_BAR"], 1)
+            self.assertEqual(summary["counts"]["events"], 2)
+            self.assertNotIn("obs-1", json.dumps(summary))
+
+    def test_nonempty_run1_before_snapshot_is_the_pre_index_offset(self) -> None:
+        """Run 1 starts at the before-snapshot row count, not at 0.
+
+        The host snapshot has 808 rows ending at le-000808, and run 1
+        committed ledger_events 812. This fixture uses the same rule at a
+        smaller count: the last snapshot id must equal the live row there.
+        """
+        def row(event_id: str, event_type: str, observation: str, **extra: object) -> bytes:
+            payload: dict[str, object] = {
+                "event_type": event_type,
+                "ledger_event_id": event_id,
+                "observation_id": observation,
+                "row_hash": "a" * 64,
+                "signal_available_at": "2026-10-12T10:05:00Z",
+                "signal_candle_open_utc": "2026-10-12T10:00:00Z",
+            }
+            payload.update(extra)
+            return (json.dumps(payload, sort_keys=True) + "\n").encode("utf-8")
+
+        first = row("le-0001", "PENDING_NEXT_BAR", "obs-pre-1")
+        second = row("le-0002", "PENDING_NEXT_BAR", "obs-pre-2")
+        third = row("le-0003", "PENDING_NEXT_BAR", "obs-indexed")
+        fourth = row(
+            "le-0004",
+            "OPEN",
+            "obs-indexed",
+            fill_time_utc="2026-10-12T11:00:00Z",
+        )
+        live = first + second + third + fourth
+        committed = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "at": "2026-10-12T10:10:01+00:00",
+                        "commits": 3,
+                        "event": "committed",
+                        "ledger_events": 3,
+                        "run_seq": 1,
+                        "source_lines": 3,
+                    },
+                    sort_keys=True,
+                ),
+                json.dumps(
+                    {
+                        "at": "2026-10-12T12:10:01+00:00",
+                        "commits": 4,
+                        "event": "committed",
+                        "ledger_events": 4,
+                        "run_seq": 2,
+                        "source_lines": 4,
+                    },
+                    sort_keys=True,
+                ),
+            ]
+        ) + "\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "ledger-root"
+            dest = base / "mirror"
+            live_path = _plant(source, live)
+            (source / EVENTS_NAME).write_text(committed, encoding="utf-8")
+            snapshot = _nested_snapshot(source, "run-000001")
+            snapshot.write_bytes(first + second)
+            mirror_ledger(source, dest, stable_for=0)
+            self.assertEqual(live_path.read_bytes(), live)
+            self.assertEqual(snapshot.read_bytes(), first + second)
+            boundaries = [
+                json.loads(line)
+                for line in (dest / BOUNDARY_NAME).read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertEqual(boundaries[0]["ledger_events_before"], 2)
+            self.assertEqual(boundaries[0]["ledger_events"], 3)
+            self.assertEqual(boundaries[0]["run_seq"], 1)
+            self.assertFalse((dest / "runs").exists())
+            summary = read_official_ledger(
+                {LEDGER_DIR_ENV: str(dest)},
+                allowlist=(str(dest),),
+                now=datetime(2026, 10, 12, 15, 0, tzinfo=timezone.utc),
+            )
+            pending = summary["pending_observations"]
+            self.assertEqual(pending["PRE_INDEX"], 2)
+            self.assertEqual(pending["BAR_NOT_YET_CLOSED"], 1)
+            self.assertEqual(pending["DATA_GAP"], 0)
+            self.assertEqual(pending["IN_FLIGHT"], 0)
+            self.assertEqual(pending["observations"], 3)
+            self.assertEqual(summary["counts"]["events"], 4)
+            self.assertNotIn("obs-pre-1", json.dumps(summary))
+
+    def test_run1_snapshot_last_id_must_match_the_live_row(self) -> None:
+        live = (
+            b'{"event_type":"PENDING_NEXT_BAR","ledger_event_id":"le-000808"}\n'
+            b'{"event_type":"PENDING_NEXT_BAR","ledger_event_id":"le-000809"}\n'
+        )
+        committed = (
+            '{"at":"2026-10-12T10:10:01+00:00","commits":2,"event":"committed",'
+            '"ledger_events":2,"run_seq":1,"source_lines":2}\n'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "ledger-root"
+            dest = base / "mirror"
+            planted = _plant(source, live)
+            (source / EVENTS_NAME).write_text(committed, encoding="utf-8")
+            snapshot = _nested_snapshot(source, "run-000001")
+            snapshot.write_bytes(b'{"ledger_event_id":"le-not-000808"}\n')
+            mirror_ledger(source, dest, stable_for=0)
+            self.assertEqual(planted.read_bytes(), live)
+            self.assertEqual((dest / LEDGER_BASENAME).read_bytes(), live)
+            self.assertFalse((dest / BOUNDARY_NAME).exists())
+
+    def test_snapshot_mismatch_drops_boundaries_and_keeps_every_ledger_row(self) -> None:
+        row = (
+            json.dumps(
+                {
+                    "event_type": "PENDING_NEXT_BAR",
+                    "ledger_event_id": "le-0001",
+                    "row_hash": "a" * 64,
+                    "signal_available_at": "2026-10-12T10:05:00Z",
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        ).encode("utf-8")
+        committed = (
+            json.dumps(
+                {
+                    "at": "2026-10-12T10:10:01+00:00",
+                    "commits": 1,
+                    "event": "committed",
+                    "ledger_events": 1,
+                    "run_seq": 1,
+                    "source_lines": 1,
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "ledger-root"
+            dest = base / "mirror"
+            live = _plant(source, row)
+            (source / EVENTS_NAME).write_text(committed, encoding="utf-8")
+            snapshot = _nested_snapshot(source, "run-000001")
+            snapshot.write_bytes(b'{"ledger_event_id":"not-the-empty-before"}\n')
+            mirror_ledger(source, dest, stable_for=0)
+            self.assertEqual(live.read_bytes(), row)
+            self.assertEqual((dest / LEDGER_BASENAME).read_bytes(), row)
+            self.assertFalse((dest / BOUNDARY_NAME).exists())
+            summary = read_official_ledger(
+                {LEDGER_DIR_ENV: str(dest)},
+                allowlist=(str(dest),),
+                now=datetime(2026, 10, 12, 11, 30, tzinfo=timezone.utc),
+            )
+            self.assertEqual(summary["counts"]["events"], 1)
+            self.assertEqual(
+                summary["pending_observations"],
+                {"raw_rows": 1, "observations": 1, "runs_waited": 1},
+            )
+
+    def test_run_seq_without_a_predecessor_does_not_publish_boundaries(self) -> None:
+        host = (
+            '{"at":"2026-10-12T23:10:01.432083+00:00","commits":366,'
+            '"event":"committed","ledger_events":1015,"run_seq":70,"source_lines":370}\n'
+        )
+        row = b'{"event_type":"PENDING_NEXT_BAR","ledger_event_id":"le-0001"}\n'
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "ledger-root"
+            dest = base / "mirror"
+            _plant(source, row)
+            (source / EVENTS_NAME).write_text(host, encoding="utf-8")
+            mirror_ledger(source, dest, stable_for=0)
+            self.assertEqual((dest / EVENTS_NAME).read_text(encoding="utf-8"), host)
+            self.assertEqual((dest / LEDGER_BASENAME).read_bytes(), row)
+            self.assertFalse((dest / BOUNDARY_NAME).exists())
+
+    def test_skips_while_events_jsonl_is_still_changing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            source = base / "ledger-root"
+            dest = base / "mirror"
+            _plant(source, b'{"ledger_event_id":"le-0001"}\n')
+            events = source / EVENTS_NAME
+            events.write_text("{}\n", encoding="utf-8")
+            clock = {"t": 0.0}
+            ticks = {"n": 0}
+
+            def monotonic() -> float:
+                return clock["t"]
+
+            def sleep(seconds: float) -> None:
+                clock["t"] += seconds
+
+            def stat_source(path: Path):
+                size = 10
+                if path.name == EVENTS_NAME:
+                    ticks["n"] += 1
+                    size = ticks["n"]
+                return mock.Mock(st_size=size, st_mtime_ns=1)
+
+            outcome = mirror_ledger(
+                source,
+                dest,
+                stable_for=2,
+                max_wait=1,
+                sleep=sleep,
+                monotonic=monotonic,
+                stat_source=stat_source,
+            )
+            self.assertEqual(outcome, "skipped")
+            self.assertFalse((dest / LEDGER_BASENAME).exists())
+            self.assertEqual(events.read_text(encoding="utf-8"), "{}\n")
 
 
 if __name__ == "__main__":
