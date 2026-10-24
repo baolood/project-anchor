@@ -282,9 +282,36 @@ class Mf4McpTests(unittest.TestCase):
                 encoding="utf-8",
             )
             state = call_tool("get_eval_state", {}, _context(root, {MF4_DIR_ENV: str(mf4)}))
-        self.assertEqual(state["pass_probability"]["source"], "stored")
-        self.assertEqual(state["pass_probability"]["trades"], 1)
-        self.assertLessEqual(len(_encoded(state)), MAX_BYTES)
+            self.assertEqual(state["pass_probability"]["source"], "zero_edge_4r")
+            self.assertGreater(state["pass_probability"]["nolimit"]["pass"], 0.0)
+            self.assertLessEqual(len(_encoded(state)), MAX_BYTES)
+            lines = []
+            for index in range(20):
+                lines.append(
+                    json.dumps(
+                        {
+                            "signal_id": f"mf4-{index}",
+                            "side": "long",
+                            "entry": 84499.5,
+                            "stop": 83633.1,
+                            "tp": 87812.6,
+                            "size": 0.16,
+                            "realized_r": -1.0,
+                            "commission": 8.0,
+                            "funding": 2.0,
+                            "mae": -1.0,
+                            "mfe": 0.2,
+                            "duration_h": 8,
+                            "gap_h": 48,
+                            "exit_reason": "stop",
+                        }
+                    )
+                )
+            (mf4 / "eval_trades.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+            stored = call_tool("get_eval_state", {}, _context(root, {MF4_DIR_ENV: str(mf4)}))
+        self.assertEqual(stored["pass_probability"]["source"], "stored")
+        self.assertEqual(stored["pass_probability"]["trades"], 20)
+        self.assertLessEqual(len(_encoded(stored)), MAX_BYTES)
 
 
 if __name__ == "__main__":

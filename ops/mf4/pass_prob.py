@@ -6,8 +6,9 @@ balance, size with the 2026-10-24 cap-150 rule, then lock, skip, pass,
 breach, or continue. The seed is fixed. A running account finishes in
 well under a second.
 
-When the trade log is empty the book is a zero-edge 4R baseline: one
-win in five, gross +4R or -1R, and 0.09R of costs on every trade.
+Until the trade log has 20 usable rows, the book is a zero-edge 4R
+baseline: one win in five, gross +4R or -1R, and 0.09R of costs on
+every trade. One losing trade does not replace that book.
 """
 
 from __future__ import annotations
@@ -26,6 +27,8 @@ COST_R = 0.09
 SEED = 7
 PATHS = 20000
 HORIZONS = (30, 60, 90)
+# Below this many usable rows, a single loss would otherwise bootstrap to 0% pass.
+MIN_STORED_TRADES = 20
 NO_LIMIT_DAYS = 1095
 # (R, mfe, mae, duration hours, gap hours)
 _WIN = (4.0 - COST_R, 4.0 - COST_R, -0.15, 24.0, 96.0)
@@ -110,7 +113,7 @@ def pass_probability(
 def book_from_outcomes(
     rows: Sequence[Mapping[str, Any]] | None,
 ) -> tuple[list[tuple[float, float, float, float, float]], str, float | None]:
-    """Stored trades when any row is usable, otherwise the 0.09R baseline."""
+    """Zero-edge 4R baseline until 20 usable trades, then the stored book."""
     parsed: list[tuple[float, float, float, float, float]] = []
     costs: list[float] = []
     for row in rows or ():
@@ -122,7 +125,7 @@ def book_from_outcomes(
         parsed.append(item[0])
         if item[1] is not None:
             costs.append(item[1])
-    if not parsed:
+    if len(parsed) < MIN_STORED_TRADES:
         return list(BASELINE), "zero_edge_4r", COST_R
     cost = sum(costs) / len(costs) if costs else None
     return parsed, "stored", cost

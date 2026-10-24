@@ -1,138 +1,91 @@
-"""MF4_BRK4H_4R signal core. Public 4h candles only. No I/O and no orders.
+"""MF4_BRK4H_4R core (frozen 2026-10-07 from eval-backtest/long/morefreq/REPORT.md). SIGNAL ONLY - never places orders.
+Same entry as B1: 4h Donchian20 + daily EMA50 filter on Kraken Futures PF_XBTUSD public charts (UTC-aligned).
+Stop dist = max(1.0*ATR4h(Wilder14), 0.35%*entry). TP = 4R. No BE/trail.
+Size = risk/(sd + 2*0.0004*entry) floored to 0.001 BTC. One virtual position at a time (stop-first on 15m)."""
+import json, time, urllib.request
 
-The decision logic lives in this module so the webhook hook and the eval
-guard can change without rewriting it. ``decide`` is the only entry the
-watcher uses.
-"""
+API = 'https://futures.kraken.com/api/charts/v1/trade/PF_XBTUSD/{res}?from={frm}'
+SEC = {'15m': 900, '4h': 14400, '1d': 86400}
+FEE = 0.0004; ATR_MULT = 1.0; MIN_SD = 0.0035; TP_R = 4.0; LOOKBACK = 20; EMA_N = 50
 
-from __future__ import annotations
+def fetch(res, frm):
+    """Return completed bars [t, o, h, l, c] (t in seconds, bar open) since frm, paging."""
+    out = {}; now = time.time(); f = int(frm)
+    for _ in range(50):
+        req = urllib.request.Request(API.format(res=res, frm=f), headers={'User-Agent': 'eval-watcher/1.0'})
+        d = json.load(urllib.request.urlopen(req, timeout=20))
+        cs = d.get('candles') or []
+        for c in cs:
+            t = c['time'] // 1000
+            if t + SEC[res] <= now: out[t] = [t, float(c['open']), float(c['high']), float(c['low']), float(c['close'])]
+        if not d.get('more_candles') or not cs: break
+        f = cs[-1]['time'] // 1000 + SEC[res]
+    return [out[k] for k in sorted(out)]
 
-from typing import Any, Mapping, Sequence
+def ema(v, n):
+    a = 2/(n+1); e = v[0]; o = []
+    for x in v: e = a*x+(1-a)*e; o.append(e)
+    return o
 
+def atr(c, n=14):
+    tr = [None]+[max(c[i][2]-c[i][3], abs(c[i][2]-c[i-1][4]), abs(c[i][3]-c[i-1][4])) for i in range(1, len(c))]
+    out = [None]*len(c); a = None
+    for i in range(1, len(c)):
+        if i == n: a = sum(tr[1:n+1])/n
+        elif i > n: a = (a*(n-1)+tr[i])/n
+        out[i] = a
+    return out
 
-STRATEGY = "MF4_BRK4H_4R"
-LOOKBACK = 4
-R_MULTIPLE = 4
+def size_for(risk, entry, sd): return int(risk/(sd + 2*FEE*entry)*1000)/1000
 
+def signal_at(b4, atr4, bd, ed50, k):
+    """Signal at the close of completed 4h bar k (index into b4). Uses last daily bar completed by that time."""
+    if k < LOOKBACK or atr4[k] is None: return None
+    tclose = b4[k][0] + SEC['4h']
+    kd = max((j for j in range(len(bd)) if bd[j][0] + SEC['1d'] <= tclose), default=None)
+    if kd is None or kd < EMA_N: return None
+    c = b4[k][4]; hh = max(x[2] for x in b4[k-LOOKBACK:k]); ll = min(x[3] for x in b4[k-LOOKBACK:k])
+    dc, de = bd[kd][4], ed50[kd]
+    info = dict(bar4h_close_utc=tclose, close=c, hh20=hh, ll20=ll, daily_close=dc, daily_ema50=de, atr4h=atr4[k], daily_bar_utc=bd[kd][0])
+    if c > hh and dc > de: return dict(side='long', **info)
+    if c < ll and dc < de: return dict(side='short', **info)
+    return dict(side=None, **info)
 
-def decide(
-    candles: Sequence[Mapping[str, Any]],
-    position: Mapping[str, Any] | None,
-) -> dict[str, Any]:
-    """Return triggers and at most one OPEN or EXIT for the last closed bar."""
-    view = _triggers(candles)
-    signal = None
-    if view["ready"]:
-        signal = _signal(view, position)
-    state = "FLAT"
-    if isinstance(position, Mapping) and position.get("side") in {"long", "short"}:
-        state = str(position["side"]).upper()
-    if signal and signal["type"] == "EXIT":
-        state = "FLAT"
-    elif signal and signal["type"] == "OPEN":
-        state = str(signal["side"]).upper()
-    return {
-        "strategy": STRATEGY,
-        "ready": view["ready"],
-        "state": state,
-        "trend": view["trend"],
-        "long_trigger_gt": view["long_trigger_gt"],
-        "short_trigger_lt": view["short_trigger_lt"],
-        "close": view["close"],
-        "bar_time": view["bar_time"],
-        "signal": signal,
-        "reason": view["reason"] if signal is None else signal["reason"],
-    }
+def make_trade(sig, entry, risk):
+    sd = max(ATR_MULT*sig['atr4h'], MIN_SD*entry); g = 1 if sig['side'] == 'long' else -1
+    return dict(side=sig['side'], entry=entry, stop=entry - g*sd, target=entry + g*TP_R*sd, sd=sd,
+                size=size_for(risk, entry, sd), risk_usd=risk, signal_4h_close_utc=sig['bar4h_close_utc'])
 
+def scan(b15, b4, bd, start_t, risk=150.0):
+    """Replay B1 from start_t (UTC s) to the latest completed bars. Returns (state dict, history list)."""
+    atr4 = atr(b4); ed50 = ema([x[4] for x in bd], EMA_N)
+    i15 = {b[0]: n for n, b in enumerate(b15)}
+    pos = None; hist = []; last_sig = None
+    for k in range(len(b4)):
+        tclose = b4[k][0] + SEC['4h']
+        if tclose < start_t: continue
+        # manage open position through this 4h bar's 15m bars (stop-first)
+        if pos is not None:
+            for t in range(b4[k][0], tclose, 900):
+                n = i15.get(t)
+                if n is None or t < pos['entry_t']: continue
+                _, o, h, l, c = b15[n]; g = 1 if pos['side'] == 'long' else -1
+                if (g > 0 and l <= pos['stop']) or (g < 0 and h >= pos['stop']):
+                    px = o if (g > 0 and o < pos['stop']) or (g < 0 and o > pos['stop']) else pos['stop']
+                    pos.update(exit='stop', exit_px=px, exit_t=t); hist.append(pos); pos = None; break
+                if (g > 0 and h >= pos['target']) or (g < 0 and l <= pos['target']):
+                    px = o if (g > 0 and o > pos['target']) or (g < 0 and o < pos['target']) else pos['target']
+                    pos.update(exit='target', exit_px=px, exit_t=t); hist.append(pos); pos = None; break
+        s = signal_at(b4, atr4, bd, ed50, k); last_sig = s
+        if pos is None and s and s['side']:
+            n = i15.get(tclose)
+            entry = b15[n][1] if n is not None else s['close']   # next 15m open; fallback 4h close if not yet available
+            pos = make_trade(s, entry, risk); pos['entry_t'] = tclose; pos['entry_is_ref'] = n is None
+    return dict(open_position=pos, last_signal=last_sig), hist
 
-def _triggers(candles: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-    usable = [bar for bar in candles if _bar_ok(bar)]
-    if len(usable) < LOOKBACK + 1:
-        return {
-            "ready": False,
-            "trend": "unknown",
-            "long_trigger_gt": None,
-            "short_trigger_lt": None,
-            "close": None,
-            "bar_time": None,
-            "bar_low": None,
-            "bar_high": None,
-            "reason": "need_more_candles",
-        }
-    window = usable[-(LOOKBACK + 1) : -1]
-    last = usable[-1]
-    long_trigger = max(float(bar["high"]) for bar in window)
-    short_trigger = min(float(bar["low"]) for bar in window)
-    close = float(last["close"])
-    mid = (long_trigger + short_trigger) / 2.0
-    if close > mid:
-        trend = "up"
-    elif close < mid:
-        trend = "down"
-    else:
-        trend = "flat"
-    return {
-        "ready": True,
-        "trend": trend,
-        "long_trigger_gt": long_trigger,
-        "short_trigger_lt": short_trigger,
-        "close": close,
-        "bar_time": last.get("time"),
-        "bar_low": float(last["low"]),
-        "bar_high": float(last["high"]),
-        "reason": "no_signal",
-    }
-
-
-def _signal(view: Mapping[str, Any], position: Mapping[str, Any] | None) -> dict[str, Any] | None:
-    close = float(view["close"])
-    side = None
-    if isinstance(position, Mapping):
-        side = position.get("side")
-    if side not in {"long", "short"}:
-        if close > float(view["long_trigger_gt"]):
-            return _open("long", close, float(view["bar_low"]))
-        if close < float(view["short_trigger_lt"]):
-            return _open("short", close, float(view["bar_high"]))
-        return None
-    try:
-        sl = float(position["sl"])
-        tp = float(position["tp"])
-    except (TypeError, ValueError, KeyError):
-        return None
-    if side == "long" and (close <= sl or close >= tp):
-        reason = "stop" if close <= sl else "target"
-        return {"type": "EXIT", "side": "long", "price": close, "reason": reason}
-    if side == "short" and (close >= sl or close <= tp):
-        reason = "stop" if close >= sl else "target"
-        return {"type": "EXIT", "side": "short", "price": close, "reason": reason}
-    return None
-
-
-def _open(side: str, price: float, stop: float) -> dict[str, Any] | None:
-    distance = abs(price - stop)
-    if distance <= 0:
-        return None
-    if side == "long" and stop >= price:
-        return None
-    if side == "short" and stop <= price:
-        return None
-    tp = price + R_MULTIPLE * distance if side == "long" else price - R_MULTIPLE * distance
-    return {
-        "type": "OPEN",
-        "side": side,
-        "price": price,
-        "sl": stop,
-        "tp": tp,
-        "reason": "close_through_4h_channel",
-    }
-
-
-def _bar_ok(bar: Mapping[str, Any]) -> bool:
-    try:
-        high = float(bar["high"])
-        low = float(bar["low"])
-        close = float(bar["close"])
-    except (TypeError, ValueError, KeyError):
-        return False
-    return high >= low and high >= close >= low
+def load(days_15m=45):
+    now = time.time()
+    b15 = fetch('15m', now - days_15m*86400)
+    b4 = fetch('4h', now - 400*86400)
+    bd = fetch('1d', now - 1200*86400)
+    return b15, b4, bd

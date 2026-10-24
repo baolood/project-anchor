@@ -28,6 +28,7 @@ from ops.mf4.eval_outcomes import (
 )
 from ops.mf4.pass_prob import (
     COST_R,
+    MIN_STORED_TRADES,
     PATHS,
     SEED,
     baseline_mean_r,
@@ -241,8 +242,16 @@ class MonteCarloTests(unittest.TestCase):
         self.assertEqual(source, "zero_edge_4r")
         self.assertEqual(cost, COST_R)
         self.assertEqual(len(book), 5)
-        stored, stored_source, _stored_cost = book_from_outcomes([TRADE])
+        self.assertEqual(MIN_STORED_TRADES, 20)
+        one, one_source, _one_cost = book_from_outcomes([TRADE])
+        self.assertEqual(one_source, "zero_edge_4r")
+        self.assertEqual(one, book)
+        below = [dict(TRADE, signal_id=str(i)) for i in range(MIN_STORED_TRADES - 1)]
+        _below_book, below_source, _below_cost = book_from_outcomes(below)
+        self.assertEqual(below_source, "zero_edge_4r")
+        stored, stored_source, _stored_cost = book_from_outcomes(below + [dict(TRADE, signal_id="last")])
         self.assertEqual(stored_source, "stored")
+        self.assertEqual(len(stored), MIN_STORED_TRADES)
         self.assertEqual(stored[0][0], -1.03)
 
     def test_one_loss_then_locks_and_a_daily_skip_does_not(self) -> None:
@@ -310,6 +319,15 @@ class MonteCarloTests(unittest.TestCase):
         self.assertEqual(first["paths"], PATHS)
         self.assertEqual(first["source"], "zero_edge_4r")
         self.assertEqual(first["cost_r"], 0.09)
+        one_loss = pass_probability(
+            equity=9954.28,
+            reset_balance=9954.28,
+            status="running",
+            outcomes=[TRADE],
+            hours_since_reset=9.5,
+        )
+        self.assertEqual(one_loss, first)
+        self.assertGreater(one_loss["nolimit"]["pass"], 0.0)
         for key in ("d30", "d60", "d90", "nolimit"):
             row = first[key]
             self.assertAlmostEqual(sum(row.values()), 1.0, places=3)
