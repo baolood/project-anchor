@@ -16,6 +16,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import stat
 import subprocess
 import sys
@@ -23,7 +24,7 @@ import tempfile
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
@@ -80,6 +81,10 @@ PAYLOAD_KEYS = (
     "event_id",
     "time_utc",
 )
+# Names from org.freedesktop.systemd1. `systemctl show --timestamp=utc` prints
+# realtime timestamps as "Sat 2026-10-24 12:00:00 UTC", not as integers.
+# LastTriggerUSecRealtime, InactiveEnterTimestampUSec, and StateChangeTimestampUSec
+# are not properties. NextElapseUSecMonotonic is a timespan ("5min" or "0").
 SHOW_PROPERTIES = ",".join(
     (
         "Id",
@@ -90,9 +95,10 @@ SHOW_PROPERTIES = ",".join(
         "Type",
         "LoadState",
         "NextElapseUSecRealtime",
-        "LastTriggerUSecRealtime",
-        "InactiveEnterTimestampUSec",
-        "StateChangeTimestampUSec",
+        "NextElapseUSecMonotonic",
+        "LastTriggerUSec",
+        "InactiveEnterTimestamp",
+        "StateChangeTimestamp",
     )
 )
 PROP_MAP = {
@@ -103,11 +109,19 @@ PROP_MAP = {
     "Result": "result",
     "Type": "type",
     "LoadState": "load_state",
-    "NextElapseUSecRealtime": "next_elapse_usec",
-    "LastTriggerUSecRealtime": "last_trigger_usec",
-    "InactiveEnterTimestampUSec": "inactive_enter_usec",
-    "StateChangeTimestampUSec": "state_change_usec",
+    "NextElapseUSecRealtime": "next_elapse_realtime",
+    "NextElapseUSecMonotonic": "next_elapse_monotonic",
+    "LastTriggerUSec": "last_trigger",
+    "InactiveEnterTimestamp": "inactive_enter",
+    "StateChangeTimestamp": "state_change",
 }
+_WEEKDAY_STAMP = re.compile(
+    r"^(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat) "
+    r"(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})(?:\.(\d{1,6}))?"
+    r"(?: ([A-Za-z0-9:+-]+))?$"
+)
+_NUMERIC_OFFSET = re.compile(r"^([+-])(\d{2}):?(\d{2})$")
+_UNSET_STAMPS = frozenset({"", "0", "n/a", "infinity", "[not set]"})
 # Long-running units the inventory tuples do not already name.
 EXTRA_LONG_RUNNING = (
     "anchor-mf4-watcher.service",
@@ -254,25 +268,83 @@ def _regular_file(path: Path) -> bool:
     return stat.S_ISREG(info.st_mode)
 
 
-def _usec(raw: object) -> float | None:
+def parse_show_time(raw: object) -> float | None:
+    """Seconds since the epoch from one `systemctl show` timestamp field.
+
+    Accepts ``--timestamp=utc`` (``Sat 2026-10-24 12:00:00 UTC``), ``--timestamp=unix``
+    (``@1729756800``), ``n/a``, and a raw integer (microseconds when it is large
+    enough to be a systemd ``t``, otherwise seconds).
+    """
     if raw is None:
         return None
     text = str(raw).strip()
-    if not text or text.lower() in {"n/a", "infinity"}:
+    lowered = text.lower()
+    if lowered in _UNSET_STAMPS:
         return None
-    try:
+    if text.startswith("@"):
+        try:
+            seconds = float(text[1:])
+        except ValueError:
+            return None
+        if seconds <= 0:
+            return None
+        return seconds
+    if re.fullmatch(r"\d+", text):
         value = int(text)
+        if value <= 0:
+            return None
+        # systemd usec-since-epoch is ~1e15 in 2026. Smaller integers are seconds.
+        if value >= 100_000_000_000_000:
+            return value / 1_000_000
+        return float(value)
+    matched = _WEEKDAY_STAMP.fullmatch(text)
+    if matched is None:
+        return None
+    date_text, clock, fraction, zone = matched.groups()
+    try:
+        parsed = datetime.strptime(f"{date_text} {clock}", "%Y-%m-%d %H:%M:%S")
     except ValueError:
         return None
-    if value <= 0:
+    if fraction:
+        parsed = parsed.replace(microsecond=int(fraction.ljust(6, "0")))
+    aware = _stamp_with_zone(parsed, zone)
+    if aware is None:
         return None
-    return value / 1_000_000
+    return aware.timestamp()
+
+
+def _stamp_with_zone(parsed: datetime, zone: str | None) -> datetime | None:
+    if zone is None or zone.upper() in {"UTC", "GMT", "Z", "UT"}:
+        return parsed.replace(tzinfo=timezone.utc)
+    offset = _NUMERIC_OFFSET.fullmatch(zone)
+    if offset is not None:
+        sign = 1 if offset.group(1) == "+" else -1
+        delta = timedelta(hours=int(offset.group(2)), minutes=int(offset.group(3))) * sign
+        return parsed.replace(tzinfo=timezone(delta))
+    # Pretty output uses the host's local clock plus a timezone abbreviation.
+    local = datetime.now().astimezone().tzinfo
+    if local is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.replace(tzinfo=local)
+
+
+def _monotonic_armed(raw: object) -> bool:
+    """True when NextElapseUSecMonotonic is a non-zero timespan.
+
+    `systemctl show` prints this as a timespan (``5min``, ``0``, ``infinity``),
+    not as a wall clock. A monotonic-only timer leaves NextElapseUSecRealtime
+    empty while this value is non-zero.
+    """
+    if raw is None:
+        return False
+    text = str(raw).strip().lower()
+    return text not in _UNSET_STAMPS
 
 
 def _since_from(props: Mapping[str, str], now: datetime, prefer_inactive: bool = False) -> str:
-    keys = ("inactive_enter_usec", "state_change_usec") if prefer_inactive else ("state_change_usec", "inactive_enter_usec")
+    keys = ("inactive_enter", "state_change") if prefer_inactive else ("state_change", "inactive_enter")
     for key in keys:
-        stamp = _usec(props.get(key))
+        stamp = parse_show_time(props.get(key))
         if stamp is not None:
             return iso(datetime.fromtimestamp(stamp, timezone.utc))
     return iso(now)
@@ -295,7 +367,7 @@ def systemctl_show(unit: str) -> dict[str, str]:
     """Read one unit. ``systemctl`` missing raises; a bad unit returns empty props."""
     if not UNIT_RE.fullmatch(unit):
         return {}
-    argv = ["systemctl", "show", unit, "--no-pager", f"--property={SHOW_PROPERTIES}"]
+    argv = ["systemctl", "show", unit, "--no-pager", "--timestamp=utc", f"--property={SHOW_PROPERTIES}"]
     try:
         completed = subprocess.run(
             argv,
@@ -368,11 +440,14 @@ def timer_fault(name: str, props: Mapping[str, str], now: datetime) -> Fault | N
         )
     if props.get("result") == "failed":
         return _fault(f"timer:{name}", f"{name} result is failed", _since_from(props, now))
-    last = _usec(props.get("last_trigger_usec"))
-    nxt = _usec(props.get("next_elapse_usec"))
+    last = parse_show_time(props.get("last_trigger"))
+    nxt = parse_show_time(props.get("next_elapse_realtime"))
     now_ts = now.timestamp()
-    # A future elapse means systemd still has this timer armed.
+    # A future realtime elapse means systemd still has this timer armed.
     if nxt is not None and nxt > now_ts:
+        return None
+    # OnUnitActiveSec / OnBootSec timers leave the realtime elapse empty.
+    if nxt is None and _monotonic_armed(props.get("next_elapse_monotonic")):
         return None
     if last is None:
         return _fault(f"timer:{name}", f"{name} has not fired", iso(now))
@@ -502,10 +577,21 @@ def mf4_decision(directory: Path, close: datetime) -> str:
     return "no"
 
 
-def mf4_fault(directory: Path, now: datetime) -> Fault | None:
+def mf4_close_under_test(now: datetime) -> datetime:
+    """Close this run is allowed to judge.
+
+    The 20 minutes after a 4h close are grace for that bar. During grace the
+    previous close is still in force, so an open fault is not cleared just
+    because the new bar has not been written yet.
+    """
     close = latest_completed_4h_close(now)
     if _in_mf4_grace(now, close):
-        return None
+        return datetime.fromtimestamp(close.timestamp() - BAR_4H_S, timezone.utc)
+    return close
+
+
+def mf4_fault(directory: Path, now: datetime) -> Fault | None:
+    close = mf4_close_under_test(now)
     found = mf4_decision(directory, close)
     stamp = iso(close)
     if found == "yes":
@@ -809,10 +895,18 @@ def deliver_payload(payload: Mapping[str, Any], config: WebhookConfig, post_json
     return False
 
 
+class _RefuseRedirect(urllib.request.HTTPRedirectHandler):
+    """Do not follow redirects. A 3xx must not resend Authorization."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001
+        raise urllib.error.HTTPError(req.full_url, code, "redirect_rejected", headers, fp)
+
+
 def urllib_post_json(url: str, headers: Mapping[str, str], body: bytes, timeout: float) -> int:
+    opener = urllib.request.build_opener(_RefuseRedirect)
     request = urllib.request.Request(url, data=body, headers=dict(headers), method="POST")
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with opener.open(request, timeout=timeout) as response:
             response.read(1024)
             return int(response.status)
     except urllib.error.HTTPError as exc:
@@ -911,18 +1005,20 @@ def run_probe(
     if config is None:
         note("delivery skipped credentials_missing")
         return result
-    sent: list[Action] = []
+    # Persist after each success and stop on the first failure. A 10s post
+    # times TimeoutStartSec=120 if a later failure keeps going, and a kill
+    # before the final write would repeat posts that already succeeded.
+    state = previous
     for action, payload in zip(actions, payloads):
-        if deliver_payload(payload, config, send):
-            sent.append(action)
-            if action.kind == "recovery":
-                result["recovered"] += 1
-            else:
-                result["sent"] += 1
-        else:
+        if not deliver_payload(payload, config, send):
             note(f"delivery not saved check={action.check}")
-    if sent:
-        save_state(state_dir, reduce_state(previous, sent, sources.now), secrets)
+            break
+        state = reduce_state(state, [action], sources.now)
+        save_state(state_dir, state, secrets)
+        if action.kind == "recovery":
+            result["recovered"] += 1
+        else:
+            result["sent"] += 1
     return result
 
 
@@ -974,13 +1070,77 @@ def build_sources(repo: Path, mf4_dir: Path, now: datetime | None = None) -> Sou
     )
 
 
+def build_selftest_payload(now: datetime) -> dict[str, Any]:
+    stamp = iso(now)
+    raw = f"selftest|{stamp}"
+    return {
+        "type": "anchor_fault",
+        "source": "anchor-fault-alarm",
+        "check": "selftest",
+        "state": "test",
+        "since": stamp,
+        "severity": "info",
+        "detail": "anchor fault alarm self-test",
+        "repeat": False,
+        "event_id": "fault-" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20],
+        "time_utc": stamp,
+    }
+
+
+def send_selftest(
+    *,
+    dry_run: bool = False,
+    post_json: PostJson | None = None,
+    webhook_config: WebhookConfig | None = None,
+    load_webhook: Callable[[], WebhookConfig | None] | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """POST one self-test. Does not read or write dedupe state."""
+    moment = now or datetime.now(timezone.utc)
+    config = webhook_config
+    if config is None and not dry_run:
+        loader = load_webhook or load_webhook_config
+        try:
+            config = loader()
+        except Exception:
+            config = None
+    secrets = config.secrets if config is not None else ()
+    payload = finalize_payload(build_selftest_payload(moment), secrets)
+    result: dict[str, Any] = {"dry_run": dry_run, "sent": 0, "payloads": [payload]}
+    if dry_run:
+        return result
+    if config is None:
+        note("delivery skipped credentials_missing")
+        return result
+    send = post_json or urllib_post_json
+    if deliver_payload(payload, config, send):
+        result["sent"] = 1
+    return result
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Read-only Anchor host fault alarm. DEPLOY=NO.")
     parser.add_argument("--dry-run", action="store_true", help="Print payloads that would be sent. Do not post or write state.")
+    parser.add_argument("--send-test", action="store_true", help="POST one self-test alert. Does not read or write dedupe state.")
     parser.add_argument("--state-dir", default=None)
     parser.add_argument("--repo-root", default=None)
     parser.add_argument("--mf4-dir", default=None)
     args = parser.parse_args(argv)
+    if args.send_test:
+        result = send_selftest(dry_run=bool(args.dry_run))
+        if args.dry_run:
+            json.dump(result, sys.stdout, indent=2, sort_keys=True)
+            sys.stdout.write("\n")
+            return 0
+        if result["sent"] != 1:
+            print("SELFTEST=NOT_SENT")
+            print("READ_ONLY=YES")
+            print("LEDGER_STATEDIRECTORY_UNCHANGED=YES")
+            return 1
+        print("SELFTEST=SENT")
+        print("READ_ONLY=YES")
+        print("LEDGER_STATEDIRECTORY_UNCHANGED=YES")
+        return 0
     sources = build_sources(resolve_repo(args.repo_root), resolve_mf4_dir(args.mf4_dir))
     state_dir = resolve_state_dir(args.state_dir)
     try:

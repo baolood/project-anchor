@@ -12,18 +12,18 @@ Every 5 minutes the oneshot `anchor-fault-alarm.service` runs `ops/fault_alarm/p
 | --- | --- |
 | Long-running services | `ActiveState` is not `active`, or the unit is not loaded. The list is `RECOMMENDED_SERVICE_UNITS` plus `anchor-mf4-watcher.service` and `anchor-control-mcp.service`. |
 | Ledger oneshots | `anchor-official-ledger.service`, `anchor-official-ledger-c6.service`, and `anchor-ledger-readonly-mirror.service` are not loaded, or the last run is not `Result=success` while idle. An in-progress run is healthy. |
-| Timers | `RECOMMENDED_TIMER_UNITS` plus `anchor-official-ledger-c6.timer`. Not loaded, not active, `Result=failed`, never fired while nothing is scheduled, next elapse more than 10 minutes overdue, or no next elapse and the last fire is more than 2 hours old. A future elapse means the timer is armed. A loaded companion service that is not intentionally disabled is held to the same oneshot or long-running rule. |
+| Timers | `RECOMMENDED_TIMER_UNITS` plus `anchor-official-ledger-c6.timer`. Not loaded, not active, `Result=failed`, never fired while nothing is scheduled, next realtime elapse more than 10 minutes overdue, or no next elapse and the last fire is more than 2 hours old. A future `NextElapseUSecRealtime` means the timer is armed. An active timer with an empty realtime elapse and a non-zero `NextElapseUSecMonotonic` (an `OnUnitActiveSec` / `OnBootSec` timer) is armed. `systemctl show` uses `--timestamp=utc` and the real properties `LastTriggerUSec`, `NextElapseUSecRealtime`, `NextElapseUSecMonotonic`, `InactiveEnterTimestamp`, and `StateChangeTimestamp`. A loaded companion service that is not intentionally disabled is held to the same oneshot or long-running rule. |
 | Backend | `GET http://127.0.0.1:8000/health` is not ok. The URL is the allowlisted probe in `app.mcp.backend_probe`. The body is not copied into the alert. |
 | MF4 decision | More than 20 minutes after the latest completed 4h BTC close, `mf4_forward_events.jsonl` has no `SIGNAL_4H` or `SIGNAL_4H_SKIPPED` for that close. |
 | Kill switch | State is `OPEN`, or the switch is unreadable. `CLOSED` with `enabled` false is healthy. The reader is `app.mcp.status.read_kill_switch`. |
 | Go-live | The post-production guard is not blocked. |
 | Live trading | The post-production guard is not blocked. |
 
-`INTENTIONALLY_DISABLED` units are not faults. `anchor-fault-alarm.service` and `anchor-fault-alarm.timer` are `AUXILIARY` in the inventory and are not on the PASS allowlist. This alarm does not change what gates MCP PASS.
+`INTENTIONALLY_DISABLED` units are not faults. `anchor-fault-alarm.service` and `anchor-fault-alarm.timer` are `AUXILIARY` in the inventory and are not on the PASS allowlist. They are on the host sidecar observe lists (`OBSERVE_SERVICES`, `OBSERVE_TIMERS`), so `get_services` and `get_timers` can see a dead alarm. This alarm does not change what gates MCP PASS.
 
 ### MF4 decision
 
-The watcher writes one row per completed 4h bar to `/var/lib/anchor-mf4-watcher/mf4_forward_events.jsonl` (`MF4_OUT_DIR`). A decision is `event_type` `SIGNAL_4H` or `SIGNAL_4H_SKIPPED` whose `bar4h_close_utc` or `signal_available_at` equals the close. Closes are UTC instants on a 14400-second grid (`00:00`, `04:00`, `08:00`, `12:00`, `16:00`, `20:00`). The probe reads the tail of that file and does not follow symlinks. The 20 minutes after a close are grace, so a bar that just closed does not page. A missing or sealed path after grace is a fault. The sealed ledger is not opened.
+The watcher writes one row per completed 4h bar to `/var/lib/anchor-mf4-watcher/mf4_forward_events.jsonl` (`MF4_OUT_DIR`). A decision is `event_type` `SIGNAL_4H` or `SIGNAL_4H_SKIPPED` whose `bar4h_close_utc` or `signal_available_at` equals the close. Closes are UTC instants on a 14400-second grid (`00:00`, `04:00`, `08:00`, `12:00`, `16:00`, `20:00`). The probe reads the tail of that file and does not follow symlinks. The 20 minutes after a close are grace for that bar. During grace the probe judges the previous close (that close minus 14400 seconds), so a watcher that is still dead across the boundary does not get a recovery. An open `mf4:decision` fault clears only when the close being judged has a decision. A missing or sealed path for that close is a fault. The sealed ledger is not opened.
 
 ### Go-live and live trading
 
@@ -46,7 +46,7 @@ Market signals from the MF4 watcher use `signal`, `strategy`, and `source=anchor
 - `MF4_WEBHOOK_ENV_FILE`, or
 - `/etc/anchor-mf4-watcher/webhook.env` when neither of those is set
 
-Keys are `EVAL_WEBHOOK_URL`, `EVAL_WEBHOOK_KEY`, `EVAL_WEBHOOK_KEY_HEADER` (default `Authorization`), and `EVAL_WEBHOOK_KEY_FORMAT` (default `Bearer {key}`). One POST, 10 second timeout. The next timer run retries a failed post. The URL, the key, and the header value are not written to the payload, the state file, or the journal line.
+Keys are `EVAL_WEBHOOK_URL`, `EVAL_WEBHOOK_KEY`, `EVAL_WEBHOOK_KEY_HEADER` (default `Authorization`), and `EVAL_WEBHOOK_KEY_FORMAT` (default `Bearer {key}`). One POST, 10 second timeout. Redirects are refused, so `Authorization` is not sent to another host. The first post that does not succeed stops that run. Each successful post is written to the dedupe file before the next post, so a `TimeoutStartSec=120` kill does not repeat a post that already succeeded. The next timer run retries what was not saved. The URL, the key, and the header value are not written to the payload, the state file, or the journal line.
 
 `LoadCredential=` requires the webhook file to exist, the same way the MF4 watcher unit does. If the file is absent, systemd does not start the oneshot. A manual `probe.py` run still starts, prints the faults under `--dry-run`, and skips the post with `delivery skipped credentials_missing`.
 
@@ -98,37 +98,61 @@ Check names:
 | `guard:live_trading` | Live trading is not blocked, or the evidence is unreadable |
 | `backend:127.0.0.1:8000` | Loopback health is not ok |
 | `systemd:show` | `systemctl` is missing |
+| `selftest` | Manual `--send-test`. `state` is `test` and `severity` is `info`. Not a fault, and it does not change dedupe state. |
 
-## Dry-run
+## Host command sequence
 
-Prints the JSON that would be posted and does not write state or open a socket to the webhook.
+Run these on the Vultr host, in this order. This repository change does not run them.
+
+1. Dry-run. `fault_count` must be `0` before the timer is allowed to post. On a machine that is not the host, missing units show up as faults. That is the same detection the timer uses.
 
 ```bash
-cd /path/to/project-anchor
-PYTHONPATH=.:anchor-backend python3 ops/fault_alarm/probe.py --dry-run --state-dir /tmp/anchor-fault-alarm-state
+cd /root/project-anchor
+PYTHONPATH=.:anchor-backend python3 ops/fault_alarm/probe.py --dry-run \
+  --repo-root /root/project-anchor \
+  --mf4-dir /var/lib/anchor-mf4-watcher \
+  --state-dir /tmp/anchor-fault-alarm-dry-run
 ```
 
-On a machine that is not the Vultr host, missing units show up as faults in that JSON. That is the same detection the timer uses. `--dry-run` still reads local unit state and loopback health when those calls are available.
+`--dry-run` prints the JSON that would be posted. It does not write dedupe state and does not open a socket to the webhook.
 
-## Install
-
-Run on the host, from the checkout, as root. This repository change does not run it.
+2. Install the units. This enables the timer for the next boot and does not start it, so install does not post.
 
 ```bash
 cd /root/project-anchor
 sudo ./ops/fault_alarm/install_fault_alarm.sh
 ```
 
-The script copies the unit files into `/etc/systemd/system`, rewrites the `/root/project-anchor` prefix when the checkout path differs, reloads systemd, enables the timer, and starts one probe. It does not print the webhook file. It refuses a unit directory under the sealed ledger paths.
+The script copies the unit files into `/etc/systemd/system`, rewrites the `/root/project-anchor` prefix when the checkout path differs, reloads systemd, and runs `systemctl enable anchor-fault-alarm.timer` without starting it. It does not print the webhook file. It refuses a unit directory under the sealed ledger paths. `ANCHOR_FAULT_START_NOW=1` is optional: the script dry-runs first and starts the timer only when `fault_count` is `0`.
 
-Confirm:
+3. Send one test alert. This does not read or write `/var/lib/anchor-fault-alarm/fault_alarm_state.json`.
 
 ```bash
+cd /root/project-anchor
+sudo PYTHONPATH=.:anchor-backend python3 ops/fault_alarm/probe.py --send-test
+```
+
+The receiver should see one object with `type` `anchor_fault`, `check` `selftest`, `state` `test`, and `severity` `info`. `source` is `anchor-fault-alarm`. The stdout line is `SELFTEST=SENT`. A missing credential prints `SELFTEST=NOT_SENT` and does not include the URL or the key. `--send-test --dry-run` prints that object and does not post.
+
+4. Start the timer, then confirm the oneshot finished cleanly.
+
+```bash
+sudo systemctl start anchor-fault-alarm.timer
+sudo systemctl start anchor-fault-alarm.service
+systemctl show anchor-fault-alarm.service -p Result --value
+```
+
+`Result` must be `success`. Then:
+
+```bash
+systemd-analyze verify /etc/systemd/system/anchor-fault-alarm.service /etc/systemd/system/anchor-fault-alarm.timer
 systemctl status anchor-fault-alarm.timer --no-pager
 systemctl list-timers anchor-fault-alarm.timer --no-pager
 ```
 
 Journal lines look like `FAULT_ALARM faults=0 sent=0 recovered=0`. A delivery problem is `delivery skipped credentials_missing` or `delivery failed network_error`. Those lines do not include the URL or the key.
+
+The service uses `ProtectHome=tmpfs` so `BindReadOnlyPaths=/root/project-anchor` is visible inside the sandbox. `CapabilityBoundingSet=CAP_DAC_READ_SEARCH` is the only capability kept above the sandbox. `systemd-analyze verify` checks the unit text; it does not start the service. The `Result=success` check is the acceptance step after a real start.
 
 ## Rollback
 
@@ -154,6 +178,7 @@ The service sandbox also lists those ledger paths as `InaccessiblePaths`, so the
 ```bash
 cd /path/to/project-anchor
 PYTHONPATH=.:anchor-backend python3 -m unittest tests.test_host_fault_alarm
+systemd-analyze verify ops/fault_alarm/anchor-fault-alarm.service ops/fault_alarm/anchor-fault-alarm.timer
 ```
 
 ## Out of scope

@@ -24,7 +24,9 @@ TimeoutStartSec=120
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ProtectHome=true
+# tmpfs so the read-only bind of /root/project-anchor is visible. The boolean form hides /root.
+ProtectHome=tmpfs
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH
 ProtectControlGroups=true
 ProtectKernelTunables=true
 ProtectKernelModules=true

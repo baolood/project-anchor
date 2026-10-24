@@ -41,8 +41,40 @@ install -m 0644 "$tmp" "$UNIT_DIR/anchor-fault-alarm.service"
 rm -f "$tmp"
 install -m 0644 "$SCRIPT_DIR/anchor-fault-alarm.timer" "$UNIT_DIR/anchor-fault-alarm.timer"
 systemctl daemon-reload
-systemctl enable --now anchor-fault-alarm.timer
-systemctl start anchor-fault-alarm.service
+
+# Default: enable the timer for the next boot and do not start it. Starting
+# posts to the webhook. ANCHOR_FAULT_START_NOW=1 starts only after a dry-run
+# whose fault_count is 0.
+if [[ "${ANCHOR_FAULT_START_NOW:-0}" == "1" ]]; then
+  dry_dir=$(mktemp -d)
+  dry_out=$(
+    PYTHONPATH="${REPO_ROOT}:${REPO_ROOT}/anchor-backend" \
+      python3 "$SCRIPT_DIR/probe.py" --dry-run --repo-root "$REPO_ROOT" --state-dir "$dry_dir"
+  ) || {
+    rm -rf "$dry_dir"
+    echo "FAULT_ALARM_INSTALL=PASS"
+    echo "FAULT_ALARM_START=BLOCKED"
+    echo "FAIL_REASON=dry_run_failed"
+    echo "TIMER_STARTED=NO"
+    exit 1
+  }
+  rm -rf "$dry_dir"
+  fault_count=$(printf '%s' "$dry_out" | python3 -c 'import json,sys; print(json.load(sys.stdin)["fault_count"])')
+  if [[ "$fault_count" != "0" ]]; then
+    echo "FAULT_ALARM_INSTALL=PASS"
+    echo "FAULT_ALARM_START=BLOCKED"
+    echo "FAIL_REASON=dry_run_faults"
+    echo "FAULT_COUNT=$fault_count"
+    echo "TIMER_STARTED=NO"
+    exit 1
+  fi
+  systemctl enable --now anchor-fault-alarm.timer
+  systemctl start anchor-fault-alarm.service
+  echo "TIMER_STARTED=YES"
+else
+  systemctl enable anchor-fault-alarm.timer
+  echo "TIMER_STARTED=NO"
+fi
 
 echo "FAULT_ALARM_INSTALL=PASS"
 echo "SERVICE=anchor-fault-alarm.service"

@@ -62,9 +62,13 @@ OBSERVE_SERVICES = RECOMMENDED_SERVICE_UNITS + (
     "project-anchor-jev-forward-shadow-v2.service",
     "anchor-official-ledger.service",
     "anchor-ledger-readonly-mirror.service",
+    "anchor-fault-alarm.service",
 )
-# Every timer this sidecar watches is already on the 2026-10-23 allowlist.
-OBSERVE_TIMERS = RECOMMENDED_TIMER_UNITS
+# Timers on the 2026-10-23 allowlist, plus the host fault alarm so a read-only
+# check can see whether the alarm itself is dead. It does not gate PASS.
+OBSERVE_TIMERS = RECOMMENDED_TIMER_UNITS + (
+    "anchor-fault-alarm.timer",
+)
 
 # Exact units from the read-only inventory, with the role recorded there.
 EXACT_CLASSES: dict[str, tuple[str, str]] = {

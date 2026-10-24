@@ -46,12 +46,17 @@ from ops.fault_alarm.probe import (
     main,
     mf4_fault,
     oneshot_fault,
+    parse_show,
+    parse_show_time,
     plan_notifications,
     resolve_repo,
     run_probe,
     save_state,
+    send_selftest,
+    systemctl_show,
     timer_fault,
     trade_guard_faults,
+    urllib_post_json,
 )
 
 
@@ -60,43 +65,69 @@ NOW = datetime(2026, 10, 24, 8, 30, tzinfo=timezone.utc)
 CLOSE = datetime(2026, 10, 24, 8, 0, tzinfo=timezone.utc)
 
 
-def _usec(when: datetime) -> str:
-    return str(int(when.timestamp() * 1_000_000))
+_WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+
+
+def systemd_utc(when: datetime) -> str:
+    """The text `systemctl show --timestamp=utc` prints for a realtime timestamp."""
+    moment = when.astimezone(timezone.utc).replace(microsecond=0)
+    day = _WEEKDAYS[moment.weekday()]
+    return f"{day} {moment.strftime('%Y-%m-%d %H:%M:%S')} UTC"
+
+
+def show_text(name: str, fields: dict[str, str]) -> str:
+    lines = [f"Id={name}"]
+    for key, value in fields.items():
+        lines.append(f"{key}={value}")
+    return "\n".join(lines) + "\n"
+
+
+def parsed_show(name: str, fields: dict[str, str]) -> dict[str, str]:
+    return parse_show(show_text(name, fields))
 
 
 def _simple(name: str) -> dict[str, str]:
-    return {
-        "id": name,
-        "load_state": "loaded",
-        "active_state": "active",
-        "sub_state": "running",
-        "result": "success",
-        "type": "simple",
-    }
+    return parsed_show(
+        name,
+        {
+            "LoadState": "loaded",
+            "ActiveState": "active",
+            "SubState": "running",
+            "Result": "success",
+            "Type": "simple",
+            "StateChangeTimestamp": systemd_utc(NOW - timedelta(hours=1)),
+        },
+    )
 
 
 def _oneshot(name: str) -> dict[str, str]:
-    return {
-        "id": name,
-        "load_state": "loaded",
-        "active_state": "inactive",
-        "sub_state": "dead",
-        "result": "success",
-        "type": "oneshot",
-    }
+    return parsed_show(
+        name,
+        {
+            "LoadState": "loaded",
+            "ActiveState": "inactive",
+            "SubState": "dead",
+            "Result": "success",
+            "Type": "oneshot",
+            "InactiveEnterTimestamp": systemd_utc(NOW - timedelta(minutes=30)),
+        },
+    )
 
 
 def _timer(name: str, now: datetime = NOW) -> dict[str, str]:
-    return {
-        "id": name,
-        "load_state": "loaded",
-        "active_state": "active",
-        "sub_state": "waiting",
-        "result": "success",
-        "type": "",
-        "last_trigger_usec": _usec(now - timedelta(seconds=60)),
-        "next_elapse_usec": _usec(now + timedelta(seconds=600)),
-    }
+    return parsed_show(
+        name,
+        {
+            "LoadState": "loaded",
+            "ActiveState": "active",
+            "SubState": "waiting",
+            "Result": "success",
+            "LastTriggerUSec": systemd_utc(now - timedelta(seconds=60)),
+            "NextElapseUSecRealtime": systemd_utc(now + timedelta(seconds=600)),
+            "NextElapseUSecMonotonic": "0",
+            "StateChangeTimestamp": systemd_utc(now - timedelta(seconds=60)),
+        },
+    )
 
 
 def _write_json(path: Path, payload: dict) -> None:
@@ -139,11 +170,13 @@ def _show_for(now: datetime = NOW):
     return show
 
 
-def _sources(root: Path, *, now: datetime = NOW, show=None, kill=None, backend=None) -> Sources:
+def _sources(root: Path, *, now: datetime = NOW, show=None, kill=None, backend=None, with_decision: bool = True) -> Sources:
     repo = root / "repo"
     mf4 = root / "mf4"
     _guards(repo)
-    _decision(mf4, latest_completed_4h_close(now).strftime("%Y-%m-%dT%H:%M:%SZ"))
+    mf4.mkdir(parents=True, exist_ok=True)
+    if with_decision:
+        _decision(mf4, latest_completed_4h_close(now).strftime("%Y-%m-%dT%H:%M:%SZ"))
     return Sources(
         show=show or _show_for(now),
         now=now,
@@ -209,10 +242,17 @@ class DetectionTests(unittest.TestCase):
     def test_inactive_long_running_unit_is_a_fault(self) -> None:
         with self._tmp() as root:
             base = _show_for()
-            props = _simple("nginx.service")
-            props["active_state"] = "inactive"
-            props["sub_state"] = "dead"
-            props["inactive_enter_usec"] = _usec(CLOSE)
+            props = parsed_show(
+                "nginx.service",
+                {
+                    "LoadState": "loaded",
+                    "ActiveState": "inactive",
+                    "SubState": "dead",
+                    "Result": "success",
+                    "Type": "simple",
+                    "InactiveEnterTimestamp": systemd_utc(CLOSE),
+                },
+            )
             sources = _sources(root, show=_override(base, "nginx.service", props))
             faults = collect_faults(sources)
         self.assertEqual([item.check for item in faults], ["service:nginx.service"])
@@ -239,34 +279,113 @@ class DetectionTests(unittest.TestCase):
         self.assertIn("not loaded (not-found)", fault.detail)
 
     def test_timer_missed_elapse_and_inactive_are_faults(self) -> None:
-        missed = _timer("anchor-official-ledger.timer")
-        missed["last_trigger_usec"] = _usec(NOW - timedelta(hours=2))
-        missed["next_elapse_usec"] = _usec(NOW - timedelta(minutes=20))
+        missed = parsed_show(
+            "anchor-official-ledger.timer",
+            {
+                "LoadState": "loaded",
+                "ActiveState": "active",
+                "SubState": "waiting",
+                "Result": "success",
+                "LastTriggerUSec": systemd_utc(NOW - timedelta(hours=2)),
+                "NextElapseUSecRealtime": systemd_utc(NOW - timedelta(minutes=20)),
+                "NextElapseUSecMonotonic": "0",
+            },
+        )
         fault = timer_fault("anchor-official-ledger.timer", missed, NOW)
         self.assertIsNotNone(fault)
         assert fault is not None
         self.assertIn("missed its elapse", fault.detail)
         self.assertEqual(fault.check, "timer:anchor-official-ledger.timer")
 
-        inactive = _timer("anchor-ledger-readonly-mirror.timer")
-        inactive["active_state"] = "inactive"
-        inactive["sub_state"] = "dead"
+        inactive = parsed_show(
+            "anchor-ledger-readonly-mirror.timer",
+            {
+                "LoadState": "loaded",
+                "ActiveState": "inactive",
+                "SubState": "dead",
+                "Result": "success",
+                "LastTriggerUSec": systemd_utc(NOW - timedelta(minutes=30)),
+                "NextElapseUSecRealtime": "n/a",
+                "NextElapseUSecMonotonic": "0",
+            },
+        )
         down = timer_fault("anchor-ledger-readonly-mirror.timer", inactive, NOW)
         self.assertIsNotNone(down)
         assert down is not None
         self.assertIn("not active", down.detail)
 
-    def test_armed_timer_that_has_not_fired_yet_is_healthy(self) -> None:
-        waiting = _timer("anchor-official-ledger-c6.timer")
-        waiting["last_trigger_usec"] = "0"
-        waiting["next_elapse_usec"] = _usec(NOW + timedelta(minutes=5))
+    def test_show_text_parses_calendar_unix_and_monotonic_timers(self) -> None:
+        future = systemd_utc(NOW + timedelta(minutes=5))
+        blob = "\n".join(
+            [
+                "Id=anchor-official-ledger-c6.timer",
+                "LoadState=loaded",
+                "ActiveState=active",
+                "SubState=waiting",
+                "Result=success",
+                "LastTriggerUSec=n/a",
+                f"NextElapseUSecRealtime={future}",
+                "NextElapseUSecMonotonic=0",
+                "InactiveEnterTimestamp=",
+                "StateChangeTimestamp=n/a",
+                "",
+            ]
+        )
+        waiting = parse_show(blob)
         self.assertIsNone(timer_fault("anchor-official-ledger-c6.timer", waiting, NOW))
-        never = dict(waiting)
-        never["next_elapse_usec"] = "0"
+        self.assertEqual(parse_show_time(future), (NOW + timedelta(minutes=5)).timestamp())
+        self.assertEqual(
+            parse_show_time("Sat 2026-10-24 12:00:00 UTC"),
+            datetime(2026, 10, 24, 12, 0, tzinfo=timezone.utc).timestamp(),
+        )
+        self.assertEqual(
+            parse_show_time("Sat 2026-10-24 14:00:00 +0200"),
+            datetime(2026, 10, 24, 12, 0, tzinfo=timezone.utc).timestamp(),
+        )
+        self.assertEqual(parse_show_time("@" + str(int(CLOSE.timestamp()))), CLOSE.timestamp())
+        self.assertIsNone(parse_show_time("n/a"))
+        self.assertIsNone(parse_show_time(""))
+
+        never = parse_show(
+            blob.replace(f"NextElapseUSecRealtime={future}", "NextElapseUSecRealtime=n/a")
+        )
         fault = timer_fault("anchor-official-ledger-c6.timer", never, NOW)
         self.assertIsNotNone(fault)
         assert fault is not None
         self.assertIn("has not fired", fault.detail)
+
+        monotonic = parse_show(
+            "\n".join(
+                [
+                    "Id=anchor-fault-alarm.timer",
+                    "LoadState=loaded",
+                    "ActiveState=active",
+                    "SubState=waiting",
+                    "Result=success",
+                    "LastTriggerUSec=n/a",
+                    "NextElapseUSecRealtime=",
+                    "NextElapseUSecMonotonic=4min 12s",
+                    "",
+                ]
+            )
+        )
+        self.assertIsNone(timer_fault("anchor-fault-alarm.timer", monotonic, NOW))
+
+    def test_systemctl_show_asks_for_real_properties(self) -> None:
+        completed = mock.Mock(stdout="Id=nginx.service\nLoadState=loaded\nActiveState=active\n", returncode=0)
+        with mock.patch("ops.fault_alarm.probe.subprocess.run", return_value=completed) as run:
+            systemctl_show("nginx.service")
+        argv = run.call_args.args[0]
+        self.assertIn("--timestamp=utc", argv)
+        joined = " ".join(argv)
+        self.assertIn("LastTriggerUSec", joined)
+        self.assertIn("NextElapseUSecRealtime", joined)
+        self.assertIn("NextElapseUSecMonotonic", joined)
+        self.assertIn("InactiveEnterTimestamp", joined)
+        self.assertIn("StateChangeTimestamp", joined)
+        self.assertNotIn("LastTriggerUSecRealtime", joined)
+        self.assertNotIn("InactiveEnterTimestampUSec", joined)
+        self.assertNotIn("StateChangeTimestampUSec", joined)
 
     def test_failed_timer_companion_is_a_fault(self) -> None:
         with self._tmp() as root:
@@ -277,12 +396,19 @@ class DetectionTests(unittest.TestCase):
             faults = collect_faults(sources)
         self.assertEqual([item.check for item in faults], ["service:project-anchor-post-production-monitoring.service"])
 
-    def test_mf4_decision_grace_and_staleness(self) -> None:
+    def test_mf4_decision_grace_checks_the_previous_close(self) -> None:
         stamp = "2026-10-24T08:00:00Z"
+        previous = "2026-10-24T04:00:00Z"
         with self._tmp() as root:
             mf4 = root / "mf4"
             mf4.mkdir()
             during = CLOSE + timedelta(minutes=19, seconds=59)
+            held = mf4_fault(mf4, during)
+            self.assertIsNotNone(held)
+            assert held is not None
+            self.assertIn(previous, held.detail)
+            self.assertNotIn(stamp, held.detail)
+            _decision(mf4, previous, "SIGNAL_4H_SKIPPED")
             self.assertIsNone(mf4_fault(mf4, during))
             at_grace = CLOSE + timedelta(minutes=20)
             stale = mf4_fault(mf4, at_grace)
@@ -293,7 +419,7 @@ class DetectionTests(unittest.TestCase):
             _decision(mf4, stamp, "SIGNAL_4H_SKIPPED")
             self.assertIsNone(mf4_fault(mf4, NOW))
             (mf4 / "mf4_forward_events.jsonl").write_text(
-                json.dumps({"event_type": "SIGNAL_4H", "bar4h_close_utc": "2026-10-24T04:00:00Z"}) + "\n",
+                json.dumps({"event_type": "SIGNAL_4H", "bar4h_close_utc": previous}) + "\n",
                 encoding="utf-8",
             )
             wrong = mf4_fault(mf4, NOW)
@@ -389,10 +515,17 @@ class _TempDir:
 
 
 class _Poster:
-    def __init__(self, status: int = 204, fail_checks: set[str] | None = None, explode: bool = False) -> None:
+    def __init__(
+        self,
+        status: int = 204,
+        fail_checks: set[str] | None = None,
+        explode: bool = False,
+        explode_checks: set[str] | None = None,
+    ) -> None:
         self.status = status
         self.fail_checks = fail_checks or set()
         self.explode = explode
+        self.explode_checks = explode_checks or set()
         self.calls: list[tuple[str, dict, bytes]] = []
 
     def __call__(self, url: str, headers: dict, body: bytes, timeout: float) -> int:
@@ -400,6 +533,8 @@ class _Poster:
         if self.explode:
             raise RuntimeError(f"boom {url} supersecretvalue")
         payload = json.loads(body)
+        if payload.get("check") in self.explode_checks:
+            raise OSError("network down")
         if payload.get("check") in self.fail_checks:
             return 500
         return self.status
@@ -491,6 +626,54 @@ class DedupeTests(unittest.TestCase):
             self.assertEqual(load_state(state)["faults"], {})
             quiet = run_probe(healthy, state, post_json=_Poster(), webhook_config=_config())
             self.assertEqual(quiet["payloads"], [])
+
+    def test_dead_mf4_watcher_across_a_4h_boundary_does_not_recover(self) -> None:
+        early = datetime(2026, 10, 24, 8, 30, tzinfo=timezone.utc)
+        later = datetime(2026, 10, 24, 12, 10, tzinfo=timezone.utc)
+        with _TempDir() as root:
+            state = root / "state"
+            first = run_probe(
+                _sources(root, now=early, with_decision=False),
+                state,
+                post_json=_Poster(),
+                webhook_config=_config(),
+            )
+            self.assertEqual([item["check"] for item in first["payloads"]], ["mf4:decision"])
+            self.assertIn("2026-10-24T08:00:00Z", first["payloads"][0]["detail"])
+            poster = _Poster()
+            second = run_probe(
+                _sources(root, now=later, with_decision=False),
+                state,
+                post_json=poster,
+                webhook_config=_config(),
+            )
+            self.assertEqual(second["recovered"], 0)
+            self.assertTrue(all(item["state"] != "recovered" for item in second["payloads"]))
+            self.assertEqual(poster.calls, [])
+            self.assertIn("mf4:decision", load_state(state)["faults"])
+            self.assertIn("2026-10-24T08:00:00Z", load_state(state)["faults"]["mf4:decision"]["detail"])
+
+    def test_stops_after_the_first_delivery_failure_and_keeps_the_success(self) -> None:
+        with _TempDir() as root:
+            base = _show_for()
+            props = _simple("nginx.service")
+            props["active_state"] = "inactive"
+            sources = _sources(
+                root,
+                show=_override(base, "nginx.service", props),
+                kill=lambda: {"state": "OPEN", "enabled": True},
+                with_decision=False,
+            )
+            state = root / "state"
+            poster = _Poster(explode_checks={"mf4:decision"})
+            result = run_probe(sources, state, post_json=poster, webhook_config=_config())
+            sent_checks = [json.loads(body)["check"] for _url, _headers, body in poster.calls]
+            self.assertEqual(sent_checks, ["kill_switch", "mf4:decision"])
+            self.assertEqual(result["sent"], 1)
+            stored = load_state(state)["faults"]
+            self.assertIn("kill_switch", stored)
+            self.assertNotIn("mf4:decision", stored)
+            self.assertNotIn("service:nginx.service", stored)
 
     def test_failed_send_does_not_advance_dedupe(self) -> None:
         with _TempDir() as root:
@@ -641,6 +824,72 @@ class PayloadTests(unittest.TestCase):
             self.assertEqual(printed["payloads"][0]["type"], "anchor_fault")
             self.assertNotIn("supersecretvalue", buf.getvalue())
 
+    def test_send_test_posts_one_info_alert_and_skips_dedupe_state(self) -> None:
+        with _TempDir() as root:
+            state = root / "state"
+            state.mkdir()
+            marker = state / "fault_alarm_state.json"
+            marker.write_text('{"version": 1, "faults": {"keep": {"fingerprint": "x"}}}\n', encoding="utf-8")
+            before = marker.read_text(encoding="utf-8")
+            poster = _Poster()
+            result = send_selftest(dry_run=False, post_json=poster, webhook_config=_config(), now=NOW)
+            self.assertEqual(result["sent"], 1)
+            payload = json.loads(poster.calls[0][2])
+            self.assertEqual(payload["type"], "anchor_fault")
+            self.assertEqual(payload["check"], "selftest")
+            self.assertEqual(payload["state"], "test")
+            self.assertEqual(payload["severity"], "info")
+            self.assertEqual(payload["source"], "anchor-fault-alarm")
+            self.assertNotIn("supersecretvalue", poster.calls[0][2].decode())
+            self.assertEqual(marker.read_text(encoding="utf-8"), before)
+            dry = _Poster()
+            preview = send_selftest(dry_run=True, post_json=dry, webhook_config=_config(), now=NOW)
+            self.assertEqual(dry.calls, [])
+            self.assertEqual(preview["payloads"][0]["check"], "selftest")
+
+            buf = io.StringIO()
+            with mock.patch("ops.fault_alarm.probe.run_probe", side_effect=AssertionError("probe")), mock.patch(
+                "ops.fault_alarm.probe.load_webhook_config", return_value=_config()
+            ), mock.patch("ops.fault_alarm.probe.urllib_post_json", return_value=204), contextlib.redirect_stdout(buf):
+                code = main(["--send-test", "--state-dir", str(root / "unused")])
+            self.assertEqual(code, 0)
+            self.assertIn("SELFTEST=SENT", buf.getvalue())
+            self.assertFalse((root / "unused").exists())
+
+    def test_webhook_post_does_not_follow_redirects(self) -> None:
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+        import threading
+
+        seen: list[str] = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_POST(self) -> None:  # noqa: N802
+                seen.append(self.path)
+                self.send_response(302)
+                self.send_header("Location", "http://127.0.0.1:1/nope")
+                self.end_headers()
+
+            def log_message(self, fmt: str, *args: object) -> None:
+                return
+
+        server = HTTPServer(("127.0.0.1", 0), Handler)
+        port = server.server_address[1]
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            code = urllib_post_json(
+                f"http://127.0.0.1:{port}/hook",
+                {"Authorization": "Bearer supersecretvalue", "Content-Type": "application/json"},
+                b"{}",
+                2.0,
+            )
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+        self.assertEqual(code, 302)
+        self.assertEqual(seen, ["/hook"])
+
 
 class UnitFileTests(unittest.TestCase):
     def test_units_are_read_only_and_timer_is_five_minutes(self) -> None:
@@ -650,8 +899,17 @@ class UnitFileTests(unittest.TestCase):
         rollback = (ROOT / "ops" / "fault_alarm" / "ROLLBACK_FAULT_ALARM.sh").read_text(encoding="utf-8")
         probe = (ROOT / "ops" / "fault_alarm" / "probe.py").read_text(encoding="utf-8")
         self.assertIn("StateDirectory=anchor-fault-alarm", service)
+        self.assertIn("ProtectHome=tmpfs", service)
+        self.assertNotIn("ProtectHome=true", service)
+        self.assertIn("CapabilityBoundingSet=CAP_DAC_READ_SEARCH", service)
         self.assertIn("OnUnitActiveSec=5min", timer)
         self.assertIn("LoadCredential=webhook:/etc/anchor-mf4-watcher/webhook.env", service)
+        self.assertIn("--timestamp=utc", probe)
+        self.assertIn("--send-test", probe)
+        self.assertIn("ANCHOR_FAULT_START_NOW", install)
+        self.assertIn("systemctl enable anchor-fault-alarm.timer\n", install)
+        self.assertLess(install.index("--dry-run"), install.index("systemctl enable --now anchor-fault-alarm.timer"))
+        self.assertLess(install.index("dry_run_faults"), install.index("systemctl start anchor-fault-alarm.service"))
         self.assertIn("InaccessiblePaths=", service)
         self.assertIn("/var/lib/anchor-official-ledger-20261010", service)
         self.assertIn("/var/lib/private", service)
@@ -662,8 +920,6 @@ class UnitFileTests(unittest.TestCase):
             self.assertNotIn("systemctl start anchor-official-ledger", text)
             self.assertNotIn("chmod ", text)
             self.assertNotIn("setfacl", text)
-        self.assertIn("systemctl enable --now anchor-fault-alarm.timer", install)
-        self.assertIn("systemctl start anchor-fault-alarm.service", install)
         self.assertNotRegex(rollback, r"rm\s+.*anchor-official-ledger")
         self.assertNotRegex(rollback, r"rm\s+.*webhook\.env")
         self.assertNotRegex(rollback, r"chmod\s+")
