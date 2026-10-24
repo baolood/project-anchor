@@ -308,6 +308,10 @@ class WatcherTests(unittest.TestCase):
             self.assertEqual(status["guard"]["daily_line"], 9816.81)
             self.assertEqual(status["guard"]["verdict"], "ok")
             self.assertEqual(status["guard"]["worst_case_at_sl"], -182.0)
+            self.assertEqual(status["guard"]["planned_risk"], 150.0)
+            self.assertEqual(status["guard"]["size"], 0.16)
+            self.assertEqual(status["guard"]["account_status"], "running")
+            self.assertEqual(status["guard"]["reason"], "within_lines")
 
     def test_record_account_is_atomic_0640_and_refuses_sealed_paths(self) -> None:
         with tempfile_cm() as out:

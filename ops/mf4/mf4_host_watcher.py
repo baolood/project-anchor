@@ -97,7 +97,16 @@ def process_once(
     account = _read_json(out_dir / ACCOUNT_NAME)
     guard = None
     if isinstance(account, dict):
-        guard = evaluate(account, mark, now=moment, risk_usd=selected.get("MF4_RISK_USD"))
+        signal = decision.get("signal") if isinstance(decision.get("signal"), dict) else {}
+        quote: dict[str, Any] = {}
+        if signal.get("type") == "OPEN":
+            quote["entry"] = signal.get("price")
+            quote["stop"] = signal.get("sl")
+            quote["may_cross_reset"] = True
+        elif isinstance(account.get("position"), dict) and account["position"].get("side") in {"long", "short"}:
+            # An open MF4 hold can still be on at the next 00:30 UTC.
+            quote["may_cross_reset"] = True
+        guard = evaluate(account, mark, now=moment, risk_usd=selected.get("MF4_RISK_USD"), **quote)
     status = _status(decision, state, mark, mark_at, guard, out_dir, selected)
     _atomic_json(out_dir / STATUS_NAME, status)
     _save_state(out_dir, state)
@@ -255,7 +264,11 @@ def _status(
             "headroom_floor",
             "worst_case_at_sl",
             "max_size_for_signal",
+            "planned_risk",
+            "size",
+            "account_status",
             "verdict",
+            "reason",
         )},
         "reason": decision.get("reason") or "no_signal",
     }

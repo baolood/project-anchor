@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import tempfile
+import time
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -193,6 +194,97 @@ class Mf4McpTests(unittest.TestCase):
             status = call_tool("get_mf4_status", {}, _context(root, {MF4_DIR_ENV: str(mf4)}))
         self.assertFalse(status["available"])
         self.assertNotIn(SECRET, _encoded(status).decode("utf-8"))
+
+    def test_running_snapshot_includes_size_and_pass_probability(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            mf4 = root / "mf4"
+            mf4.mkdir()
+            (mf4 / "status.json").write_text(json.dumps(_status()), encoding="utf-8")
+            (mf4 / "eval_account.json").write_text(json.dumps(_account()), encoding="utf-8")
+            ctx = _context(root, {MF4_DIR_ENV: str(mf4)})
+            started = time.perf_counter()
+            state = call_tool("get_eval_state", {}, ctx)
+            elapsed = time.perf_counter() - started
+        self.assertLess(elapsed, 1.0)
+        self.assertEqual(state["account_status"], "running")
+        self.assertEqual(state["planned_risk"], 150.0)
+        self.assertEqual(state["size"], 0.16)
+        self.assertEqual(state["guard_verdict"], "ok")
+        block = state["pass_probability"]
+        self.assertTrue(block["available"])
+        self.assertEqual(block["source"], "zero_edge_4r")
+        self.assertEqual(block["seed"], 7)
+        self.assertEqual(block["model"], "mc")
+        for key in ("d30", "d60", "d90", "nolimit"):
+            self.assertAlmostEqual(sum(block[key].values()), 1.0, places=3)
+        self.assertLessEqual(len(_encoded(state)), MAX_BYTES)
+        self.assertIn("median_days", block)
+
+    def test_locked_is_distinct_from_breached(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            mf4 = root / "mf4"
+            mf4.mkdir()
+            locked = _account()
+            locked["balance"] = "9470"
+            locked["daily_ref_balance"] = "9470"
+            locked["position"] = None
+            (mf4 / "eval_account.json").write_text(json.dumps(locked), encoding="utf-8")
+            locked_state = call_tool("get_eval_state", {}, _context(root, {MF4_DIR_ENV: str(mf4)}))
+            breached = _account()
+            breached["balance"] = "9300"
+            breached["daily_ref_balance"] = "10000"
+            breached["position"] = None
+            (mf4 / "eval_account.json").write_text(json.dumps(breached), encoding="utf-8")
+            breached_state = call_tool("get_eval_state", {}, _context(root, {MF4_DIR_ENV: str(mf4)}))
+        self.assertEqual(locked_state["account_status"], "locked")
+        self.assertEqual(locked_state["guard_verdict"], "block")
+        self.assertEqual(locked_state["reason"], "too_close")
+        self.assertEqual(locked_state["pass_probability"]["nolimit"]["locked"], 1.0)
+        self.assertEqual(locked_state["pass_probability"]["nolimit"]["breach"], 0.0)
+        self.assertEqual(breached_state["account_status"], "breached")
+        self.assertEqual(breached_state["reason"], "worst_case_breaches_line")
+        self.assertEqual(breached_state["pass_probability"]["nolimit"]["breach"], 1.0)
+        self.assertEqual(breached_state["pass_probability"]["nolimit"]["locked"], 0.0)
+        self.assertNotEqual(locked_state["account_status"], breached_state["account_status"])
+        self.assertLessEqual(len(_encoded(locked_state)), MAX_BYTES)
+        self.assertLessEqual(len(_encoded(breached_state)), MAX_BYTES)
+
+    def test_stored_trades_feed_the_monte_carlo(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            mf4 = root / "mf4"
+            mf4.mkdir()
+            flat = _account()
+            flat["position"] = None
+            (mf4 / "eval_account.json").write_text(json.dumps(flat), encoding="utf-8")
+            (mf4 / "eval_trades.jsonl").write_text(
+                json.dumps(
+                    {
+                        "signal_id": "mf4-1",
+                        "side": "long",
+                        "entry": 84499.5,
+                        "stop": 83633.1,
+                        "tp": 87812.6,
+                        "size": 0.16,
+                        "realized_r": -1.0,
+                        "commission": 8.0,
+                        "funding": 2.0,
+                        "mae": -1.0,
+                        "mfe": 0.2,
+                        "duration_h": 8,
+                        "gap_h": 48,
+                        "exit_reason": "stop",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            state = call_tool("get_eval_state", {}, _context(root, {MF4_DIR_ENV: str(mf4)}))
+        self.assertEqual(state["pass_probability"]["source"], "stored")
+        self.assertEqual(state["pass_probability"]["trades"], 1)
+        self.assertLessEqual(len(_encoded(state)), MAX_BYTES)
 
 
 if __name__ == "__main__":
