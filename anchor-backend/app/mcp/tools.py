@@ -1,4 +1,4 @@
-"""Stage-1 read-only MCP tools. The registry is exactly these seven names."""
+"""Stage-1 read-only MCP tools, plus the default-off MF4 readers."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from typing import Any, Callable, Mapping
 from app.mcp.backend_probe import probe_backend
 from app.mcp.commands import CommandResult, run_readonly_command
 from app.mcp.inventory import host_sidecar_enabled
+from app.mcp.mf4_eval import parse_clock, read_eval_state, read_mf4_status
 from app.mcp.sanitize import redact_obj
 from app.mcp.status import (
     checklist_counts,
@@ -39,6 +40,8 @@ TOOL_NAMES = (
     "get_timers",
     "get_recent_errors",
     "run_readonly_healthcheck",
+    "get_mf4_status",
+    "get_eval_state",
 )
 
 BOUNDARIES = {
@@ -278,6 +281,17 @@ def tool_definitions() -> list[dict[str, Any]]:
         ),
         "get_recent_errors": "Read recent allowlisted journal errors and sanitized artifact errors. Read-only.",
         "run_readonly_healthcheck": "Run one combined read-only health check across the other six status views.",
+        "get_mf4_status": (
+            "Read the MF4 host watcher status.json. Read-only. No network. "
+            "Requires ANCHOR_CONTROL_MCP_MF4_DIR. Line A and sealed paths are rejected unread. "
+            "Returns state, triggers, last 4h close, last signal, public price age, shadow equity, "
+            "webhook counters, and the compare streak. Does not place orders."
+        ),
+        "get_eval_state": (
+            "Read the manual Kraken Prop snapshot in eval_account.json and the eval guard. "
+            "Read-only. No exchange API. source is manual-snapshot. "
+            "A snapshot older than 24 hours is guard_verdict unknown. Does not place orders."
+        ),
     }
     tools = []
     for name in TOOL_NAMES:
@@ -334,4 +348,8 @@ def call_tool(name: str, arguments: Any, ctx: ToolContext) -> dict[str, Any]:
         return get_recent_errors(ctx, parsed)
     if name == "run_readonly_healthcheck":
         return run_readonly_healthcheck(ctx)
+    if name == "get_mf4_status":
+        return _envelope("get_mf4_status", read_mf4_status(ctx.env, parse_clock(ctx.clock())), ctx)
+    if name == "get_eval_state":
+        return _envelope("get_eval_state", read_eval_state(ctx.env, parse_clock(ctx.clock())), ctx)
     raise KeyError(name)

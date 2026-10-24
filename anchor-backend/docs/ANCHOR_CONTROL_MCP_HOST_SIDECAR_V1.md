@@ -15,7 +15,7 @@ This change does not deploy to Vultr, does not edit live Nginx, does not change 
 - App: `python3 -m app.mcp.host_sidecar` mounts only `POST /mcp`. It does not mount trading, account, or ops-write routes.
 - Credential file, outside git: `/etc/project-anchor/anchor-control-mcp.env` (`ANCHOR_CONTROL_MCP_TOKEN`, and `REDIS_URL` for the existing read-only kill-switch GET). systemd reads that file before dropping privileges. Do not commit it.
 
-The seven tools are the same tools as [`ANCHOR_CONTROL_MCP_V1.md`](ANCHOR_CONTROL_MCP_V1.md). systemd access stays the fixed argv allowlist (`systemctl show`, `journalctl -u <service> -p err`). Report JSON stays inside the allowlisted reports directory.
+The tools are the same tools as [`ANCHOR_CONTROL_MCP_V1.md`](ANCHOR_CONTROL_MCP_V1.md), including `get_mf4_status` and `get_eval_state`. Those two read `ANCHOR_CONTROL_MCP_MF4_DIR` only when it is set, and they do not open Line A. systemd access stays the fixed argv allowlist (`systemctl show`, `journalctl -u <service> -p err`). Report JSON stays inside the allowlisted reports directory.
 
 ## What the sidecar may do
 
@@ -78,6 +78,7 @@ Classes below started from the 2026-09-29 Vultr read-only inventory (host `vultr
 | `anchor-official-ledger.service` and `.timer` | `EVALUATION` | Official Ledger writer. Timer is on the default list. Oneshot and timer stay `expectation: observed` and do not gate PASS |
 | `anchor-ledger-readonly-mirror.service` and `.timer` | `EVALUATION` | Read-only mirror of the ledger file. Timer is on the default list. Oneshot and timer stay `expectation: observed` and do not gate PASS |
 | `anchor-official-ledger-c6.service` and `.timer` | `EVALUATION` | C6 pass-line series recorder. Not on the default allowlist. The host drop-in template adds them. Hourly at minute 13 UTC. Does not gate PASS |
+| `anchor-mf4-watcher.service` | `EVALUATION` | MF4 host watcher. Public PF_XBTUSD only. Not on the default allowlist. Does not gate PASS |
 | `project-anchor-kraken-public-shadow-paper-v1-1-monitor.service` | `EVALUATION` | Failed at inventory time. Excluded from the default lists |
 | `project-anchor-kraken-turtle-eth-1h-shadow.timer` | `EVALUATION` | Inactive historical timer. Excluded from the default lists |
 | `docker.service` | `AUXILIARY` | Not an inventoried systemd control target |

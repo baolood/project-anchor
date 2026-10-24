@@ -19,7 +19,7 @@ The backend process already listens on `127.0.0.1:8000` in `anchor-backend/docke
 - Client header: `Authorization: Bearer <token>`
 - If the env var is unset or empty, `POST /mcp` returns HTTP 503 and serves no tools.
 - Query-string credentials are rejected.
-- The token is scoped only to the seven tools below. It is separate from `OPS_TOKEN` (that header can change kill-switch state).
+- The token is scoped only to the tools below. It is separate from `OPS_TOKEN` (that header can change kill-switch state).
 - Do not commit a real token. `anchor-backend/.env.example` names the variable and leaves it unset.
 
 Optional: `ANCHOR_CONTROL_MCP_ALLOWED_ORIGINS` (comma-separated exact origins). When unset, a request with an `Origin` header is accepted only when that origin's host matches the request `Host`. Requests with no `Origin` are accepted after the bearer check. Server-side Grok connectors typically omit `Origin`.
@@ -39,7 +39,7 @@ Optional C6 series directory: `ANCHOR_CONTROL_MCP_C6_SERIES_DIR`. When unset, `g
 
 ## Stage-1 tools
 
-Exactly these seven, all read-only:
+Exactly these tools, all read-only:
 
 | Tool | What it returns |
 | --- | --- |
@@ -50,8 +50,10 @@ Exactly these seven, all read-only:
 | `get_timers` | `systemctl show` for the timer allowlist |
 | `get_recent_errors` | Sanitized journal errors for the service allowlist, plus sanitized artifact error strings |
 | `run_readonly_healthcheck` | One combined read-only health check over the other views |
+| `get_mf4_status` | MF4 watcher `status.json` when `ANCHOR_CONTROL_MCP_MF4_DIR` is set. Read-only, no network. Unset or rejected paths return `available: false` |
+| `get_eval_state` | Manual Kraken Prop snapshot plus the eval guard. `source` is `manual-snapshot`. A snapshot older than 24 hours is `guard_verdict` `unknown`. No exchange API |
 
-`tools/list` advertises only this set. Any other tool name, including shell, SSH, file read, or order placement, is rejected.
+`tools/list` advertises only this set. Any other tool name, including shell, SSH, file read, or order placement, is rejected. `get_mf4_status` and `get_eval_state` stay in the registry and do nothing until `ANCHOR_CONTROL_MCP_MF4_DIR` is set outside git. See [`docs/ANCHOR_MF4_EVAL_TOOLS_V1.md`](../../docs/ANCHOR_MF4_EVAL_TOOLS_V1.md).
 
 ## Hard boundaries
 
@@ -79,7 +81,7 @@ Kill-switch reads fail closed. An unread or failed Redis read is `UNKNOWN` and t
    - Transport: Streamable HTTP
    - Header: `Authorization: Bearer <same value as ANCHOR_CONTROL_MCP_TOKEN>`
 4. Store the token in the connector secret store. Do not paste it into git, docs, or chat logs.
-5. Confirm `tools/list` returns the seven tools above and nothing else.
+5. Confirm `tools/list` returns the tools above and nothing else.
 6. A 503 response means the env var is still unset (fail closed). A 401 means the bearer token does not match.
 
 ## Local check
