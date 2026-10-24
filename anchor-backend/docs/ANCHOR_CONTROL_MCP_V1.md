@@ -51,7 +51,7 @@ Exactly these tools, all read-only:
 | `get_recent_errors` | Sanitized journal errors for the service allowlist, plus sanitized artifact error strings |
 | `run_readonly_healthcheck` | One combined read-only health check over the other views |
 | `get_mf4_status` | MF4 watcher `status.json` when `ANCHOR_CONTROL_MCP_MF4_DIR` is set. Read-only, no network. Unset or rejected paths return `available: false` |
-| `get_eval_state` | Manual Kraken Prop snapshot plus the eval guard. `source` is `manual-snapshot`. A snapshot older than 24 hours is `guard_verdict` `unknown`. No exchange API |
+| `get_eval_state` | Manual Kraken Prop snapshot plus the eval guard. `source` is `manual-snapshot`. A snapshot older than 24 hours is `guard_verdict` `unknown`. `account_status` `locked` is distinct from `breached`. `pass_probability` is a fixed-seed Monte Carlo. No exchange API |
 
 `tools/list` advertises only this set. Any other tool name, including shell, SSH, file read, or order placement, is rejected. `get_mf4_status` and `get_eval_state` stay in the registry and do nothing until `ANCHOR_CONTROL_MCP_MF4_DIR` is set outside git. See [`docs/ANCHOR_MF4_EVAL_TOOLS_V1.md`](../../docs/ANCHOR_MF4_EVAL_TOOLS_V1.md).
 

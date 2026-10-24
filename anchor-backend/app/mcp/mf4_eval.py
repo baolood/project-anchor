@@ -107,9 +107,11 @@ def read_eval_state(env: Mapping[str, str], now: datetime) -> dict[str, Any]:
     mark = None
     if isinstance(status, dict) and isinstance(status.get("price"), dict):
         mark = status["price"].get("last")
-    guard = _evaluate(account, mark, now)
+    # A new eval trade may still be open at the next 00:30 UTC.
+    guard = _evaluate(account, mark, now, may_cross_reset=True)
     if guard is None:
         return _unavailable("eval_guard_unavailable", source=_SOURCE)
+    outcomes = _read_outcomes(root)
     body = {
         "available": True,
         "read_only": True,
@@ -122,10 +124,14 @@ def read_eval_state(env: Mapping[str, str], now: datetime) -> dict[str, Any]:
         "headroom_daily": guard.get("headroom_daily"),
         "headroom_floor": guard.get("headroom_floor"),
         "worst_case_at_sl": guard.get("worst_case_at_sl"),
+        "planned_risk": guard.get("planned_risk"),
+        "size": guard.get("size"),
+        "account_status": _short(guard.get("account_status"), 16),
         "position": _position(account.get("position")),
         "snapshot_age_s": guard.get("snapshot_age_s"),
         "guard_verdict": guard.get("verdict"),
         "reason": _short(guard.get("reason"), 160),
+        "pass_probability": _pass_block(guard, account, outcomes, now),
     }
     return cap_tool_payload("get_eval_state", redact_obj(body), now)
 
@@ -142,7 +148,7 @@ def cap_tool_payload(tool: str, payload: Mapping[str, Any], now: datetime) -> di
             body["reason"] = reason[: max(24, len(reason) // 2)]
             continue
         dropped = False
-        for key in ("last_signal", "compare", "webhook", "position", "last_4h_close"):
+        for key in ("last_signal", "compare", "webhook", "position", "last_4h_close", "pass_probability"):
             if key in body:
                 body.pop(key)
                 dropped = True
@@ -248,22 +254,95 @@ def _count_outbox(root: Path) -> int:
     return sum(1 for line in blob.splitlines() if line.strip())
 
 
-def _evaluate(account: Mapping[str, Any], mark: Any, now: datetime) -> dict[str, Any] | None:
+def _evaluate(
+    account: Mapping[str, Any],
+    mark: Any,
+    now: datetime,
+    *,
+    may_cross_reset: bool = False,
+) -> dict[str, Any] | None:
     evaluate = _guard()
     if evaluate is None:
         return None
     try:
-        result = evaluate(account, mark, now=now)
+        result = evaluate(account, mark, now=now, may_cross_reset=may_cross_reset)
     except Exception:
         return None
     return result if isinstance(result, dict) else None
 
 
+def _pass_block(
+    guard: Mapping[str, Any],
+    account: Mapping[str, Any],
+    outcomes: list[dict[str, Any]],
+    now: datetime,
+) -> dict[str, Any]:
+    """Monte Carlo block. A failure here leaves the rest of the snapshot."""
+    module = _sibling("pass_prob.py", "anchor_mf4_pass_prob")
+    if module is None:
+        return {"available": False, "reason": "pass_prob_unavailable"}
+    equity = guard.get("est_equity")
+    reset_balance = _number(account.get("daily_ref_balance"))
+    status = guard.get("account_status")
+    if not isinstance(equity, (int, float)) or reset_balance is None or not isinstance(status, str):
+        return {"available": False, "reason": "equity_unknown"}
+    try:
+        hours = module.hours_since_daily_reset(now)
+        floor = guard.get("floor")
+        target = guard.get("target")
+        return module.pass_probability(
+            equity=float(equity),
+            reset_balance=reset_balance,
+            status=status,
+            outcomes=outcomes,
+            hours_since_reset=hours,
+            floor=float(floor) if isinstance(floor, (int, float)) else module.FLOOR,
+            target=float(target) if isinstance(target, (int, float)) else module.TARGET,
+        )
+    except Exception:
+        return {"available": False, "reason": "pass_prob_unavailable"}
+
+
+def _read_outcomes(root: Path) -> list[dict[str, Any]]:
+    path = root / "eval_trades.jsonl"
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return []
+    blob = _read_bounded(path, root, tail=True)
+    if not blob:
+        return []
+    text = blob.decode("utf-8", errors="replace")
+    lines = text.splitlines()
+    if size > len(blob) and lines:
+        lines = lines[1:]
+    rows: list[dict[str, Any]] = []
+    for line in lines:
+        raw = line.strip()
+        if not raw:
+            continue
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            rows.append(payload)
+    return rows
+
+
 def _guard() -> Callable[..., dict[str, Any]] | None:
-    path = Path(__file__).resolve().parents[3] / "ops" / "mf4" / "eval_guard.py"
+    module = _sibling("eval_guard.py", "anchor_mf4_eval_guard")
+    if module is None:
+        return None
+    evaluate = getattr(module, "evaluate", None)
+    return evaluate if callable(evaluate) else None
+
+
+def _sibling(filename: str, modname: str) -> Any:
+    path = Path(__file__).resolve().parents[3] / "ops" / "mf4" / filename
     if not path.is_file():
         return None
-    spec = importlib.util.spec_from_file_location("anchor_mf4_eval_guard", path)
+    spec = importlib.util.spec_from_file_location(modname, path)
     if spec is None or spec.loader is None:
         return None
     module = importlib.util.module_from_spec(spec)
@@ -271,8 +350,7 @@ def _guard() -> Callable[..., dict[str, Any]] | None:
         spec.loader.exec_module(module)
     except Exception:
         return None
-    evaluate = getattr(module, "evaluate", None)
-    return evaluate if callable(evaluate) else None
+    return module
 
 
 def _unavailable(reason: str, source: str | None = None) -> dict[str, Any]:

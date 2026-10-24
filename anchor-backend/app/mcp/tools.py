@@ -290,7 +290,10 @@ def tool_definitions() -> list[dict[str, Any]]:
         "get_eval_state": (
             "Read the manual Kraken Prop snapshot in eval_account.json and the eval guard. "
             "Read-only. No exchange API. source is manual-snapshot. "
-            "A snapshot older than 24 hours is guard_verdict unknown. Does not place orders."
+            "A snapshot older than 24 hours is guard_verdict unknown. "
+            "account_status locked means $50 of risk no longer fits above the floor, and is not a breach. "
+            "pass_probability is a fixed-seed Monte Carlo from the manual trade log, or a zero-edge 4R baseline. "
+            "Does not place orders."
         ),
     }
     tools = []
