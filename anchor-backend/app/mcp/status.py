@@ -30,6 +30,7 @@ from app.mcp.inventory import (
     OBSERVE_TIMERS,
     RECOMMENDED_SERVICE_UNITS,
     RECOMMENDED_TIMER_UNITS,
+    RETIRED_UNITS,
     classify_unit,
     host_sidecar_enabled,
 )
@@ -438,6 +439,9 @@ def _select_units(kind: str, env: Mapping[str, str]) -> tuple[list[str], str | N
         for name in extra:
             if name not in names and len(names) < HOST_OBSERVE_LIMIT:
                 names.append(name)
+        for name in RETIRED_UNITS:
+            if name.endswith(suffix) and name not in names and len(names) < HOST_OBSERVE_LIMIT:
+                names.append(name)
     return names, warning, host
 
 
@@ -448,10 +452,23 @@ def _unit_record(name: str, props: dict[str, str], kind: str, host: bool) -> dic
         "healthy": _unit_healthy(props, kind) if props else False,
         "properties": props,
     }
+    if name in RETIRED_UNITS:
+        record["healthy"] = True
+        record["retired"] = True
+        record["note"] = "retired"
     if not host:
+        if name in RETIRED_UNITS:
+            record["expectation"] = "retired"
+            record["gates_overall_pass"] = False
         return record
     record.update(classify_unit(name))
-    if record.get("unit_class") == CLASS_INTENTIONALLY_DISABLED and props.get("active_state") == "active":
+    if name in RETIRED_UNITS:
+        record["healthy"] = True
+        record["retired"] = True
+        record["note"] = "retired"
+        record["expectation"] = "retired"
+        record["gates_overall_pass"] = False
+    elif record.get("unit_class") == CLASS_INTENTIONALLY_DISABLED and props.get("active_state") == "active":
         record["note"] = "active_while_intentionally_disabled"
     return record
 
@@ -550,23 +567,31 @@ def _partition_units(services: dict[str, Any]) -> tuple[bool, list[Any], list[An
     host = services.get("host_sidecar") is True
     if not isinstance(units, list):
         return host, [], []
-    if not host:
-        return False, list(units), []
     gating: list[Any] = []
     ignored: list[Any] = []
     for item in units:
-        if isinstance(item, dict) and item.get("gates_overall_pass") is True:
-            gating.append(item)
-        else:
+        retired = isinstance(item, dict) and (
+            item.get("name") in RETIRED_UNITS or item.get("expectation") == "retired" or item.get("retired") is True
+        )
+        if retired or not isinstance(item, dict):
             ignored.append(item)
-    return True, gating, ignored
+            continue
+        if host and item.get("gates_overall_pass") is not True:
+            ignored.append(item)
+            continue
+        if not host or item.get("gates_overall_pass") is True:
+            gating.append(item)
+            continue
+        ignored.append(item)
+    return host, gating, ignored
 
 
 def process_from_units(services: dict[str, Any]) -> dict[str, Any]:
     """Process health is PASS only when every gating service unit was shown healthy.
 
     Outside host mode every configured service gates. In host mode only
-    CORE_RUNTIME gates. INTENTIONALLY_DISABLED, EVALUATION, and AUXILIARY do not.
+    CORE_RUNTIME gates. RETIRED_UNITS are ignored for PASS in both modes.
+    INTENTIONALLY_DISABLED, EVALUATION, and AUXILIARY do not gate.
     """
     command_state = str(services.get("command_state") or "undetermined")
     host, gating, ignored = _partition_units(services)

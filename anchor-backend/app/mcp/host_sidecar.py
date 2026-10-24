@@ -122,7 +122,7 @@ def unit_problems(text: str) -> list[str]:
         "Environment=ANCHOR_CONTROL_MCP_HOST_SIDECAR=1",
         "Environment=ANCHOR_CONTROL_MCP_SERVICE_UNITS=nginx.service,",
         "project-anchor-payment-webhook.service",
-        "project-anchor-post-production-monitoring.timer",
+        "project-anchor-kraken-forward.timer",
         "Environment=ANCHOR_CONTROL_MCP_BACKEND_PROBE=1",
         f"Environment=ANCHOR_CONTROL_MCP_LEDGER_DIR={LEDGER_MIRROR_DIR}",
         "ExecStart=/usr/bin/python3 -m app.mcp.host_sidecar",

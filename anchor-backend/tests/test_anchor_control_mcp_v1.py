@@ -205,7 +205,7 @@ class AnchorControlMcpToolTests(unittest.TestCase):
             )
             payload = call_tool("get_services", {}, ctx)
             self.assertEqual(payload["unit_config"], "invalid_override_ignored")
-            self.assertEqual(payload["expected_units"], ["project-anchor-post-production-monitoring.service"])
+            self.assertEqual(payload["expected_units"], ["anchor-fault-alarm.service"])
             self.assertTrue(all("reboot" not in part for call in runner.calls for part in call))
 
     def test_process_unknown_or_failed_is_not_pass(self) -> None:

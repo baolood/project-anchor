@@ -13,8 +13,11 @@ SYSTEMCTL_PROPERTIES = (
     "Id,ActiveState,SubState,UnitFileState,Result,Type,Description,"
     "NextElapseUSecRealtime,LastTriggerUSecRealtime"
 )
-DEFAULT_SERVICES = ("project-anchor-post-production-monitoring.service",)
-DEFAULT_TIMERS = ("project-anchor-post-production-monitoring.timer",)
+# In-container fallback only. The host sidecar uses the inventory allowlist.
+# These names are read with systemctl show. They do not start or stop a unit.
+# The retired post-production monitor is not a default.
+DEFAULT_SERVICES = ("anchor-fault-alarm.service",)
+DEFAULT_TIMERS = ("anchor-fault-alarm.timer",)
 SERVICE_UNITS_ENV = "ANCHOR_CONTROL_MCP_SERVICE_UNITS"
 TIMER_UNITS_ENV = "ANCHOR_CONTROL_MCP_TIMER_UNITS"
 COMMAND_TIMEOUT_SEC = 3.0

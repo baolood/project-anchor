@@ -74,7 +74,7 @@ Classes below started from the 2026-09-29 Vultr read-only inventory (host `vultr
 | `project-anchor-jev-forward-shadow-v2.timer` | `EVALUATION` | Official Ledger feed. On the 2026-10-23 default timer list. Does not gate PASS |
 | `project-anchor-kraken-forward.service` | `EVALUATION` | Forward collector. Unit file disabled; optional oneshot |
 | `project-anchor-kraken-forward.timer` | `EVALUATION` | Still on the default timer list |
-| `project-anchor-post-production-monitoring.service` and `.timer` | `AUXILIARY` | Read-only monitoring refresh. Timer stays on the default list |
+| `project-anchor-post-production-monitoring.service` and `.timer` | `AUXILIARY` | Retired 2026-10-24 20:02 Asia/Shanghai. Replaced by `anchor-fault-alarm`. `expectation: retired`. Not a fault |
 | `anchor-official-ledger.service` and `.timer` | `EVALUATION` | Official Ledger writer. Timer is on the default list. Oneshot and timer stay `expectation: observed` and do not gate PASS |
 | `anchor-ledger-readonly-mirror.service` and `.timer` | `EVALUATION` | Read-only mirror of the ledger file. Timer is on the default list. Oneshot and timer stay `expectation: observed` and do not gate PASS |
 | `anchor-official-ledger-c6.service` and `.timer` | `EVALUATION` | C6 pass-line series recorder. Not on the default allowlist. The host drop-in template adds them. Hourly at minute 13 UTC. Does not gate PASS |
@@ -93,12 +93,12 @@ These match the inventory's production lists. Spaces match the inventory text. C
 
 ```bash
 ANCHOR_CONTROL_MCP_SERVICE_UNITS="nginx.service project-anchor-commercial-api.service project-anchor-payment-webhook.service project-anchor-whisper.service project-anchor-word-converter.service"
-ANCHOR_CONTROL_MCP_TIMER_UNITS="project-anchor-post-production-monitoring.timer project-anchor-kraken-forward.timer project-anchor-jev-forward-shadow-v2.timer anchor-official-ledger.timer anchor-ledger-readonly-mirror.timer"
+ANCHOR_CONTROL_MCP_TIMER_UNITS="project-anchor-kraken-forward.timer project-anchor-jev-forward-shadow-v2.timer anchor-official-ledger.timer anchor-ledger-readonly-mirror.timer"
 ```
 
 Of those services, only `nginx.service` gates PASS. The four product services are read and classified `AUXILIARY`. None of the recommended timers gate PASS. `project-anchor-jev-forward-shadow-v2.timer` stays on the list because it is the Official Ledger feed. `anchor-official-ledger.timer` and `anchor-ledger-readonly-mirror.timer` are `EVALUATION` with `expectation: observed`. An idle oneshot or an inactive timer in that class does not fail PASS. `project-anchor-jev-forward-shadow-v2.service` is observed and does not gate PASS. Shadow paper v1.1, evidence reporter v1, JEV forward shadow v1, and JEV candidate review v1 are classified and left out of the default lists. The failed shadow-paper monitor and the inactive turtle timer stay out as well.
 
-The sidecar does not read `RECOMMENDED_TIMER_UNITS` on each request when `ANCHOR_CONTROL_MCP_TIMER_UNITS` is set. `configured_units` uses that environment value, and uses `HOST_DEFAULT_TIMERS` (the same tuple) only when the variable is empty or invalid. Host mode then appends any `OBSERVE_TIMERS` name that is not already selected, up to 16 names. `anchor-fault-alarm.service` and `anchor-fault-alarm.timer` are on those observe lists and are `AUXILIARY`, so a read-only check can see a dead alarm without changing PASS. systemd applies a drop-in `Environment=` after the main unit file, and `EnvironmentFile=` overrides `Environment=` when the file sets the same key. The live host drop-in `anchor-control-mcp.service.d/20-timer-allowlist.conf` therefore supplies the running process. A process that still imports the previous observe tuple keeps showing the retired timers after that drop-in list. `render_service_unit()` writes `RECOMMENDED_TIMER_UNITS` into the example unit. This sync keeps the next render from putting the retired timers back, and it stops appending them. `get_timers` also reports `recommended_timer_units` from the Python tuple, separate from the units it actually shows. Unclassified names in that shown list are `CORE_RUNTIME`. The ledger rows above exist so those allowlisted timers do not gate PASS.
+The sidecar does not read `RECOMMENDED_TIMER_UNITS` on each request when `ANCHOR_CONTROL_MCP_TIMER_UNITS` is set. `configured_units` uses that environment value, and uses `HOST_DEFAULT_TIMERS` (the same tuple) only when the variable is empty or invalid. Host mode then appends any `OBSERVE_TIMERS` name that is not already selected, up to 16 names, and then any `RETIRED_UNITS` name of the same suffix that still fits. `anchor-fault-alarm.service` and `anchor-fault-alarm.timer` are on those observe lists and are `AUXILIARY`, so a read-only check can see a dead alarm without changing PASS. systemd applies a drop-in `Environment=` after the main unit file, and `EnvironmentFile=` overrides `Environment=` when the file sets the same key. The live host drop-in `anchor-control-mcp.service.d/20-timer-allowlist.conf` therefore supplies the running process. A name in `RETIRED_UNITS` is reported with `expectation: retired`, `healthy: true`, `note: retired`, and `gates_overall_pass: false` even when that older drop-in still lists it. The real `systemctl show` properties stay on the record. It does not fail PASS. `render_service_unit()` writes `RECOMMENDED_TIMER_UNITS` into the example unit, which no longer names `project-anchor-post-production-monitoring.timer`. `get_timers` also reports `recommended_timer_units` from the Python tuple, separate from the units it actually shows. Unclassified names in that shown list are `CORE_RUNTIME`. The ledger rows above exist so those allowlisted timers do not gate PASS.
 
 Reports directory from the inventory: `/var/lib/project-anchor/reports`.
 
@@ -106,7 +106,7 @@ Official V2 ledger directory named by the example unit: `/var/lib/anchor-ledger-
 
 `get_services` and `get_timers` repeat `recommended_service_units`, `recommended_timer_units`, `gating_classes`, and `non_gating_classes` when `ANCHOR_CONTROL_MCP_HOST_SIDECAR=1`.
 
-The in-container MCP does not set that flag. Its default units remain `project-anchor-post-production-monitoring.service` and `.timer`.
+The in-container MCP does not set that flag. Its default units are `anchor-fault-alarm.service` and `anchor-fault-alarm.timer`. Those names are read with `systemctl show` only.
 
 ## Later operator steps
 
