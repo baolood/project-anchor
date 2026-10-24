@@ -2,7 +2,7 @@
 
 DEPLOY=NO. Nothing in this change installs a unit or posts a webhook. The host checkout stays `/root/project-anchor` when an operator later runs the install script.
 
-The 15-minute `project-anchor-post-production-monitoring.timer` re-checks the stored 2026-08-06 Binance order governance files. It does not check whether `anchor-mf4-watcher` or the official ledger are alive, and its Telegram sender stays off unless `POSTPRODUCTION_MONITORING_TELEGRAM_AUTO_SEND=1`. This probe is the host-side alarm for those gaps. The old timer is left in place.
+The 15-minute `project-anchor-post-production-monitoring.timer` re-checked the stored 2026-08-06 Binance order governance files. It did not check whether `anchor-mf4-watcher` or the official ledger were alive. At 20:02 Asia/Shanghai on 2026-10-24 that timer and `project-anchor-post-production-monitoring.service` were stopped and disabled. Both names are in `RETIRED_UNITS` in `anchor-backend/app/mcp/inventory.py`. This probe skips that set, and MCP reports `expectation: retired`.
 
 ## What is checked
 
@@ -12,14 +12,14 @@ Every 5 minutes the oneshot `anchor-fault-alarm.service` runs `ops/fault_alarm/p
 | --- | --- |
 | Long-running services | `ActiveState` is not `active`, or the unit is not loaded. The list is `RECOMMENDED_SERVICE_UNITS` plus `anchor-mf4-watcher.service` and `anchor-control-mcp.service`. |
 | Ledger oneshots | `anchor-official-ledger.service`, `anchor-official-ledger-c6.service`, and `anchor-ledger-readonly-mirror.service` are not loaded, or the last run is not `Result=success` while idle. An in-progress run is healthy. |
-| Timers | `RECOMMENDED_TIMER_UNITS` plus `anchor-official-ledger-c6.timer`. Not loaded, not active, `Result=failed`, never fired while nothing is scheduled, next realtime elapse more than 10 minutes overdue, or no next elapse and the last fire is more than 2 hours old. A future `NextElapseUSecRealtime` means the timer is armed. An active timer with an empty realtime elapse and a non-zero `NextElapseUSecMonotonic` (an `OnUnitActiveSec` / `OnBootSec` timer) is armed. `systemctl show` uses `--timestamp=utc` and the real properties `LastTriggerUSec`, `NextElapseUSecRealtime`, `NextElapseUSecMonotonic`, `InactiveEnterTimestamp`, and `StateChangeTimestamp`. A loaded companion service that is not intentionally disabled is held to the same oneshot or long-running rule. |
+| Timers | `RECOMMENDED_TIMER_UNITS` plus `anchor-official-ledger-c6.timer`, except names in `RETIRED_UNITS`. Not loaded, not active, `Result=failed`, never fired while nothing is scheduled, next realtime elapse more than 10 minutes overdue, or no next elapse and the last fire is more than 2 hours old. A future `NextElapseUSecRealtime` means the timer is armed. An active timer with an empty realtime elapse and a non-zero `NextElapseUSecMonotonic` (an `OnUnitActiveSec` / `OnBootSec` timer) is armed. `systemctl show` uses `--timestamp=utc` and the real properties `LastTriggerUSec`, `NextElapseUSecRealtime`, `NextElapseUSecMonotonic`, `InactiveEnterTimestamp`, and `StateChangeTimestamp`. A loaded companion service is held to the same oneshot or long-running rule. Companions in `RETIRED_UNITS` or classed `INTENTIONALLY_DISABLED` are skipped. |
 | Backend | `GET http://127.0.0.1:8000/health` is not ok. The URL is the allowlisted probe in `app.mcp.backend_probe`. The body is not copied into the alert. |
 | MF4 decision | More than 20 minutes after the latest completed 4h BTC close, `mf4_forward_events.jsonl` has no `SIGNAL_4H` or `SIGNAL_4H_SKIPPED` for that close. |
 | Kill switch | State is `OPEN`, or the switch is unreadable. `CLOSED` with `enabled` false is healthy. The reader is `app.mcp.status.read_kill_switch`. |
 | Go-live | The post-production guard is not blocked. |
 | Live trading | The post-production guard is not blocked. |
 
-`INTENTIONALLY_DISABLED` units are not faults. `anchor-fault-alarm.service` and `anchor-fault-alarm.timer` are `AUXILIARY` in the inventory and are not on the PASS allowlist. They are on the host sidecar observe lists (`OBSERVE_SERVICES`, `OBSERVE_TIMERS`), so `get_services` and `get_timers` can see a dead alarm. This alarm does not change what gates MCP PASS.
+`INTENTIONALLY_DISABLED` units are not faults. Names in `RETIRED_UNITS` are skipped the same way. A later retirement is one new line in that tuple. MCP `classify_unit` reports `expectation: retired` and `gates_overall_pass: false`. Host mode still lists those names on `get_services` and `get_timers`, with `healthy: true` and `note: retired`, and the real `systemctl show` properties stay on the record. An older drop-in that still names a retired unit does not make it a fault. The current set is `project-anchor-post-production-monitoring.service` and `.timer`. `anchor-fault-alarm.service` and `anchor-fault-alarm.timer` are `AUXILIARY` in the inventory and are not on the PASS allowlist. They are on the host sidecar observe lists (`OBSERVE_SERVICES`, `OBSERVE_TIMERS`), so `get_services` and `get_timers` can see a dead alarm. This alarm does not watch its own units and does not change what gates MCP PASS.
 
 ### MF4 decision
 
@@ -183,4 +183,4 @@ systemd-analyze verify ops/fault_alarm/anchor-fault-alarm.service ops/fault_alar
 
 ## Out of scope
 
-No restarts, no database writes, no orders, no exchange calls, no edits to Line A, the legacy equity CSV, the governance register, or the PASS LINE freeze record. The post-production monitoring timer is unchanged.
+No restarts, no database writes, no orders, no exchange calls, no edits to Line A, the legacy equity CSV, the governance register, or the PASS LINE freeze record. `project-anchor-post-production-monitoring.timer` and `.service` were retired on 2026-10-24 and are not watched.

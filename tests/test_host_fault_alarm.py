@@ -17,6 +17,7 @@ from app.mcp.inventory import (
     CLASS_AUXILIARY,
     RECOMMENDED_SERVICE_UNITS,
     RECOMMENDED_TIMER_UNITS,
+    RETIRED_UNITS,
     classify_unit,
 )
 from ops.fault_alarm.probe import (
@@ -214,6 +215,20 @@ class InventoryWatchListTests(unittest.TestCase):
         self.assertNotIn("anchor-fault-alarm.service", expected_long_running())
         self.assertNotIn("anchor-fault-alarm.timer", expected_timers())
         self.assertNotIn("project-anchor-jev-forward-shadow-v2.service", expected_long_running())
+        self.assertEqual(
+            RETIRED_UNITS,
+            (
+                "project-anchor-post-production-monitoring.service",
+                "project-anchor-post-production-monitoring.timer",
+            ),
+        )
+        for name in RETIRED_UNITS:
+            self.assertNotIn(name, expected_long_running())
+            self.assertNotIn(name, expected_oneshots())
+            self.assertNotIn(name, expected_timers())
+            classified = classify_unit(name)
+            self.assertEqual(classified["expectation"], "retired", name)
+            self.assertIs(classified["gates_overall_pass"], False, name)
 
     def test_fault_alarm_units_do_not_gate_pass(self) -> None:
         for name in ("anchor-fault-alarm.service", "anchor-fault-alarm.timer", "extra-fault-alarm.service"):
@@ -390,11 +405,37 @@ class DetectionTests(unittest.TestCase):
     def test_failed_timer_companion_is_a_fault(self) -> None:
         with self._tmp() as root:
             base = _show_for()
-            props = _oneshot("project-anchor-post-production-monitoring.service")
+            props = _oneshot("project-anchor-kraken-forward.service")
             props["result"] = "failed"
-            sources = _sources(root, show=_override(base, "project-anchor-post-production-monitoring.service", props))
+            sources = _sources(root, show=_override(base, "project-anchor-kraken-forward.service", props))
             faults = collect_faults(sources)
-        self.assertEqual([item.check for item in faults], ["service:project-anchor-post-production-monitoring.service"])
+        self.assertEqual([item.check for item in faults], ["service:project-anchor-kraken-forward.service"])
+
+    def test_retired_post_production_monitor_is_not_a_fault(self) -> None:
+        asked: list[str] = []
+        with self._tmp() as root:
+            base = _show_for()
+
+            def show(name: str) -> dict[str, str]:
+                asked.append(name)
+                if name == "project-anchor-post-production-monitoring.timer":
+                    props = _timer(name)
+                    props["active_state"] = "inactive"
+                    props["sub_state"] = "dead"
+                    props["result"] = "failed"
+                    return props
+                if name == "project-anchor-post-production-monitoring.service":
+                    props = _oneshot(name)
+                    props["result"] = "failed"
+                    return props
+                return base(name)
+
+            faults = collect_faults(_sources(root, show=show))
+        checks = [item.check for item in faults]
+        self.assertNotIn("timer:project-anchor-post-production-monitoring.timer", checks)
+        self.assertNotIn("service:project-anchor-post-production-monitoring.service", checks)
+        self.assertNotIn("project-anchor-post-production-monitoring.timer", asked)
+        self.assertNotIn("project-anchor-post-production-monitoring.service", asked)
 
     def test_mf4_decision_grace_checks_the_previous_close(self) -> None:
         stamp = "2026-10-24T08:00:00Z"

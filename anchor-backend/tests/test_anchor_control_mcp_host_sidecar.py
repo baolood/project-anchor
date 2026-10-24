@@ -29,6 +29,7 @@ from app.mcp.inventory import (
     OBSERVE_TIMERS,
     RECOMMENDED_SERVICE_UNITS,
     RECOMMENDED_TIMER_UNITS,
+    RETIRED_UNITS,
     classify_unit,
 )
 from app.mcp.tools import TOOL_NAMES, ToolContext, call_tool
@@ -145,13 +146,27 @@ class InventoryClassificationTests(unittest.TestCase):
         self.assertEqual(
             RECOMMENDED_TIMER_UNITS,
             (
-                "project-anchor-post-production-monitoring.timer",
                 "project-anchor-kraken-forward.timer",
                 "project-anchor-jev-forward-shadow-v2.timer",
                 "anchor-official-ledger.timer",
                 "anchor-ledger-readonly-mirror.timer",
             ),
         )
+        self.assertEqual(
+            RETIRED_UNITS,
+            (
+                "project-anchor-post-production-monitoring.service",
+                "project-anchor-post-production-monitoring.timer",
+            ),
+        )
+        for name in RETIRED_UNITS:
+            self.assertNotIn(name, RECOMMENDED_TIMER_UNITS)
+            self.assertNotIn(name, OBSERVE_TIMERS)
+            self.assertNotIn(name, OBSERVE_SERVICES)
+            classified = classify_unit(name)
+            self.assertEqual(classified["expectation"], "retired", name)
+            self.assertIs(classified["gates_overall_pass"], False, name)
+            self.assertEqual(classified["unit_class"], CLASS_AUXILIARY, name)
         self.assertEqual(HOST_DEFAULT_TIMERS, RECOMMENDED_TIMER_UNITS)
         self.assertEqual(OBSERVE_TIMERS, RECOMMENDED_TIMER_UNITS + ("anchor-fault-alarm.timer",))
         self.assertIn("anchor-fault-alarm.service", OBSERVE_SERVICES)
@@ -305,6 +320,21 @@ class HostHealthTests(unittest.TestCase):
         self.assertIn("anchor-fault-alarm.timer", by_timer)
         self.assertEqual(by_timer["anchor-fault-alarm.timer"]["unit_class"], CLASS_AUXILIARY)
         self.assertIs(by_timer["anchor-fault-alarm.timer"]["gates_overall_pass"], False)
+        retired_service = by_name["project-anchor-post-production-monitoring.service"]
+        self.assertEqual(retired_service["expectation"], "retired")
+        self.assertIs(retired_service["healthy"], True)
+        self.assertIs(retired_service["retired"], True)
+        self.assertEqual(retired_service["note"], "retired")
+        self.assertIs(retired_service["gates_overall_pass"], False)
+        self.assertEqual(retired_service["properties"]["active_state"], "dead")
+        self.assertIn("project-anchor-post-production-monitoring.service", status["process"]["ignored_for_pass"])
+        retired_timer = by_timer["project-anchor-post-production-monitoring.timer"]
+        self.assertEqual(retired_timer["expectation"], "retired")
+        self.assertIs(retired_timer["healthy"], True)
+        self.assertIs(retired_timer["retired"], True)
+        self.assertEqual(retired_timer["note"], "retired")
+        self.assertIs(retired_timer["gates_overall_pass"], False)
+        self.assertEqual(retired_timer["properties"]["active_state"], "inactive")
         self.assertEqual(by_name["anchor-official-ledger.service"]["unit_class"], CLASS_EVALUATION)
         self.assertEqual(by_name["anchor-official-ledger.service"]["expectation"], "observed")
         self.assertIs(by_name["anchor-ledger-readonly-mirror.service"]["gates_overall_pass"], False)
@@ -364,8 +394,72 @@ class HostHealthTests(unittest.TestCase):
         self.assertNotIn("backend_http", status)
         self.assertNotIn("unit_class", services["units"][0])
         self.assertNotIn("host_sidecar", services)
-        self.assertEqual(services["expected_units"], ["project-anchor-post-production-monitoring.service"])
+        self.assertEqual(services["expected_units"], ["anchor-fault-alarm.service"])
         self.assertEqual(len(TOOL_NAMES), 9)
+
+    def test_retired_unit_stays_retired_when_the_drop_in_still_lists_it(self) -> None:
+        states = _healthy_states()
+        states["project-anchor-post-production-monitoring.service"] = ("failed", "failed", "oneshot")
+        states["project-anchor-post-production-monitoring.timer"] = ("inactive", "failed", "simple")
+        runner = HostRunner(states)
+        env = {
+            **HOST_ENV,
+            "ANCHOR_CONTROL_MCP_SERVICE_UNITS": "nginx.service project-anchor-post-production-monitoring.service",
+            "ANCHOR_CONTROL_MCP_TIMER_UNITS": (
+                "project-anchor-post-production-monitoring.timer project-anchor-kraken-forward.timer"
+            ),
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = _context(Path(tmp), runner, env)
+            _write_artifacts(ctx)
+            from app.mcp import tools as tools_module
+
+            original = tools_module.probe_backend
+            tools_module.probe_backend = _probe_ok
+            try:
+                status = call_tool("get_anchor_status", {}, ctx)
+                services = call_tool("get_services", {}, ctx)
+                timers = call_tool("get_timers", {}, ctx)
+                health = call_tool("run_readonly_healthcheck", {}, ctx)
+            finally:
+                tools_module.probe_backend = original
+        by_name = {item["name"]: item for item in services["units"]}
+        by_timer = {item["name"]: item for item in timers["units"]}
+        retired_service = by_name["project-anchor-post-production-monitoring.service"]
+        retired_timer = by_timer["project-anchor-post-production-monitoring.timer"]
+        self.assertEqual(services["expected_units"].count("project-anchor-post-production-monitoring.service"), 1)
+        self.assertEqual(timers["expected_units"].count("project-anchor-post-production-monitoring.timer"), 1)
+        self.assertEqual(retired_service["expectation"], "retired")
+        self.assertIs(retired_service["healthy"], True)
+        self.assertEqual(retired_service["properties"]["active_state"], "failed")
+        self.assertEqual(retired_timer["expectation"], "retired")
+        self.assertIs(retired_timer["healthy"], True)
+        self.assertEqual(retired_timer["properties"]["active_state"], "inactive")
+        self.assertEqual(status["process"]["state"], "PASS")
+        self.assertIn("project-anchor-post-production-monitoring.service", status["process"]["ignored_for_pass"])
+        self.assertEqual(health["verdict"], "PASS")
+
+    def test_container_retired_override_is_not_a_failed_process(self) -> None:
+        states = {
+            "project-anchor-post-production-monitoring.service": ("inactive", "failed", "oneshot"),
+        }
+        runner = HostRunner(states)
+        env = {"ANCHOR_CONTROL_MCP_SERVICE_UNITS": "project-anchor-post-production-monitoring.service"}
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = _context(Path(tmp), runner, env)
+            services = call_tool("get_services", {}, ctx)
+            status = call_tool("get_anchor_status", {}, ctx)
+        unit = services["units"][0]
+        self.assertEqual(unit["name"], "project-anchor-post-production-monitoring.service")
+        self.assertEqual(unit["expectation"], "retired")
+        self.assertIs(unit["healthy"], True)
+        self.assertIs(unit["retired"], True)
+        self.assertEqual(unit["note"], "retired")
+        self.assertIs(unit["gates_overall_pass"], False)
+        self.assertNotIn("unit_class", unit)
+        self.assertEqual(unit["properties"]["active_state"], "inactive")
+        self.assertEqual(status["process"]["state"], "UNKNOWN")
+        self.assertEqual(status["process"]["reason"], "no_units")
 
 
 class BackendProbeTests(unittest.TestCase):

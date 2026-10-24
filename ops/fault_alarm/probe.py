@@ -45,6 +45,7 @@ from app.mcp.inventory import (  # noqa: E402
     CLASS_INTENTIONALLY_DISABLED,
     RECOMMENDED_SERVICE_UNITS,
     RECOMMENDED_TIMER_UNITS,
+    RETIRED_UNITS,
     classify_unit,
 )
 from app.mcp.inventory import HOST_SIDECAR_ENV  # noqa: E402
@@ -215,13 +216,18 @@ def _fault(check: str, detail: str, since: str, severity: str = "critical") -> F
     )
 
 
+def _alarm_skips(name: str) -> bool:
+    """Retired and intentionally disabled units are not faults."""
+    if name in RETIRED_UNITS:
+        return True
+    return classify_unit(name)["unit_class"] == CLASS_INTENTIONALLY_DISABLED
+
+
 def expected_long_running() -> tuple[str, ...]:
     """Inventory long-running services, plus the MF4 watcher and the MCP sidecar."""
     names: list[str] = []
     for name in tuple(RECOMMENDED_SERVICE_UNITS) + EXTRA_LONG_RUNNING:
-        if name in names:
-            continue
-        if classify_unit(name)["unit_class"] == CLASS_INTENTIONALLY_DISABLED:
+        if name in names or _alarm_skips(name):
             continue
         names.append(name)
     return tuple(names)
@@ -230,7 +236,7 @@ def expected_long_running() -> tuple[str, ...]:
 def expected_oneshots() -> tuple[str, ...]:
     names: list[str] = []
     for name in ONESHOT_SERVICES:
-        if classify_unit(name)["unit_class"] == CLASS_INTENTIONALLY_DISABLED:
+        if _alarm_skips(name):
             continue
         names.append(name)
     return tuple(names)
@@ -240,9 +246,7 @@ def expected_timers() -> tuple[str, ...]:
     """Inventory timers, plus the C6 series timer that is classified but not allowlisted."""
     names: list[str] = []
     for name in tuple(RECOMMENDED_TIMER_UNITS) + EXTRA_TIMERS:
-        if name in names:
-            continue
-        if classify_unit(name)["unit_class"] == CLASS_INTENTIONALLY_DISABLED:
+        if name in names or _alarm_skips(name):
             continue
         names.append(name)
     return tuple(names)
@@ -485,9 +489,7 @@ def unit_faults(show: Callable[[str], Mapping[str, str]], now: datetime) -> list
         if fault is not None:
             faults.append(fault)
         companion = name[: -len(".timer")] + ".service"
-        if companion in seen:
-            continue
-        if classify_unit(companion)["unit_class"] == CLASS_INTENTIONALLY_DISABLED:
+        if companion in seen or _alarm_skips(companion):
             continue
         props = get(companion)
         if props.get("load_state") != "loaded":

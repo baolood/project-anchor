@@ -38,16 +38,23 @@ RECOMMENDED_SERVICE_UNITS = (
     "project-anchor-whisper.service",
     "project-anchor-word-converter.service",
 )
-# 2026-10-23 founder allowlist. Order matches the live drop-in
-# anchor-control-mcp.service.d/20-timer-allowlist.conf. None of these are CORE_RUNTIME.
-# Retired from this list: shadow-paper v1.1, evidence-reporter v1, JEV forward shadow v1,
+# 2026-10-23 founder allowlist, minus units in RETIRED_UNITS. Order matches the
+# live drop-in anchor-control-mcp.service.d/20-timer-allowlist.conf after the
+# 2026-10-24 retirement of post-production monitoring. None of these are CORE_RUNTIME.
+# Removed earlier: shadow-paper v1.1, evidence-reporter v1, JEV forward shadow v1,
 # and JEV candidate review v1.
 RECOMMENDED_TIMER_UNITS = (
-    "project-anchor-post-production-monitoring.timer",
     "project-anchor-kraken-forward.timer",
     "project-anchor-jev-forward-shadow-v2.timer",
     "anchor-official-ledger.timer",
     "anchor-ledger-readonly-mirror.timer",
+)
+# Stopped on purpose. The fault alarm skips these names. MCP reports them as
+# expectation "retired" and does not treat them as a fault. A later retirement
+# is one new line here.
+RETIRED_UNITS = (
+    "project-anchor-post-production-monitoring.service",
+    "project-anchor-post-production-monitoring.timer",
 )
 HOST_DEFAULT_SERVICES = RECOMMENDED_SERVICE_UNITS
 HOST_DEFAULT_TIMERS = RECOMMENDED_TIMER_UNITS
@@ -57,7 +64,6 @@ HOST_DEFAULT_TIMERS = RECOMMENDED_TIMER_UNITS
 # JEV forward shadow v1, and JEV candidate review v1. Also omitted: the failed shadow-paper
 # monitor, turtle timer, and Track B history. Those names stay in EXACT_CLASSES.
 OBSERVE_SERVICES = RECOMMENDED_SERVICE_UNITS + (
-    "project-anchor-post-production-monitoring.service",
     "project-anchor-kraken-forward.service",
     "project-anchor-jev-forward-shadow-v2.service",
     "anchor-official-ledger.service",
@@ -146,11 +152,11 @@ EXACT_CLASSES: dict[str, tuple[str, str]] = {
     ),
     "project-anchor-post-production-monitoring.service": (
         CLASS_AUXILIARY,
-        "Inventory: read-only post-production monitoring oneshot",
+        "Retired 2026-10-24. Replaced by anchor-fault-alarm. Not a fault",
     ),
     "project-anchor-post-production-monitoring.timer": (
         CLASS_AUXILIARY,
-        "Inventory: schedules post-production monitoring; does not gate PASS",
+        "Retired 2026-10-24. Replaced by anchor-fault-alarm. Not a fault",
     ),
     "project-anchor-kraken-turtle-eth-1h-shadow.timer": (
         CLASS_EVALUATION,
@@ -318,7 +324,20 @@ def classify_unit(name: str) -> dict[str, object]:
 
     An allowlisted name that matches neither the exact table nor an inventory
     family stays CORE_RUNTIME so a new Anchor ops unit still gates PASS.
+    A name in RETIRED_UNITS is reported as retired and does not gate PASS.
     """
+    if name in RETIRED_UNITS:
+        exact = EXACT_CLASSES.get(name)
+        unit_class = exact[0] if exact is not None else CLASS_AUXILIARY
+        if unit_class == CLASS_CORE_RUNTIME:
+            unit_class = CLASS_AUXILIARY
+        reason = exact[1] if exact is not None else "Retired unit. Stopped on purpose. Not a fault."
+        return {
+            "unit_class": unit_class,
+            "gates_overall_pass": False,
+            "class_reason": reason,
+            "expectation": "retired",
+        }
     exact = EXACT_CLASSES.get(name)
     if exact is not None:
         unit_class, reason = exact
