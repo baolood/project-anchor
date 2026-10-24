@@ -1,0 +1,15 @@
+# Template only. DEPLOY=NO. Hourly at minute 13 UTC.
+# The host clock is UTC, so this calendar is 13 minutes past every hour UTC.
+
+[Unit]
+Description=Run the C6 pass-line series recorder hourly at minute 13 UTC
+After=network-online.target
+
+[Timer]
+OnCalendar=*-*-* *:13:00 UTC
+AccuracySec=1min
+Persistent=true
+Unit=anchor-official-ledger-c6.service
+
+[Install]
+WantedBy=timers.target

@@ -22,6 +22,7 @@ The seven tools are the same tools as [`ANCHOR_CONTROL_MCP_V1.md`](ANCHOR_CONTRO
 - `systemctl show` and `journalctl -p err` for allowlisted unit names
 - Read allowlisted report JSON and `docs/GO_LIVE_CHECKLIST.md`
 - Read Official V2 ledger files when `ANCHOR_CONTROL_MCP_LEDGER_DIR` names the allowlisted mirror directory `/var/lib/anchor-ledger-mirror`. The sidecar does not open the ledger StateDirectory. Opens are read-only. The sidecar does not write the mirror. See [`ANCHOR_LEDGER_READONLY_MIRROR_V1.md`](ANCHOR_LEDGER_READONLY_MIRROR_V1.md).
+- Read the C6 series equity CSV when `ANCHOR_CONTROL_MCP_C6_SERIES_DIR` is set, and return only the compact `c6_series` block on `get_ledger_summary`. The drop-in template `docs/templates/anchor-control-mcp.service.d/30-c6-series.conf` is what exposes `/var/lib/anchor-passline` read-only. This change does not install that drop-in. The reader does not write the series and does not open Line A.
 - Optionally `GET http://127.0.0.1:8000/health` and `GET http://127.0.0.1:8000/ops/state`
 
 `/health` gates the host health check. `/ops/state` is reduced to booleans (`kill_switch`, `worker_heartbeat`, `worker_panic` present or not) and does not gate PASS. Response bodies are not returned. Redirects are not followed. No other URL is requested. `ANCHOR_CONTROL_MCP_BACKEND_PROBE=0` turns the probe off.
@@ -76,6 +77,7 @@ Classes below started from the 2026-09-29 Vultr read-only inventory (host `vultr
 | `project-anchor-post-production-monitoring.service` and `.timer` | `AUXILIARY` | Read-only monitoring refresh. Timer stays on the default list |
 | `anchor-official-ledger.service` and `.timer` | `EVALUATION` | Official Ledger writer. Timer is on the default list. Oneshot and timer stay `expectation: observed` and do not gate PASS |
 | `anchor-ledger-readonly-mirror.service` and `.timer` | `EVALUATION` | Read-only mirror of the ledger file. Timer is on the default list. Oneshot and timer stay `expectation: observed` and do not gate PASS |
+| `anchor-official-ledger-c6.service` and `.timer` | `EVALUATION` | C6 pass-line series recorder. Not on the default allowlist. The host drop-in template adds them. Hourly at minute 13 UTC. Does not gate PASS |
 | `project-anchor-kraken-public-shadow-paper-v1-1-monitor.service` | `EVALUATION` | Failed at inventory time. Excluded from the default lists |
 | `project-anchor-kraken-turtle-eth-1h-shadow.timer` | `EVALUATION` | Inactive historical timer. Excluded from the default lists |
 | `docker.service` | `AUXILIARY` | Not an inventoried systemd control target |

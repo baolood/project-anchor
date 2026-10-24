@@ -97,6 +97,10 @@ FORBIDDEN_PATH_MARKERS = (
     "anchor-official-ledger",
     "/var/lib/private",
 )
+# Read-guard exception. ``_forbidden`` runs before a scoring input is opened.
+# The same marker strings are a write guard in the score CLI and the public
+# funding-cache helper; those callers do not use this exception.
+_C6_SERIES_READ_PARTS = ("var", "lib", "anchor-passline", "affl-v2-official-ledger-c6")
 
 MISSING = "MISSING"
 
@@ -1413,11 +1417,42 @@ def _read_only_bytes(path: Path) -> bytes:
         os.close(fd)
 
 
+def _c6_series_read_path(path: Path) -> bool:
+    """True when the resolved path is the C6 series under anchor-passline.
+
+    ``affl-v2-official-ledger-c6`` contains the Line A marker
+    ``affl-v2-official-ledger`` as a substring. That name is readable only
+    as this directory sequence, so a copy sitting anywhere else stays refused.
+    """
+    try:
+        resolved = path.resolve()
+    except OSError:
+        resolved = path
+    parts = tuple(part for part in resolved.parts if part not in {"/", ""})
+    tail = _C6_SERIES_READ_PARTS
+    width = len(tail)
+    return any(parts[index : index + width] == tail for index in range(len(parts) - width + 1))
+
+
 def _forbidden(path: Path) -> str | None:
+    """Read guard for scoring inputs.
+
+    Line A paths stay refused by substring, including ``affl-v2-official-ledger``
+    and ``anchor-official-ledger``. The one read exception is the C6 series
+    directory ``var/lib/anchor-passline/affl-v2-official-ledger-c6``.
+    ``/var/lib/private`` and ``anchor-official-ledger`` stay refused inside
+    that tree as well. This function does not authorize writes.
+    """
     try:
         text = str(path.resolve())
     except OSError:
         text = str(path)
+    if "/var/lib/private" in text:
+        return "refusing sealed ledger path containing /var/lib/private"
+    if "anchor-official-ledger" in text:
+        return "refusing sealed ledger path containing anchor-official-ledger"
+    if _c6_series_read_path(path):
+        return None
     for marker in FORBIDDEN_PATH_MARKERS:
         if marker in text:
             return f"refusing sealed ledger path containing {marker}"

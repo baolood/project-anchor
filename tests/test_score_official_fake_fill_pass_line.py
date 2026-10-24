@@ -713,6 +713,85 @@ class PassLineScorerTest(unittest.TestCase):
         self.assertEqual(report["criteria"]["C9"]["reason"], "GOVERNANCE_BREACH_PRESENT")
         self.assertEqual(report["criteria"]["C9"]["value"]["OTHER"], 1)
 
+    def test_c6_series_path_is_readable_and_line_a_paths_stay_refused(self) -> None:
+        """The marker check in the scorer is a read guard.
+
+        ``_forbidden`` runs before the input is opened. The C6 series directory
+        contains the Line A substring ``affl-v2-official-ledger``, and reading
+        that directory under ``var/lib/anchor-passline`` is allowed. Every
+        other Line A path stays refused. The CLI ``--out`` path still uses the
+        raw markers as a write guard, so a report is not written into the series.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            series = root / "var" / "lib" / "anchor-passline" / "affl-v2-official-ledger-c6" / "out"
+            series.mkdir(parents=True)
+            ledger = series / "copy.jsonl"
+            _write_jsonl(ledger, _chain([_mark(T0)]))
+            before = ledger.read_bytes()
+            report = score_ledger_file(ledger, t0=T0, t_score=T_SCORE, governance_path=None)
+            self.assertEqual(report["input"]["read_only"], True)
+            self.assertEqual(report["input"]["bytes_written"], 0)
+            self.assertEqual(ledger.read_bytes(), before)
+
+            out = series / "report.json"
+            refused_write = subprocess.run(
+                [
+                    "python3",
+                    str(SCORER),
+                    "--ledger",
+                    str(ledger),
+                    "--t0",
+                    T0,
+                    "--t-score",
+                    T_SCORE,
+                    "--out",
+                    str(out),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(refused_write.returncode, 2, refused_write.stderr)
+            self.assertIn("affl-v2-official-ledger", refused_write.stderr)
+            self.assertFalse(out.exists())
+
+            cache_out = series / "funding.json"
+            refused_cache = subprocess.run(
+                [
+                    "python3",
+                    str(PROJECT_ROOT / "scripts" / "fetch_public_funding_cache.py"),
+                    "--out",
+                    str(cache_out),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(refused_cache.returncode, 2, refused_cache.stderr)
+            self.assertIn("affl-v2-official-ledger", refused_cache.stderr)
+            self.assertFalse(cache_out.exists())
+
+            bare = root / "affl-v2-official-ledger-c6" / "copy.jsonl"
+            bare.parent.mkdir()
+            _write_jsonl(bare, _chain([_mark(T0)]))
+            with self.assertRaises(ScoringRefusal):
+                score_ledger_file(bare)
+
+            line_a = root / "var" / "lib" / "anchor-passline" / "affl-v2-official-ledger" / "copy.jsonl"
+            line_a.parent.mkdir(parents=True)
+            _write_jsonl(line_a, _chain([_mark(T0)]))
+            with self.assertRaises(ScoringRefusal) as sealed:
+                score_ledger_file(line_a)
+            self.assertIn("affl-v2-official-ledger", str(sealed.exception))
+
+            anchor = root / "var" / "lib" / "anchor-passline" / "anchor-official-ledger" / "copy.jsonl"
+            anchor.parent.mkdir(parents=True)
+            _write_jsonl(anchor, _chain([_mark(T0)]))
+            with self.assertRaises(ScoringRefusal) as anchor_refused:
+                score_ledger_file(anchor)
+            self.assertIn("anchor-official-ledger", str(anchor_refused.exception))
+
 
 if __name__ == "__main__":
     unittest.main()
