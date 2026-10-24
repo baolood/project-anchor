@@ -17,6 +17,7 @@ Group=anchor-mf4
 UMask=0027
 WorkingDirectory=/var/lib/anchor-mf4-watcher
 Environment=MF4_OUT_DIR=/var/lib/anchor-mf4-watcher
+Environment=MF4_RISK_USD=150
 Environment=MF4_WEBHOOK_ENABLED=0
 Environment=PYTHONPATH=/opt/project-anchor
 LoadCredential=webhook:/etc/anchor-mf4-watcher/webhook.env

@@ -10,8 +10,9 @@ The vendor FAQ on kraken.com/pro/prop says Kraken Prop does not currently offer 
 
 | Path | Role |
 | --- | --- |
-| `ops/mf4/_b1_core.py` | Public 4h breakout, 4R target. No I/O |
-| `ops/mf4/mf4_host_watcher.py` | Public `PF_XBTUSD` ticker and 4h candles, writes `status.json` |
+| `ops/mf4/_b1_core.py` | Live MF4 core, byte-for-byte. Public PF_XBTUSD futures charts |
+| `ops/mf4/mf4_host_watcher.py` | Host stepper for those charts. Webhook default off. Writes `status.json` |
+| `ops/mf4/verify_chain.py` | Read-only check of the forward-stream hash chain |
 | `ops/mf4/mf4_webhook.py` | Signal webhook. `MF4_WEBHOOK_ENABLED` defaults to `0` |
 | `ops/mf4/eval_guard.py` | Daily line, floor, worst case, cap-150 size |
 | `ops/mf4/pass_prob.py` | Fixed-seed pass / breach / locked Monte Carlo |
@@ -25,7 +26,9 @@ The vendor FAQ on kraken.com/pro/prop says Kraken Prop does not currently offer 
 
 `anchor-mf4-watcher.service` is `EVALUATION` in the MCP inventory. It is not on the default allowlist and it does not gate PASS.
 
-`ops/mf4/` was absent on main when this change was written. The signal core is isolated in `_b1_core.py`. The host sha256 recorded for that file (`f2834232…ae52`) was not in this checkout, so this copy is not a byte-for-byte claim against the host. The webhook, guard, and MCP readers call `decide` and do not inline its arithmetic.
+`ops/mf4/_b1_core.py` is the live MF4 core, byte-for-byte. Its sha256 is `f2834232bccf10d546e0ef769753042cc0becda86f09ca0960c3cb1ff818ae52`. The rule is 4h Donchian20 plus a daily EMA50 filter on Kraken Futures `PF_XBTUSD`, stop `max(1.0×ATR4h, 0.35% of entry)`, target 4R, size from `MF4_RISK_USD` (default 150), one virtual position, stop-first on 15m bars. Entry reference is the 4h close. The watcher calls that core. It does not inline the arithmetic.
+
+The watcher is the host stepper, including the restart fix: `state.json` stores numbers as text, and those strings load back as floats so an open position still exits after a restart. `status.json` keeps the host compare fields (`last_4h_close_sh`, trend, triggers) and adds the fields `get_mf4_status` reads: `price` (`last`, `at`), `last_4h_close` (`at_sh`, `close`), `last_signal` (`type`, `side`, `price`, `at_sh`), and `compare`. Webhook delivery and the eval guard sit on that stepper. Both stay quiet unless the operator turns the webhook flag on or writes `eval_account.json`.
 
 ## Webhook
 
@@ -93,7 +96,7 @@ Set `ANCHOR_CONTROL_MCP_MF4_DIR` to an absolute directory that is not a Line A p
 
 `account_status` is `running`, `passed` (equity at the target), `locked`, or `breached`. `locked` means equity is still above the floor and the daily line, but equity − floor − 30 is under $50, so the account can no longer open a trade at the minimum risk. `breached` means equity is already through the floor or the daily line. A stale snapshot stays `unknown`.
 
-`pass_probability` is a fixed-seed (7) Monte Carlo of 20,000 paths, ported from `research/eval-pass-prob/lib.py`. It uses estimated equity, the last-reset balance, floor 9,400, target 11,000, and the cap-150 rule. Trade outcomes come from `eval_trades.jsonl` in the MF4 directory (last 64 KB). With no usable rows it uses a zero-edge 4R book whose costs are 0.09R per trade. The block reports pass, breach, locked, and running at 30, 60, and 90 days and at a 1,095-day no-limit horizon, plus median days to resolve. It finishes in under a second. The whole tool reply stays within 2.5 KB.
+`pass_probability` is a fixed-seed (7) Monte Carlo of 20,000 paths, ported from `research/eval-pass-prob/lib.py`. It uses estimated equity, the last-reset balance, floor 9,400, target 11,000, and the cap-150 rule. Trade outcomes come from `eval_trades.jsonl` in the MF4 directory (last 64 KB). Until that file has at least 20 usable trades, the book stays the zero-edge 4R baseline (costs 0.09R per trade), so one losing trade does not show a 0% pass. At 20 trades the stored book is the book. The block reports pass, breach, locked, and running at 30, 60, and 90 days and at a 1,095-day no-limit horizon, plus median days to resolve. It finishes in under a second. The whole tool reply stays within 2.5 KB.
 
 ## Trade log
 
@@ -105,7 +108,7 @@ Set `ANCHOR_CONTROL_MCP_MF4_DIR` to an absolute directory that is not a Line A p
 
 ## Unit and rollback
 
-`ops/mf4/anchor-mf4-watcher.service` is a template. It sets `Environment=MF4_WEBHOOK_ENABLED=0`, `LoadCredential=webhook:/etc/anchor-mf4-watcher/webhook.env`, and `ReadOnlyPaths` including `/etc/anchor-mf4-watcher`. `RestrictAddressFamilies` stays `AF_INET` and `AF_INET6`. The unit is not enabled by this change.
+`ops/mf4/anchor-mf4-watcher.service` is a template. It sets `Environment=MF4_RISK_USD=150`, `Environment=MF4_WEBHOOK_ENABLED=0`, `LoadCredential=webhook:/etc/anchor-mf4-watcher/webhook.env`, and `ReadOnlyPaths` including `/etc/anchor-mf4-watcher`. `RestrictAddressFamilies` stays `AF_INET` and `AF_INET6`. The unit is not enabled by this change. A 90-day PF_XBTUSD replay of this stepper (2026-07-26 12:00 through 2026-10-24 13:15 Asia/Shanghai) is 13 trades and 26 signals, the same times and prices as the live host.
 
 `ops/mf4/ROLLBACK_MF4_WATCHER.sh` disables that unit and deletes the unit file under `/etc/systemd/system`. It leaves `/var/lib/anchor-mf4-watcher` in place. It does not read or delete the webhook env file. It does not touch Line A, the sealed ledger, the legacy equity CSV, the governance register, or the PASS LINE freeze record.
 
