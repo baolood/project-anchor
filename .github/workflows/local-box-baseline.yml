@@ -78,3 +78,7 @@ jobs:
           assert getattr(ctl, "app", None) is not None
           print("LOCAL_BOX_CONTROL_IMPORT ok")
           PY
+      - name: Test — host fault alarm
+        env:
+          PYTHONPATH: .:anchor-backend
+        run: python -m unittest tests.test_host_fault_alarm

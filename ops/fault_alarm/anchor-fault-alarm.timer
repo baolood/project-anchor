@@ -1,0 +1,15 @@
+# Template. Every 5 minutes. DEPLOY=NO until install_fault_alarm.sh is run on the host.
+
+[Unit]
+Description=Run the Project Anchor host fault alarm every 5 minutes
+Documentation=file:/root/project-anchor/docs/ANCHOR_HOST_FAULT_ALARM_V1.md
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+Persistent=true
+Unit=anchor-fault-alarm.service
+
+[Install]
+WantedBy=timers.target

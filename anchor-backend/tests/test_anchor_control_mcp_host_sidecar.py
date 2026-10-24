@@ -153,7 +153,10 @@ class InventoryClassificationTests(unittest.TestCase):
             ),
         )
         self.assertEqual(HOST_DEFAULT_TIMERS, RECOMMENDED_TIMER_UNITS)
-        self.assertEqual(OBSERVE_TIMERS, RECOMMENDED_TIMER_UNITS)
+        self.assertEqual(OBSERVE_TIMERS, RECOMMENDED_TIMER_UNITS + ("anchor-fault-alarm.timer",))
+        self.assertIn("anchor-fault-alarm.service", OBSERVE_SERVICES)
+        self.assertNotIn("anchor-fault-alarm.service", RECOMMENDED_SERVICE_UNITS)
+        self.assertNotIn("anchor-fault-alarm.timer", RECOMMENDED_TIMER_UNITS)
         retired_timers = (
             "project-anchor-kraken-public-shadow-paper-v1-1.timer",
             "project-anchor-evidence-reporter-v1.timer",
@@ -296,6 +299,12 @@ class HostHealthTests(unittest.TestCase):
         self.assertFalse(by_timer["anchor-ledger-readonly-mirror.timer"]["healthy"])
         self.assertIn("anchor-official-ledger.service", status["process"]["ignored_for_pass"])
         self.assertIn("anchor-ledger-readonly-mirror.service", status["process"]["ignored_for_pass"])
+        self.assertIn("anchor-fault-alarm.service", by_name)
+        self.assertEqual(by_name["anchor-fault-alarm.service"]["unit_class"], CLASS_AUXILIARY)
+        self.assertIs(by_name["anchor-fault-alarm.service"]["gates_overall_pass"], False)
+        self.assertIn("anchor-fault-alarm.timer", by_timer)
+        self.assertEqual(by_timer["anchor-fault-alarm.timer"]["unit_class"], CLASS_AUXILIARY)
+        self.assertIs(by_timer["anchor-fault-alarm.timer"]["gates_overall_pass"], False)
         self.assertEqual(by_name["anchor-official-ledger.service"]["unit_class"], CLASS_EVALUATION)
         self.assertEqual(by_name["anchor-official-ledger.service"]["expectation"], "observed")
         self.assertIs(by_name["anchor-ledger-readonly-mirror.service"]["gates_overall_pass"], False)
