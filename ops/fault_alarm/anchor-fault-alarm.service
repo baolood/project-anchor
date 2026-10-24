@@ -1,0 +1,40 @@
+# Template. The install script copies this to /etc/systemd/system.
+# Read-only fault alarm. It does not restart Anchor units.
+# Host checkout: /root/project-anchor
+# Webhook credential, same file as the MF4 watcher:
+#   LoadCredential=webhook:/etc/anchor-mf4-watcher/webhook.env
+# StateDirectory is /var/lib/anchor-fault-alarm only.
+# InaccessiblePaths hides the sealed ledger. Do not change mode bits on those paths.
+
+[Unit]
+Description=Project Anchor read-only host fault alarm
+Documentation=file:/root/project-anchor/docs/ANCHOR_HOST_FAULT_ALARM_V1.md
+
+[Service]
+Type=oneshot
+WorkingDirectory=/var/lib/anchor-fault-alarm
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=/root/project-anchor:/root/project-anchor/anchor-backend
+Environment=ANCHOR_FAULT_REPO_ROOT=/root/project-anchor
+Environment=MF4_OUT_DIR=/var/lib/anchor-mf4-watcher
+LoadCredential=webhook:/etc/anchor-mf4-watcher/webhook.env
+ExecStart=/usr/bin/python3 /root/project-anchor/ops/fault_alarm/probe.py
+StateDirectory=anchor-fault-alarm
+TimeoutStartSec=120
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectControlGroups=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectHostname=true
+LockPersonality=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0077
+BindReadOnlyPaths=/root/project-anchor
+ReadWritePaths=/var/lib/anchor-fault-alarm
+InaccessiblePaths=-/var/lib/private -/var/lib/private/anchor-official-ledger-20261010 -/var/lib/anchor-official-ledger-20261010 -/var/lib/anchor-ledger-mirror
+SyslogIdentifier=anchor-fault-alarm

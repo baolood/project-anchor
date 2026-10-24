@@ -180,6 +180,14 @@ EXACT_CLASSES: dict[str, tuple[str, str]] = {
         CLASS_EVALUATION,
         "MF4 host watcher. Public PF_XBTUSD only. EVALUATION. Does not gate PASS",
     ),
+    "anchor-fault-alarm.service": (
+        CLASS_AUXILIARY,
+        "Read-only host fault alarm oneshot. Does not gate PASS",
+    ),
+    "anchor-fault-alarm.timer": (
+        CLASS_AUXILIARY,
+        "Schedules the host fault alarm. Does not gate PASS",
+    ),
     "docker.service": (
         CLASS_AUXILIARY,
         "Inventory: Docker containers are not systemd MCP targets; backend health is the loopback HTTP probe",
@@ -189,6 +197,11 @@ EXACT_CLASSES: dict[str, tuple[str, str]] = {
 # Fallback for names that are not in the exact table. First match wins.
 # jev-forward-shadow-v2 stays ahead of the generic shadow rule.
 FAMILY_RULES: tuple[tuple[str, str, str], ...] = (
+    (
+        "fault-alarm",
+        CLASS_AUXILIARY,
+        "Host fault alarm units are auxiliary and do not gate PASS",
+    ),
     (
         "anchor-mf4",
         CLASS_EVALUATION,

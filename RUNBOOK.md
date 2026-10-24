@@ -219,6 +219,12 @@ Ops notes: [`anchor-backend/docs/ANCHOR_CONTROL_MCP_V1.md`](anchor-backend/docs/
 - Ops notes for the sidecar and unit classes: [`anchor-backend/docs/ANCHOR_CONTROL_MCP_HOST_SIDECAR_V1.md`](anchor-backend/docs/ANCHOR_CONTROL_MCP_HOST_SIDECAR_V1.md)
 - Do not apply the Nginx example or the systemd example on a live host from the doc change. Do not put a real token in git.
 
+## Host fault alarm
+
+Ops notes: [`docs/ANCHOR_HOST_FAULT_ALARM_V1.md`](docs/ANCHOR_HOST_FAULT_ALARM_V1.md).
+
+The probe is read-only. It posts `type=anchor_fault` to the MF4 webhook when a watched unit, timer, MF4 4h decision, kill switch, go-live flag, or live-trading flag is wrong. Install and rollback stay on the host; this runbook does not enable the timer.
+
 ```bash
 cd /path/to/project-anchor
 PYTHONPATH=anchor-backend python3 -m unittest discover -s anchor-backend/tests -p 'test_anchor_control_mcp*.py'
