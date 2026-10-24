@@ -181,6 +181,8 @@ class InventoryClassificationTests(unittest.TestCase):
         self.assertNotIn("anchor-official-ledger-c6.service", RECOMMENDED_SERVICE_UNITS)
         self.assertNotIn("anchor-official-ledger-c6.service", OBSERVE_SERVICES)
         self.assertNotIn("anchor-official-ledger-c6.timer", RECOMMENDED_TIMER_UNITS)
+        self.assertNotIn("anchor-mf4-watcher.service", RECOMMENDED_SERVICE_UNITS)
+        self.assertNotIn("anchor-mf4-watcher.service", OBSERVE_SERVICES)
         expected = {
             "nginx.service": CLASS_CORE_RUNTIME,
             "docker.service": CLASS_AUXILIARY,
@@ -219,6 +221,7 @@ class InventoryClassificationTests(unittest.TestCase):
             "anchor-ledger-readonly-mirror-extra.service",
             "anchor-official-ledger-c6.service",
             "anchor-official-ledger-c6.timer",
+            "anchor-mf4-watcher.service",
         ):
             classified = classify_unit(name)
             self.assertEqual(classified["unit_class"], CLASS_EVALUATION, name)
@@ -353,7 +356,7 @@ class HostHealthTests(unittest.TestCase):
         self.assertNotIn("unit_class", services["units"][0])
         self.assertNotIn("host_sidecar", services)
         self.assertEqual(services["expected_units"], ["project-anchor-post-production-monitoring.service"])
-        self.assertEqual(len(TOOL_NAMES), 7)
+        self.assertEqual(len(TOOL_NAMES), 9)
 
 
 class BackendProbeTests(unittest.TestCase):

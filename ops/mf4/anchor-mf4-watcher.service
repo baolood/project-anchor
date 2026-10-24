@@ -1,0 +1,37 @@
+# Template only. DEPLOY=NO. Do not install this from the repository change.
+# Public Kraken Futures PF_XBTUSD watcher. Signal only. No orders.
+# User on the host: anchor-mf4. Credential file is placed by the operator:
+#   /etc/anchor-mf4-watcher/webhook.env  (root:anchor-mf4, mode 0640)
+# systemd LoadCredential exposes it as $CREDENTIALS_DIRECTORY/webhook mode 0400.
+# MF4_WEBHOOK_ENABLED defaults to 0. The key is not in this unit.
+
+[Unit]
+Description=Anchor MF4 host watcher (public PF_XBTUSD, signal only, EVALUATION)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=anchor-mf4
+Group=anchor-mf4
+UMask=0027
+WorkingDirectory=/var/lib/anchor-mf4-watcher
+Environment=MF4_OUT_DIR=/var/lib/anchor-mf4-watcher
+Environment=MF4_WEBHOOK_ENABLED=0
+Environment=PYTHONPATH=/opt/project-anchor
+LoadCredential=webhook:/etc/anchor-mf4-watcher/webhook.env
+ExecStart=/usr/bin/python3 /opt/anchor-mf4-watcher/mf4_host_watcher.py --loop
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/anchor-mf4-watcher
+ReadOnlyPaths=/opt/anchor-mf4-watcher /etc/anchor-mf4-watcher
+InaccessiblePaths=/var/lib/private /var/lib/private/anchor-official-ledger-20261010 /var/lib/anchor-official-ledger-20261010 /var/lib/anchor-ledger-mirror
+PrivateNetwork=no
+RestrictAddressFamilies=AF_INET AF_INET6
+LockPersonality=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

@@ -114,7 +114,7 @@ def _initialize_result(params: dict[str, Any]) -> dict[str, Any]:
         "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
         "instructions": (
             "ANCHOR_CONTROL_MCP_V1 is read-only. "
-            "Exactly seven tools are available: "
+            f"Exactly {len(TOOL_NAMES)} tools are available: "
             + ", ".join(TOOL_NAMES)
             + ". No secrets, trading, orders, withdrawals, database writes, "
             "service control, SSH, or arbitrary shell."

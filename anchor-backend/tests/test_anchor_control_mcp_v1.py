@@ -86,6 +86,8 @@ class AnchorControlMcpToolTests(unittest.TestCase):
                 "get_timers",
                 "get_recent_errors",
                 "run_readonly_healthcheck",
+                "get_mf4_status",
+                "get_eval_state",
             ),
         )
         advertised = tuple(tool["name"] for tool in tool_definitions())

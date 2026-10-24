@@ -1,0 +1,22 @@
+# Template only. DEPLOY=NO. Not installed by this change.
+# Diff to apply on the host unit when the operator later enables the webhook
+# hook. The credential file is created by the operator, not by this diff.
+--- a/etc/systemd/system/anchor-mf4-watcher.service
++++ b/etc/systemd/system/anchor-mf4-watcher.service
+@@ -12,6 +12,8 @@ Group=anchor-mf4
+ UMask=0027
+ WorkingDirectory=/var/lib/anchor-mf4-watcher
+ Environment=MF4_OUT_DIR=/var/lib/anchor-mf4-watcher
++Environment=MF4_WEBHOOK_ENABLED=0
++LoadCredential=webhook:/etc/anchor-mf4-watcher/webhook.env
+ ExecStart=/usr/bin/python3 /opt/anchor-mf4-watcher/mf4_host_watcher.py --loop
+ NoNewPrivileges=true
+ PrivateTmp=true
+@@ -19,7 +21,7 @@ ProtectSystem=strict
+ ProtectHome=true
+ ReadWritePaths=/var/lib/anchor-mf4-watcher
+-ReadOnlyPaths=/opt/anchor-mf4-watcher
++ReadOnlyPaths=/opt/anchor-mf4-watcher /etc/anchor-mf4-watcher
+ InaccessiblePaths=/var/lib/private /var/lib/private/anchor-official-ledger-20261010 /var/lib/anchor-official-ledger-20261010 /var/lib/anchor-ledger-mirror
+ PrivateNetwork=no
+ RestrictAddressFamilies=AF_INET AF_INET6

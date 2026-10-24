@@ -105,7 +105,7 @@ class C6SeriesReaderTest(unittest.TestCase):
             self.assertNotIn(SECRET, blob)
             self.assertLess(len(json.dumps(payload["c6_series"])), 400)
             self.assertLess(len(blob), 2600)
-            self.assertEqual(len(TOOL_NAMES), 7)
+            self.assertEqual(len(TOOL_NAMES), 9)
 
     def test_line_a_paths_are_rejected_unread(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
