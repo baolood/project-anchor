@@ -263,7 +263,10 @@ def tool_definitions() -> list[dict[str, Any]]:
             "Live rows use ledger_event_id, row_hash, and signal_available_at, fill_time_utc, or signal_candle_open_utc. "
             "last_event_time is the latest of those times on the last row, and last_event_time_field names the source. "
             "Per-exit NET_PNL rows exclude entry costs. "
-            "Does not write the ledger or fall back to report JSON while that env var is set."
+            "Does not write the ledger or fall back to report JSON while that env var is set. "
+            "When ANCHOR_CONTROL_MCP_C6_SERIES_DIR is set, c6_series is a compact read-only block "
+            "(available, rows, last_row_time, position_state, scoring_status). "
+            "It does not include mark prices, funding rates, or row bodies."
         ),
         "get_services": (
             "Read allowlisted systemd service status. Does not start, stop, or restart units. "

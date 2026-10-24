@@ -178,6 +178,9 @@ class InventoryClassificationTests(unittest.TestCase):
             "anchor-ledger-readonly-mirror.service",
         ):
             self.assertIn(name, OBSERVE_SERVICES)
+        self.assertNotIn("anchor-official-ledger-c6.service", RECOMMENDED_SERVICE_UNITS)
+        self.assertNotIn("anchor-official-ledger-c6.service", OBSERVE_SERVICES)
+        self.assertNotIn("anchor-official-ledger-c6.timer", RECOMMENDED_TIMER_UNITS)
         expected = {
             "nginx.service": CLASS_CORE_RUNTIME,
             "docker.service": CLASS_AUXILIARY,
@@ -214,6 +217,8 @@ class InventoryClassificationTests(unittest.TestCase):
             "anchor-ledger-readonly-mirror.timer",
             "anchor-official-ledger-extra.timer",
             "anchor-ledger-readonly-mirror-extra.service",
+            "anchor-official-ledger-c6.service",
+            "anchor-official-ledger-c6.timer",
         ):
             classified = classify_unit(name)
             self.assertEqual(classified["unit_class"], CLASS_EVALUATION, name)

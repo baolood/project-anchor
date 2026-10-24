@@ -33,6 +33,7 @@ from app.mcp.inventory import (
     classify_unit,
     host_sidecar_enabled,
 )
+from app.mcp.c6_series import read_c6_series
 from app.mcp.official_ledger import official_ledger_configured, read_official_ledger
 from app.mcp.sanitize import looks_sensitive_path, redact_text
 
@@ -302,12 +303,21 @@ def collect_ledger(
     test injection and is not read from the environment or tool arguments.
     """
     if env is not None and official_ledger_configured(env):
-        return read_official_ledger(env, allowlist=ledger_allowlist)
-    found = _newest(reports_dir, LEDGER_FILES, _is_fake_fill)
-    if found is None:
-        return {"kind": "official_fake_fill", "available": False, "reason": "official_fake_fill_not_found", "redacted": True}
-    name, data = found
-    return project_ledger(data, name)
+        summary = read_official_ledger(env, allowlist=ledger_allowlist)
+    else:
+        found = _newest(reports_dir, LEDGER_FILES, _is_fake_fill)
+        if found is None:
+            summary = {
+                "kind": "official_fake_fill",
+                "available": False,
+                "reason": "official_fake_fill_not_found",
+                "redacted": True,
+            }
+        else:
+            name, data = found
+            summary = project_ledger(data, name)
+    summary["c6_series"] = read_c6_series(env or {})
+    return summary
 
 
 def checklist_counts(repo: Path) -> dict[str, Any]:

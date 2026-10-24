@@ -1,0 +1,35 @@
+# Template only. DEPLOY=NO. Do not install this from the repository change.
+# Repo source: ops/passline/c6_series_recorder.py
+# Host copy: /opt/anchor-passline-host/bin/c6_series_recorder.py
+# Data: /var/lib/anchor-passline/affl-v2-official-ledger-c6/{out,marks,governance}
+#       /var/lib/anchor-passline/funding-cache
+# Owner on the host: anchor-c6:anchor-mcp, directories 0750, files 0640.
+# Class: EVALUATION. Does not gate PASS. Does not open Line A.
+
+[Unit]
+Description=Project Anchor C6 pass-line series recorder (NON_SCORING, EVALUATION)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=anchor-c6
+Group=anchor-mcp
+UMask=0027
+WorkingDirectory=/var/lib/anchor-passline
+Environment=PYTHONPATH=/opt/project-anchor-passline
+ExecStart=/usr/bin/python3 /opt/anchor-passline-host/bin/c6_series_recorder.py --root /var/lib/anchor-passline
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/anchor-passline
+ReadOnlyPaths=/opt/anchor-passline-host
+InaccessiblePaths=/var/lib/private /var/lib/private/anchor-official-ledger-20261010 /var/lib/anchor-official-ledger-20261010 /var/lib/anchor-ledger-mirror
+PrivateNetwork=no
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

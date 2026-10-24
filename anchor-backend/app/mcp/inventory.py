@@ -168,6 +168,14 @@ EXACT_CLASSES: dict[str, tuple[str, str]] = {
         CLASS_EVALUATION,
         "2026-10-23 allowlist: schedules the read-only ledger mirror; observed, does not gate PASS",
     ),
+    "anchor-official-ledger-c6.service": (
+        CLASS_EVALUATION,
+        "C6 pass-line series recorder. EVALUATION and NON_SCORING. Does not gate PASS",
+    ),
+    "anchor-official-ledger-c6.timer": (
+        CLASS_EVALUATION,
+        "C6 pass-line series timer, hourly at minute 13 UTC. EVALUATION. Does not gate PASS",
+    ),
     "docker.service": (
         CLASS_AUXILIARY,
         "Inventory: Docker containers are not systemd MCP targets; backend health is the loopback HTTP probe",
