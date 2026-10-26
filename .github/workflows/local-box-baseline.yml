@@ -54,6 +54,8 @@ jobs:
       # Lock go-live rule anchors in docs/RULES.md (stdout-only + --out); see scripts/check_go_live_rules.sh.
       - name: Guardrail — go-live rules (stdout-only + --out)
         run: ./scripts/check_go_live_rules.sh
+      - name: Guardrail — research PARAMS.lock hashes
+        run: ./scripts/check_research_params_lock.sh
       # Local optional --out must be a file path, not a directory (see README / go_live_status_report.sh --help). CI prints to stdout only.
       - name: Smoke — go-live status report parses checklist
         run: ./scripts/go_live_status_report.sh

@@ -48,10 +48,11 @@ Workflow hardening in the YAML: **`actions/checkout`** uses **`persist-credentia
 2. Job **`check`** installs **`requirements.txt`**
 3. Job **`check`** runs **`./scripts/check_local_box_baseline.sh`** (`--help` explains scope; required paths include **`local_box`**, **`shared`**, **`risk_engine`**, **`docs/RULES.md`**, **`docs/GO_LIVE_CHECKLIST.md`**, **`artifacts/go-live/README.md`**, **`.github/pull_request_template.md`**, plus checklist `curl` guardrails)
 4. Job **`check`** runs **`./scripts/check_go_live_rules.sh`** (fails fast if **`docs/RULES.md`** loses the **stdout-only** + **`--out`** anchors)
-5. Job **`check`** runs **`./scripts/go_live_status_report.sh`** (parses **`docs/GO_LIVE_CHECKLIST.md`**; CI prints to stdout only; locally **`--out`** must be a file path — see **`./scripts/go_live_status_report.sh --help`** and **`docs/RULES.md`**)
-6. Job **`check`** smoke-tests **`event_store.init_db()`**, **`import local_box.runner`**, **`import local_box.control.server`**
-7. If job **`checklist-curl-guardrails`** fails, fix script policy first: run **`./scripts/check_checklist_curl_guardrails.sh`** (try **`--verbose`** or **`--changed-only`**). That job is independent of job **`check`**.
-8. If job **`check`** fails, reproduce locally in the same order: **`./scripts/check_checklist_curl_guardrails.sh`**, **`./scripts/check_local_box_baseline.sh`**, **`./scripts/check_go_live_rules.sh`**, **`./scripts/go_live_status_report.sh`**, then the **Quick local checks** block below (Python smokes).
+5. Job **`check`** runs **`./scripts/check_research_params_lock.sh`** (every `research/**/PARAMS.lock` matches the sha256 of its `PARAMS.md`)
+6. Job **`check`** runs **`./scripts/go_live_status_report.sh`** (parses **`docs/GO_LIVE_CHECKLIST.md`**; CI prints to stdout only; locally **`--out`** must be a file path — see **`./scripts/go_live_status_report.sh --help`** and **`docs/RULES.md`**)
+7. Job **`check`** smoke-tests **`event_store.init_db()`**, **`import local_box.runner`**, **`import local_box.control.server`**
+8. If job **`checklist-curl-guardrails`** fails, fix script policy first: run **`./scripts/check_checklist_curl_guardrails.sh`** (try **`--verbose`** or **`--changed-only`**). That job is independent of job **`check`**.
+9. If job **`check`** fails, reproduce locally in the same order: **`./scripts/check_checklist_curl_guardrails.sh`**, **`./scripts/check_local_box_baseline.sh`**, **`./scripts/check_go_live_rules.sh`**, **`./scripts/check_research_params_lock.sh`**, **`./scripts/go_live_status_report.sh`**, then the **Quick local checks** block below (Python smokes).
 
 Quick local options for the guardrail scanner:
 
@@ -92,6 +93,7 @@ Each workflow job sets **`timeout-minutes`** in **[`.github/workflows/local-box-
 ```bash
 ./scripts/check_local_box_baseline.sh
 ./scripts/check_go_live_rules.sh
+./scripts/check_research_params_lock.sh
 ./scripts/go_live_status_report.sh
 # Optional standup artifact (--out must be a file path, not a directory):
 # ./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out

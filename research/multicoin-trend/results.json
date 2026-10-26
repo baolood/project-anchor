@@ -1,0 +1,113 @@
+{
+ "variants": {
+  "L50_LONG_FLAT": {
+   "IS": {
+    "weeks": 207,
+    "ann_net": 0.3392265332775617,
+    "sharpe_net": 1.2795294223405551,
+    "maxdd": -0.3434077771416504,
+    "ann_gross_simple": 0.36808268836688435,
+    "ann_cost_simple": 0.04423779859878432,
+    "gross_over_cost": 8.320547134481496,
+    "fees_total": 0.01896330652267293,
+    "funding_total": 0.1571371609763339
+   }
+  },
+  "L50_LONG_SHORT": {
+   "IS": {
+    "weeks": 207,
+    "ann_net": 0.27290101218942087,
+    "sharpe_net": 1.0239679193210733,
+    "maxdd": -0.3604619404002666,
+    "ann_gross_simple": 0.32866757783794864,
+    "ann_cost_simple": 0.051275683896999394,
+    "gross_over_cost": 6.409813635994858,
+    "fees_total": 0.05008924258918672,
+    "funding_total": 0.15402742215463777
+   }
+  },
+  "L100_LONG_FLAT": {
+   "IS": {
+    "weeks": 207,
+    "ann_net": 0.23480614748390227,
+    "sharpe_net": 1.1831736308648326,
+    "maxdd": -0.22541998102919392,
+    "ann_gross_simple": 0.27876791007101415,
+    "ann_cost_simple": 0.048788302726821456,
+    "gross_over_cost": 5.7138267676969425,
+    "fees_total": 0.019353813249029093,
+    "funding_total": 0.1748611610673563
+   }
+  },
+  "L100_LONG_SHORT": {
+   "IS": {
+    "weeks": 207,
+    "ann_net": 0.1069157564124863,
+    "sharpe_net": 0.5917884031420508,
+    "maxdd": -0.33073457826749775,
+    "ann_gross_simple": 0.18059515679387295,
+    "ann_cost_simple": 0.05727893292568453,
+    "gross_over_cost": 3.152907143507417,
+    "fees_total": 0.04408855061962096,
+    "funding_total": 0.1839256631422386
+   }
+  }
+ },
+ "selected": "L50_LONG_FLAT",
+ "gate": {
+  "ann_gross": 0.36808268836688435,
+  "ann_cost": 0.04423779859878432,
+  "pass": true
+ },
+ "OOS": {
+  "weeks": 143,
+  "ann_net": 0.046913492507011156,
+  "sharpe_net": 0.3089128263609551,
+  "maxdd": -0.255285812556323,
+  "ann_gross_simple": 0.09922006387639355,
+  "ann_cost_simple": 0.02737305255622619,
+  "gross_over_cost": 3.6247350810651646,
+  "fees_total": 0.01812733022772514,
+  "funding_total": 0.057148564301896874
+ },
+ "random_p95_sharpe": 0.8560726969470209,
+ "segments_net_sum": {
+  "2024": 0.15534646946346758,
+  "2025": -0.04974582838772468,
+  "2026": 0.09197864005471726
+ },
+ "coin_net_contrib": {
+  "BTC": 0.028358732182959343,
+  "ETH": 0.09179083387055495,
+  "XRP": -0.013479929797666226,
+  "ADA": 0.028228363616917978,
+  "DOGE": 0.05368803011829107,
+  "LTC": 0.00879536972983272,
+  "LINK": 0.07587861553506123,
+  "SOL": -0.026321121391431508,
+  "DOT": -0.020747510573974455,
+  "AVAX": -0.02861210216008487
+ },
+ "top_coin": "ETH",
+ "stress_spot_40bp_info_only": {
+  "weeks": 143,
+  "ann_net": 0.023037163698426344,
+  "sharpe_net": 0.20976231057037378,
+  "maxdd": -0.2694396878722304,
+  "ann_gross_simple": 0.09922006387639355,
+  "ann_cost_simple": 0.050444200118785455,
+  "gross_over_cost": 1.9669270925646798,
+  "fees_total": 0.08157298602476314,
+  "funding_total": 0.057148564301896874
+ },
+ "criteria": {
+  "P1_ann_net>=8%": false,
+  "P2_sharpe>=0.7": false,
+  "P3_sharpe>random_p95": false,
+  "P4_maxdd<=25%": false,
+  "P5_gross/cost>=2": true,
+  "P6_2of3_segments>0": true,
+  "P7_ex_top_coin>0": true
+ },
+ "verdict": "FAIL"
+}

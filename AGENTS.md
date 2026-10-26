@@ -18,6 +18,7 @@ Run in order (matches CI job **`check`** guardrails + smokes intent):
 ./scripts/check_checklist_curl_guardrails.sh
 ./scripts/check_local_box_baseline.sh
 ./scripts/check_go_live_rules.sh
+./scripts/check_research_params_lock.sh
 ./scripts/go_live_status_report.sh
 ```
 
