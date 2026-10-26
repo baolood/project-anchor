@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -89,6 +90,87 @@ class RandomDirectionTests(unittest.TestCase):
         self.assertIn("EVAL_PASS_PROB_V1", gate)
         self.assertIn("EVAL_DIR_FAMILIES_V1", gate)
         self.assertIn("## 8.", gate)
+
+
+class ParamsLockTests(unittest.TestCase):
+    def test_every_params_lock_matches_params_md(self) -> None:
+        families = sorted(
+            path.parent.relative_to(ROOT).as_posix()
+            for path in (ROOT / "research").rglob("PARAMS.lock")
+            if path.is_file()
+        )
+        self.assertEqual(
+            families,
+            [
+                "research/basis-mr",
+                "research/eval-dir-families",
+                "research/eval-pass-prob",
+                "research/funding-carry",
+                "research/multicoin-trend",
+                "research/quarterly-basis-cc",
+            ],
+        )
+        for folder in families:
+            params = (ROOT / folder / "PARAMS.md").read_bytes()
+            lock = (ROOT / folder / "PARAMS.lock").read_text(encoding="utf-8").split()[0]
+            self.assertEqual(hashlib.sha256(params).hexdigest(), lock, folder)
+
+        script = ROOT / "scripts" / "check_research_params_lock.sh"
+        proc = subprocess.run(
+            [str(script)],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("[pass]", proc.stdout)
+        for folder in families:
+            self.assertIn(folder, proc.stdout)
+
+        help_proc = subprocess.run(
+            [str(script), "--help"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(help_proc.returncode, 0, help_proc.stderr)
+        self.assertIn("PARAMS.lock", help_proc.stdout)
+        bad = subprocess.run(
+            [str(script), "--nope"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(bad.returncode, 2)
+
+    def test_scoreboard_report_links_resolve_beside_the_board(self) -> None:
+        board = ROOT / "research" / "SCOREBOARD.md"
+        text = board.read_text(encoding="utf-8")
+        self.assertIn("MULTICOIN_TREND_V1", text)
+        self.assertTrue((ROOT / "research" / "IDEAS.md").is_file())
+        links = []
+        for line in text.splitlines():
+            if "REPORT.md" not in line or not line.startswith("|"):
+                continue
+            cell = line.strip().strip("|").split("|")[-1].strip()
+            links.append(cell)
+            self.assertTrue((board.parent / cell).is_file(), cell)
+        self.assertEqual(
+            links,
+            [
+                "funding-carry/REPORT.md",
+                "basis-mr/REPORT.md",
+                "quarterly-basis-cc/REPORT.md",
+                "eval-dir-families/REPORT.md",
+                "eval-dir-families/REPORT.md",
+                "eval-dir-families/REPORT.md",
+                "eval-pass-prob/REPORT.md",
+                "multicoin-trend/REPORT.md",
+            ],
+        )
 
 
 class ReportTextTests(unittest.TestCase):

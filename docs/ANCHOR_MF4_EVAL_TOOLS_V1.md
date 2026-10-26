@@ -18,7 +18,7 @@ The vendor FAQ on kraken.com/pro/prop says Kraken Prop does not currently offer 
 | `ops/mf4/pass_prob.py` | Fixed-seed pass / breach / locked Monte Carlo |
 | `ops/mf4/eval_outcomes.py` | Append-only manual trade log and cost summary |
 | `ops/mf4/mf4_record_actual.py` | `--account` writes `eval_account.json` mode `0640` |
-| `research/` | Locked eval studies, research gate, random-direction control |
+| `research/` | Locked strategy-family studies, research gate, scoreboard, random-direction control |
 | `ops/mf4/anchor-mf4-watcher.service` | Unit template. Not installed |
 | `ops/mf4/anchor-mf4-watcher.service.diff` | Webhook lines for that unit |
 | `ops/mf4/ROLLBACK_MF4_WATCHER.sh` | Stops the unit. Does not print or delete the webhook file |
@@ -105,6 +105,8 @@ Set `ANCHOR_CONTROL_MCP_MF4_DIR` to an absolute directory that is not a Line A p
 ## Research record
 
 `research/RESEARCH_GATE.md` (including §8), `research/eval-pass-prob/`, `research/eval-dir-families/`, and `research/PASS_PROB_20261024.md` are the 2026-10-24 study. `PARAMS.lock` hashes are unchanged. `research/random_direction.py` is the reusable P3 control (`Rnd`, `match_p`). It does not place orders.
+
+`research/SCOREBOARD.md` is one row per family (all FAIL through 2026-10-26; newest is MULTICOIN_TREND_V1). Report links are relative to that file: `research/funding-carry/`, `research/basis-mr/`, `research/quarterly-basis-cc/`, `research/multicoin-trend/`, plus the two studies above. `research/IDEAS.md` is the idea bank. `./scripts/check_research_params_lock.sh` checks that every `PARAMS.lock` matches the sha256 of its `PARAMS.md`. DEPLOY=NO.
 
 ## Unit and rollback
 

@@ -21,6 +21,7 @@ cd /path/to/project-anchor
 export PYTHONPATH=.
 ./scripts/check_local_box_baseline.sh
 ./scripts/check_go_live_rules.sh
+./scripts/check_research_params_lock.sh
 ./scripts/go_live_status_report.sh
 # Optional standup artifact (--out must be a file path, not a directory):
 # ./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out
@@ -68,6 +69,7 @@ cd /path/to/project-anchor
 ./scripts/check_checklist_curl_guardrails.sh
 ./scripts/check_local_box_baseline.sh
 ./scripts/check_go_live_rules.sh
+./scripts/check_research_params_lock.sh
 ./scripts/go_live_status_report.sh
 # Optional standup artifact (--out must be a file path, not a directory):
 # ./scripts/go_live_status_report.sh --out artifacts/go-live/go_live_daily_status_$(date +%F).out
