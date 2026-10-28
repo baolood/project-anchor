@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/workspace/anchor-redesign/regime-bull-voltarget/vt_backtest.py", line 298, in <module>
+    else: main()
+          ~~~~^^
+  File "/workspace/anchor-redesign/regime-bull-voltarget/vt_backtest.py", line 262, in main
+    info = evaluate(bn, INFO, 'INFO Binance 2018-03-04..2026-09-30 (contaminated, veto only)', null=True)
+  File "/workspace/anchor-redesign/regime-bull-voltarget/vt_backtest.py", line 198, in evaluate
+    assert i0 >= SMA_WIN, 'need >=200 prior closes'
+           ^^^^^^^^^^^^^
+AssertionError: need >=200 prior closes

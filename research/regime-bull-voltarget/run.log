@@ -1,0 +1,86 @@
+{
+ "criteria": {
+  "G1_fee_gate": "PASS",
+  "C0_no_liquidation": "PASS",
+  "C1_survive": "FAIL",
+  "C2_bull_capture": "FAIL",
+  "C3_vs_buyhold_return_or_calmar": "FAIL",
+  "C4_vs_V2": "FAIL",
+  "C5_random_timing": "PASS",
+  "C6_cycle_test": "PASS"
+ },
+ "overall_pre": "FAIL",
+ "veto": [
+  "INFO max drawdown -55.1% worse than -40%"
+ ],
+ "final": "FAIL",
+ "lines": {
+  "NEW": {
+   "days": 1689,
+   "final": 146887.9097509745,
+   "cagr": 0.7872717513478054,
+   "max_dd": -0.3710870437173558,
+   "calmar": 2.1215285326626576,
+   "avg_exposure": 0.17128857129985092,
+   "trades": 44,
+   "brakes": 5,
+   "liquidations": 0,
+   "max_dd_intraday_low": -0.4871102048621737,
+   "max_exposure": 1.5033826108744677,
+   "fraction_days_at_cap": 0.007104795737122558
+  },
+  "NEW_NOBRAKE(info)": {
+   "days": 1689,
+   "final": 2769018.8965684753,
+   "cagr": 2.3712960982856344,
+   "max_dd": -0.5760887042217072,
+   "calmar": 4.1161996076441785,
+   "avg_exposure": 0.6844732616851857,
+   "trades": 125
+  },
+  "V2b": {
+   "days": 1689,
+   "final": 768218.7083545844,
+   "cagr": 1.555413638706336,
+   "max_dd": -0.40809193813095235,
+   "calmar": 3.811429468148965,
+   "avg_exposure": 0.46392357142484786,
+   "trades": 77
+  },
+  "V2a": {
+   "days": 1689,
+   "final": 3578656.277348794,
+   "cagr": 2.56344142409278,
+   "max_dd": -0.7086054122598252,
+   "calmar": 3.617586571795531,
+   "avg_exposure": 0.7164002368265245,
+   "trades": 25
+  },
+  "BH": {
+   "days": 1689,
+   "final": 3307315.990922838,
+   "cagr": 2.503235134436814,
+   "max_dd": -0.848579076156571,
+   "calmar": 2.9499138085923566
+  }
+ },
+ "phases": {
+  "bull_days": 853,
+  "bull_capture": 0.26710189756895025,
+  "n_bull": 13,
+  "n_bear": 13
+ },
+ "null": {
+  "n": 1000,
+  "p50": 0.2616007417983011,
+  "p90": 1.6104192716511523,
+  "p95": 2.0798843032195857,
+  "max": 4.854984270943832,
+  "strat_calmar_engine": 2.1215285326626576,
+  "strat_calmar_replay": 3.2427234360340074,
+  "pct_engine": 95.0,
+  "pct_replay": 99.1,
+  "replay_cagr": 0.921476246625301,
+  "engine_cagr": 0.7872717513478054
+ }
+}

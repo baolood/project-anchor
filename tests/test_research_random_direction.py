@@ -106,8 +106,13 @@ class ParamsLockTests(unittest.TestCase):
                 "research/eval-dir-families",
                 "research/eval-pass-prob",
                 "research/funding-carry",
+                "research/liq-cascade",
                 "research/multicoin-trend",
                 "research/quarterly-basis-cc",
+                "research/regime-bull",
+                "research/regime-bull-v2",
+                "research/regime-bull-v3",
+                "research/regime-bull-voltarget",
             ],
         )
         for folder in families:
@@ -150,6 +155,8 @@ class ParamsLockTests(unittest.TestCase):
         board = ROOT / "research" / "SCOREBOARD.md"
         text = board.read_text(encoding="utf-8")
         self.assertIn("MULTICOIN_TREND_V1", text)
+        self.assertIn("REGIME_BULL_SURVIVE_V1", text)
+        self.assertIn("REGIME_BULL_VOLTARGET_V1", text)
         self.assertTrue((ROOT / "research" / "IDEAS.md").is_file())
         links = []
         for line in text.splitlines():
@@ -169,6 +176,8 @@ class ParamsLockTests(unittest.TestCase):
                 "eval-dir-families/REPORT.md",
                 "eval-pass-prob/REPORT.md",
                 "multicoin-trend/REPORT.md",
+                "regime-bull/REPORT.md",
+                "regime-bull-voltarget/REPORT.md",
             ],
         )
 

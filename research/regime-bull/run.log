@@ -1,0 +1,89 @@
+{
+ "integrity": {
+  "BTCUSDT": {
+   "rows": 3332,
+   "missing_days": 0,
+   "nonpositive": 0,
+   "max_abs_daily_close_move": 0.3950484717412017
+  },
+  "ETHUSDT": {
+   "rows": 3332,
+   "missing_days": 0,
+   "nonpositive": 0,
+   "max_abs_daily_close_move": 0.44596886079852016
+  }
+ },
+ "gate": {
+  "a_SMA200": {
+   "gross_cagr": 0.1870866668196851,
+   "annual_cost": 0.009937606352807713,
+   "ratio": 18.826129771866718,
+   "passes": true,
+   "is_calmar": 0.2723100804161497,
+   "entries": 16
+  },
+  "b_SMA200_VOLTARGET": {
+   "gross_cagr": 0.21892252450755678,
+   "annual_cost": 0.006255931754847385,
+   "ratio": 34.99439141706197,
+   "passes": true,
+   "is_calmar": 0.4963836634080546,
+   "entries": 16
+  },
+  "c_CROSS50_200_EXIT20": {
+   "gross_cagr": 0.32373510516780635,
+   "annual_cost": 0.00869540555870675,
+   "ratio": 37.23059298179012,
+   "passes": true,
+   "is_calmar": 0.6767569674222077,
+   "entries": 14
+  },
+  "d_VOLTARGET_DDBRAKE": {
+   "gross_cagr": 0.21892252450755678,
+   "annual_cost": 0.006255931754847385,
+   "ratio": 34.99439141706197,
+   "passes": true,
+   "is_calmar": 0.4963836634080546,
+   "entries": 16
+  }
+ },
+ "selected": "c_CROSS50_200_EXIT20",
+ "judged": {
+  "BTCUSDT": {
+   "c1": false,
+   "c2": false,
+   "c3": false,
+   "c3_cagr_ratio": 0.1474193056428711,
+   "c3_cagr_ok": false,
+   "c3_calmar_ok": false,
+   "c4": "FAIL",
+   "null_p50": 0.32428135349439163,
+   "null_p95": 1.7702571973434027,
+   "null_p9875": 2.732102505069779,
+   "null_max": 4.7560722436205936,
+   "strat_calmar": 0.1955659179339764,
+   "strat_percentile": 38.2,
+   "null_n": 1000,
+   "recompute_cagr_check": 0.07957350869930235,
+   "reported_cagr": 0.07957350869930235
+  },
+  "ETHUSDT": {
+   "c1": false,
+   "c2": false,
+   "c3": false,
+   "c3_cagr_ratio": 0.3256670316376396,
+   "c3_cagr_ok": false,
+   "c3_calmar_ok": false,
+   "c4": "FAIL",
+   "null_p50": 0.024156070092223467,
+   "null_p95": 1.0776573479794151,
+   "null_p9875": 2.713449341529971,
+   "null_max": 3.538587746348724,
+   "strat_calmar": 0.16344745274644454,
+   "strat_percentile": 63.5,
+   "null_n": 1000,
+   "recompute_cagr_check": 0.07823000645735712,
+   "reported_cagr": 0.07823000645735712
+  }
+ }
+}
